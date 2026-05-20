@@ -219,6 +219,7 @@ interface RowFormFieldsProps {
   fields: Array<IField>;
   disabled: boolean;
   tableSlug: string;
+  disabledFields?: ReadonlySet<string>;
 }
 
 export function RowFormFields({
@@ -226,6 +227,7 @@ export function RowFormFields({
   fields,
   disabled,
   tableSlug,
+  disabledFields,
 }: RowFormFieldsProps): React.JSX.Element {
   return (
     <section
@@ -244,6 +246,8 @@ export function RowFormFields({
         ) {
           return null;
         }
+
+        const fieldDisabled = disabled || (disabledFields?.has(field.slug) ?? false);
 
         return (
           <div
@@ -265,7 +269,7 @@ export function RowFormFields({
                     return (
                       <formField.TableRowTextField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.TEXT_LONG:
@@ -273,21 +277,21 @@ export function RowFormFields({
                       return (
                         <formField.TableRowRichTextField
                           field={field}
-                          disabled={disabled}
+                          disabled={fieldDisabled}
                         />
                       );
                     }
                     return (
                       <formField.TableRowTextareaField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.DROPDOWN:
                     return (
                       <formField.TableRowDropdownField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                         tableSlug={tableSlug}
                       />
                     );
@@ -295,35 +299,35 @@ export function RowFormFields({
                     return (
                       <formField.TableRowDateField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.FILE:
                     return (
                       <formField.TableRowFileField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.RELATIONSHIP:
                     return (
                       <formField.TableRowRelationshipField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.CATEGORY:
                     return (
                       <formField.TableRowCategoryField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   case E_FIELD_TYPE.USER:
                     return (
                       <formField.TableRowUserField
                         field={field}
-                        disabled={disabled}
+                        disabled={fieldDisabled}
                       />
                     );
                   default:
