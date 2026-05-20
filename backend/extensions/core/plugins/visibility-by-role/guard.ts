@@ -3,9 +3,8 @@ import { left, right } from '@application/core/either.core';
 import type { Either } from '@application/core/either.core';
 import type {
   IField,
-  IRow,
+  IJWTPayload,
   ITable,
-  IUser,
 } from '@application/core/entity.core';
 import {
   E_FIELD_TYPE,
@@ -44,7 +43,7 @@ const FIELD_SLUG = 'visibility';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function isAdmin(user: IUser | undefined): boolean {
+function isAdmin(user: IJWTPayload | undefined): boolean {
   return Boolean(user && ADMIN_ROLES.includes(user.role));
 }
 

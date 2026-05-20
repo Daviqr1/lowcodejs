@@ -6,8 +6,15 @@ import { loadExtensions } from '@application/core/extensions/loader';
 import { Setting } from '@application/model/setting.model';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionMongooseRepository from '@application/repositories/extension/extension-mongoose.repository';
+import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
+import FieldMongooseRepository from '@application/repositories/field/field-mongoose.repository';
+import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
+import RowMongooseRepository from '@application/repositories/row/row-mongoose.repository';
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
+import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
+import { injectVisibilityByRoleGuardDeps } from '../extensions/core/plugins/visibility-by-role/guard';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import StorageService from '@application/services/storage/storage.service';
@@ -81,6 +88,18 @@ async function loadExtensionsRegistry(): Promise<void> {
   }
 }
 
+function injectExtensionGuardsDeps(): void {
+  injectVisibilityByRoleGuardDeps({
+    fieldRepo: getInstanceByToken<FieldContractRepository>(
+      FieldMongooseRepository,
+    ),
+    tableRepo: getInstanceByToken<TableContractRepository>(
+      TableMongooseRepository,
+    ),
+    rowRepo: getInstanceByToken<RowContractRepository>(RowMongooseRepository),
+  });
+}
+
 async function start(): Promise<void> {
   try {
     await loadStorageConfig();
@@ -101,6 +120,7 @@ async function start(): Promise<void> {
 
     await sweepStaleMigrations();
     await loadExtensionsRegistry();
+    injectExtensionGuardsDeps();
 
     const storageRepository = getInstanceByToken<StorageContractRepository>(
       StorageMongooseRepository,

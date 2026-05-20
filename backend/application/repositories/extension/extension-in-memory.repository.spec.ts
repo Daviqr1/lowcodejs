@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 
-import ExtensionInMemoryRepository from './extension-in-memory.repository';
 import type { ExtensionUpsertPayload } from './extension-contract.repository';
+import ExtensionInMemoryRepository from './extension-in-memory.repository';
 
 const baseUpsert = (extensionId: string): ExtensionUpsertPayload => ({
   pkg: 'core',
@@ -19,7 +19,7 @@ const baseUpsert = (extensionId: string): ExtensionUpsertPayload => ({
   route: null,
   submenu: null,
   manifestSnapshot: {},
-  requires: { lowcodejs: null, extensions: [] },
+  requires: { lowcodejs: undefined, extensions: [] },
 });
 
 describe('ExtensionInMemoryRepository.findActiveForTable', () => {

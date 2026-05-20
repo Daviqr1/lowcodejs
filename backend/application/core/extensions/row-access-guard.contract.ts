@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import type { Either } from '@application/core/either.core';
-import type { IRow, ITable, IUser } from '@application/core/entity.core';
+import type { IJWTPayload, IRow, ITable } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
 export type GuardOperation = 'create' | 'update' | 'delete';
@@ -29,17 +29,17 @@ export abstract class RowAccessGuard {
   /** Modifica a query mongo de listagem (paginated). */
   abstract adjustListQuery(
     query: Record<string, unknown>,
-    user: IUser | undefined,
+    user: IJWTPayload | undefined,
     table: ITable,
   ): Record<string, unknown>;
 
   /** Decide se user pode ler uma row específica. */
-  abstract canRead(row: IRow, user: IUser | undefined, table: ITable): boolean;
+  abstract canRead(row: IRow, user: IJWTPayload | undefined, table: ITable): boolean;
 
   /** Decide se user pode escrever (create/update/delete). */
   abstract canWrite(
     row: IRow | null,
-    user: IUser | undefined,
+    user: IJWTPayload | undefined,
     table: ITable,
     payload: Record<string, unknown> | null,
     operation: GuardOperation,
@@ -48,7 +48,7 @@ export abstract class RowAccessGuard {
   /** Ajusta o payload antes de salvar (força PUBLIC pra não-admin). */
   abstract sanitizeWritePayload(
     payload: Record<string, unknown>,
-    user: IUser | undefined,
+    user: IJWTPayload | undefined,
     table: ITable,
     operation: 'create' | 'update',
     currentRow: IRow | null,
