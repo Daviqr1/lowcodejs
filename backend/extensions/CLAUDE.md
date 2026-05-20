@@ -14,6 +14,25 @@ mas a "fonte de verdade" para o registro no DB é este diretório.
 | `MODULE` | Tela/dashboard/formulário maior, com URL própria | Dashboard customizado, Homepage | URL default `/e/<pkg>/<id>` ou via Menu custom |
 | `TOOL` | Utilitário do sistema, listado no submenu Ferramentas | Clonar tabela, Importar CSV | `/tools/<pkg>/<id>` + sublink na sidebar Ferramentas |
 
+### Capability `kind` (plugins que mutam comportamento do core)
+
+Plugins do tipo `PLUGIN` podem declarar `placement.kind` ao invés de
+`placement.slot` quando não são UI mas **interceptam comportamento do core**.
+
+| kind | Contrato | Onde fica registrado | Plugin de exemplo |
+|------|----------|---------------------|-------------------|
+| `row-access-guard` | `RowAccessGuard` (em `application/core/extensions/row-access-guard.contract.ts`) | `RowAccessGuardService.GUARDS` (map estático em `row-access-guard.service.ts`); registro feito pelo próprio módulo do plugin no module-load | `core/plugins/visibility-by-role` |
+
+Row use-cases (paginated/show/create/update/delete) consultam o service via
+`getActiveGuardsFor(tableId)` e aplicam os métodos do guard (`adjustListQuery`,
+`canRead`, `canWrite`, `sanitizeWritePayload`) — para detalhes do contrato
+ver o arquivo da interface.
+
+Plugins desse `kind` precisam injetar suas próprias dependências de repos
+no boot. Convenção: o plugin exporta `injectXxxGuardDeps(deps)` e o
+`bin/server.ts` chama com `getInstanceByToken(...)` após o DI registry estar
+pronto. Veja exemplo no `core/plugins/visibility-by-role`.
+
 ## Estrutura de pastas
 
 ```
