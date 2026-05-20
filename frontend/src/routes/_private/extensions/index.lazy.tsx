@@ -44,6 +44,10 @@ export const Route = createLazyFileRoute('/_private/extensions/')({
   component: RouteComponent,
 });
 
+const SCOPE_ALL_BLOCKLIST: ReadonlySet<string> = new Set([
+  'core:visibility-by-role',
+]);
+
 function TypeBadge({ type }: { type: IExtension['type'] }): React.JSX.Element {
   const Icon =
     type === E_EXTENSION_TYPE.PLUGIN
@@ -191,12 +195,24 @@ function TableScopeSheet({
   open,
   onOpenChange,
 }: TableScopeSheetProps): React.JSX.Element | null {
+  const pluginKey = extension
+    ? `${extension.pkg}:${extension.extensionId}`
+    : '';
+  const disableScopeAll = SCOPE_ALL_BLOCKLIST.has(pluginKey);
+
   const [mode, setMode] = React.useState<'all' | 'specific'>('all');
   const [tableIds, setTableIds] = React.useState<Array<string>>([]);
 
   React.useEffect(() => {
     if (!extension) return;
-    setMode(extension.tableScope.mode);
+    const scopeAllBlocked = SCOPE_ALL_BLOCKLIST.has(
+      `${extension.pkg}:${extension.extensionId}`,
+    );
+    setMode(
+      scopeAllBlocked && extension.tableScope.mode === 'all'
+        ? 'specific'
+        : extension.tableScope.mode,
+    );
     setTableIds(extension.tableScope.tableIds);
   }, [extension]);
 
@@ -232,15 +248,22 @@ function TableScopeSheet({
           <Field>
             <FieldLabel>Modo</FieldLabel>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <label
+                className={`flex items-center gap-2 text-sm ${disableScopeAll ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+              >
                 <input
                   type="radio"
                   checked={mode === 'all'}
                   onChange={() => setMode('all')}
-                  disabled={isPending}
+                  disabled={isPending || disableScopeAll}
                 />
                 <span>Todas as tabelas</span>
               </label>
+              {disableScopeAll && (
+                <p className="text-xs text-muted-foreground pl-5">
+                  Este plugin requer seleção explícita de tabelas.
+                </p>
+              )}
               <label className="flex items-center gap-2 cursor-pointer text-sm">
                 <input
                   type="radio"
