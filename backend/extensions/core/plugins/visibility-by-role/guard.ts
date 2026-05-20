@@ -1,8 +1,17 @@
 /* eslint-disable no-unused-vars */
 import { left, right } from '@application/core/either.core';
 import type { Either } from '@application/core/either.core';
-import type { IField, IRow, ITable, IUser } from '@application/core/entity.core';
-import { E_FIELD_TYPE, E_ROLE, E_VISIBILITY } from '@application/core/entity.core';
+import type {
+  IField,
+  IRow,
+  ITable,
+  IUser,
+} from '@application/core/entity.core';
+import {
+  E_FIELD_TYPE,
+  E_ROLE,
+  E_VISIBILITY,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import type {
   GuardBindResult,
@@ -42,7 +51,9 @@ function isAdmin(user: IUser | undefined): boolean {
 function isCompatibleDropdown(field: IField): boolean {
   if (field.type !== E_FIELD_TYPE.DROPDOWN) return false;
   const ids = (field.dropdown ?? []).map((o) => o.id);
-  return ids.includes(E_VISIBILITY.PUBLIC) && ids.includes(E_VISIBILITY.SIGILOSO);
+  return (
+    ids.includes(E_VISIBILITY.PUBLIC) && ids.includes(E_VISIBILITY.SIGILOSO)
+  );
 }
 
 // ── Guard ─────────────────────────────────────────────────────────────────────
@@ -51,7 +62,9 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
   pluginKey: 'core:visibility-by-role',
   supportsScopeAll: false,
 
-  async onTableBound(table: ITable): Promise<Either<HTTPException, GuardBindResult>> {
+  async onTableBound(
+    table: ITable,
+  ): Promise<Either<HTTPException, GuardBindResult>> {
     if (!deps) {
       return left(
         HTTPException.InternalServerError(
@@ -64,7 +77,10 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
     // Step 1: Check if the table already has a field with slug=visibility
     const populatedFields = Array.isArray(table.fields) ? table.fields : [];
     const existingField = populatedFields.find(
-      (f): f is IField => typeof f === 'object' && f !== null && (f as IField).slug === FIELD_SLUG,
+      (f): f is IField =>
+        typeof f === 'object' &&
+        f !== null &&
+        (f as IField).slug === FIELD_SLUG,
     );
 
     let wasCreated = false;
@@ -122,19 +138,23 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
     }
 
     // Step 5: Backfill — rows without data.visibility get PUBLIC
-    await deps.rowRepo.bulkSetMissingField(table, FIELD_SLUG, E_VISIBILITY.PUBLIC);
+    await deps.rowRepo.bulkSetMissingField(
+      table,
+      FIELD_SLUG,
+      E_VISIBILITY.PUBLIC,
+    );
 
     return right({ wasCreated });
   },
 
   adjustListQuery(query, user, _table) {
     if (isAdmin(user)) return query;
-    return { ...query, [`data.${FIELD_SLUG}`]: E_VISIBILITY.PUBLIC };
+    return { ...query, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
   },
 
   canRead(row, user, _table) {
     if (isAdmin(user)) return true;
-    return row.data?.[FIELD_SLUG] === E_VISIBILITY.PUBLIC;
+    return (row as Record<string, unknown>)[FIELD_SLUG] === E_VISIBILITY.PUBLIC;
   },
 
   canWrite(_row, user, _table, payload, _operation): GuardWriteCheck {
@@ -150,9 +170,12 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
     if (operation === 'create') {
       return { ...payload, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
     }
+    const currentValue = currentRow
+      ? (currentRow as Record<string, unknown>)[FIELD_SLUG]
+      : undefined;
     return {
       ...payload,
-      [FIELD_SLUG]: currentRow?.data?.[FIELD_SLUG] ?? E_VISIBILITY.PUBLIC,
+      [FIELD_SLUG]: currentValue ?? E_VISIBILITY.PUBLIC,
     };
   },
 };

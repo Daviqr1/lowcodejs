@@ -357,9 +357,12 @@ export default class RowMongooseRepository extends RowContractRepository {
     defaultValue: unknown,
   ): Promise<{ matched: number; modified: number }> {
     const model = await this.getModel(table);
+    // Schema dinamico (buildTable) cria fields no top-level do documento mongo
+    // (model.create(payload.data) espalha direto). Por isso o path e {fieldSlug},
+    // nao data.{fieldSlug}.
     const result = await model.updateMany(
-      { [`data.${fieldSlug}`]: { $exists: false } },
-      { $set: { [`data.${fieldSlug}`]: defaultValue } },
+      { [fieldSlug]: { $exists: false } },
+      { $set: { [fieldSlug]: defaultValue } },
     );
     return { matched: result.matchedCount, modified: result.modifiedCount };
   }
