@@ -9,6 +9,8 @@ import InMemoryScriptExecutionService from '@application/services/script-executi
 import { makeTextShortWithFormat } from '@test/helpers/field-factory.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import TableRowUpdateUseCase from '../update.use-case';
 
 let tableRepository: TableInMemoryRepository;
@@ -31,6 +33,7 @@ describe('Table Row Update - FIELD_GROUP', () => {
       rowPasswordService,
       scriptExecutionService,
       new InMemoryKanbanCommentMentionService(),
+      new RowAccessGuardService(new ExtensionInMemoryRepository()),
     );
   });
 

@@ -8,6 +8,8 @@ import InMemoryScriptExecutionService from '@application/services/script-executi
 import { makeCategoryField } from '@test/helpers/field-factory.helper';
 import { makeTable } from '@test/helpers/table-factory.helper';
 
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import TableRowUpdateUseCase from '../update.use-case';
 
 const CATEGORIES = [
@@ -39,6 +41,7 @@ describe('Table Row Update - CATEGORY', () => {
       rowPasswordService,
       scriptExecutionService,
       new InMemoryKanbanCommentMentionService(),
+      new RowAccessGuardService(new ExtensionInMemoryRepository()),
     );
   });
 

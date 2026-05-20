@@ -8,6 +8,8 @@ import InMemoryScriptExecutionService from '@application/services/script-executi
 import { makeUserField } from '@test/helpers/field-factory.helper';
 import { makeTable } from '@test/helpers/table-factory.helper';
 
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import TableRowUpdateUseCase from '../update.use-case';
 
 const VALID_OBJECT_ID = '507f1f77bcf86cd799439011';
@@ -33,6 +35,7 @@ describe('Table Row Update - USER', () => {
       rowPasswordService,
       scriptExecutionService,
       new InMemoryKanbanCommentMentionService(),
+      new RowAccessGuardService(new ExtensionInMemoryRepository()),
     );
   });
 

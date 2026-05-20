@@ -39,6 +39,7 @@ export default class {
       ...(request.body as Record<string, any>),
       ...params,
       ...(request?.user?.sub && { __actorUserId: request.user.sub }),
+      ...(request?.user && { __actorUserJwt: request.user }),
     });
 
     if (result.isLeft()) {
