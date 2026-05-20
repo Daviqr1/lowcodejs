@@ -24,6 +24,13 @@ else
   su-exec 1001:1001 node /app/database/migrations/migrate-backfill-storage-location.js
 fi
 
+echo "🔍 Verificando index de visibilidade nas tabelas..."
+if [ -f "/app/database/migrations/migrate-add-visibility-index.ts" ]; then
+  su-exec 1001:1001 npm run migrate:visibility-index
+else
+  su-exec 1001:1001 node /app/database/migrations/migrate-add-visibility-index.js
+fi
+
 echo "🌱 Rodando seeders..."
 if [ -f "/app/database/seeders/main.ts" ]; then
   su-exec 1001:1001 npm run seed
