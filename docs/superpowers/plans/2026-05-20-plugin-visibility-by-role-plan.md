@@ -1594,7 +1594,9 @@ async function run(): Promise<void> {
     const table = await tables.findById(tableId);
     if (!table) continue;
     const Model = buildTable(table);
-    await Model.collection.createIndex({ tableId: 1, 'data.visibility': 1 });
+    // IMPORTANT: rows sao FLAT no mongo (model.create(payload.data) espalha).
+    // Index e {tableId: 1, visibility: 1}, NAO data.visibility.
+    await Model.collection.createIndex({ tableId: 1, visibility: 1 });
     console.log(`[migrate-add-visibility-index] index criado em ${table.slug}`);
   }
 

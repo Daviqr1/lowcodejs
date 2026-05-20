@@ -1,5 +1,15 @@
 # Plugin: Visibilidade por Papel — Design
 
+> **ERRATA (2026-05-20):** O spec original assumia que rows do mongo eram
+> nested sob `data.*` (ex: `data.visibility`). Descoberta na implementação:
+> `IRow = Merge<Base, Record<string, unknown>>` é FLAT, e o `buildTable` do
+> mongoose também — `model.create(payload.data)` espalha os campos no
+> top-level do documento. Onde o spec menciona `data.visibility` ou
+> `data.${slug}`, leia como `visibility` ou `${slug}` (top-level). Não
+> aplica-se à propriedade `tableId` (essa É top-level mesmo). Aplicado nos
+> commits `8d1a7b08` (guard+mongoose) e válido para o índice da Task 15
+> (deve ser `{tableId: 1, visibility: 1}`).
+
 > Spec da feature solicitada pelo cliente: plugin que filtra registros de uma
 > tabela conforme o papel (role) do usuário logado, ocultando registros
 > marcados como "Sigiloso" para usuários não-administradores.
