@@ -129,5 +129,7 @@ export const queryKeys = {
     details: () => [...queryKeys.extensions.all, 'detail'] as const,
     detail: (extensionId: string) =>
       [...queryKeys.extensions.details(), extensionId] as const,
+    boundTo: (tableId: string) =>
+      [...queryKeys.extensions.all, 'bound-to', tableId] as const,
   },
 } as const;
