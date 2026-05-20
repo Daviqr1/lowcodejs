@@ -1,4 +1,5 @@
 import type { IExtension } from '@application/core/entity.core';
+import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 
 import type {
   ExtensionAvailabilityKey,
@@ -10,9 +11,7 @@ import type {
   ExtensionUpsertPayload,
 } from './extension-contract.repository';
 
-export default class ExtensionInMemoryRepository
-  implements ExtensionContractRepository
-{
+export default class ExtensionInMemoryRepository implements ExtensionContractRepository {
   items: IExtension[] = [];
 
   async findById(_id: string): Promise<IExtension | null> {
@@ -107,6 +106,15 @@ export default class ExtensionInMemoryRepository
     item.tableScope = tableScope;
     item.updatedAt = new Date();
     return item;
+  }
+
+  async findActiveForTable(tableId: string): Promise<IExtension[]> {
+    return this.items.filter((e) => {
+      if (!e.enabled || !e.available) return false;
+      if (e.type !== E_EXTENSION_TYPE.PLUGIN) return false;
+      if (e.tableScope?.mode === 'all') return true;
+      return Boolean(e.tableScope?.tableIds?.includes(tableId));
+    });
   }
 
   async markUnavailableExcept(

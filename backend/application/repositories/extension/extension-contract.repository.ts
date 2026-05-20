@@ -64,6 +64,7 @@ export abstract class ExtensionContractRepository {
   abstract updateTableScope(
     payload: ExtensionUpdateTableScopePayload,
   ): Promise<IExtension>;
+  abstract findActiveForTable(tableId: string): Promise<IExtension[]>;
   /**
    * Marca como `available: false` toda extensão cuja chave (pkg, type, extensionId)
    * NÃO esteja em `presentKeys`. Usado pelo loader para sinalizar manifestos

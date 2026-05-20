@@ -1,6 +1,7 @@
 import { Service } from 'fastify-decorators';
 
 import type { IExtension } from '@application/core/entity.core';
+import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import { Extension as Model } from '@application/model/extension.model';
 
 import type {
@@ -14,9 +15,7 @@ import type {
 } from './extension-contract.repository';
 
 @Service()
-export default class ExtensionMongooseRepository
-  implements ExtensionContractRepository
-{
+export default class ExtensionMongooseRepository implements ExtensionContractRepository {
   private transform(entity: InstanceType<typeof Model>): IExtension {
     return {
       ...entity.toJSON({ flattenObjectIds: true }),
@@ -111,6 +110,19 @@ export default class ExtensionMongooseRepository
     doc.set({ tableScope });
     await doc.save();
     return this.transform(doc);
+  }
+
+  async findActiveForTable(tableId: string): Promise<IExtension[]> {
+    const docs = await Model.find({
+      enabled: true,
+      available: true,
+      type: E_EXTENSION_TYPE.PLUGIN,
+      $or: [
+        { 'tableScope.mode': 'all' },
+        { 'tableScope.mode': 'specific', 'tableScope.tableIds': tableId },
+      ],
+    });
+    return docs.map((d) => this.transform(d));
   }
 
   async markUnavailableExcept(
