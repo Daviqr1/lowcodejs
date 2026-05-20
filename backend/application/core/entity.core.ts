@@ -124,6 +124,11 @@ export const E_TABLE_COLLABORATION = {
   RESTRICTED: 'RESTRICTED',
 } as const;
 
+export const E_VISIBILITY = {
+  PUBLIC: 'PUBLIC',
+  SIGILOSO: 'SIGILOSO',
+} as const;
+
 export const E_JWT_TYPE = {
   ACCESS: 'ACCESS',
   REFRESH: 'REFRESH',
