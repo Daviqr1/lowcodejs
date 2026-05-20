@@ -44,6 +44,7 @@ export default class {
       ...query,
       ...params,
       user: request.user?.sub,
+      userJwt: request.user,
     });
 
     if (result.isLeft()) {

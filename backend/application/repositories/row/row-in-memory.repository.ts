@@ -89,6 +89,8 @@ export default class RowInMemoryRepository extends RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'user' ||
+          key === 'userJwt' ||
           String(key).startsWith('order-')
         ) {
           continue;
@@ -121,6 +123,8 @@ export default class RowInMemoryRepository extends RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'user' ||
+          key === 'userJwt' ||
           String(key).startsWith('order-')
         ) {
           continue;

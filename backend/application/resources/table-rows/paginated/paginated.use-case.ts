@@ -3,8 +3,14 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IMeta, IRow, Paginated } from '@application/core/entity.core';
+import type {
+  IJWTPayload,
+  IMeta,
+  IRow,
+  Paginated,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowContextContractService } from '@application/services/row-context/row-context-contract.service';
@@ -14,7 +20,10 @@ import type { TableRowPaginatedPayload } from './paginated.validator';
 
 type Response = Either<HTTPException, Paginated<IRow>>;
 
-type Payload = TableRowPaginatedPayload & { user?: string };
+type Payload = TableRowPaginatedPayload & {
+  user?: string;
+  userJwt?: IJWTPayload;
+};
 
 @Service()
 export default class TableRowPaginatedUseCase {
@@ -23,6 +32,7 @@ export default class TableRowPaginatedUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowContextService: RowContextContractService,
+    private readonly guardService: RowAccessGuardService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -37,15 +47,21 @@ export default class TableRowPaginatedUseCase {
         );
       }
 
+      const guards = await this.guardService.getActiveGuardsFor(table._id);
+      let filters: Record<string, unknown> = { ...payload };
+      for (const g of guards) {
+        filters = g.adjustListQuery(filters, payload.userJwt, table);
+      }
+
       const rows = await this.rowRepository.findMany({
         table,
-        rawFilters: payload,
+        rawFilters: filters,
         skip,
         limit: payload.perPage,
         includeReverseRelationships: true,
       });
 
-      const total = await this.rowRepository.count(table, payload);
+      const total = await this.rowRepository.count(table, filters);
 
       const lastPage = Math.ceil(total / payload.perPage);
 
