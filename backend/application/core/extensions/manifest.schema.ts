@@ -14,9 +14,13 @@ export const ManifestRequiresSchema = z
 
 export const ManifestPlacementSchema = z
   .object({
-    slot: z.string().min(1),
+    slot: z.string().min(1).optional(),
+    kind: z.enum(['row-access-guard']).optional(),
   })
   .strict()
+  .refine((p) => p.slot || p.kind, {
+    message: 'placement deve ter slot ou kind',
+  })
   .optional();
 
 export const ManifestToolSchema = z
