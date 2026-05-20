@@ -19,6 +19,11 @@ export const E_MENU_ITEM_TYPE = {
   SEPARATOR: 'SEPARATOR',
 } as const;
 
+export const E_VISIBILITY = {
+  PUBLIC: 'PUBLIC',
+  SIGILOSO: 'SIGILOSO',
+} as const;
+
 export const E_FIELD_TYPE = {
   TEXT_SHORT: 'TEXT_SHORT',
   TEXT_LONG: 'TEXT_LONG',
