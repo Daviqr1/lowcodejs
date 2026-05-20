@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
+import { VisibilityByRoleGuard } from '../../../extensions/core/plugins/visibility-by-role/guard';
 
 import type { RowAccessGuard } from './row-access-guard.contract';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
@@ -29,3 +30,5 @@ export class RowAccessGuardService {
       .filter((g): g is RowAccessGuard => Boolean(g));
   }
 }
+
+RowAccessGuardService.register(VisibilityByRoleGuard.pluginKey, VisibilityByRoleGuard);

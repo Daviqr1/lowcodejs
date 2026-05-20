@@ -29,6 +29,8 @@ export default defineConfig({
       '**/*.use-case.spec.ts',
       '**/*.service.spec.ts',
       '**/*.repository.spec.ts',
+      '**/*.guard.spec.ts',
+      '**/guard.spec.ts',
     ],
     coverage: {
       provider: 'v8',
