@@ -352,6 +352,28 @@ export default class RowInMemoryRepository extends RowContractRepository {
       .map((row) => ({ ...row })) as Record<string, unknown>[];
   }
 
+  async bulkSetMissingField(
+    table: RowTableContext,
+    fieldSlug: string,
+    defaultValue: unknown,
+  ): Promise<{ matched: number; modified: number }> {
+    const collection = this.getCollection(table.slug);
+    let matched = 0;
+    let modified = 0;
+
+    for (const row of collection) {
+      if (row.trashed) continue;
+      const record = row as Record<string, unknown>;
+      matched++;
+      if (!Object.prototype.hasOwnProperty.call(record, fieldSlug)) {
+        record[fieldSlug] = defaultValue;
+        modified++;
+      }
+    }
+
+    return { matched, modified };
+  }
+
   async insertRaw(
     table: RowTableContext,
     row: Record<string, unknown>,

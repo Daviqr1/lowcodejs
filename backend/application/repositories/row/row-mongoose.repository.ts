@@ -351,6 +351,19 @@ export default class RowMongooseRepository extends RowContractRepository {
     return docs.map((doc): Record<string, unknown> => ({ ...doc }));
   }
 
+  async bulkSetMissingField(
+    table: RowTableContext,
+    fieldSlug: string,
+    defaultValue: unknown,
+  ): Promise<{ matched: number; modified: number }> {
+    const model = await this.getModel(table);
+    const result = await model.updateMany(
+      { [`data.${fieldSlug}`]: { $exists: false } },
+      { $set: { [`data.${fieldSlug}`]: defaultValue } },
+    );
+    return { matched: result.matchedCount, modified: result.modifiedCount };
+  }
+
   async insertRaw(
     table: RowTableContext,
     row: Record<string, unknown>,

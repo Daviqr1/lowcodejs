@@ -140,4 +140,10 @@ export abstract class RowContractRepository {
     row: Record<string, unknown>,
     creator?: string,
   ): Promise<IRow>;
+
+  abstract bulkSetMissingField(
+    table: RowTableContext,
+    fieldSlug: string,
+    defaultValue: unknown,
+  ): Promise<{ matched: number; modified: number }>;
 }
