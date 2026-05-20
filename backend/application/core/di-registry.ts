@@ -30,6 +30,7 @@ import { EmailContractService } from '@application/services/email/email-contract
 import NodemailerEmailService from '@application/services/email/nodemailer-email.service';
 import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
 import KanbanCommentMentionService from '@application/services/kanban-comment-mention/kanban-comment-mention.service';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import BcryptPasswordService from '@application/services/password/bcrypt-password.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
 import { PermissionContractService } from '@application/services/permission/permission-contract.service';
@@ -151,4 +152,6 @@ export function registerDependencies(): void {
     KanbanCommentMentionContractService,
     KanbanCommentMentionService,
   );
+
+  injectablesHolder.injectService(RowAccessGuardService, RowAccessGuardService);
 }
