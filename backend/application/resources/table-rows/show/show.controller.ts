@@ -38,6 +38,7 @@ export default class {
     const result = await this.useCase.execute({
       ...params,
       user: request.user?.sub,
+      userJwt: request.user,
     });
 
     if (result.isLeft()) {
