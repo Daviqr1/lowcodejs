@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 import { E_EXTENSION_TYPE, E_FIELD_TYPE } from '@application/core/entity.core';
@@ -44,7 +45,7 @@ describe('ExtensionConfigureTableScopeUseCase com guards', () => {
     tableRepo = new TableInMemoryRepository();
     fieldRepo = new FieldInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo });
+    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo, tableSchemaService: new TableSchemaInMemoryService() });
     RowAccessGuardService.register(VisibilityByRoleGuard.pluginKey, VisibilityByRoleGuard);
     guardService = new RowAccessGuardService(extensionRepo);
     useCase = new ExtensionConfigureTableScopeUseCase(

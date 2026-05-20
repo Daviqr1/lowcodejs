@@ -12,7 +12,10 @@ import {
 } from '@application/core/entity.core';
 import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import HTTPException from '@application/core/exception.core';
-import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
+// NAO usar `import type` aqui: fastify-decorators DI resolve dependencias do
+// construtor por referencia em runtime (reflect-metadata). Type-only e apagado
+// no build e quebra o registro.
+import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 

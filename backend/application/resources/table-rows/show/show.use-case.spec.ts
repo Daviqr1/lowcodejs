@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   E_EXTENSION_TYPE,
@@ -150,6 +151,7 @@ describe('Table Row Show Use Case — RowAccessGuard', () => {
       fieldRepo: {} as any,
       tableRepo,
       rowRepo,
+      tableSchemaService: new TableSchemaInMemoryService(),
     });
 
     RowAccessGuardService.register(

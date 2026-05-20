@@ -30,6 +30,11 @@ services:
     ports:
       - "${APP_SERVER_PORT}:3000"
     env_file: .env
+    environment:
+      # Overrides para rodar dentro do docker network (sobrescreve o .env
+      # que aponta pra localhost — usado em dev fora do container)
+      - DATABASE_URL=mongodb://${DB_USERNAME}:${DB_PASSWORD}@mongo:27017/${DB_DATABASE:-lowcodejs}?authSource=admin
+      - REDIS_URL=redis://redis:6379
     networks:
       - low-code-js-network
     depends_on:
@@ -73,8 +78,11 @@ services:
     image: redis:7-alpine
     container_name: low-code-js-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Sem mapeamento de porta no host — o API conecta via rede docker interna
+    # (hostname `redis`). Evita conflito com outros redis na maquina (ex:
+    # ooinfo-redis-local, host brew).
+    expose:
+      - "6379"
     volumes:
       - redis-volume:/data
     networks:

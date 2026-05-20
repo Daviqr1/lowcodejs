@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   E_EXTENSION_TYPE,
@@ -148,6 +149,7 @@ describe('TableRowCreateUseCase with RowAccessGuard', () => {
       fieldRepo: {} as any,
       tableRepo,
       rowRepo,
+      tableSchemaService: new TableSchemaInMemoryService(),
     });
 
     RowAccessGuardService.register(
@@ -220,9 +222,9 @@ describe('TableRowCreateUseCase with RowAccessGuard', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value._id).toBeDefined();
-      expect((result.value as Record<string, unknown>)['visibility']).toBe(
+      expect((result.value as Record<string, unknown>)['visibility']).toEqual([
         E_VISIBILITY.PUBLIC,
-      );
+      ]);
     }
   });
 
@@ -238,9 +240,9 @@ describe('TableRowCreateUseCase with RowAccessGuard', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value._id).toBeDefined();
-      expect((result.value as Record<string, unknown>)['visibility']).toBe(
+      expect((result.value as Record<string, unknown>)['visibility']).toEqual([
         E_VISIBILITY.PUBLIC,
-      );
+      ]);
     }
   });
 
@@ -257,7 +259,7 @@ describe('TableRowCreateUseCase with RowAccessGuard', () => {
     if (result.isRight()) {
       expect(result.value._id).toBeDefined();
       expect((result.value as Record<string, unknown>)['visibility']).toBe(
-        E_VISIBILITY.SIGILOSO,
+        E_VISIBILITY.SIGILOSO, // MASTER preserva o valor exato passado (string crua)
       );
     }
   });

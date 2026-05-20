@@ -14,6 +14,8 @@ import { StorageContractRepository } from '@application/repositories/storage/sto
 import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
+import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import TableSchemaMongooseService from '@application/services/table-schema/table-schema-mongoose.service';
 import { injectVisibilityByRoleGuardDeps } from '../extensions/core/plugins/visibility-by-role/guard';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
@@ -97,6 +99,9 @@ function injectExtensionGuardsDeps(): void {
       TableMongooseRepository,
     ),
     rowRepo: getInstanceByToken<RowContractRepository>(RowMongooseRepository),
+    tableSchemaService: getInstanceByToken<TableSchemaContractService>(
+      TableSchemaMongooseService,
+    ),
   });
 }
 

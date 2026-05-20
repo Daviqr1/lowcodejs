@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   E_EXTENSION_TYPE,
@@ -156,6 +157,7 @@ describe('TableRowUpdateUseCase with RowAccessGuard', () => {
       fieldRepo: {} as any,
       tableRepo,
       rowRepo,
+      tableSchemaService: new TableSchemaInMemoryService(),
     });
 
     RowAccessGuardService.register(
@@ -241,9 +243,10 @@ describe('TableRowUpdateUseCase with RowAccessGuard', () => {
     if (result.isRight()) {
       expect(result.value._id).toBeDefined();
       // sanitize preserves PUBLIC visibility since MANAGER cannot change it
-      expect((result.value as Record<string, unknown>)['visibility']).toBe(
+      // (armazenado como array — DROPDOWN field)
+      expect((result.value as Record<string, unknown>)['visibility']).toEqual([
         E_VISIBILITY.PUBLIC,
-      );
+      ]);
     }
   });
 

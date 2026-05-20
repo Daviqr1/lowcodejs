@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import { VisibilityByRoleGuard, injectVisibilityByRoleGuardDeps } from './guard';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
@@ -15,7 +16,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     fieldRepo = new FieldInMemoryRepository();
     tableRepo = new TableInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo });
+    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo, tableSchemaService: new TableSchemaInMemoryService() });
   });
 
   it('cria field Visibilidade quando ausente, backfilla rows existentes; wasCreated=true', async () => {
@@ -50,10 +51,10 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     );
     expect(fieldIds).toContain(visField?._id);
 
-    // rows foram backfilled com visibility em top-level (in-memory storage)
+    // rows foram backfilled com visibility=['PUBLIC'] em top-level (DROPDOWN e array)
     const allRows = await rowRepo.findAllRaw(table);
     expect(allRows.length).toBe(2);
-    expect(allRows.every((r) => (r as any).visibility === 'PUBLIC')).toBe(true);
+    expect(allRows.every((r) => JSON.stringify((r as any).visibility) === '[\"PUBLIC\"]')).toBe(true);
   });
 
   it('skip create quando field visibility ja existe compativel; wasCreated=false', async () => {
@@ -184,6 +185,6 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     expect((result2.value as any).wasCreated).toBe(false);
 
     const allRows = await rowRepo.findAllRaw(table);
-    expect(allRows.every((r) => (r as any).visibility === 'PUBLIC')).toBe(true);
+    expect(allRows.every((r) => JSON.stringify((r as any).visibility) === '[\"PUBLIC\"]')).toBe(true);
   });
 });

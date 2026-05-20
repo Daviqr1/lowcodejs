@@ -21,6 +21,7 @@ import type {
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import type { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
 
 // ── Dependency injection for onTableBound ─────────────────────────────────────
 
@@ -28,6 +29,7 @@ type Deps = {
   fieldRepo: FieldContractRepository;
   tableRepo: TableContractRepository;
   rowRepo: RowContractRepository;
+  tableSchemaService: TableSchemaContractService;
 };
 
 let deps: Deps | null = null;
@@ -45,6 +47,21 @@ const FIELD_SLUG = 'visibility';
 
 function isAdmin(user: IJWTPayload | undefined): boolean {
   return Boolean(user && ADMIN_ROLES.includes(user.role));
+}
+
+/**
+ * LowCodeJS armazena DROPDOWN fields como array (mesmo com multiple=false).
+ * Esses helpers normalizam pra leitura/escrita consistente.
+ */
+function readVisibility(source: Record<string, unknown> | undefined): string | undefined {
+  if (!source) return undefined;
+  const v = source[FIELD_SLUG];
+  if (Array.isArray(v)) return v.length > 0 ? String(v[0]) : undefined;
+  return v == null ? undefined : String(v);
+}
+
+function asVisibilityArray(value: string): [string] {
+  return [value];
 }
 
 function isCompatibleDropdown(field: IField): boolean {
@@ -113,7 +130,7 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
         widthInDetail: null,
         locked: true,
         native: false,
-        defaultValue: E_VISIBILITY.PUBLIC,
+        defaultValue: asVisibilityArray(E_VISIBILITY.PUBLIC),
         relationship: null,
         dropdown: [
           { id: E_VISIBILITY.PUBLIC, label: 'Público', color: '#22c55e' },
@@ -124,23 +141,46 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
         group: null,
       });
 
-      // Associate field to table
+      // Associate field to table + atualizar _schema + sync mongoose model.
+      // Mesmo flow do TableFieldCreateUseCase (resources/table-fields/create).
+      const populatedFieldObjs = populatedFields.filter(
+        (f): f is IField => typeof f === 'object' && f !== null,
+      );
+      const allFields = [...populatedFieldObjs, newField];
       const currentFieldIds = populatedFields.map((f) =>
         typeof f === 'string' ? f : (f as IField)._id,
       );
+      const newSchema = deps.tableSchemaService.computeSchema(
+        allFields,
+        table.groups,
+      );
+      const mergedSchema = { ...table._schema, ...newSchema };
+
       await deps.tableRepo.update({
         _id: table._id,
         fields: [...currentFieldIds, newField._id],
+        _schema: mergedSchema,
+        fieldOrderList: [...(table.fieldOrderList ?? []), newField._id],
+        fieldOrderForm: [...(table.fieldOrderForm ?? []), newField._id],
+        fieldOrderFilter: [...(table.fieldOrderFilter ?? []), newField._id],
+        fieldOrderDetail: [...(table.fieldOrderDetail ?? []), newField._id],
       });
+
+      // syncModel rebuilda o mongoose model dinamico com o novo field
+      await deps.tableSchemaService.syncModel({
+        ...table,
+        _schema: mergedSchema,
+      } as ITable);
 
       wasCreated = true;
     }
 
     // Step 5: Backfill — rows without data.visibility get PUBLIC
+    // DROPDOWN field e armazenado como array, mesmo com multiple=false.
     await deps.rowRepo.bulkSetMissingField(
       table,
       FIELD_SLUG,
-      E_VISIBILITY.PUBLIC,
+      asVisibilityArray(E_VISIBILITY.PUBLIC),
     );
 
     return right({ wasCreated });
@@ -148,17 +188,19 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
 
   adjustListQuery(query, user, _table) {
     if (isAdmin(user)) return query;
+    // Mongo: equality query em campo-array casa quando o array contem o valor.
     return { ...query, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
   },
 
   canRead(row, user, _table) {
     if (isAdmin(user)) return true;
-    return (row as Record<string, unknown>)[FIELD_SLUG] === E_VISIBILITY.PUBLIC;
+    return readVisibility(row as Record<string, unknown>) === E_VISIBILITY.PUBLIC;
   },
 
   canWrite(_row, user, _table, payload, _operation): GuardWriteCheck {
     if (isAdmin(user)) return { allowed: true };
-    if (payload?.[FIELD_SLUG] === E_VISIBILITY.SIGILOSO) {
+    const incoming = readVisibility(payload ?? undefined);
+    if (incoming === E_VISIBILITY.SIGILOSO) {
       return { allowed: false, reason: 'Sem permissão para marcar Sigiloso' };
     }
     return { allowed: true };
@@ -167,14 +209,14 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
   sanitizeWritePayload(payload, user, _table, operation, currentRow) {
     if (isAdmin(user)) return payload;
     if (operation === 'create') {
-      return { ...payload, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
+      return { ...payload, [FIELD_SLUG]: asVisibilityArray(E_VISIBILITY.PUBLIC) };
     }
-    const currentValue = currentRow
-      ? (currentRow as Record<string, unknown>)[FIELD_SLUG]
-      : undefined;
+    const currentValue =
+      readVisibility(currentRow as Record<string, unknown> | undefined) ??
+      E_VISIBILITY.PUBLIC;
     return {
       ...payload,
-      [FIELD_SLUG]: currentValue ?? E_VISIBILITY.PUBLIC,
+      [FIELD_SLUG]: asVisibilityArray(currentValue),
     };
   },
 };

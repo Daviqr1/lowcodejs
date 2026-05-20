@@ -23,7 +23,13 @@ function makeUser(role: string): any {
 function makeRow(visibility: string | undefined): any {
   // IRow is flat (Merge<Base, Record<string, unknown>>) — fields ficam no top-level,
   // não em data.*. Mongoose tambem nao nest: model.create(payload.data) espalha direto.
-  return { _id: 'r1', visibility };
+  // DROPDOWN field é armazenado como array (mesmo com multiple=false).
+  return { _id: 'r1', visibility: visibility === undefined ? undefined : [visibility] };
+}
+
+function makePayload(visibility: string | undefined): Record<string, unknown> {
+  if (visibility === undefined) return {};
+  return { visibility: [visibility] };
 }
 
 const TABLE: any = { _id: 'T1', slug: 't1', fields: [] };
@@ -97,7 +103,7 @@ describe('VisibilityByRoleGuard.canWrite', () => {
         null,
         makeUser(E_ROLE.MASTER),
         TABLE,
-        { visibility: 'SIGILOSO' },
+        { visibility: ['SIGILOSO'] },
         'create',
       ),
     ).toEqual({ allowed: true });
@@ -108,7 +114,7 @@ describe('VisibilityByRoleGuard.canWrite', () => {
       null,
       makeUser(E_ROLE.MANAGER),
       TABLE,
-      { visibility: 'SIGILOSO' },
+      { visibility: ['SIGILOSO'] },
       'create',
     );
     expect(r.allowed).toBe(false);
@@ -120,7 +126,7 @@ describe('VisibilityByRoleGuard.canWrite', () => {
         null,
         makeUser(E_ROLE.MANAGER),
         TABLE,
-        { visibility: 'PUBLIC' },
+        { visibility: ['PUBLIC'] },
         'create',
       ),
     ).toEqual({ allowed: true });
@@ -142,34 +148,34 @@ describe('VisibilityByRoleGuard.canWrite', () => {
 describe('VisibilityByRoleGuard.sanitizeWritePayload', () => {
   it('non-admin create: forca PUBLIC mesmo se SIGILOSO no payload', () => {
     const r = VisibilityByRoleGuard.sanitizeWritePayload(
-      { nome: 'x', visibility: 'SIGILOSO' },
+      { nome: 'x', visibility: ['SIGILOSO'] },
       makeUser(E_ROLE.MANAGER),
       TABLE,
       'create',
       null,
     );
-    expect(r.visibility).toBe(E_VISIBILITY.PUBLIC);
+    expect(r.visibility).toEqual([E_VISIBILITY.PUBLIC]);
   });
 
   it('non-admin update: preserva o valor da row atual (nao permite trocar)', () => {
     const r = VisibilityByRoleGuard.sanitizeWritePayload(
-      { nome: 'x', visibility: 'SIGILOSO' },
+      { nome: 'x', visibility: ['SIGILOSO'] },
       makeUser(E_ROLE.MANAGER),
       TABLE,
       'update',
       makeRow('PUBLIC'),
     );
-    expect(r.visibility).toBe(E_VISIBILITY.PUBLIC);
+    expect(r.visibility).toEqual([E_VISIBILITY.PUBLIC]);
   });
 
   it('admin: payload preservado', () => {
     const r = VisibilityByRoleGuard.sanitizeWritePayload(
-      { visibility: 'SIGILOSO' },
+      { visibility: ['SIGILOSO'] },
       makeUser(E_ROLE.ADMINISTRATOR),
       TABLE,
       'update',
       makeRow('PUBLIC'),
     );
-    expect(r.visibility).toBe(E_VISIBILITY.SIGILOSO);
+    expect(r.visibility).toEqual([E_VISIBILITY.SIGILOSO]);
   });
 });
