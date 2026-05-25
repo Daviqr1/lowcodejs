@@ -51,6 +51,10 @@ export const Schema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    tableSettings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
 
     trashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },

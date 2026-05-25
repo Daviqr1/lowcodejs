@@ -11,6 +11,7 @@ import type {
   ExtensionToggleEnabledPayload,
   ExtensionType,
   ExtensionUpdateTableScopePayload,
+  ExtensionUpdateTableSettingsPayload,
   ExtensionUpsertPayload,
 } from './extension-contract.repository';
 
@@ -110,6 +111,19 @@ export default class ExtensionMongooseRepository implements ExtensionContractRep
     doc.set({ tableScope });
     await doc.save();
     return this.transform(doc);
+  }
+
+  async updateTableSettings({
+    _id,
+    tableId,
+    settings,
+    expectedUpdatedAt,
+  }: ExtensionUpdateTableSettingsPayload): Promise<IExtension | null> {
+    return Model.findOneAndUpdate(
+      { _id, updatedAt: expectedUpdatedAt },
+      { $set: { [`tableSettings.${tableId}`]: settings } },
+      { new: true },
+    ).lean<IExtension | null>();
   }
 
   async findActiveForTable(tableId: string): Promise<IExtension[]> {

@@ -8,6 +8,7 @@ import type {
   ExtensionToggleEnabledPayload,
   ExtensionType,
   ExtensionUpdateTableScopePayload,
+  ExtensionUpdateTableSettingsPayload,
   ExtensionUpsertPayload,
 } from './extension-contract.repository';
 
@@ -77,6 +78,7 @@ export default class ExtensionInMemoryRepository implements ExtensionContractRep
       enabled: false,
       available: true,
       tableScope: { mode: 'all', tableIds: [] },
+      tableSettings: {},
       createdAt: new Date(),
       updatedAt: new Date(),
       trashed: false,
@@ -104,6 +106,28 @@ export default class ExtensionInMemoryRepository implements ExtensionContractRep
     const item = this.items.find((i) => i._id === _id);
     if (!item) throw new Error('Extension not found');
     item.tableScope = tableScope;
+    item.updatedAt = new Date();
+    return item;
+  }
+
+  async updateTableSettings({
+    _id,
+    tableId,
+    settings,
+    expectedUpdatedAt,
+  }: ExtensionUpdateTableSettingsPayload): Promise<IExtension | null> {
+    const item = this.items.find((i) => i._id === _id);
+    if (!item) return null;
+
+    // Optimistic lock: se updatedAt não corresponde, retorna null (conflito)
+    if (item.updatedAt?.getTime() !== expectedUpdatedAt.getTime()) {
+      return null;
+    }
+
+    item.tableSettings = {
+      ...(item.tableSettings ?? {}),
+      [tableId]: settings,
+    };
     item.updatedAt = new Date();
     return item;
   }

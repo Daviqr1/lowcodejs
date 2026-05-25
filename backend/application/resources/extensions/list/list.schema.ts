@@ -52,6 +52,13 @@ export const ExtensionListSchema: FastifySchema = {
             type: 'object',
             additionalProperties: true,
           },
+          tableSettings: {
+            type: 'object',
+            additionalProperties: true,
+          },
+          supportsScopeAll: { type: 'boolean' },
+          category: { type: 'string', nullable: true },
+          hasSettingsSchema: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },

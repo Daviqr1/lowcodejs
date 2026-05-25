@@ -557,6 +557,8 @@ export type IExtension = Merge<
     /** Manifesto completo, para auditoria/diagnóstico. */
     manifestSnapshot: Record<string, unknown>;
     requires: IExtensionRequires;
+    /** Settings por tabela: chave = tableId, valor = Record settings do guard. */
+    tableSettings: Record<string, Record<string, unknown>>;
   }
 >;
 

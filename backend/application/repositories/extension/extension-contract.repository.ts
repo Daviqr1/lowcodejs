@@ -36,6 +36,13 @@ export type ExtensionUpdateTableScopePayload = {
   tableScope: IExtensionTableScope;
 };
 
+export type ExtensionUpdateTableSettingsPayload = {
+  _id: string;
+  tableId: string;
+  settings: Record<string, unknown>;
+  expectedUpdatedAt: Date;
+};
+
 export type ExtensionQueryPayload = {
   type?: ExtensionType;
   enabled?: boolean;
@@ -65,6 +72,14 @@ export abstract class ExtensionContractRepository {
     payload: ExtensionUpdateTableScopePayload,
   ): Promise<IExtension>;
   abstract findActiveForTable(tableId: string): Promise<IExtension[]>;
+  /**
+   * Atualiza settings de um guard para uma tabela específica com optimistic lock.
+   * Retorna null se `expectedUpdatedAt` não corresponde ao `updatedAt` atual
+   * (conflito de concorrência — cliente deve recarregar e tentar novamente).
+   */
+  abstract updateTableSettings(
+    payload: ExtensionUpdateTableSettingsPayload,
+  ): Promise<IExtension | null>;
   /**
    * Marca como `available: false` toda extensão cuja chave (pkg, type, extensionId)
    * NÃO esteja em `presentKeys`. Usado pelo loader para sinalizar manifestos

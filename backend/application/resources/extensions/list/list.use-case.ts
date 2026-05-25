@@ -4,10 +4,17 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IExtension } from '@application/core/entity.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 
-type Response = Either<HTTPException, IExtension[]>;
+type ExtensionWithGuardMeta = IExtension & {
+  supportsScopeAll: boolean;
+  category: string | null;
+  hasSettingsSchema: boolean;
+};
+
+type Response = Either<HTTPException, ExtensionWithGuardMeta[]>;
 
 @Service()
 export default class ExtensionListUseCase {
@@ -18,7 +25,20 @@ export default class ExtensionListUseCase {
   async execute(): Promise<Response> {
     try {
       const extensions = await this.extensionRepository.findMany();
-      return right(extensions);
+      const guards = RowAccessGuardService.getRegistered();
+
+      const enriched: ExtensionWithGuardMeta[] = extensions.map((ext) => {
+        const guardKey = `${ext.pkg}:${ext.extensionId}`;
+        const guard = guards[guardKey];
+        return {
+          ...ext,
+          supportsScopeAll: guard ? guard.supportsScopeAll : true,
+          category: guard ? guard.category : null,
+          hasSettingsSchema: guard ? Boolean(guard.settingsSchema) : false,
+        };
+      });
+
+      return right(enriched);
     } catch (error) {
       console.error('[extensions > list][error]:', error);
       return left(
