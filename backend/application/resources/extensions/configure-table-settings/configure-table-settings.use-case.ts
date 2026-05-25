@@ -102,10 +102,7 @@ export default class ExtensionConfigureTableSettingsUseCase {
 
       return right(updated);
     } catch (error) {
-      console.error(
-        '[extensions > configure-table-settings][error]:',
-        error,
-      );
+      console.error('[extensions > configure-table-settings][error]:', error);
       return left(
         HTTPException.InternalServerError(
           'Erro ao configurar settings de tabela',

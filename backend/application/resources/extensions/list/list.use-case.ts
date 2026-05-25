@@ -4,8 +4,8 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IExtension } from '@application/core/entity.core';
-import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import HTTPException from '@application/core/exception.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 
 type ExtensionWithGuardMeta = IExtension & {

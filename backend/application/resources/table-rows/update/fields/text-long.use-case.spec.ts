@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemoryKanbanCommentMentionService from '@application/services/kanban-comment-mention/in-memory-kanban-comment-mention.service';
@@ -8,8 +10,6 @@ import InMemoryScriptExecutionService from '@application/services/script-executi
 import { makeTextLongField } from '@test/helpers/field-factory.helper';
 import { makeTable } from '@test/helpers/table-factory.helper';
 
-import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
-import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import TableRowUpdateUseCase from '../update.use-case';
 
 let tableRepository: TableInMemoryRepository;

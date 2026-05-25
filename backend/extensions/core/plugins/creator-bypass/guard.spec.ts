@@ -78,7 +78,12 @@ describe('CreatorBypassGuard.canRead', () => {
 
   it('user undefined → abstain (sem autenticação)', () => {
     expect(
-      CreatorBypassGuard.canRead(makeRow('user-123'), undefined, TABLE, SETTINGS),
+      CreatorBypassGuard.canRead(
+        makeRow('user-123'),
+        undefined,
+        TABLE,
+        SETTINGS,
+      ),
     ).toBe('abstain');
   });
 

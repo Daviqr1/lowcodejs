@@ -2,10 +2,7 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import {
-  E_EXTENSION_TYPE,
-  type ValueOf,
-} from '@application/core/entity.core';
+import { E_EXTENSION_TYPE, type ValueOf } from '@application/core/entity.core';
 import type {
   ExtensionAvailabilityKey,
   ExtensionContractRepository,

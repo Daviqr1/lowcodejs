@@ -1,5 +1,6 @@
 import { injectablesHolder } from 'fastify-decorators';
 
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import { EvaluationContractRepository } from '@application/repositories/evaluation/evaluation-contract.repository';
 import EvaluationMongooseRepository from '@application/repositories/evaluation/evaluation-mongoose.repository';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
@@ -30,7 +31,6 @@ import { EmailContractService } from '@application/services/email/email-contract
 import NodemailerEmailService from '@application/services/email/nodemailer-email.service';
 import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
 import KanbanCommentMentionService from '@application/services/kanban-comment-mention/kanban-comment-mention.service';
-import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import BcryptPasswordService from '@application/services/password/bcrypt-password.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
 import { PermissionContractService } from '@application/services/permission/permission-contract.service';

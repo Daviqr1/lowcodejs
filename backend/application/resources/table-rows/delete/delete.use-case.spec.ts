@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   E_EXTENSION_TYPE,
@@ -15,6 +14,7 @@ import { RowAccessGuardService } from '@application/core/extensions/row-access-g
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   injectVisibilityByRoleGuardDeps,

@@ -14,7 +14,11 @@ describe('RowInMemoryRepository.bulkSetMissingField', () => {
     await repo.create({ table, data: { nome: 'A' } });
     await repo.create({ table, data: { nome: 'B', visibility: 'SIGILOSO' } });
 
-    const result = await repo.bulkSetMissingField(table, 'visibility', 'PUBLIC');
+    const result = await repo.bulkSetMissingField(
+      table,
+      'visibility',
+      'PUBLIC',
+    );
     expect(result.modified).toBe(1);
 
     const all = await repo.findAllRaw(table);
@@ -28,7 +32,11 @@ describe('RowInMemoryRepository.bulkSetMissingField', () => {
     await repo.create({ table, data: { nome: 'A' } });
     await repo.bulkSetMissingField(table, 'visibility', 'PUBLIC');
 
-    const second = await repo.bulkSetMissingField(table, 'visibility', 'PUBLIC');
+    const second = await repo.bulkSetMissingField(
+      table,
+      'visibility',
+      'PUBLIC',
+    );
     expect(second.modified).toBe(0);
   });
 
@@ -39,13 +47,21 @@ describe('RowInMemoryRepository.bulkSetMissingField', () => {
     const rowId = (all[0] as any)._id;
     await repo.bulkTrash({ table, ids: [rowId] });
 
-    const result = await repo.bulkSetMissingField(table, 'visibility', 'PUBLIC');
+    const result = await repo.bulkSetMissingField(
+      table,
+      'visibility',
+      'PUBLIC',
+    );
     expect(result.matched).toBe(0);
     expect(result.modified).toBe(0);
   });
 
   it('retorna matched e modified corretos para colecao vazia', async () => {
-    const result = await repo.bulkSetMissingField(table, 'visibility', 'PUBLIC');
+    const result = await repo.bulkSetMissingField(
+      table,
+      'visibility',
+      'PUBLIC',
+    );
     expect(result.matched).toBe(0);
     expect(result.modified).toBe(0);
   });

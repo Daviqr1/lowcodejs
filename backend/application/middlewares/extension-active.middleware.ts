@@ -1,10 +1,7 @@
 import { type FastifyRequest } from 'fastify';
 import { getInstanceByToken } from 'fastify-decorators';
 
-import {
-  E_EXTENSION_TYPE,
-  type ValueOf,
-} from '@application/core/entity.core';
+import { E_EXTENSION_TYPE, type ValueOf } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionMongooseRepository from '@application/repositories/extension/extension-mongoose.repository';

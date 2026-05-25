@@ -5,6 +5,8 @@ import { E_ROLE } from '@application/core/entity.core';
 import type { IJWTPayload, IRow, ITable } from '@application/core/entity.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 
+import { CreatorBypassGuard } from '../../../extensions/core/plugins/creator-bypass/guard';
+import { DateWindowGuard } from '../../../extensions/core/plugins/date-window-guard/guard';
 import { VisibilityByRoleGuard } from '../../../extensions/core/plugins/visibility-by-role/guard';
 
 import type {
@@ -203,3 +205,8 @@ RowAccessGuardService.register(
   VisibilityByRoleGuard.pluginKey,
   VisibilityByRoleGuard,
 );
+RowAccessGuardService.register(
+  CreatorBypassGuard.pluginKey,
+  CreatorBypassGuard,
+);
+RowAccessGuardService.register(DateWindowGuard.pluginKey, DateWindowGuard);

@@ -14,17 +14,19 @@ import { StorageContractRepository } from '@application/repositories/storage/sto
 import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
-import TableSchemaMongooseService from '@application/services/table-schema/table-schema-mongoose.service';
-import { injectVisibilityByRoleGuardDeps } from '../extensions/core/plugins/visibility-by-role/guard';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import StorageService from '@application/services/storage/storage.service';
 import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
+import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import TableSchemaMongooseService from '@application/services/table-schema/table-schema-mongoose.service';
 import { MongooseConnect } from '@config/database.config';
 import { syncStorageEnv } from '@config/setting-env-sync';
 import { Env } from '@start/env';
 import { kernel } from '@start/kernel';
+
+import { injectDateWindowGuardDeps } from '../extensions/core/plugins/date-window-guard/guard';
+import { injectVisibilityByRoleGuardDeps } from '../extensions/core/plugins/visibility-by-role/guard';
 
 const SETTING_SYNC_KEYS = [
   'SYSTEM_NAME',
@@ -91,18 +93,26 @@ async function loadExtensionsRegistry(): Promise<void> {
 }
 
 function injectExtensionGuardsDeps(): void {
+  const fieldRepo = getInstanceByToken<FieldContractRepository>(
+    FieldMongooseRepository,
+  );
+  const tableRepo = getInstanceByToken<TableContractRepository>(
+    TableMongooseRepository,
+  );
+  const rowRepo = getInstanceByToken<RowContractRepository>(
+    RowMongooseRepository,
+  );
+  const tableSchemaService = getInstanceByToken<TableSchemaContractService>(
+    TableSchemaMongooseService,
+  );
+
   injectVisibilityByRoleGuardDeps({
-    fieldRepo: getInstanceByToken<FieldContractRepository>(
-      FieldMongooseRepository,
-    ),
-    tableRepo: getInstanceByToken<TableContractRepository>(
-      TableMongooseRepository,
-    ),
-    rowRepo: getInstanceByToken<RowContractRepository>(RowMongooseRepository),
-    tableSchemaService: getInstanceByToken<TableSchemaContractService>(
-      TableSchemaMongooseService,
-    ),
+    fieldRepo,
+    tableRepo,
+    rowRepo,
+    tableSchemaService,
   });
+  injectDateWindowGuardDeps({ fieldRepo, tableRepo, tableSchemaService });
 }
 
 async function start(): Promise<void> {

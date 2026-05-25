@@ -4,22 +4,24 @@ import { z } from 'zod';
 import { right, left } from '@application/core/either.core';
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import type { ITable, IJWTPayload, IRow } from '@application/core/entity.core';
-import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import HTTPException from '@application/core/exception.core';
 import type {
   RowAccessGuard,
   GuardAccessDecision,
   GuardWriteDecision,
 } from '@application/core/extensions/row-access-guard.contract';
-import HTTPException from '@application/core/exception.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 
 import ExtensionConfigureTableSettingsUseCase from './configure-table-settings.use-case';
 
 // ── TestGuard com settingsSchema e onTableBound controlável ──────────────────
 
-const testSettingsSchema = z.object({ slidingDays: z.number().int().positive() });
+const testSettingsSchema = z.object({
+  slidingDays: z.number().int().positive(),
+});
 
 let onTableBoundShouldFail = false;
 
@@ -133,7 +135,10 @@ const SimpleGuard: RowAccessGuard = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const baseUpsert = (extensionId: string, pkg = 'test'): ExtensionUpsertPayload => ({
+const baseUpsert = (
+  extensionId: string,
+  pkg = 'test',
+): ExtensionUpsertPayload => ({
   pkg,
   type: E_EXTENSION_TYPE.PLUGIN,
   extensionId,
@@ -180,7 +185,12 @@ describe('ExtensionConfigureTableSettingsUseCase', () => {
     extensionId = ext._id;
 
     // Cria tabela
-    const table = await tableRepo.create({ name: 'T1', slug: 't1', owner: 'u1', fields: [] });
+    const table = await tableRepo.create({
+      name: 'T1',
+      slug: 't1',
+      owner: 'u1',
+      fields: [],
+    });
     tableId = table._id;
   });
 
@@ -196,7 +206,6 @@ describe('ExtensionConfigureTableSettingsUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    const updated = result.value as ReturnType<typeof right>['value'];
     const stored = await extensionRepo.findById(extensionId);
     expect(stored?.tableSettings?.[tableId]).toEqual({ slidingDays: 30 });
   });
@@ -297,6 +306,8 @@ describe('ExtensionConfigureTableSettingsUseCase', () => {
 
     expect(result.isRight()).toBe(true);
     const stored = await extensionRepo.findById(simpleExt._id);
-    expect(stored?.tableSettings?.[tableId]).toEqual({ qualquerCoisa: 'sem-schema' });
+    expect(stored?.tableSettings?.[tableId]).toEqual({
+      qualquerCoisa: 'sem-schema',
+    });
   });
 });

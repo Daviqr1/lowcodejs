@@ -1,18 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
-import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 import { E_EXTENSION_TYPE, E_FIELD_TYPE } from '@application/core/entity.core';
 import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
-import {
-  VisibilityByRoleGuard,
-  injectVisibilityByRoleGuardDeps,
-} from '../../../../extensions/core/plugins/visibility-by-role/guard';
+import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+
+import {
+  VisibilityByRoleGuard,
+  injectVisibilityByRoleGuardDeps,
+} from '../../../../extensions/core/plugins/visibility-by-role/guard';
+
+import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 
 const baseUpsert = (extensionId: string): ExtensionUpsertPayload => ({
   pkg: 'core',
@@ -45,8 +47,16 @@ describe('ExtensionConfigureTableScopeUseCase com guards', () => {
     tableRepo = new TableInMemoryRepository();
     fieldRepo = new FieldInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo, tableSchemaService: new TableSchemaInMemoryService() });
-    RowAccessGuardService.register(VisibilityByRoleGuard.pluginKey, VisibilityByRoleGuard);
+    injectVisibilityByRoleGuardDeps({
+      fieldRepo,
+      tableRepo,
+      rowRepo,
+      tableSchemaService: new TableSchemaInMemoryService(),
+    });
+    RowAccessGuardService.register(
+      VisibilityByRoleGuard.pluginKey,
+      VisibilityByRoleGuard,
+    );
     guardService = new RowAccessGuardService(extensionRepo);
     useCase = new ExtensionConfigureTableScopeUseCase(
       extensionRepo,

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   E_EXTENSION_TYPE,
@@ -18,6 +17,7 @@ import TableInMemoryRepository from '@application/repositories/table/table-in-me
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
+import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
   injectVisibilityByRoleGuardDeps,
