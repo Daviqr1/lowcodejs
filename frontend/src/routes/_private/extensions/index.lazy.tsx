@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createLazyFileRoute } from '@tanstack/react-router';
 import {
   AlertTriangleIcon,
+  ChevronDownIcon,
   PackageIcon,
   PuzzleIcon,
   SettingsIcon,
@@ -11,6 +12,7 @@ import React from 'react';
 
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
+import { SETTINGS_FORMS } from '@/components/extensions/settings/settings-form-registry';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +22,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
 import {
@@ -43,10 +50,6 @@ import { toastSuccess } from '@/lib/toast';
 export const Route = createLazyFileRoute('/_private/extensions/')({
   component: RouteComponent,
 });
-
-const SCOPE_ALL_BLOCKLIST: ReadonlySet<string> = new Set([
-  'core:visibility-by-role',
-]);
 
 function TypeBadge({ type }: { type: IExtension['type'] }): React.JSX.Element {
   const Icon =
@@ -184,6 +187,52 @@ function ExtensionCard({
   );
 }
 
+interface TableSettingsSectionProps {
+  extension: IExtension;
+  tableIds: Array<string>;
+}
+
+function TableSettingsSection({
+  extension,
+  tableIds,
+}: TableSettingsSectionProps): React.JSX.Element | null {
+  const pluginKey = `${extension.pkg}:${extension.extensionId}`;
+  const SettingsForm = SETTINGS_FORMS[pluginKey];
+
+  if (!SettingsForm) return null;
+
+  return (
+    <div className="border-t pt-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+        Configurações por tabela
+      </p>
+      <div className="space-y-3">
+        {tableIds.map((tableId) => (
+          <Collapsible key={tableId}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                <span className="truncate font-mono text-xs">{tableId}</span>
+                <ChevronDownIcon className="size-4 shrink-0 transition-transform [[data-state=open]_&]:rotate-180" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-1 pt-3 pb-1">
+              <SettingsForm
+                extensionId={extension._id}
+                tableId={tableId}
+                initialSettings={extension.tableSettings?.[tableId] ?? {}}
+                expectedUpdatedAt={extension.updatedAt ?? extension.createdAt}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface TableScopeSheetProps {
   extension: IExtension | null;
   open: boolean;
@@ -195,21 +244,15 @@ function TableScopeSheet({
   open,
   onOpenChange,
 }: TableScopeSheetProps): React.JSX.Element | null {
-  const pluginKey = extension
-    ? `${extension.pkg}:${extension.extensionId}`
-    : '';
-  const disableScopeAll = SCOPE_ALL_BLOCKLIST.has(pluginKey);
+  const disableScopeAll = extension ? !extension.supportsScopeAll : false;
 
   const [mode, setMode] = React.useState<'all' | 'specific'>('all');
   const [tableIds, setTableIds] = React.useState<Array<string>>([]);
 
   React.useEffect(() => {
     if (!extension) return;
-    const scopeAllBlocked = SCOPE_ALL_BLOCKLIST.has(
-      `${extension.pkg}:${extension.extensionId}`,
-    );
     setMode(
-      scopeAllBlocked && extension.tableScope.mode === 'all'
+      !extension.supportsScopeAll && extension.tableScope.mode === 'all'
         ? 'specific'
         : extension.tableScope.mode,
     );
@@ -287,6 +330,15 @@ function TableScopeSheet({
               />
             </Field>
           )}
+
+          {mode === 'specific' &&
+            tableIds.length > 0 &&
+            extension.hasSettingsSchema && (
+              <TableSettingsSection
+                extension={extension}
+                tableIds={tableIds}
+              />
+            )}
         </div>
 
         <SheetFooter>

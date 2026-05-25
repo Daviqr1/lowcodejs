@@ -419,6 +419,10 @@ export type IExtension = Merge<
     tableScope: IExtensionTableScope;
     manifestSnapshot: Record<string, unknown>;
     requires: IExtensionRequires;
+    supportsScopeAll: boolean;
+    category: 'restrictive' | 'permissive' | null;
+    hasSettingsSchema: boolean;
+    tableSettings?: Record<string, Record<string, unknown>>;
   }
 >;
 

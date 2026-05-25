@@ -477,3 +477,10 @@ export type ExtensionConfigureTableScopePayload = {
   mode: 'all' | 'specific';
   tableIds: Array<string>;
 };
+
+export type ExtensionConfigureTableSettingsPayload = {
+  extensionId: string;
+  tableId: string;
+  settings: Record<string, unknown>;
+  expectedUpdatedAt: string;
+};
