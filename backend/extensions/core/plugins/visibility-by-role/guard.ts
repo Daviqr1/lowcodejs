@@ -1,21 +1,24 @@
-/* eslint-disable no-unused-vars */
+/**
+ * VisibilityByRoleGuard — v2
+ *
+ * NOTE: Admin bypass (MASTER / ADMINISTRATOR) é aplicado GLOBALMENTE pelo
+ * RowAccessGuardService antes de invocar qualquer guard. Este guard pode assumir
+ * que user?.role NUNCA será MASTER ou ADMINISTRATOR.
+ */
 import { left, right } from '@application/core/either.core';
 import type { Either } from '@application/core/either.core';
 import type {
   IField,
   IJWTPayload,
+  IRow,
   ITable,
 } from '@application/core/entity.core';
-import {
-  E_FIELD_TYPE,
-  E_ROLE,
-  E_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_VISIBILITY } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import type {
+  GuardAccessDecision,
   GuardBindResult,
-  GuardOperation,
-  GuardWriteCheck,
+  GuardWriteDecision,
   RowAccessGuard,
 } from '@application/core/extensions/row-access-guard.contract';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
@@ -40,20 +43,18 @@ export function injectVisibilityByRoleGuardDeps(d: Deps): void {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const ADMIN_ROLES: string[] = [E_ROLE.MASTER, E_ROLE.ADMINISTRATOR];
 const FIELD_SLUG = 'visibility';
+const RESTRITO = 'RESTRITO';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function isAdmin(user: IJWTPayload | undefined): boolean {
-  return Boolean(user && ADMIN_ROLES.includes(user.role));
-}
 
 /**
  * LowCodeJS armazena DROPDOWN fields como array (mesmo com multiple=false).
  * Esses helpers normalizam pra leitura/escrita consistente.
  */
-function readVisibility(source: Record<string, unknown> | undefined): string | undefined {
+function readVisibility(
+  source: Record<string, unknown> | undefined,
+): string | undefined {
   if (!source) return undefined;
   const v = source[FIELD_SLUG];
   if (Array.isArray(v)) return v.length > 0 ? String(v[0]) : undefined;
@@ -76,10 +77,13 @@ function isCompatibleDropdown(field: IField): boolean {
 
 export const VisibilityByRoleGuard: RowAccessGuard = {
   pluginKey: 'core:visibility-by-role',
+  category: 'restrictive',
   supportsScopeAll: false,
+  settingsSchema: undefined,
 
   async onTableBound(
     table: ITable,
+    _settings: Record<string, unknown>,
   ): Promise<Either<HTTPException, GuardBindResult>> {
     if (!deps) {
       return left(
@@ -142,7 +146,6 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
       });
 
       // Associate field to table + atualizar _schema + sync mongoose model.
-      // Mesmo flow do TableFieldCreateUseCase (resources/table-fields/create).
       const populatedFieldObjs = populatedFields.filter(
         (f): f is IField => typeof f === 'object' && f !== null,
       );
@@ -175,8 +178,8 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
       wasCreated = true;
     }
 
-    // Step 5: Backfill — rows without data.visibility get PUBLIC
-    // DROPDOWN field e armazenado como array, mesmo com multiple=false.
+    // Step 5: Backfill — rows without visibility get PUBLIC
+    // DROPDOWN field é armazenado como array, mesmo com multiple=false.
     await deps.rowRepo.bulkSetMissingField(
       table,
       FIELD_SLUG,
@@ -186,30 +189,63 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
     return right({ wasCreated });
   },
 
-  adjustListQuery(query, user, _table) {
-    if (isAdmin(user)) return query;
-    // Mongo: equality query em campo-array casa quando o array contem o valor.
+  adjustListQuery(
+    query: Record<string, unknown>,
+    _user: IJWTPayload | undefined,
+    _table: ITable,
+    _settings: Record<string, unknown>,
+  ): Record<string, unknown> {
+    // Admin bypass is handled globally — here we always restrict to PUBLIC.
+    // Mongo: equality query on array field matches when array contains the value.
     return { ...query, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
   },
 
-  canRead(row, user, _table) {
-    if (isAdmin(user)) return true;
-    return readVisibility(row as Record<string, unknown>) === E_VISIBILITY.PUBLIC;
+  canRead(
+    row: IRow,
+    user: IJWTPayload | undefined,
+    _table: ITable,
+    _settings: Record<string, unknown>,
+  ): GuardAccessDecision {
+    // Admin bypass is handled globally — never reaches here for MASTER/ADMINISTRATOR.
+    const vis = readVisibility(row as Record<string, unknown>);
+    if (vis === E_VISIBILITY.PUBLIC) return 'abstain';
+    // RESTRITO is visible to MANAGER role
+    if (vis === RESTRITO && user?.role === 'MANAGER') return 'abstain';
+    // SIGILOSO or unknown: deny
+    return 'deny';
   },
 
-  canWrite(_row, user, _table, payload, _operation): GuardWriteCheck {
-    if (isAdmin(user)) return { allowed: true };
-    const incoming = readVisibility(payload ?? undefined);
+  canWrite(
+    _row: IRow | null,
+    _user: IJWTPayload | undefined,
+    _table: ITable,
+    payload: Record<string, unknown> | null,
+    _operation: 'create' | 'update' | 'delete',
+    _settings: Record<string, unknown>,
+  ): GuardWriteDecision {
+    // Admin bypass is handled globally.
+    if (!payload) return { decision: 'abstain' };
+    const incoming = readVisibility(payload);
     if (incoming === E_VISIBILITY.SIGILOSO) {
-      return { allowed: false, reason: 'Sem permissão para marcar Sigiloso' };
+      return { decision: 'deny', reason: 'ROW_WRITE_RESTRICTED' };
     }
-    return { allowed: true };
+    return { decision: 'abstain' };
   },
 
-  sanitizeWritePayload(payload, user, _table, operation, currentRow) {
-    if (isAdmin(user)) return payload;
+  sanitizeWritePayload(
+    payload: Record<string, unknown>,
+    _user: IJWTPayload | undefined,
+    _table: ITable,
+    operation: 'create' | 'update',
+    currentRow: IRow | null,
+    _settings: Record<string, unknown>,
+  ): Record<string, unknown> {
+    // Admin bypass is handled globally — here we always sanitize for non-admin.
     if (operation === 'create') {
-      return { ...payload, [FIELD_SLUG]: asVisibilityArray(E_VISIBILITY.PUBLIC) };
+      return {
+        ...payload,
+        [FIELD_SLUG]: asVisibilityArray(E_VISIBILITY.PUBLIC),
+      };
     }
     const currentValue =
       readVisibility(currentRow as Record<string, unknown> | undefined) ??

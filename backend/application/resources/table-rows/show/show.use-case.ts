@@ -49,16 +49,19 @@ export default class TableRowShowUseCase {
         );
       }
 
-      const guards = await this.guardService.getActiveGuardsFor(table._id);
-      for (const g of guards) {
-        if (!g.canRead(row, payload.userJwt, table)) {
-          return left(
-            HTTPException.Forbidden(
-              'Sem permissão para acessar este registro',
-              'ROW_ACCESS_DENIED',
-            ),
-          );
-        }
+      const canRead = await this.guardService.composeReadDecision(
+        table._id,
+        row,
+        payload.userJwt,
+        table,
+      );
+      if (!canRead) {
+        return left(
+          HTTPException.Forbidden(
+            'Sem permissão para acessar este registro',
+            'ROW_ACCESS_DENIED',
+          ),
+        );
       }
 
       this.rowPasswordService.mask(row, table.fields);

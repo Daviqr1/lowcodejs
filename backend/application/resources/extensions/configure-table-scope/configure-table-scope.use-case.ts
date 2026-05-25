@@ -10,13 +10,13 @@ import {
   type IField,
   type ITable,
 } from '@application/core/entity.core';
-import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import HTTPException from '@application/core/exception.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 // NAO usar `import type` aqui: fastify-decorators DI resolve dependencias do
 // construtor por referencia em runtime (reflect-metadata). Type-only e apagado
 // no build e quebra o registro.
-import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
+import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 type Input = { _id: string; tableScope: IExtensionTableScope };
@@ -131,7 +131,7 @@ export default class ExtensionConfigureTableScopeUseCase {
           // Populate fields so the guard can inspect existing field objects
           const populatedTable = await this.populateFields(table);
 
-          const result = await guard.onTableBound(populatedTable);
+          const result = await guard.onTableBound(populatedTable, {});
 
           if (result.isLeft()) {
             await runCompensations(compensations);

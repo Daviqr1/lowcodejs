@@ -156,23 +156,29 @@ export default class TableRowCreateUseCase {
       }
 
       // Guard checks: canWrite -> sanitize (no canRead on create — no existing row)
-      const guards = await this.guardService.getActiveGuardsFor(table._id);
-      if (guards.length > 0) {
-        for (const g of guards) {
-          const check = g.canWrite(null, actorUserJwt, table, createData, 'create');
-          if (!check.allowed) {
-            return left(
-              HTTPException.Forbidden(check.reason, 'ROW_WRITE_RESTRICTED'),
-            );
-          }
-        }
-        let sanitized: Record<string, unknown> = { ...createData };
-        for (const g of guards) {
-          sanitized = g.sanitizeWritePayload(sanitized, actorUserJwt, table, 'create', null);
-        }
-        for (const key of Object.keys(sanitized)) {
-          createData[key] = sanitized[key];
-        }
+      const writeDecision = await this.guardService.composeWriteDecision(
+        table._id,
+        null,
+        actorUserJwt,
+        table,
+        createData,
+        'create',
+      );
+      if (writeDecision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(writeDecision.reason, 'ROW_WRITE_RESTRICTED'),
+        );
+      }
+      const sanitized = await this.guardService.composeSanitize(
+        table._id,
+        createData,
+        actorUserJwt,
+        table,
+        'create',
+        null,
+      );
+      for (const key of Object.keys(sanitized)) {
+        createData[key] = sanitized[key];
       }
 
       const row = await this.rowRepository.create({

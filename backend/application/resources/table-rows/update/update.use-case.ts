@@ -68,8 +68,7 @@ export default class TableRowUpdateUseCase {
       await this.rowPasswordService.hash(payload, table.fields);
 
       const beforeSaveCode = table.methods?.beforeSave?.code;
-      const guards = await this.guardService.getActiveGuardsFor(table._id);
-      const needsExistingRow = guards.length > 0 || Boolean(beforeSaveCode);
+      const needsExistingRow = true; // always fetch to run guards + beforeSave
 
       let existing: IRow | null = null;
       if (needsExistingRow) {
@@ -156,28 +155,46 @@ export default class TableRowUpdateUseCase {
       delete payload.__actorUserId;
 
       // Guard checks: canRead -> canWrite -> sanitize
-      if (guards.length > 0 && existing) {
-        for (const g of guards) {
-          if (!g.canRead(existing, actorUserJwt, table)) {
-            return left(
-              HTTPException.Forbidden(
-                'Sem permissão para acessar este registro',
-                'ROW_ACCESS_DENIED',
-              ),
-            );
-          }
-          const check = g.canWrite(existing, actorUserJwt, table, payload, 'update');
-          if (!check.allowed) {
-            return left(
-              HTTPException.Forbidden(check.reason, 'ROW_WRITE_RESTRICTED'),
-            );
-          }
+      if (existing) {
+        const canRead = await this.guardService.composeReadDecision(
+          table._id,
+          existing,
+          actorUserJwt,
+          table,
+        );
+        if (!canRead) {
+          return left(
+            HTTPException.Forbidden(
+              'Sem permissão para acessar este registro',
+              'ROW_ACCESS_DENIED',
+            ),
+          );
+        }
+        const writeDecision = await this.guardService.composeWriteDecision(
+          table._id,
+          existing,
+          actorUserJwt,
+          table,
+          payload as Record<string, unknown>,
+          'update',
+        );
+        if (writeDecision.decision === 'deny') {
+          return left(
+            HTTPException.Forbidden(
+              writeDecision.reason,
+              'ROW_WRITE_RESTRICTED',
+            ),
+          );
         }
         // Sanitize after all gates pass
-        let sanitized: Record<string, unknown> = { ...payload };
-        for (const g of guards) {
-          sanitized = g.sanitizeWritePayload(sanitized, actorUserJwt, table, 'update', existing);
-        }
+        const sanitized = await this.guardService.composeSanitize(
+          table._id,
+          payload as Record<string, unknown>,
+          actorUserJwt,
+          table,
+          'update',
+          existing,
+        );
         for (const key of Object.keys(sanitized)) {
           (payload as Record<string, unknown>)[key] = sanitized[key];
         }

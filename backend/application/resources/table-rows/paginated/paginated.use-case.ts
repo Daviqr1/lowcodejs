@@ -47,11 +47,12 @@ export default class TableRowPaginatedUseCase {
         );
       }
 
-      const guards = await this.guardService.getActiveGuardsFor(table._id);
-      let filters: Record<string, unknown> = { ...payload };
-      for (const g of guards) {
-        filters = g.adjustListQuery(filters, payload.userJwt, table);
-      }
+      const filters = await this.guardService.composeListQuery(
+        table._id,
+        { ...payload },
+        payload.userJwt,
+        table,
+      );
 
       const rows = await this.rowRepository.findMany({
         table,

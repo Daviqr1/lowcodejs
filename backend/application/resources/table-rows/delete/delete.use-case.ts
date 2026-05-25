@@ -32,35 +32,43 @@ export default class TableRowDeleteUseCase {
         );
       }
 
-      const guards = await this.guardService.getActiveGuardsFor(table._id);
-      if (guards.length > 0) {
-        const existing = await this.rowRepository.findOne({
-          table,
-          query: { _id: payload._id },
-        });
+      const existing = await this.rowRepository.findOne({
+        table,
+        query: { _id: payload._id },
+      });
 
-        if (!existing) {
-          return left(
-            HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
-          );
-        }
+      if (!existing) {
+        return left(
+          HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
+      }
 
-        for (const g of guards) {
-          if (!g.canRead(existing, payload.userJwt, table)) {
-            return left(
-              HTTPException.Forbidden(
-                'Sem permissão para acessar este registro',
-                'ROW_ACCESS_DENIED',
-              ),
-            );
-          }
-          const check = g.canWrite(existing, payload.userJwt, table, null, 'delete');
-          if (!check.allowed) {
-            return left(
-              HTTPException.Forbidden(check.reason, 'ROW_WRITE_RESTRICTED'),
-            );
-          }
-        }
+      const canRead = await this.guardService.composeReadDecision(
+        table._id,
+        existing,
+        payload.userJwt,
+        table,
+      );
+      if (!canRead) {
+        return left(
+          HTTPException.Forbidden(
+            'Sem permissão para acessar este registro',
+            'ROW_ACCESS_DENIED',
+          ),
+        );
+      }
+      const writeDecision = await this.guardService.composeWriteDecision(
+        table._id,
+        existing,
+        payload.userJwt,
+        table,
+        null,
+        'delete',
+      );
+      if (writeDecision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(writeDecision.reason, 'ROW_WRITE_RESTRICTED'),
+        );
       }
 
       const deleted = await this.rowRepository.deleteOne(table, payload._id);

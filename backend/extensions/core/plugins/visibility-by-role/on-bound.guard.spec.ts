@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+
+import { E_FIELD_TYPE } from '@application/core/entity.core';
+import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
+import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
-import { VisibilityByRoleGuard, injectVisibilityByRoleGuardDeps } from './guard';
-import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
-import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
-import { E_FIELD_TYPE } from '@application/core/entity.core';
+import {
+  VisibilityByRoleGuard,
+  injectVisibilityByRoleGuardDeps,
+} from './guard';
 
 describe('VisibilityByRoleGuard.onTableBound', () => {
   let fieldRepo: FieldInMemoryRepository;
@@ -16,7 +20,12 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     fieldRepo = new FieldInMemoryRepository();
     tableRepo = new TableInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    injectVisibilityByRoleGuardDeps({ fieldRepo, tableRepo, rowRepo, tableSchemaService: new TableSchemaInMemoryService() });
+    injectVisibilityByRoleGuardDeps({
+      fieldRepo,
+      tableRepo,
+      rowRepo,
+      tableSchemaService: new TableSchemaInMemoryService(),
+    });
   });
 
   it('cria field Visibilidade quando ausente, backfilla rows existentes; wasCreated=true', async () => {
@@ -32,7 +41,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     await rowRepo.create({ table, data: { nome: 'A' } });
     await rowRepo.create({ table, data: { nome: 'B' } });
 
-    const result = await VisibilityByRoleGuard.onTableBound(table);
+    const result = await VisibilityByRoleGuard.onTableBound(table, {});
     expect(result.isRight()).toBe(true);
     expect((result.value as any).wasCreated).toBe(true);
 
@@ -54,7 +63,11 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     // rows foram backfilled com visibility=['PUBLIC'] em top-level (DROPDOWN e array)
     const allRows = await rowRepo.findAllRaw(table);
     expect(allRows.length).toBe(2);
-    expect(allRows.every((r) => JSON.stringify((r as any).visibility) === '[\"PUBLIC\"]')).toBe(true);
+    expect(
+      allRows.every(
+        (r) => JSON.stringify((r as any).visibility) === '["PUBLIC"]',
+      ),
+    ).toBe(true);
   });
 
   it('skip create quando field visibility ja existe compativel; wasCreated=false', async () => {
@@ -96,7 +109,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     // onTableBound recebe o table com fields populados (como a use-case fará em produção)
     const populated = { ...table, fields: [existing] } as any;
 
-    const result = await VisibilityByRoleGuard.onTableBound(populated);
+    const result = await VisibilityByRoleGuard.onTableBound(populated, {});
     expect(result.isRight()).toBe(true);
     expect((result.value as any).wasCreated).toBe(false);
 
@@ -139,7 +152,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
 
     const populated = { ...table, fields: [incompat] } as any;
 
-    const result = await VisibilityByRoleGuard.onTableBound(populated);
+    const result = await VisibilityByRoleGuard.onTableBound(populated, {});
     expect(result.isLeft()).toBe(true);
     expect((result.value as any).code).toBe(409);
   });
@@ -155,7 +168,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
       fields: [],
     });
 
-    const result = await VisibilityByRoleGuard.onTableBound(table);
+    const result = await VisibilityByRoleGuard.onTableBound(table, {});
     expect(result.isLeft()).toBe(true);
     expect((result.value as any).code).toBe(500);
   });
@@ -172,7 +185,7 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     await rowRepo.create({ table, data: { nome: 'A' } });
 
     // primeira execução
-    await VisibilityByRoleGuard.onTableBound(table);
+    await VisibilityByRoleGuard.onTableBound(table, {});
 
     // segunda execução — table agora tem fields populados após primeira execução
     // Simular table com fields populados para segunda execução
@@ -180,11 +193,15 @@ describe('VisibilityByRoleGuard.onTableBound', () => {
     const fieldObjs = await fieldRepo.findMany();
     const populated = { ...reloadedTable!, fields: fieldObjs } as any;
 
-    const result2 = await VisibilityByRoleGuard.onTableBound(populated);
+    const result2 = await VisibilityByRoleGuard.onTableBound(populated, {});
     expect(result2.isRight()).toBe(true);
     expect((result2.value as any).wasCreated).toBe(false);
 
     const allRows = await rowRepo.findAllRaw(table);
-    expect(allRows.every((r) => JSON.stringify((r as any).visibility) === '[\"PUBLIC\"]')).toBe(true);
+    expect(
+      allRows.every(
+        (r) => JSON.stringify((r as any).visibility) === '["PUBLIC"]',
+      ),
+    ).toBe(true);
   });
 });

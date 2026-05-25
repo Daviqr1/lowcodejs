@@ -31,6 +31,41 @@ export default class RowInMemoryRepository extends RowContractRepository {
     }
   }
 
+  /**
+   * Evaluates a MongoDB-style filter fragment against a row.
+   * Supports: $and, $or, and simple key-value equality.
+   * For array fields: equality matches if the array contains the scalar value.
+   */
+  private matchesFilter(
+    row: Record<string, unknown>,
+    filter: Record<string, unknown>,
+  ): boolean {
+    for (const [key, value] of Object.entries(filter)) {
+      if (key === '$and') {
+        const clauses = value as Record<string, unknown>[];
+        for (const clause of clauses) {
+          if (!this.matchesFilter(row, clause)) return false;
+        }
+        continue;
+      }
+      if (key === '$or') {
+        const clauses = value as Record<string, unknown>[];
+        const any = clauses.some((clause) => this.matchesFilter(row, clause));
+        if (!any) return false;
+        continue;
+      }
+      // Simple field equality — handle array fields (DROPDOWN stored as array)
+      const rowVal = row[key];
+      if (Array.isArray(rowVal)) {
+        // row[key] is an array: match if array contains the scalar value
+        if (!rowVal.includes(value)) return false;
+      } else {
+        if (rowVal !== value) return false;
+      }
+    }
+    return true;
+  }
+
   private getCollection(slug: string): IRow[] {
     if (!this.collections.has(slug)) {
       this.collections.set(slug, []);
@@ -78,26 +113,29 @@ export default class RowInMemoryRepository extends RowContractRepository {
     const collection = this.getCollection(payload.table.slug);
 
     const rawFilters = payload.rawFilters ?? {};
+
+    // Strip meta-keys (pagination, sorting, etc.) before matching
+    const SKIP_KEYS = new Set([
+      'page',
+      'perPage',
+      'slug',
+      'public',
+      'search',
+      'trashed',
+      'user',
+      'userJwt',
+    ]);
+    const effectiveFilters: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(rawFilters)) {
+      if (!SKIP_KEYS.has(key) && !String(key).startsWith('order-')) {
+        effectiveFilters[key] = value;
+      }
+    }
+
     const result = collection.filter((item) => {
       const row = item as Record<string, unknown>;
       if (row['trashed'] === true) return false;
-      for (const [key, value] of Object.entries(rawFilters)) {
-        if (
-          key === 'page' ||
-          key === 'perPage' ||
-          key === 'slug' ||
-          key === 'public' ||
-          key === 'search' ||
-          key === 'trashed' ||
-          key === 'user' ||
-          key === 'userJwt' ||
-          String(key).startsWith('order-')
-        ) {
-          continue;
-        }
-        if (row[key] !== value) return false;
-      }
-      return true;
+      return this.matchesFilter(row, effectiveFilters);
     });
 
     return result
@@ -112,26 +150,27 @@ export default class RowInMemoryRepository extends RowContractRepository {
     const collection = this.getCollection(table.slug);
     const filters = rawFilters ?? {};
 
+    const SKIP_KEYS = new Set([
+      'page',
+      'perPage',
+      'slug',
+      'public',
+      'search',
+      'trashed',
+      'user',
+      'userJwt',
+    ]);
+    const effectiveFilters: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (!SKIP_KEYS.has(key) && !String(key).startsWith('order-')) {
+        effectiveFilters[key] = value;
+      }
+    }
+
     return collection.filter((item) => {
       const row = item as Record<string, unknown>;
       if (row['trashed'] === true) return false;
-      for (const [key, value] of Object.entries(filters)) {
-        if (
-          key === 'page' ||
-          key === 'perPage' ||
-          key === 'slug' ||
-          key === 'public' ||
-          key === 'search' ||
-          key === 'trashed' ||
-          key === 'user' ||
-          key === 'userJwt' ||
-          String(key).startsWith('order-')
-        ) {
-          continue;
-        }
-        if (row[key] !== value) return false;
-      }
-      return true;
+      return this.matchesFilter(row, effectiveFilters);
     }).length;
   }
 

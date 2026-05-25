@@ -36,7 +36,7 @@ type SettingMarkerDoc = {
 };
 
 async function setMarker(
-  settings: mongoose.mongo.Collection,
+  settings: mongoose.mongo.Collection<SettingMarkerDoc>,
   settingDoc: SettingMarkerDoc | null,
 ): Promise<void> {
   if (settingDoc) {
@@ -120,10 +120,9 @@ async function run(): Promise<void> {
       for (const table of tableDocs) {
         if (!table.slug || typeof table.slug !== 'string') continue;
         try {
-          await dataConn.db!.collection(table.slug).createIndex(
-            { visibility: 1 },
-            { background: true },
-          );
+          await dataConn
+            .db!.collection(table.slug)
+            .createIndex({ visibility: 1 }, { background: true });
           console.info(
             `[visibility-index] Index criado/garantido em '${table.slug}'.`,
           );
