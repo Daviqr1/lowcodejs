@@ -2,7 +2,8 @@
 
 Espelho do `backend/extensions/` para o lado React. **Aqui mora apenas o código
 de UI** (componentes, hooks, assets). A declaração canônica de uma extensão
-(manifest.json + DB upsert) vive no backend — ver `backend/extensions/CLAUDE.md`.
+(manifest.json + DB upsert) vive no backend — ver
+`backend/extensions/CLAUDE.md`.
 
 ## Estrutura
 
@@ -20,8 +21,8 @@ O frontend descobre as extensões com `import.meta.glob`:
 const entries = import.meta.glob('./*/{plugins,modules,tools}/*/index.tsx');
 ```
 
-Cada entry é lazy-importado quando o slot/rota correspondente é montado, então
-o bundle inicial não carrega tudo de uma vez.
+Cada entry é lazy-importado quando o slot/rota correspondente é montado, então o
+bundle inicial não carrega tudo de uma vez.
 
 ## Convenções
 

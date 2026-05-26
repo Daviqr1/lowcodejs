@@ -46,9 +46,30 @@ Filtra registros de tabelas vinculadas conforme o role do usuário logado:
 
 - **Manifest:** `manifest.json` declara `placement.kind: "row-access-guard"`
 - **Implementação:** `guard.ts` exporta `VisibilityByRoleGuard` que implementa o contrato `RowAccessGuard` (em `backend/application/core/extensions/row-access-guard.contract.ts`)
+- **Categoria:** `restrictive` — contribui com AND nas queries via `$or` de composição
 - **Registro:** O guard é registrado no map estático `RowAccessGuardService.GUARDS` (em `row-access-guard.service.ts`) pela chave `core:visibility-by-role`
 - **Injeção de deps:** No boot (`bin/server.ts`), o guard recebe `fieldRepo`, `tableRepo` e `rowRepo` via `injectVisibilityByRoleGuardDeps(...)`
-- **Consumo:** Row use-cases (paginated, show, create, update, delete) consultam `RowAccessGuardService.getActiveGuardsFor(tableId)` e aplicam os métodos do guard
+- **Consumo:** Row use-cases (paginated, show, create, update, delete, bulk-trash) chamam os helpers `composeListQuery / composeReadDecision / composeWriteDecision / composeSanitize` do `RowAccessGuardService` — o loop manual por guard desapareceu
+
+### Admin bypass é GLOBAL
+
+A partir do contract v2, **MASTER e ADMINISTRATOR nunca passam por guard algum**.
+A decisão é tomada uma única vez no início de cada helper do `RowAccessGuardService`.
+Este plugin pode (e deve) assumir que `user?.role` nunca será MASTER ou ADMINISTRATOR
+nos métodos `canRead / canWrite / adjustListQuery / sanitizeWritePayload`.
+
+### Decisão tri-state
+
+`canRead` e `canWrite` retornam `'allow' | 'deny' | 'abstain'` (write usa o tipo
+`GuardWriteDecision`). Este plugin é restrictive: nunca emite `'allow'` — apenas
+`'deny'` (quando viola a visibilidade) ou `'abstain'` (quando a row é permitida).
+A regra global do service é `allow > deny > abstain` (permissive vence; default
+é permitir quando todos abstêm).
+
+### Settings
+
+Este plugin **não usa settings** — os 2 valores PUBLIC/SIGILOSO são fixos. O
+método `settingsSchema` é `undefined` e os hooks ignoram o parâmetro `settings`.
 
 Spec completa: `docs/superpowers/specs/2026-05-20-plugin-visibility-by-role-design.md`
 Plano de implementação: `docs/superpowers/plans/2026-05-20-plugin-visibility-by-role-plan.md`

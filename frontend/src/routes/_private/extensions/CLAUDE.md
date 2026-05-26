@@ -5,11 +5,11 @@ role MASTER.
 
 ## Arquivos
 
-| Arquivo                            | Tipo         | Descrição                                                                |
-| ---------------------------------- | ------------ | ------------------------------------------------------------------------ |
-| `index.tsx`                        | Route config | `beforeLoad` valida MASTER, loader prefetch `extensionListOptions()`     |
-| `index.lazy.tsx`                   | Componente   | Listagem por pacote, toggle de ativação, sheet de escopo por tabela      |
-| `-extensions-page-skeleton.tsx`    | Privado      | Skeleton exibido durante prefetch                                        |
+| Arquivo                         | Tipo         | Descrição                                                            |
+| ------------------------------- | ------------ | -------------------------------------------------------------------- |
+| `index.tsx`                     | Route config | `beforeLoad` valida MASTER, loader prefetch `extensionListOptions()` |
+| `index.lazy.tsx`                | Componente   | Listagem por pacote, toggle de ativação, sheet de escopo por tabela  |
+| `-extensions-page-skeleton.tsx` | Privado      | Skeleton exibido durante prefetch                                    |
 
 ## Fluxo
 
@@ -19,6 +19,11 @@ role MASTER.
 4. Toggle de ativação — `useExtensionToggle` (mutation)
 5. Para plugins: botão "Configurar" abre sheet com modo `all` ou `specific` +
    `TableMultiSelect` — `useExtensionConfigureTableScope`
+6. Para plugins com `tableScope.mode === 'specific'` que declaram um form em
+   `SETTINGS_FORMS` (registry em `@/components/extensions/settings`), a seção
+   "Configurações por tabela" aparece com um collapsible por `tableId` — cada
+   collapsible carrega o form do plugin (ex: `DateWindowSettingsForm`) e
+   despacha `useExtensionConfigureTableSettings` ao salvar
 
 ## Controle de acesso
 
@@ -32,3 +37,9 @@ role MASTER.
   não podem ser ativadas — exibem alerta vermelho
 - Configuração de escopo só aparece para `type === PLUGIN`
 - Configuração de escopo `all` zera o array `tableIds`
+- A UI desabilita o radio "Todas as tabelas" quando o plugin declara
+  `supportsScopeAll: false` (descoberto via `extension.supportsScopeAll` —
+  serializado pelo backend a partir do guard registrado)
+- Settings por tabela usam **optimistic lock**: o PATCH envia `expectedUpdatedAt`;
+  o backend retorna **409** se outro usuário modificou o registro antes — a UI
+  mostra "Recarregue e tente novamente"
