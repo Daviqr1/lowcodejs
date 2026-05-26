@@ -247,7 +247,8 @@ export function RowFormFields({
           return null;
         }
 
-        const fieldDisabled = disabled || (disabledFields?.has(field.slug) ?? false);
+        const fieldDisabled =
+          disabled || (disabledFields?.has(field.slug) ?? false);
 
         return (
           <div

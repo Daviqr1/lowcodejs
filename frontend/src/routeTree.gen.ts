@@ -28,6 +28,7 @@ import { Route as PrivateSettingsIndexRouteImport } from './routes/_private/sett
 import { Route as PrivateProfileIndexRouteImport } from './routes/_private/profile/index'
 import { Route as PrivateMenusIndexRouteImport } from './routes/_private/menus/index'
 import { Route as PrivateGroupsIndexRouteImport } from './routes/_private/groups/index'
+import { Route as PrivateExtensionsIndexRouteImport } from './routes/_private/extensions/index'
 import { Route as PrivateDashboardIndexRouteImport } from './routes/_private/dashboard/index'
 import { Route as AuthenticationSignUpIndexRouteImport } from './routes/_authentication/sign-up/index'
 import { Route as AuthenticationForgotPasswordIndexRouteImport } from './routes/_authentication/forgot-password/index'
@@ -174,6 +175,13 @@ const PrivateGroupsIndexRoute = PrivateGroupsIndexRouteImport.update({
   getParentRoute: () => PrivateLayoutRoute,
 } as any).lazy(() =>
   import('./routes/_private/groups/index.lazy').then((d) => d.Route),
+)
+const PrivateExtensionsIndexRoute = PrivateExtensionsIndexRouteImport.update({
+  id: '/extensions/',
+  path: '/extensions/',
+  getParentRoute: () => PrivateLayoutRoute,
+} as any).lazy(() =>
+  import('./routes/_private/extensions/index.lazy').then((d) => d.Route),
 )
 const PrivateDashboardIndexRoute = PrivateDashboardIndexRouteImport.update({
   id: '/dashboard/',
@@ -396,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthenticationForgotPasswordIndexRoute
   '/sign-up': typeof AuthenticationSignUpIndexRoute
   '/dashboard': typeof PrivateDashboardIndexRoute
+  '/extensions': typeof PrivateExtensionsIndexRoute
   '/groups': typeof PrivateGroupsIndexRoute
   '/menus': typeof PrivateMenusIndexRoute
   '/profile': typeof PrivateProfileIndexRoute
@@ -440,6 +449,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthenticationForgotPasswordIndexRoute
   '/sign-up': typeof AuthenticationSignUpIndexRoute
   '/dashboard': typeof PrivateDashboardIndexRoute
+  '/extensions': typeof PrivateExtensionsIndexRoute
   '/groups': typeof PrivateGroupsIndexRoute
   '/menus': typeof PrivateMenusIndexRoute
   '/profile': typeof PrivateProfileIndexRoute
@@ -487,6 +497,7 @@ export interface FileRoutesById {
   '/_authentication/forgot-password/': typeof AuthenticationForgotPasswordIndexRoute
   '/_authentication/sign-up/': typeof AuthenticationSignUpIndexRoute
   '/_private/dashboard/': typeof PrivateDashboardIndexRoute
+  '/_private/extensions/': typeof PrivateExtensionsIndexRoute
   '/_private/groups/': typeof PrivateGroupsIndexRoute
   '/_private/menus/': typeof PrivateMenusIndexRoute
   '/_private/profile/': typeof PrivateProfileIndexRoute
@@ -533,6 +544,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/sign-up'
     | '/dashboard'
+    | '/extensions'
     | '/groups'
     | '/menus'
     | '/profile'
@@ -577,6 +589,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/sign-up'
     | '/dashboard'
+    | '/extensions'
     | '/groups'
     | '/menus'
     | '/profile'
@@ -623,6 +636,7 @@ export interface FileRouteTypes {
     | '/_authentication/forgot-password/'
     | '/_authentication/sign-up/'
     | '/_private/dashboard/'
+    | '/_private/extensions/'
     | '/_private/groups/'
     | '/_private/menus/'
     | '/_private/profile/'
@@ -800,6 +814,13 @@ declare module '@tanstack/react-router' {
       path: '/groups'
       fullPath: '/groups'
       preLoaderRoute: typeof PrivateGroupsIndexRouteImport
+      parentRoute: typeof PrivateLayoutRoute
+    }
+    '/_private/extensions/': {
+      id: '/_private/extensions/'
+      path: '/extensions'
+      fullPath: '/extensions'
+      preLoaderRoute: typeof PrivateExtensionsIndexRouteImport
       parentRoute: typeof PrivateLayoutRoute
     }
     '/_private/dashboard/': {
@@ -1005,6 +1026,7 @@ const AuthenticationLayoutRouteWithChildren =
 interface PrivateLayoutRouteChildren {
   PrivatePagesSlugRoute: typeof PrivatePagesSlugRoute
   PrivateDashboardIndexRoute: typeof PrivateDashboardIndexRoute
+  PrivateExtensionsIndexRoute: typeof PrivateExtensionsIndexRoute
   PrivateGroupsIndexRoute: typeof PrivateGroupsIndexRoute
   PrivateMenusIndexRoute: typeof PrivateMenusIndexRoute
   PrivateProfileIndexRoute: typeof PrivateProfileIndexRoute
@@ -1035,6 +1057,7 @@ interface PrivateLayoutRouteChildren {
 const PrivateLayoutRouteChildren: PrivateLayoutRouteChildren = {
   PrivatePagesSlugRoute: PrivatePagesSlugRoute,
   PrivateDashboardIndexRoute: PrivateDashboardIndexRoute,
+  PrivateExtensionsIndexRoute: PrivateExtensionsIndexRoute,
   PrivateGroupsIndexRoute: PrivateGroupsIndexRoute,
   PrivateMenusIndexRoute: PrivateMenusIndexRoute,
   PrivateProfileIndexRoute: PrivateProfileIndexRoute,
@@ -1103,12 +1126,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

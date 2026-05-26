@@ -1,4 +1,5 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import type { UseQueryOptions } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 
 import { queryKeys } from './_query-keys';
@@ -9,14 +10,14 @@ import type { IExtension } from '@/lib/interfaces';
 export function useExtensionsBoundToTable(
   tableId: string | undefined,
   options?: Omit<
-    UseQueryOptions<IExtension[], AxiosError | Error>,
+    UseQueryOptions<Array<IExtension>, AxiosError | Error>,
     'queryKey' | 'queryFn' | 'enabled'
   > & { enabled?: boolean },
 ) {
-  return useQuery<IExtension[], AxiosError | Error>({
+  return useQuery<Array<IExtension>, AxiosError | Error>({
     queryKey: queryKeys.extensions.boundTo(tableId ?? ''),
     queryFn: async () => {
-      const all = await API.get<IExtension[]>('/extensions').then(
+      const all = await API.get<Array<IExtension>>('/extensions').then(
         (r) => r.data,
       );
       return all.filter(

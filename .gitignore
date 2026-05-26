@@ -23,3 +23,7 @@ backend/_storage/*
 
 _docs/nextjs/
 frontend-next
+
+# Claude Code worktrees (transient — não vão pro repo)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
