@@ -132,10 +132,15 @@ export default class RowInMemoryRepository extends RowContractRepository {
       }
     }
 
+    const extraFilters = payload.extraFilters ?? {};
     const result = collection.filter((item) => {
       const row = item as Record<string, unknown>;
       if (row['trashed'] === true) return false;
-      return this.matchesFilter(row, effectiveFilters);
+      if (!this.matchesFilter(row, effectiveFilters)) return false;
+      if (Object.keys(extraFilters).length > 0) {
+        return this.matchesFilter(row, extraFilters);
+      }
+      return true;
     });
 
     return result
@@ -146,6 +151,7 @@ export default class RowInMemoryRepository extends RowContractRepository {
   async count(
     table: RowTableContext,
     rawFilters?: Record<string, unknown>,
+    extraFilters?: Record<string, unknown>,
   ): Promise<number> {
     const collection = this.getCollection(table.slug);
     const filters = rawFilters ?? {};
@@ -167,10 +173,15 @@ export default class RowInMemoryRepository extends RowContractRepository {
       }
     }
 
+    const extras = extraFilters ?? {};
     return collection.filter((item) => {
       const row = item as Record<string, unknown>;
       if (row['trashed'] === true) return false;
-      return this.matchesFilter(row, effectiveFilters);
+      if (!this.matchesFilter(row, effectiveFilters)) return false;
+      if (Object.keys(extras).length > 0) {
+        return this.matchesFilter(row, extras);
+      }
+      return true;
     }).length;
   }
 

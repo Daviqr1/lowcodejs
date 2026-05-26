@@ -28,6 +28,8 @@ export type RowFindOnePayload = {
 export type RowFindManyPayload = {
   table: RowTableContext;
   rawFilters?: Record<string, unknown>;
+  /** Filtros adicionais já em formato Mongo (ex: $and/$or de Row Access Guards). Combinados via $and com buildQuery. */
+  extraFilters?: Record<string, unknown>;
   skip: number;
   limit: number;
   sortField?: string;
@@ -78,6 +80,7 @@ export abstract class RowContractRepository {
   abstract count(
     table: RowTableContext,
     rawFilters?: Record<string, unknown>,
+    extraFilters?: Record<string, unknown>,
   ): Promise<number>;
 
   abstract update(payload: RowUpdatePayload): Promise<IRow | null>;

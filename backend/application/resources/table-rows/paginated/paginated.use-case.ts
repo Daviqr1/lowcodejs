@@ -47,22 +47,27 @@ export default class TableRowPaginatedUseCase {
         );
       }
 
-      const filters = await this.guardService.composeListQuery(
+      const guardFilters = await this.guardService.composeListQuery(
         table._id,
-        { ...payload },
+        {},
         payload.userJwt,
         table,
       );
 
       const rows = await this.rowRepository.findMany({
         table,
-        rawFilters: filters,
+        rawFilters: payload,
+        extraFilters: guardFilters,
         skip,
         limit: payload.perPage,
         includeReverseRelationships: true,
       });
 
-      const total = await this.rowRepository.count(table, filters);
+      const total = await this.rowRepository.count(
+        table,
+        payload,
+        guardFilters,
+      );
 
       const lastPage = Math.ceil(total / payload.perPage);
 

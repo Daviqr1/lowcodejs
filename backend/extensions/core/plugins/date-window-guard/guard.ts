@@ -65,6 +65,14 @@ function parseSettings(raw: Record<string, unknown>): DateWindowSettings {
   return dateWindowSettingsSchema.parse(raw);
 }
 
+/**
+ * Settings are configured separately via PATCH /extensions/:id/table-settings/:tableId.
+ * Until then settings is `{}` — guard treats it as inactive (no-op) for this table.
+ */
+function settingsArePresent(raw: Record<string, unknown>): boolean {
+  return typeof raw === 'object' && raw !== null && 'mode' in raw;
+}
+
 function asDate(value: unknown): Date | null {
   if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
   if (typeof value === 'string') {
@@ -192,6 +200,12 @@ export const DateWindowGuard: RowAccessGuard = {
     table: ITable,
     rawSettings: Record<string, unknown>,
   ): Promise<Either<HTTPException, GuardBindResult>> {
+    // No settings yet — bind is a no-op. Real configuration arrives via
+    // PATCH /extensions/:id/table-settings/:tableId, which re-invokes onTableBound.
+    if (!settingsArePresent(rawSettings)) {
+      return right({ wasCreated: false });
+    }
+
     const settings = parseSettings(rawSettings);
 
     // createdAt-* modes need no field creation — createdAt is native
@@ -297,6 +311,8 @@ export const DateWindowGuard: RowAccessGuard = {
     _table: ITable,
     rawSettings: Record<string, unknown>,
   ): Record<string, unknown> {
+    if (!settingsArePresent(rawSettings)) return {};
+
     const settings = parseSettings(rawSettings);
     const now = new Date();
 
@@ -329,6 +345,8 @@ export const DateWindowGuard: RowAccessGuard = {
     _table: ITable,
     rawSettings: Record<string, unknown>,
   ): GuardAccessDecision {
+    if (!settingsArePresent(rawSettings)) return 'abstain';
+
     const settings = parseSettings(rawSettings);
     const now = new Date();
 
