@@ -2,7 +2,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createLazyFileRoute } from '@tanstack/react-router';
 import {
   AlertTriangleIcon,
-  ChevronDownIcon,
   PackageIcon,
   PuzzleIcon,
   SettingsIcon,
@@ -12,7 +11,7 @@ import React from 'react';
 
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
-import { SETTINGS_FORMS } from '@/components/extensions/settings/settings-form-registry';
+import { RowAccessConfigSheet } from '@/components/extensions/row-access/row-access-config-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,11 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
 import {
@@ -50,6 +44,12 @@ import { toastSuccess } from '@/lib/toast';
 export const Route = createLazyFileRoute('/_private/extensions/')({
   component: RouteComponent,
 });
+
+const ROW_ACCESS_PLUGIN_KEY = 'core:row-access';
+
+function isRowAccessPlugin(extension: IExtension): boolean {
+  return `${extension.pkg}:${extension.extensionId}` === ROW_ACCESS_PLUGIN_KEY;
+}
 
 function TypeBadge({ type }: { type: IExtension['type'] }): React.JSX.Element {
   const Icon =
@@ -87,11 +87,16 @@ function groupByPackage(
 interface ExtensionCardProps {
   extension: IExtension;
   onConfigureTableScope: (extension: IExtension) => void;
+  onConfigureRowAccess: (
+    extension: IExtension,
+    initialTableId?: string,
+  ) => void;
 }
 
 function ExtensionCard({
   extension,
   onConfigureTableScope,
+  onConfigureRowAccess,
 }: ExtensionCardProps): React.JSX.Element {
   const toggle = useExtensionToggle({
     onSuccess(_data) {
@@ -174,7 +179,11 @@ function ExtensionCard({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onConfigureTableScope(extension)}
+              onClick={() =>
+                isRowAccessPlugin(extension)
+                  ? onConfigureRowAccess(extension)
+                  : onConfigureTableScope(extension)
+              }
               data-test-id={`extension-configure-${extension._id}`}
             >
               <SettingsIcon className="size-4" />
@@ -182,54 +191,31 @@ function ExtensionCard({
             </Button>
           </div>
         )}
+
+        {isRowAccessPlugin(extension) &&
+          extension.tableSettings &&
+          Object.keys(extension.tableSettings).length > 0 && (
+            <div className="pt-2 border-t">
+              <p className="text-xs uppercase tracking-wide mb-1">
+                Tabelas configuradas
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {Object.keys(extension.tableSettings).map((tableId) => (
+                  <button
+                    key={tableId}
+                    type="button"
+                    onClick={() => onConfigureRowAccess(extension, tableId)}
+                    className="rounded-md border bg-muted/30 px-2 py-1 font-mono text-[10px] text-foreground hover:bg-muted transition-colors"
+                    title={`Editar config dessa tabela individualmente`}
+                  >
+                    {tableId.slice(-8)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
       </CardContent>
     </Card>
-  );
-}
-
-interface TableSettingsSectionProps {
-  extension: IExtension;
-  tableIds: Array<string>;
-}
-
-function TableSettingsSection({
-  extension,
-  tableIds,
-}: TableSettingsSectionProps): React.JSX.Element | null {
-  const pluginKey = `${extension.pkg}:${extension.extensionId}`;
-  const SettingsForm = SETTINGS_FORMS[pluginKey];
-
-  if (!SettingsForm) return null;
-
-  return (
-    <div className="border-t pt-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-        Configurações por tabela
-      </p>
-      <div className="space-y-3">
-        {tableIds.map((tableId) => (
-          <Collapsible key={tableId}>
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
-              >
-                <span className="truncate font-mono text-xs">{tableId}</span>
-                <ChevronDownIcon className="size-4 shrink-0 transition-transform [[data-state=open]_&]:rotate-180" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="px-1 pt-3 pb-1">
-              <SettingsForm
-                extensionId={extension._id}
-                tableId={tableId}
-                initialSettings={extension.tableSettings?.[tableId] ?? {}}
-                expectedUpdatedAt={extension.updatedAt ?? extension.createdAt}
-              />
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -330,15 +316,6 @@ function TableScopeSheet({
               />
             </Field>
           )}
-
-          {mode === 'specific' &&
-            tableIds.length > 0 &&
-            extension.hasSettingsSchema && (
-              <TableSettingsSection
-                extension={extension}
-                tableIds={tableIds}
-              />
-            )}
         </div>
 
         <SheetFooter>
@@ -379,12 +356,28 @@ function RouteComponent(): React.JSX.Element {
   );
   const [scopeOpen, setScopeOpen] = React.useState(false);
 
+  const [rowAccessExtension, setRowAccessExtension] =
+    React.useState<IExtension | null>(null);
+  const [rowAccessOpen, setRowAccessOpen] = React.useState(false);
+  const [rowAccessInitialTableId, setRowAccessInitialTableId] = React.useState<
+    string | undefined
+  >(undefined);
+
   const groups = React.useMemo(() => groupByPackage(data), [data]);
 
   const handleConfigureTableScope = React.useCallback(
     (extension: IExtension) => {
       setScopeExtension(extension);
       setScopeOpen(true);
+    },
+    [],
+  );
+
+  const handleConfigureRowAccess = React.useCallback(
+    (extension: IExtension, initialTableId?: string) => {
+      setRowAccessExtension(extension);
+      setRowAccessInitialTableId(initialTableId);
+      setRowAccessOpen(true);
     },
     [],
   );
@@ -423,6 +416,7 @@ function RouteComponent(): React.JSX.Element {
                   key={extension._id}
                   extension={extension}
                   onConfigureTableScope={handleConfigureTableScope}
+                  onConfigureRowAccess={handleConfigureRowAccess}
                 />
               ))}
             </div>
@@ -434,6 +428,16 @@ function RouteComponent(): React.JSX.Element {
         extension={scopeExtension}
         open={scopeOpen}
         onOpenChange={setScopeOpen}
+      />
+
+      <RowAccessConfigSheet
+        extension={rowAccessExtension}
+        open={rowAccessOpen}
+        onOpenChange={(o) => {
+          setRowAccessOpen(o);
+          if (!o) setRowAccessInitialTableId(undefined);
+        }}
+        initialTableId={rowAccessInitialTableId}
       />
     </PageShell>
   );

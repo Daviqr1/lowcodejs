@@ -58,7 +58,7 @@ function UpdateRowFormContent({
     user?.group?.slug === E_ROLE.MASTER ||
     user?.group?.slug === E_ROLE.ADMINISTRATOR;
   const visibilityPluginActive = boundPlugins.some(
-    (e) => `${e.pkg}:${e.extensionId}` === 'core:visibility-by-role',
+    (e) => `${e.pkg}:${e.extensionId}` === 'core:row-access',
   );
   const disabledFields = React.useMemo(() => {
     const set = new Set<string>();
