@@ -17,9 +17,9 @@ import TableInMemoryRepository from '@application/repositories/table/table-in-me
 import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
-  injectVisibilityByRoleGuardDeps,
-  VisibilityByRoleGuard,
-} from '../../../../extensions/core/plugins/visibility-by-role/guard';
+  injectRowAccessGuardDeps,
+  RowAccessControlGuard,
+} from '../../../../extensions/core/plugins/row-access/guard';
 
 import TableRowDeleteUseCase from './delete.use-case';
 
@@ -135,7 +135,7 @@ describe('TableRowDeleteUseCase with RowAccessGuard', () => {
     const rowRepo = new RowInMemoryRepository();
     const extensionRepo = new ExtensionInMemoryRepository();
 
-    injectVisibilityByRoleGuardDeps({
+    injectRowAccessGuardDeps({
       fieldRepo: {} as any,
       tableRepo,
       rowRepo,
@@ -143,15 +143,15 @@ describe('TableRowDeleteUseCase with RowAccessGuard', () => {
     });
 
     RowAccessGuardService.register(
-      VisibilityByRoleGuard.pluginKey,
-      VisibilityByRoleGuard,
+      RowAccessControlGuard.pluginKey,
+      RowAccessControlGuard,
     );
 
     const ext = await extensionRepo.upsert({
       pkg: 'core',
       type: E_EXTENSION_TYPE.PLUGIN,
-      extensionId: 'visibility-by-role',
-      name: 'Visibility by Role',
+      extensionId: 'row-access',
+      name: 'Controle de Acesso a Linhas',
       description: null,
       version: '1.0.0',
       author: null,

@@ -21,7 +21,7 @@ Plugins do tipo `PLUGIN` podem declarar `placement.kind` ao invés de
 
 | kind | Contrato | Onde fica registrado | Plugin de exemplo |
 |------|----------|---------------------|-------------------|
-| `row-access-guard` | `RowAccessGuard` (em `application/core/extensions/row-access-guard.contract.ts`) | `RowAccessGuardService.GUARDS` (map estático em `row-access-guard.service.ts`); registro feito pelo próprio módulo do plugin no module-load | `core/plugins/visibility-by-role` |
+| `row-access-guard` | `RowAccessGuard` (em `application/core/extensions/row-access-guard.contract.ts`) | `RowAccessGuardService.GUARDS` (map estático em `row-access-guard.service.ts`); registro feito pelo próprio módulo do plugin no module-load | `core/plugins/row-access` |
 
 Row use-cases (paginated/show/create/update/delete) consultam o service via
 `getActiveGuardsFor(tableId)` e aplicam os métodos do guard (`adjustListQuery`,
@@ -31,7 +31,7 @@ ver o arquivo da interface.
 Plugins desse `kind` precisam injetar suas próprias dependências de repos
 no boot. Convenção: o plugin exporta `injectXxxGuardDeps(deps)` e o
 `bin/server.ts` chama com `getInstanceByToken(...)` após o DI registry estar
-pronto. Veja exemplo no `core/plugins/visibility-by-role`.
+pronto. Veja exemplo no `core/plugins/row-access`.
 
 ## Estrutura de pastas
 

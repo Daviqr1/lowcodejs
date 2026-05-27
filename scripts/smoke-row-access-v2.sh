@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Smoke E2E real para Row Access Guards v2 (visibility-by-role + creator-bypass + date-window-guard)
+# Smoke E2E real para o plugin unico core:row-access
 #
-# Pre-requisitos: stack docker rodando (low-code-js-api healthy em http://localhost:3000),
+# Pre-requisitos: stack docker rodando (low-code-js-api em http://localhost:3000),
 # users admin@gmail.com (senha: admin) e manager@teste.com (senha: manager) existindo.
 # Cria automaticamente registered_smoke@teste.com.
 #
@@ -16,8 +16,8 @@ MANAGER_EMAIL="${MANAGER_EMAIL:-manager@teste.com}"
 MANAGER_PASS="${MANAGER_PASS:-manager}"
 REGISTERED_EMAIL="registered_smoke@teste.com"
 REGISTERED_PASS="SmokeReg123!"
-TABLE_SLUG="smokev2_docs"
-TABLE_NAME="Smoke V2 Docs"
+TABLE_NAME="Smoke RA Docs"
+TABLE_SLUG="smoke_ra_docs"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 PASS=0; FAIL=0
@@ -31,7 +31,6 @@ warn() { echo -e "${YELLOW}  ⚠ $1${NC}"; }
 cookies_master=$(mktemp); cookies_manager=$(mktemp); cookies_registered=$(mktemp)
 trap "rm -f $cookies_master $cookies_manager $cookies_registered" EXIT
 
-# ─── Helpers ────────────────────────────────────────────────────────────────────
 login() {
   local email="$1" pass="$2" cookies="$3"
   curl -s -c "$cookies" -X POST "$API/authentication/sign-in" \
@@ -67,14 +66,16 @@ mongo_run() {
 # ─── Setup ──────────────────────────────────────────────────────────────────────
 step "1. Login MASTER + MANAGER"
 code=$(login "$MASTER_EMAIL" "$MASTER_PASS" "$cookies_master")
-[ "$code" = "200" ] && pass "MASTER login ($MASTER_EMAIL)" || { fail "MASTER login: HTTP $code"; exit 1; }
+[ "$code" = "200" ] && pass "MASTER login" || { fail "MASTER login: HTTP $code"; exit 1; }
 code=$(login "$MANAGER_EMAIL" "$MANAGER_PASS" "$cookies_manager")
-[ "$code" = "200" ] && pass "MANAGER login ($MANAGER_EMAIL)" || { fail "MANAGER login: HTTP $code"; exit 1; }
+[ "$code" = "200" ] && pass "MANAGER login" || { fail "MANAGER login: HTTP $code"; exit 1; }
 
 step "2. Garante user REGISTERED"
-existing=$(api GET "/users/paginated?page=1&perPage=100" "$cookies_master" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((u['_id'] for u in d.get('data',[]) if u['email']=='$REGISTERED_EMAIL'),''))" 2>/dev/null || echo "")
+existing=$(api GET "/users/paginated?page=1&perPage=100" "$cookies_master" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((u['_id'] for u in d.get('data',[]) if u['email']=='$REGISTERED_EMAIL'),''))" 2>/dev/null || echo "")
 if [ -z "$existing" ]; then
-  group_registered=$(api GET "/user-group" "$cookies_master" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((g['_id'] for g in d if g['slug']=='REGISTERED'), ''))")
+  group_registered=$(api GET "/user-group" "$cookies_master" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((g['_id'] for g in d if g['slug']=='REGISTERED'), ''))")
   [ -z "$group_registered" ] && { fail "Group REGISTERED não encontrado"; exit 1; }
   body=$(printf '{"name":"Registered Smoke","email":"%s","password":"%s","group":"%s","status":"ACTIVE"}' \
     "$REGISTERED_EMAIL" "$REGISTERED_PASS" "$group_registered")
@@ -105,31 +106,56 @@ body='{"name":"Nome","slug":"nome","type":"TEXT_SHORT","format":"PLAIN_TEXT","re
 api POST "/tables/$TABLE_SLUG/fields" "$cookies_master" "$body" > /dev/null
 pass "Field 'nome' adicionado"
 
-step "4. Ativa 3 plugins com scope specific na tabela"
-ext_data=$(api GET "/extensions" "$cookies_master")
-for plugin in visibility-by-role creator-bypass date-window-guard; do
-  ext_id=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['_id'] for e in d if e.get('extensionId')==\"$plugin\"),''))")
-  [ -z "$ext_id" ] && { fail "Plugin $plugin não encontrado"; exit 1; }
-  api PATCH "/extensions/$ext_id/toggle" "$cookies_master" '{"enabled":true}' > /dev/null
-  body=$(printf '{"mode":"specific","tableIds":["%s"]}' "$table_id")
-  scope_code=$(api_status PATCH "/extensions/$ext_id/table-scope" "$cookies_master" "$body")
-  if [ "$scope_code" = "200" ]; then
-    pass "$plugin: enabled + scope specific"
-  else
-    fail "$plugin scope PATCH HTTP $scope_code"
-  fi
-done
+# Segunda tabela pro bulk apply v2
+TABLE2_NAME="Smoke RA Docs 2"
+TABLE2_SLUG="smoke_ra_docs_2"
+mongo_run "
+const tables = db.tables.find({name:'$TABLE2_NAME'}, {slug:1}).toArray();
+tables.forEach(t => {
+  db.getSiblingDB('lowcodejs_data').getCollection(t.slug).drop();
+  db.fields.deleteMany({table: t._id.toString()});
+});
+db.tables.deleteMany({name:'$TABLE2_NAME'});
+" > /dev/null
+body=$(printf '{"name":"%s","slug":"%s","style":"LIST","visibility":"OPEN","collaboration":"OPEN"}' "$TABLE2_NAME" "$TABLE2_SLUG")
+resp=$(api POST "/tables" "$cookies_master" "$body")
+table2_id=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin).get('_id',''))" 2>/dev/null || echo "")
+TABLE2_SLUG=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin).get('slug',''))" 2>/dev/null || echo "")
+api POST "/tables/$TABLE2_SLUG/fields" "$cookies_master" \
+  '{"name":"Nome","slug":"nome","type":"TEXT_SHORT","format":"PLAIN_TEXT","required":false}' > /dev/null
+pass "Tabela secundária criada (slug=$TABLE2_SLUG)"
 
-step "5. Configura date-window-guard com sliding 30 dias"
+step "4. Ativa SÓ o plugin core:row-access"
 ext_data=$(api GET "/extensions" "$cookies_master")
-dw_id=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['_id'] for e in d if e.get('extensionId')=='date-window-guard'),''))")
-dw_updatedAt=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['updatedAt'] for e in d if e.get('extensionId')=='date-window-guard'),''))")
-body=$(printf '{"settings":{"mode":"createdAt-sliding","slidingDays":30},"expectedUpdatedAt":"%s"}' "$dw_updatedAt")
-code=$(api_status PATCH "/extensions/$dw_id/table-settings/$table_id" "$cookies_master" "$body")
-[ "$code" = "200" ] && pass "date-window-guard configurado (sliding 30d)" || warn "date-window settings HTTP $code (continua)"
+ra_id=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['_id'] for e in d if e.get('extensionId')=='row-access'),''))")
+[ -z "$ra_id" ] && { fail "Plugin row-access não encontrado"; exit 1; }
+api PATCH "/extensions/$ra_id/toggle" "$cookies_master" '{"enabled":true}' > /dev/null
+pass "row-access enabled"
 
-step "6. MASTER cria 3 rows (PUBLIC, RESTRITO, SIGILOSO)"
-for vis in PUBLIC RESTRITO SIGILOSO; do
+step "5. Bulk apply na primeira tabela (visibility + creator + date 30d)"
+ext_data=$(api GET "/extensions" "$cookies_master")
+ra_updatedAt=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['updatedAt'] for e in d if e.get('extensionId')=='row-access'),''))")
+settings_json='{
+  "visibility": {
+    "enabled": true,
+    "fieldSlug": "visibility",
+    "values": ["PUBLIC", "INTERNO", "SIGILOSO"],
+    "roleMatrix": {
+      "PUBLIC": ["MASTER","ADMINISTRATOR","MANAGER","REGISTERED"],
+      "INTERNO": ["MASTER","ADMINISTRATOR","MANAGER"],
+      "SIGILOSO": ["MASTER","ADMINISTRATOR"]
+    },
+    "defaultValue": "PUBLIC"
+  },
+  "creatorBypass": {"enabled": true},
+  "dateWindow": {"mode": "createdAt-sliding", "slidingDays": 30}
+}'
+body=$(printf '{"tableIds":["%s"],"settings":%s,"expectedUpdatedAt":"%s"}' "$table_id" "$settings_json" "$ra_updatedAt")
+resp=$(api PATCH "/extensions/$ra_id/bulk-table-settings" "$cookies_master" "$body")
+echo "$resp" | grep -q '"success":\["'"$table_id"'"\]' && pass "Bulk apply: tabela 1 success" || fail "Bulk apply 1: $resp"
+
+step "6. MASTER cria 3 rows (PUBLIC, INTERNO, SIGILOSO)"
+for vis in PUBLIC INTERNO SIGILOSO; do
   body=$(printf '{"nome":"doc-master-%s","visibility":["%s"]}' "$vis" "$vis")
   resp=$(api POST "/tables/$TABLE_SLUG/rows" "$cookies_master" "$body")
   echo "$resp" | grep -q '"_id"' && pass "MASTER row $vis criada" || fail "MASTER row $vis: $resp"
@@ -144,7 +170,7 @@ body='{"nome":"doc-manager-SIGILOSO","visibility":["SIGILOSO"]}'
 code=$(api_status POST "/tables/$TABLE_SLUG/rows" "$cookies_manager" "$body")
 [ "$code" = "403" ] && pass "MANAGER row SIGILOSO bloqueada (403)" || warn "MANAGER row SIGILOSO HTTP $code (esperado 403)"
 
-# Pra ter row SIGILOSA "criada por MANAGER" (testa creator-bypass), insere direto via mongo
+# Forçar row SIGILOSA criada por MANAGER via mongo direct (testa creator-bypass)
 manager_id=$(mongo_run "print(db.users.findOne({email:'$MANAGER_EMAIL'})._id.toString())" 2>/dev/null | tail -1)
 mongo_run "
 db.getSiblingDB('lowcodejs_data').getCollection('$TABLE_SLUG').insertOne({
@@ -154,32 +180,30 @@ db.getSiblingDB('lowcodejs_data').getCollection('$TABLE_SLUG').insertOne({
   trashed: false, trashedAt: null
 });
 " > /dev/null
-pass "Row SIGILOSA \"de\" MANAGER inserida direto via mongo (simula edição pré-plugin)"
+pass "Row SIGILOSA \"de\" MANAGER inserida via mongo direct"
 
 step "8. MASTER lista — deve ver TODAS as rows (admin bypass)"
 resp=$(api GET "/tables/$TABLE_SLUG/rows/paginated?page=1&perPage=50" "$cookies_master")
 total=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['meta']['total'])")
 [ "$total" -ge 5 ] && pass "MASTER vê $total rows (>=5)" || fail "MASTER deveria ver 5+, viu $total"
 
-step "9. MANAGER lista — deve ver PUBLIC+RESTRITO de outros + TODAS as próprias (creator-bypass)"
+step "9. MANAGER lista — vê PUBLIC + INTERNO de outros + TODAS suas próprias"
 resp=$(api GET "/tables/$TABLE_SLUG/rows/paginated?page=1&perPage=50" "$cookies_manager")
-total=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['meta']['total'])")
 nomes=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(','.join(sorted([r.get('nome','?') for r in d['data']])))")
 echo "    MANAGER vê: $nomes"
-echo "$nomes" | grep -q "doc-master-PUBLIC" && pass "MANAGER vê PUBLIC de MASTER" || fail "MANAGER NÃO viu PUBLIC de MASTER"
-echo "$nomes" | grep -q "doc-master-RESTRITO" && pass "MANAGER vê RESTRITO de MASTER" || fail "MANAGER NÃO viu RESTRITO de MASTER"
+echo "$nomes" | grep -q "doc-master-PUBLIC" && pass "MANAGER vê PUBLIC" || fail "MANAGER NÃO viu PUBLIC"
+echo "$nomes" | grep -q "doc-master-INTERNO" && pass "MANAGER vê INTERNO" || fail "MANAGER NÃO viu INTERNO"
 echo "$nomes" | grep -q "doc-manager-PUBLIC" && pass "MANAGER vê própria PUBLIC" || fail "MANAGER NÃO viu própria PUBLIC"
-echo "$nomes" | grep -q "doc-manager-SIGILOSO-forced" && pass "MANAGER vê própria SIGILOSA (creator-bypass)" || fail "MANAGER NÃO viu própria SIGILOSA (esperado via creator-bypass)"
+echo "$nomes" | grep -q "doc-manager-SIGILOSO-forced" && pass "MANAGER vê própria SIGILOSA (creator-bypass)" || fail "MANAGER NÃO viu própria SIGILOSA"
 echo "$nomes" | grep -q "doc-master-SIGILOSO" && fail "MANAGER viu SIGILOSA de MASTER (vazamento!)" || pass "MANAGER NÃO vê SIGILOSA de outros"
 
 step "10. REGISTERED lista — só PUBLIC"
 resp=$(api GET "/tables/$TABLE_SLUG/rows/paginated?page=1&perPage=50" "$cookies_registered")
-total=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['meta']['total'])")
 nomes=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(','.join(sorted([r.get('nome','?') for r in d['data']])))")
 echo "    REGISTERED vê: $nomes"
-echo "$nomes" | grep -q "RESTRITO\|SIGILOSO" && fail "REGISTERED viu RESTRITO/SIGILOSO (vazamento!)" || pass "REGISTERED só vê PUBLIC"
+echo "$nomes" | grep -q "INTERNO\|SIGILOSO" && fail "REGISTERED viu INTERNO/SIGILOSO (vazamento!)" || pass "REGISTERED só vê PUBLIC"
 
-step "11. date-window-guard: força row antiga via mongo, MANAGER deixa de ver"
+step "11. date-window: força row antiga via mongo, MANAGER deixa de ver"
 mongo_run "
 db.getSiblingDB('lowcodejs_data').getCollection('$TABLE_SLUG').updateOne(
   {nome:'doc-master-PUBLIC'},
@@ -189,7 +213,7 @@ db.getSiblingDB('lowcodejs_data').getCollection('$TABLE_SLUG').updateOne(
 resp=$(api GET "/tables/$TABLE_SLUG/rows/paginated?page=1&perPage=50" "$cookies_manager")
 nomes=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(','.join(sorted([r.get('nome','?') for r in d['data']])))")
 echo "    MANAGER após date-window: $nomes"
-echo "$nomes" | grep -q "doc-master-PUBLIC" && fail "MANAGER ainda viu doc-master-PUBLIC (60d atrás, deveria ser filtrado)" || pass "date-window filtrou doc-master-PUBLIC antigo"
+echo "$nomes" | grep -q "doc-master-PUBLIC" && fail "MANAGER ainda viu PUBLIC antigo" || pass "date-window filtrou PUBLIC antigo"
 
 step "12. REGISTERED tenta GET row SIGILOSA de MASTER → 403"
 sigiloso_row=$(mongo_run "
@@ -198,6 +222,13 @@ print(r._id.toString());
 " 2>/dev/null | tail -1)
 code=$(api_status GET "/tables/$TABLE_SLUG/rows/$sigiloso_row" "$cookies_registered")
 [ "$code" = "403" ] && pass "REGISTERED GET SIGILOSA = 403" || fail "REGISTERED GET SIGILOSA = HTTP $code (esperado 403)"
+
+step "13. Bulk apply v2 — aplica mesma config na tabela secundária"
+ext_data=$(api GET "/extensions" "$cookies_master")
+ra_updatedAt=$(echo "$ext_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((e['updatedAt'] for e in d if e.get('extensionId')=='row-access'),''))")
+body=$(printf '{"tableIds":["%s"],"settings":%s,"expectedUpdatedAt":"%s"}' "$table2_id" "$settings_json" "$ra_updatedAt")
+resp=$(api PATCH "/extensions/$ra_id/bulk-table-settings" "$cookies_master" "$body")
+echo "$resp" | grep -q '"success":\["'"$table2_id"'"\]' && pass "Bulk apply: tabela 2 success (bulk endpoint funcional)" || fail "Bulk apply 2: $resp"
 
 # ─── Summary ────────────────────────────────────────────────────────────────────
 echo ""

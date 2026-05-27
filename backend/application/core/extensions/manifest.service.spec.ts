@@ -5,7 +5,7 @@ import { ManifestSchema } from './manifest.schema';
 describe('ManifestSchema', () => {
   it('aceita placement.kind = "row-access-guard" para plugins sem slot', () => {
     const result = ManifestSchema.safeParse({
-      id: 'visibility-by-role',
+      id: 'row-access',
       type: 'PLUGIN',
       name: 'Visibilidade por Papel',
       version: '1.0.0',

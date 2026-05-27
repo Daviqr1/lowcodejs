@@ -10,9 +10,9 @@ import TableInMemoryRepository from '@application/repositories/table/table-in-me
 import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
-  VisibilityByRoleGuard,
-  injectVisibilityByRoleGuardDeps,
-} from '../../../../extensions/core/plugins/visibility-by-role/guard';
+  RowAccessControlGuard,
+  injectRowAccessGuardDeps,
+} from '../../../../extensions/core/plugins/row-access/guard';
 
 import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 
@@ -47,15 +47,15 @@ describe('ExtensionConfigureTableScopeUseCase com guards', () => {
     tableRepo = new TableInMemoryRepository();
     fieldRepo = new FieldInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    injectVisibilityByRoleGuardDeps({
+    injectRowAccessGuardDeps({
       fieldRepo,
       tableRepo,
       rowRepo,
       tableSchemaService: new TableSchemaInMemoryService(),
     });
     RowAccessGuardService.register(
-      VisibilityByRoleGuard.pluginKey,
-      VisibilityByRoleGuard,
+      RowAccessControlGuard.pluginKey,
+      RowAccessControlGuard,
     );
     guardService = new RowAccessGuardService(extensionRepo);
     useCase = new ExtensionConfigureTableScopeUseCase(
@@ -65,7 +65,7 @@ describe('ExtensionConfigureTableScopeUseCase com guards', () => {
       fieldRepo,
     );
 
-    await extensionRepo.upsert(baseUpsert('visibility-by-role'));
+    await extensionRepo.upsert(baseUpsert('row-access'));
     const [ext] = await extensionRepo.findMany();
     extensionId = ext._id;
     await extensionRepo.toggleEnabled({ _id: extensionId, enabled: true });

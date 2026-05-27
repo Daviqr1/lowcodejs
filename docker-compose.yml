@@ -30,6 +30,13 @@ services:
     ports:
       - "${APP_SERVER_PORT}:3000"
     env_file: .env
+    environment:
+      # Sobrescreve URLs do .env (que apontam pra localhost pra rodar fora
+      # do compose) com os hostnames da network do compose.
+      - DATABASE_URL=mongodb://${DB_USERNAME}:${DB_PASSWORD}@mongo:27017/${DB_DATABASE}?authSource=admin
+      - REDIS_URL=redis://host.docker.internal:6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - low-code-js-network
     depends_on:

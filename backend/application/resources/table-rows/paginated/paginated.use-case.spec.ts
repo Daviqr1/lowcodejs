@@ -19,9 +19,9 @@ import InMemoryRowPasswordService from '@application/services/row-password/in-me
 import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
 
 import {
-  injectVisibilityByRoleGuardDeps,
-  VisibilityByRoleGuard,
-} from '../../../../extensions/core/plugins/visibility-by-role/guard';
+  injectRowAccessGuardDeps,
+  RowAccessControlGuard,
+} from '../../../../extensions/core/plugins/row-access/guard';
 
 import TableRowPaginatedUseCase from './paginated.use-case';
 
@@ -147,7 +147,7 @@ describe('Table Row Paginated Use Case — RowAccessGuard', () => {
     const contextSvc = new InMemoryRowContextService();
     const extensionRepo = new ExtensionInMemoryRepository();
 
-    injectVisibilityByRoleGuardDeps({
+    injectRowAccessGuardDeps({
       fieldRepo: {} as any,
       tableRepo,
       rowRepo,
@@ -155,16 +155,16 @@ describe('Table Row Paginated Use Case — RowAccessGuard', () => {
     });
 
     RowAccessGuardService.register(
-      VisibilityByRoleGuard.pluginKey,
-      VisibilityByRoleGuard,
+      RowAccessControlGuard.pluginKey,
+      RowAccessControlGuard,
     );
 
     // Create extension record, enable it, and scope it to all tables
     const ext = await extensionRepo.upsert({
       pkg: 'core',
       type: E_EXTENSION_TYPE.PLUGIN,
-      extensionId: 'visibility-by-role',
-      name: 'Visibility by Role',
+      extensionId: 'row-access',
+      name: 'Controle de Acesso a Linhas',
       description: null,
       version: '1.0.0',
       author: null,

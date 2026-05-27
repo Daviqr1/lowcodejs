@@ -1,8 +1,8 @@
 # Bulk Trash Rows
 
 Envia multiplos registros para a lixeira em uma unica operacao, respeitando
-row-access guards ativos na tabela (`visibility-by-role`, `creator-bypass`,
-`date-window-guard` etc.).
+row-access guards ativos na tabela (`row-access` — consolida visibility,
+creator bypass e janela temporal num plugin único).
 
 ## Endpoint
 `PATCH /tables/:slug/rows/bulk-trash` | Auth: Sim | Permission: UPDATE_ROW
