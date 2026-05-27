@@ -171,7 +171,32 @@ export function RowAccessConfigSheet({
       open={open}
       onOpenChange={onOpenChange}
     >
-      <SheetContent className="sm:max-w-2xl overflow-y-auto">
+      <SheetContent
+        className="sm:max-w-2xl overflow-y-auto"
+        // Impede que o Sheet capture cliques destinados aos portals filhos
+        // (TableMultiSelect's Combobox, DropdownMenu, Select). Sem isso, o
+        // primeiro item do dropdown não consegue ser selecionado.
+        onPointerDownOutside={(e) => {
+          const target = e.target as HTMLElement | null;
+          if (
+            target?.closest?.(
+              '[data-slot="combobox-content"], [data-slot="combobox-positioner"], [role="listbox"], [role="menu"]',
+            )
+          ) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement | null;
+          if (
+            target?.closest?.(
+              '[data-slot="combobox-content"], [data-slot="combobox-positioner"], [role="listbox"], [role="menu"]',
+            )
+          ) {
+            e.preventDefault();
+          }
+        }}
+      >
         <SheetHeader>
           <SheetTitle>Configurar Controle de Acesso a Linhas</SheetTitle>
           <SheetDescription>
