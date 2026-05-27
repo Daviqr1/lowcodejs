@@ -11,8 +11,8 @@ import React from 'react';
 
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
-import { RowAccessConfigSheet } from '@/components/extensions/row-access/row-access-config-sheet';
 import { ConfiguredTablesList } from '@/components/extensions/row-access/configured-tables-list';
+import { RowAccessConfigSheet } from '@/components/extensions/row-access/row-access-config-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -194,11 +194,11 @@ function ExtensionCard({
         )}
 
         {isRowAccessPlugin(extension) &&
-          extension.tableSettings &&
-          Object.keys(extension.tableSettings).length > 0 && (
+          extension.tableScope.mode === 'specific' &&
+          extension.tableScope.tableIds.length > 0 && (
             <div className="pt-2 border-t">
               <ConfiguredTablesList
-                tableIds={Object.keys(extension.tableSettings)}
+                tableIds={extension.tableScope.tableIds}
                 onClick={(tableId) => onConfigureRowAccess(extension, tableId)}
               />
             </div>

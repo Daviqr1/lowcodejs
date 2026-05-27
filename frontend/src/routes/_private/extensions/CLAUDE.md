@@ -40,6 +40,6 @@ role MASTER.
 - A UI desabilita o radio "Todas as tabelas" quando o plugin declara
   `supportsScopeAll: false` (descoberto via `extension.supportsScopeAll` —
   serializado pelo backend a partir do guard registrado)
-- Settings por tabela usam **optimistic lock**: o PATCH envia `expectedUpdatedAt`;
-  o backend retorna **409** se outro usuário modificou o registro antes — a UI
-  mostra "Recarregue e tente novamente"
+- Settings por tabela usam **optimistic lock**: o PATCH envia
+  `expectedUpdatedAt`; o backend retorna **409** se outro usuário modificou o
+  registro antes — a UI mostra "Recarregue e tente novamente"

@@ -12,7 +12,7 @@ import {
 import { tableListOptions } from '@/hooks/tanstack-query/_query-options';
 
 interface Props {
-  tableIds: string[];
+  tableIds: Array<string>;
   onClick: (tableId: string) => void;
 }
 

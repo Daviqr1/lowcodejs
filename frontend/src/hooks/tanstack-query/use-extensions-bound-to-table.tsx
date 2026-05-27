@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { UseQueryOptions } from '@tanstack/react-query';
+import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 
 import { queryKeys } from './_query-keys';
@@ -13,7 +13,7 @@ export function useExtensionsBoundToTable(
     UseQueryOptions<Array<IExtension>, AxiosError | Error>,
     'queryKey' | 'queryFn' | 'enabled'
   > & { enabled?: boolean },
-) {
+): UseQueryResult<Array<IExtension>, AxiosError | Error> {
   return useQuery<Array<IExtension>, AxiosError | Error>({
     queryKey: queryKeys.extensions.boundTo(tableId ?? ''),
     queryFn: async () => {

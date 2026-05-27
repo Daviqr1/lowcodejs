@@ -71,7 +71,7 @@ export function TableMultiSelect({
   // (ghost selections — bindings antigos de tabelas em paginas posteriores
   // ou tabelas deletadas). Usa ref "frozen" pra evitar loop: a query e
   // disparada UMA vez com os IDs iniciais; resultados populam o cache.
-  const initialMissingRef = React.useRef<string[] | null>(null);
+  const initialMissingRef = React.useRef<Array<string> | null>(null);
   if (initialMissingRef.current === null && value.length > 0) {
     const known = new Set(pageTables.map((t) => t._id));
     const missing = value.filter((id) => !known.has(id));
@@ -113,24 +113,38 @@ export function TableMultiSelect({
   // Auto-purge IDs orfaos: quando a query _ids JA TERMINOU mas alguns IDs
   // ainda nao apareceram em nenhum lugar (tabelas deletadas), filtra value
   // emitindo onValueChange. Roda uma vez por sessao via ref de guarda.
+  // Nota: missingData entra nas deps para evitar race condition onde o efeito
+  // de cache (setSelectedCache) ainda nao tomou efeito quando a purge roda.
   const purgedRef = React.useRef(false);
   React.useEffect(() => {
     if (purgedRef.current) return;
-    // Aguarda query terminar (ou ser desnecessaria)
     const queryDone =
       (initialMissingRef.current?.length ?? 0) === 0 ||
       missingStatus === 'success' ||
       missingStatus === 'error';
     if (!queryDone) return;
     if (status === 'pending') return;
-    if (selectedTables.length === value.length) {
-      purgedRef.current = true; // nao tem nada pra purgar
+
+    const freshMap = new Map<string, ITable>();
+    for (const t of selectedTables) freshMap.set(t._id, t);
+    for (const t of missingData?.data ?? []) freshMap.set(t._id, t);
+
+    if (value.every((id) => freshMap.has(id))) {
+      purgedRef.current = true;
       return;
     }
     purgedRef.current = true;
-    const validIds = selectedTables.map((t) => t._id);
-    onValueChange?.(validIds, selectedTables);
-  }, [missingStatus, status, selectedTables, value, onValueChange]);
+    const validIds = value.filter((id) => freshMap.has(id));
+    const validTables = validIds.map((id) => freshMap.get(id)!);
+    onValueChange?.(validIds, validTables);
+  }, [
+    missingStatus,
+    status,
+    selectedTables,
+    value,
+    onValueChange,
+    missingData,
+  ]);
 
   const items = React.useMemo<Array<ITable>>(() => {
     const idsInList = new Set(pageTables.map((t) => t._id));
