@@ -33,7 +33,7 @@ export default class RowInMemoryRepository extends RowContractRepository {
 
   /**
    * Evaluates a MongoDB-style filter fragment against a row.
-   * Supports: $and, $or, and simple key-value equality.
+   * Supports: $and, $or, $in, and simple key-value equality.
    * For array fields: equality matches if the array contains the scalar value.
    */
   private matchesFilter(
@@ -53,6 +53,20 @@ export default class RowInMemoryRepository extends RowContractRepository {
         const any = clauses.some((clause) => this.matchesFilter(row, clause));
         if (!any) return false;
         continue;
+      }
+      // Operator object: { $in: [...] }
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        const op = value as Record<string, unknown>;
+        if ('$in' in op) {
+          const list = op['$in'] as unknown[];
+          const rowVal = row[key];
+          if (Array.isArray(rowVal)) {
+            if (!rowVal.some((v) => list.includes(v))) return false;
+          } else {
+            if (!list.includes(rowVal)) return false;
+          }
+          continue;
+        }
       }
       // Simple field equality — handle array fields (DROPDOWN stored as array)
       const rowVal = row[key];

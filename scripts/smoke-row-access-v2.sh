@@ -95,7 +95,7 @@ tables.forEach(t => {
 });
 db.tables.deleteMany({name:'$TABLE_NAME'});
 " > /dev/null
-body=$(printf '{"name":"%s","slug":"%s","style":"LIST","visibility":"RESTRICTED","collaboration":"OPEN"}' "$TABLE_NAME" "$TABLE_SLUG")
+body=$(printf '{"name":"%s","slug":"%s","style":"LIST","visibility":"OPEN","collaboration":"OPEN"}' "$TABLE_NAME" "$TABLE_SLUG")
 resp=$(api POST "/tables" "$cookies_master" "$body")
 table_id=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin).get('_id',''))" 2>/dev/null || echo "")
 TABLE_SLUG=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin).get('slug',''))" 2>/dev/null || echo "")

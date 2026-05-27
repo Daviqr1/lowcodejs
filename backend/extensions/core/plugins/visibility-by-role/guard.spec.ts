@@ -44,6 +44,28 @@ describe('VisibilityByRoleGuard.canRead', () => {
     ).toBe('abstain');
   });
 
+  it('row RESTRITO + MANAGER: abstain (MANAGER pode ver RESTRITO)', () => {
+    expect(
+      VisibilityByRoleGuard.canRead(
+        makeRow('RESTRITO'),
+        makeUser(E_ROLE.MANAGER),
+        TABLE,
+        SETTINGS,
+      ),
+    ).toBe('abstain');
+  });
+
+  it('row RESTRITO + REGISTERED: deny', () => {
+    expect(
+      VisibilityByRoleGuard.canRead(
+        makeRow('RESTRITO'),
+        makeUser(E_ROLE.REGISTERED),
+        TABLE,
+        SETTINGS,
+      ),
+    ).toBe('deny');
+  });
+
   it('row SIGILOSO + MANAGER: deny', () => {
     expect(
       VisibilityByRoleGuard.canRead(
@@ -126,8 +148,7 @@ describe('VisibilityByRoleGuard.canRead', () => {
 });
 
 describe('VisibilityByRoleGuard.adjustListQuery', () => {
-  it('sempre adiciona filtro visibility=PUBLIC (admin bypass no service, não aqui)', () => {
-    // Guard doesn't know about admin — service bypasses before calling adjustListQuery
+  it('MANAGER: inclui PUBLIC e RESTRITO (canRead espelha esta lógica)', () => {
     expect(
       VisibilityByRoleGuard.adjustListQuery(
         { foo: 1 },
@@ -135,8 +156,21 @@ describe('VisibilityByRoleGuard.adjustListQuery', () => {
         TABLE,
         SETTINGS,
       ),
-    ).toEqual({ foo: 1, visibility: E_VISIBILITY.PUBLIC });
+    ).toEqual({ foo: 1, visibility: { $in: [E_VISIBILITY.PUBLIC, 'RESTRITO'] } });
+  });
 
+  it('REGISTERED: apenas PUBLIC', () => {
+    expect(
+      VisibilityByRoleGuard.adjustListQuery(
+        { foo: 1 },
+        makeUser(E_ROLE.REGISTERED),
+        TABLE,
+        SETTINGS,
+      ),
+    ).toEqual({ foo: 1, visibility: E_VISIBILITY.PUBLIC });
+  });
+
+  it('MASTER (chegaria aqui via guard direto): apenas PUBLIC — service bypassa admin antes', () => {
     expect(
       VisibilityByRoleGuard.adjustListQuery(
         { foo: 1 },
@@ -147,7 +181,7 @@ describe('VisibilityByRoleGuard.adjustListQuery', () => {
     ).toEqual({ foo: 1, visibility: E_VISIBILITY.PUBLIC });
   });
 
-  it('user undefined: adiciona filtro', () => {
+  it('user undefined: apenas PUBLIC', () => {
     expect(
       VisibilityByRoleGuard.adjustListQuery({}, undefined, TABLE, SETTINGS),
     ).toEqual({ visibility: E_VISIBILITY.PUBLIC });

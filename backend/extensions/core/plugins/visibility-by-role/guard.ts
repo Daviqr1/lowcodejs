@@ -191,12 +191,18 @@ export const VisibilityByRoleGuard: RowAccessGuard = {
 
   adjustListQuery(
     query: Record<string, unknown>,
-    _user: IJWTPayload | undefined,
+    user: IJWTPayload | undefined,
     _table: ITable,
     _settings: Record<string, unknown>,
   ): Record<string, unknown> {
-    // Admin bypass is handled globally — here we always restrict to PUBLIC.
-    // Mongo: equality query on array field matches when array contains the value.
+    // Admin bypass is handled globally.
+    // MANAGER can see PUBLIC + RESTRITO rows (mirrors canRead logic).
+    if (user?.role === 'MANAGER') {
+      return {
+        ...query,
+        [FIELD_SLUG]: { $in: [E_VISIBILITY.PUBLIC, RESTRITO] },
+      };
+    }
     return { ...query, [FIELD_SLUG]: E_VISIBILITY.PUBLIC };
   },
 

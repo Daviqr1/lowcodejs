@@ -27,6 +27,7 @@ import {
 import { buildSchema } from '@application/core/util.core';
 import { Extension } from '@application/model/extension.model';
 import { Field } from '@application/model/field.model';
+import { Permission } from '@application/model/permission.model';
 import { Table } from '@application/model/table.model';
 import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
@@ -49,12 +50,15 @@ async function createUserWithRole(
   const password = 'test1234';
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // Reuse permissions created by createAuthenticatedUser (seeded in beforeEach)
+  const allPermissions = await Permission.find({});
+
   let group = await UserGroup.findOne({ slug: role });
   if (!group) {
     group = await UserGroup.create({
       name: role,
       slug: role,
-      permissions: [],
+      permissions: allPermissions.map((p) => p._id),
     });
   }
 
@@ -154,12 +158,19 @@ describe('E2E paginated rows — guard combinado: visibility-by-role + creator-b
       _id: visibilityField._id.toString(),
     };
 
+    // Native fields required by buildTable schema so creator/trashed are stored properly
+    const nativeFieldsForSchema = [
+      { slug: 'creator', type: E_FIELD_TYPE.CREATOR, required: false },
+      { slug: 'trashed', type: E_FIELD_TYPE.TRASHED, required: false },
+      { slug: 'trashedAt', type: E_FIELD_TYPE.TRASHED_AT, required: false },
+    ] as any[];
+
     await Table.create({
       name: 'Docs Guard E2E',
       slug: TABLE_SLUG,
       owner: masterUserId,
       fields: [visibilityField._id.toString()],
-      _schema: buildSchema([fieldForSchema]),
+      _schema: buildSchema([fieldForSchema, ...nativeFieldsForSchema]),
       administrators: [],
       style: E_TABLE_STYLE.LIST,
       visibility: E_TABLE_VISIBILITY.PUBLIC,
@@ -249,7 +260,7 @@ describe('E2E paginated rows — guard combinado: visibility-by-role + creator-b
 
     // ── Create rows via HTTP (so creator field is set properly) ───────────────
 
-    // MASTER creates: PUBLIC, RESTRITO, SIGILOSO
+    // MASTER creates: PUBLIC, RESTRITO, SIGILOSO (admin bypass — all allowed)
     await supertest(kernel.server)
       .post(`/tables/${TABLE_SLUG}/rows`)
       .set('Cookie', masterCookies)
@@ -265,16 +276,27 @@ describe('E2E paginated rows — guard combinado: visibility-by-role + creator-b
       .set('Cookie', masterCookies)
       .send({ visibility: [E_VISIBILITY.SIGILOSO] });
 
-    // MANAGER creates: PUBLIC, SIGILOSO
-    await supertest(kernel.server)
+    // MANAGER creates PUBLIC via HTTP (canWrite allows PUBLIC)
+    const managerPublicResp = await supertest(kernel.server)
       .post(`/tables/${TABLE_SLUG}/rows`)
       .set('Cookie', managerCookies)
       .send({ visibility: [E_VISIBILITY.PUBLIC] });
+    expect(managerPublicResp.statusCode).toBe(201);
 
-    await supertest(kernel.server)
-      .post(`/tables/${TABLE_SLUG}/rows`)
-      .set('Cookie', managerCookies)
-      .send({ visibility: [E_VISIBILITY.SIGILOSO] });
+    // MANAGER SIGILOSO row must be inserted directly — canWrite blocks SIGILOSO
+    // via HTTP for non-admins (correct behavior). Direct insertion tests creator-bypass.
+    const conn = getDataConnection();
+    const DynModel =
+      conn.models[TABLE_SLUG] ??
+      conn.model(TABLE_SLUG, new mongoose.Schema({}, { strict: false }), TABLE_SLUG);
+    await DynModel.create({
+      visibility: [E_VISIBILITY.SIGILOSO],
+      creator: new mongoose.Types.ObjectId(managerResult.userId),
+      trashed: false,
+      trashedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   });
 
   afterAll(async () => {
@@ -313,25 +335,23 @@ describe('E2E paginated rows — guard combinado: visibility-by-role + creator-b
 
   it('após mover createdAt do PUBLIC do master para 60 dias atrás → MANAGER passa a ver 3 rows', async () => {
     // First, find the master's PUBLIC row in the dynamic collection
-    await Table.findOne({ slug: TABLE_SLUG });
     const conn = getDataConnection();
-    const DynamicModel = conn.model(
-      TABLE_SLUG,
-      new mongoose.Schema({}, { strict: false }),
-      TABLE_SLUG,
-    );
+    const DynamicModel =
+      conn.models[TABLE_SLUG] ??
+      conn.model(TABLE_SLUG, new mongoose.Schema({}, { strict: false }), TABLE_SLUG);
 
-    // Find the PUBLIC row created by master
+    // Find the PUBLIC row created by master (creator stored as ObjectId, cast from request.user.sub)
     const masterPublicRow = await DynamicModel.findOne({
-      creator: masterUserId,
+      creator: new mongoose.Types.ObjectId(masterUserId),
       visibility: E_VISIBILITY.PUBLIC,
     });
 
     expect(masterPublicRow).toBeDefined();
 
-    // Set createdAt to 60 days ago (outside the 30-day window)
+    // Set createdAt to 60 days ago (outside the 30-day window).
+    // Use raw collection to bypass Mongoose timestamps immutability on createdAt.
     const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000);
-    await DynamicModel.updateOne(
+    await DynamicModel.collection.updateOne(
       { _id: masterPublicRow!._id },
       { $set: { createdAt: sixtyDaysAgo } },
     );
