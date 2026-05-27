@@ -25,7 +25,13 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
-    include: ['**/*.use-case.spec.ts', '**/*.service.spec.ts'],
+    include: [
+      '**/*.use-case.spec.ts',
+      '**/*.service.spec.ts',
+      '**/*.repository.spec.ts',
+      '**/*.guard.spec.ts',
+      '**/guard.spec.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

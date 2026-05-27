@@ -131,13 +131,19 @@ export default class RowMongooseRepository extends RowContractRepository {
     );
 
     const conn = getDataConnection();
-    const query = await buildQuery(
+    const builtQuery = await buildQuery(
       payload.rawFilters ?? {},
       payload.table.fields ?? [],
       payload.table.groups,
       payload.table.slug,
       conn,
     );
+
+    const extraFilters = payload.extraFilters ?? {};
+    const query =
+      Object.keys(extraFilters).length > 0
+        ? { $and: [builtQuery, extraFilters] }
+        : builtQuery;
 
     const sort = buildOrder(
       payload.rawFilters ?? {},
@@ -158,15 +164,21 @@ export default class RowMongooseRepository extends RowContractRepository {
   async count(
     table: RowTableContext,
     rawFilters?: Record<string, unknown>,
+    extraFilters?: Record<string, unknown>,
   ): Promise<number> {
     const model = await this.getModel(table);
-    const query = await buildQuery(
+    const builtQuery = await buildQuery(
       rawFilters ?? {},
       table.fields ?? [],
       table.groups,
       table.slug,
       getDataConnection(),
     );
+    const extras = extraFilters ?? {};
+    const query =
+      Object.keys(extras).length > 0
+        ? { $and: [builtQuery, extras] }
+        : builtQuery;
     return model.countDocuments(query);
   }
 
@@ -349,6 +361,22 @@ export default class RowMongooseRepository extends RowContractRepository {
     const model = await this.getModel(table);
     const docs = await model.find({ trashed: { $ne: true } }).lean();
     return docs.map((doc): Record<string, unknown> => ({ ...doc }));
+  }
+
+  async bulkSetMissingField(
+    table: RowTableContext,
+    fieldSlug: string,
+    defaultValue: unknown,
+  ): Promise<{ matched: number; modified: number }> {
+    const model = await this.getModel(table);
+    // Schema dinamico (buildTable) cria fields no top-level do documento mongo
+    // (model.create(payload.data) espalha direto). Por isso o path e {fieldSlug},
+    // nao data.{fieldSlug}.
+    const result = await model.updateMany(
+      { [fieldSlug]: { $exists: false } },
+      { $set: { [fieldSlug]: defaultValue } },
+    );
+    return { matched: result.matchedCount, modified: result.modifiedCount };
   }
 
   async insertRaw(

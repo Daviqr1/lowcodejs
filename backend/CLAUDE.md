@@ -66,6 +66,7 @@ backend/
 │   ├── seeders/                   # Permissions, user groups, settings (idempotente)
 │   └── migrations/                # Migracoes one-time (dual-connection)
 ├── docker-entrypoint.sh           # Roda migrations + seeders antes do server
+├── extensions/                    # Pacotes de extensões (plugins/modules/tools) — ver extensions/CLAUDE.md
 ├── templates/email/               # EJS templates (notification, sign-up)
 └── test/                          # Setup, helpers (auth)
 ```
@@ -494,6 +495,22 @@ Comando: `npm run seed`
 | 1720465893-settings.seed.ts | Setting singleton. Marca SETUP_COMPLETED=true se ja existe MASTER; caso contrario, `$setOnInsert: {}` |
 
 Usuario MASTER **nao** tem seed — e criado via Setup Wizard na UI na primeira execucao.
+
+## Extensões (Plugins / Módulos / Ferramentas)
+
+Mecanismo build-time + ativação runtime para estender a plataforma sem mexer
+no core. Documentação canônica em `backend/extensions/CLAUDE.md`.
+
+- **Diretório**: `backend/extensions/<pkg>/{plugins,modules,tools}/<id>/manifest.json`
+- **Loader**: `application/core/extensions/loader.ts` varre o FS no boot,
+  valida manifests via Zod e faz upsert na collection `extensions`
+- **Model + Repo**: `Extension` (system DB), com chave única `(pkg, type,
+  extensionId)` e flags `enabled` / `available`
+- **REST**: `/extensions` (list, toggle, configure-table-scope) — MASTER only
+- **Guarda runtime**: `ExtensionActiveMiddleware({ pkg, type, extensionId })`
+  retorna 404 quando a extensão está desativada/indisponível
+- **Sem sandbox**: extensões rodam com privilégios totais — desenvolvedores
+  internos assumem o risco
 
 ## Migrations
 

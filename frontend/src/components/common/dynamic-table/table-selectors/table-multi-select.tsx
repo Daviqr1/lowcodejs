@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
 import { ComboboxLoadMore } from '@/components/common/combobox-load-more';
@@ -14,6 +15,7 @@ import {
   useComboboxAnchor,
 } from '@/components/ui/combobox';
 import { Spinner } from '@/components/ui/spinner';
+import { tableListOptions } from '@/hooks/tanstack-query/_query-options';
 import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-tables-read-paginated-infinite';
 import type { ITable } from '@/lib/interfaces';
 
@@ -65,6 +67,35 @@ export function TableMultiSelect({
     });
   }, [pageTables]);
 
+  // Hidrata cache pra IDs em `value` que nao vieram na 1a pagina
+  // (ghost selections — bindings antigos de tabelas em paginas posteriores
+  // ou tabelas deletadas). Usa ref "frozen" pra evitar loop: a query e
+  // disparada UMA vez com os IDs iniciais; resultados populam o cache.
+  const initialMissingRef = React.useRef<Array<string> | null>(null);
+  if (initialMissingRef.current === null && value.length > 0) {
+    const known = new Set(pageTables.map((t) => t._id));
+    const missing = value.filter((id) => !known.has(id));
+    if (missing.length > 0) initialMissingRef.current = missing;
+  }
+
+  const { data: missingData, status: missingStatus } = useQuery({
+    ...tableListOptions({
+      _ids: initialMissingRef.current ?? [],
+      perPage: 100,
+    }),
+    enabled: (initialMissingRef.current?.length ?? 0) > 0,
+  });
+
+  React.useEffect(() => {
+    const tables = missingData?.data;
+    if (!tables?.length) return;
+    setSelectedCache((prev) => {
+      const next = new Map(prev);
+      for (const table of tables) next.set(table._id, table);
+      return next;
+    });
+  }, [missingData]);
+
   const selectedTables = React.useMemo<Array<ITable>>(() => {
     const result: Array<ITable> = [];
     for (const id of value) {
@@ -78,6 +109,42 @@ export function TableMultiSelect({
     }
     return result;
   }, [pageTables, selectedCache, value]);
+
+  // Auto-purge IDs orfaos: quando a query _ids JA TERMINOU mas alguns IDs
+  // ainda nao apareceram em nenhum lugar (tabelas deletadas), filtra value
+  // emitindo onValueChange. Roda uma vez por sessao via ref de guarda.
+  // Nota: missingData entra nas deps para evitar race condition onde o efeito
+  // de cache (setSelectedCache) ainda nao tomou efeito quando a purge roda.
+  const purgedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (purgedRef.current) return;
+    const queryDone =
+      (initialMissingRef.current?.length ?? 0) === 0 ||
+      missingStatus === 'success' ||
+      missingStatus === 'error';
+    if (!queryDone) return;
+    if (status === 'pending') return;
+
+    const freshMap = new Map<string, ITable>();
+    for (const t of selectedTables) freshMap.set(t._id, t);
+    for (const t of missingData?.data ?? []) freshMap.set(t._id, t);
+
+    if (value.every((id) => freshMap.has(id))) {
+      purgedRef.current = true;
+      return;
+    }
+    purgedRef.current = true;
+    const validIds = value.filter((id) => freshMap.has(id));
+    const validTables = validIds.map((id) => freshMap.get(id)!);
+    onValueChange?.(validIds, validTables);
+  }, [
+    missingStatus,
+    status,
+    selectedTables,
+    value,
+    onValueChange,
+    missingData,
+  ]);
 
   const items = React.useMemo<Array<ITable>>(() => {
     const idsInList = new Set(pageTables.map((t) => t._id));

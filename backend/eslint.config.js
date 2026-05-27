@@ -47,6 +47,9 @@ export default [
       '@typescript-eslint/consistent-type-imports': 'off',
       // Permite uso de ?. e ?? mesmo quando TypeScript acha desnecessário
       '@typescript-eslint/no-unnecessary-condition': 'off',
+      // Honra a convenção `_arg` para parâmetros intencionalmente não usados
+      // (ex.: middleware Fastify recebe `request` mas não consulta)
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
     settings: {
       'import/resolver': {

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { RootFilterQuery, SortOrder } from 'mongoose';
 import mongoose from 'mongoose';
 

@@ -263,7 +263,6 @@ export default class TableInMemoryRepository implements TableContractRepository 
     return filtered.length;
   }
 
-  // eslint-disable-next-line no-unused-vars
   async dropCollection(_slug: string): Promise<void> {
     // No-op em memória — os registros não existem separadamente
   }

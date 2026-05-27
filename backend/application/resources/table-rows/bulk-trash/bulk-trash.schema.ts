@@ -37,11 +37,25 @@ export const BulkTrashSchema: FastifySchema = {
       description: 'Rows moved to trash successfully',
       type: 'object',
       properties: {
-        modified: {
+        deleted: {
           type: 'number',
-          description: 'Number of rows moved to trash',
+          description: 'Number of rows successfully moved to trash',
+        },
+        skipped: {
+          type: 'array',
+          description:
+            'Rows that were not moved to trash (not found or blocked by row-access guards). Each entry includes the rowId and reason (NOT_FOUND, ROW_ACCESS_DENIED, or guard-specific cause).',
+          items: {
+            type: 'object',
+            properties: {
+              rowId: { type: 'string' },
+              reason: { type: 'string' },
+            },
+            required: ['rowId', 'reason'],
+          },
         },
       },
+      required: ['deleted', 'skipped'],
     },
     400: {
       description: 'Bad request - Invalid parameters',

@@ -3,8 +3,9 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow } from '@application/core/entity.core';
+import type { IJWTPayload, IRow } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
 import { validateRowPayload } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -17,6 +18,7 @@ type Response = Either<HTTPException, IRow>;
 type Payload = Record<string, unknown> & {
   slug: string;
   creator?: string | null;
+  __actorUserJwt?: IJWTPayload;
 };
 
 @Service()
@@ -27,10 +29,18 @@ export default class TableRowCreateUseCase {
     private readonly userRepository: UserContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly scriptExecutionService: ScriptExecutionContractService,
+    private readonly guardService: RowAccessGuardService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
+      // Extract __actorUserJwt early so it doesn't pollute validateRowPayload or DB writes
+      const actorUserJwt =
+        payload.__actorUserJwt && typeof payload.__actorUserJwt === 'object'
+          ? (payload.__actorUserJwt as IJWTPayload)
+          : undefined;
+      delete payload.__actorUserJwt;
+
       const table = await this.tableRepository.findBySlug(payload.slug);
 
       if (!table) {
@@ -143,6 +153,32 @@ export default class TableRowCreateUseCase {
             createData[key] = scriptDoc[key];
           }
         }
+      }
+
+      // Guard checks: canWrite -> sanitize (no canRead on create — no existing row)
+      const writeDecision = await this.guardService.composeWriteDecision(
+        table._id,
+        null,
+        actorUserJwt,
+        table,
+        createData,
+        'create',
+      );
+      if (writeDecision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(writeDecision.reason, 'ROW_WRITE_RESTRICTED'),
+        );
+      }
+      const sanitized = await this.guardService.composeSanitize(
+        table._id,
+        createData,
+        actorUserJwt,
+        table,
+        'create',
+        null,
+      );
+      for (const key of Object.keys(sanitized)) {
+        createData[key] = sanitized[key];
       }
 
       const row = await this.rowRepository.create({

@@ -85,6 +85,7 @@ function PrivateLayout(): React.JSX.Element {
     '/users/create',
     '/tables/new',
     '/tools',
+    '/extensions',
   ];
 
   if (!isAuthenticated) {

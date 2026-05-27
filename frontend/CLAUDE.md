@@ -89,7 +89,8 @@ frontend/
 │   │       ├── pages/              # Paginas customizadas (menu type=PAGE)
 │   │       ├── profile/            # Perfil do usuario
 │   │       ├── settings/           # Configuracoes do sistema
-│   │       └── tools/              # Clone, import, export de tabelas
+│   │       ├── tools/              # Clone, import, export de tabelas
+│   │       └── extensions/         # Workshop de extensoes (MASTER)
 │   │
 │   ├── components/
 │   │   ├── ui/                     # Design system (34 componentes shadcn/Radix)
@@ -138,6 +139,7 @@ frontend/
 │       ├── tanstack-query/         # QueryClientProvider + devtools
 │       └── tanstack-form/          # createFormHook + 40 field components
 │
+├── extensions/                     # Codigo UI das extensoes — ver extensions/CLAUDE.md
 ├── vite.config.ts                  # Vite + Nitro + TanStack Start + Tailwind
 ├── tsconfig.json                   # ES2024, strict, @/* path alias
 ├── eslint.config.js                # TanStack ESLint + Prettier
@@ -342,6 +344,20 @@ Cada subdiretorio tem seu proprio CLAUDE.md com documentacao detalhada.
 - `lib/seo.ts`: createRouteHead() gera meta tags
 - `__root.tsx`: meta tags OG, Twitter, JSON-LD structured data
 - Settings do sistema (nome, descricao) carregados via server function
+
+## Extensoes
+
+Espelho frontend de `backend/extensions/` para o codigo de UI. Ver
+`frontend/extensions/CLAUDE.md` para o contrato. Workshop de gestao em
+`/extensions` (rota MASTER):
+
+- Lista as extensoes registradas no DB (descobertas pelo loader do backend)
+- Toggle de ativacao via `useExtensionToggle`
+- Configuracao de escopo por tabela para plugins via
+  `useExtensionConfigureTableScope`
+
+Tipos em `IExtension` (lib/interfaces.ts), enum `E_EXTENSION_TYPE`
+(lib/constant.ts), payloads em lib/payloads.ts.
 
 ## Convencoes de Nomenclatura
 

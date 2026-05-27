@@ -20,6 +20,7 @@ export const ROLE_ROUTES: Record<string, Array<LinkProps['to']>> = {
   MANAGER: ['/tables', '/tables/$slug', '/pages/$slug'],
   REGISTERED: ['/tables', '/tables/$slug', '/pages/$slug'],
   MASTER: [
+    '/extensions',
     '/groups',
     '/groups/create',
     '/groups/$groupId',

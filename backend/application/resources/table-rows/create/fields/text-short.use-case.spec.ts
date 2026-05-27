@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { E_FIELD_FORMAT } from '@application/core/entity.core';
+import { RowAccessGuardService } from '@application/core/extensions/row-access-guard.service';
+import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -37,6 +39,7 @@ describe('Table Row Create - TEXT_SHORT', () => {
       userRepository,
       rowPasswordService,
       scriptExecutionService,
+      new RowAccessGuardService(new ExtensionInMemoryRepository()),
     );
   });
 

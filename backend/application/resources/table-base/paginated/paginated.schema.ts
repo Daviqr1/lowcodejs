@@ -31,6 +31,12 @@ export const TablePaginatedSchema: FastifySchema = {
           'Search term for filtering Tables by name or slug (optional)',
         examples: ['user', 'product', 'blog'],
       },
+      _ids: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Filter by specific table IDs. Used by TableMultiSelect to hydrate selected tables not on the first page.',
+      },
       'order-name': {
         type: 'string',
         enum: ['asc', 'desc'],

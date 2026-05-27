@@ -10,7 +10,7 @@ export const serverSignIn = createServerFn({ method: 'POST' })
   .inputValidator(signInSchema)
   .handler(async ({ data }) => {
     const { Env } = await import('@/env');
-    const baseUrl = Env.VITE_API_BASE_URL;
+    const baseUrl = process.env['INTERNAL_API_URL'] || Env.VITE_API_BASE_URL;
     const res = await fetch(`${baseUrl}/authentication/sign-in`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,7 +34,7 @@ export const serverSignIn = createServerFn({ method: 'POST' })
 export const serverSignOut = createServerFn({ method: 'POST' }).handler(
   async () => {
     const { Env } = await import('@/env');
-    const baseUrl = Env.VITE_API_BASE_URL;
+    const baseUrl = process.env['INTERNAL_API_URL'] || Env.VITE_API_BASE_URL;
     const { getRequestHeader } = await import('@tanstack/react-start/server');
     const cookies = getRequestHeader('Cookie') ?? '';
     await fetch(`${baseUrl}/authentication/sign-out`, {

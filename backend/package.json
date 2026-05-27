@@ -22,7 +22,11 @@
     "migrate:group-native-fields": "node --import @swc-node/register/esm-register database/migrations/migrate-group-native-fields.ts",
     "migrate:group-native-fields:prod": "node database/migrations/migrate-group-native-fields.js",
     "migrate:backfill-storage-location": "node --import @swc-node/register/esm-register database/migrations/migrate-backfill-storage-location.ts",
-    "migrate:backfill-storage-location:prod": "node database/migrations/migrate-backfill-storage-location.js"
+    "migrate:backfill-storage-location:prod": "node database/migrations/migrate-backfill-storage-location.js",
+    "migrate:visibility-index": "node --import @swc-node/register/esm-register database/migrations/migrate-add-visibility-index.ts",
+    "migrate:visibility-index:prod": "node database/migrations/migrate-add-visibility-index.js",
+    "migrate:consolidate-row-access": "node --import @swc-node/register/esm-register database/migrations/migrate-consolidate-row-access.ts",
+    "migrate:consolidate-row-access:prod": "node database/migrations/migrate-consolidate-row-access.js"
   },
   "keywords": [],
   "author": "",

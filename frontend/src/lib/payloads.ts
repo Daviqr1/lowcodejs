@@ -465,3 +465,35 @@ export type RowEvaluationPayload = Merge<
     value: number;
   }
 >;
+
+// ============== EXTENSIONS ==============
+export type ExtensionTogglePayload = {
+  _id: string;
+  enabled: boolean;
+};
+
+export type ExtensionConfigureTableScopePayload = {
+  _id: string;
+  mode: 'all' | 'specific';
+  tableIds: Array<string>;
+};
+
+export type ExtensionConfigureTableSettingsPayload = {
+  extensionId: string;
+  tableId: string;
+  settings: Record<string, unknown>;
+  expectedUpdatedAt: string;
+};
+
+export type ExtensionBulkConfigureTableSettingsPayload = {
+  extensionId: string;
+  tableIds: Array<string>;
+  settings: Record<string, unknown>;
+  expectedUpdatedAt: string;
+};
+
+export type ExtensionBulkConfigureTableSettingsResponse = {
+  extension: unknown; // IExtension (sem importar pra evitar ciclo)
+  success: Array<string>;
+  failed: Array<{ tableId: string; reason: string; message: string }>;
+};

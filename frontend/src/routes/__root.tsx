@@ -20,7 +20,10 @@ const getSystemSettings = createServerFn({ method: 'GET' }).handler(
   async () => {
     try {
       const { Env } = await import('@/env');
-      const baseUrl = Env.VITE_API_BASE_URL;
+      // SSR usa INTERNAL_API_URL (hostname interno do compose) quando definido;
+      // fallback pra VITE_API_BASE_URL (que vale tanto pro client quanto pra
+      // SSR fora de Docker).
+      const baseUrl = process.env['INTERNAL_API_URL'] || Env.VITE_API_BASE_URL;
       const response = await fetch(`${baseUrl}/setting/public`);
       if (response.ok) {
         const data = await response.json();

@@ -6,6 +6,23 @@ export const TablePaginatedQueryValidator = z.object({
   page: z.coerce.number().default(1),
   perPage: z.coerce.number().default(50),
   search: z.string().trim().optional(),
+  /**
+   * Filtro por IDs especificos (CSV "a,b,c" ou array repetido).
+   * Usado por TableMultiSelect pra hidratar tabelas ja selecionadas
+   * que nao vieram na primeira pagina.
+   */
+  _ids: z
+    .preprocess(
+      (value) => {
+        if (value === undefined || value === null || value === '')
+          return undefined;
+        const arr = Array.isArray(value) ? value : String(value).split(',');
+        const cleaned = arr.map((s) => String(s).trim()).filter(Boolean);
+        return cleaned.length > 0 ? cleaned : undefined;
+      },
+      z.array(z.string()).optional(),
+    )
+    .optional(),
   //
   name: z.string().trim().optional(),
   trashed: z.string().trim().optional(),

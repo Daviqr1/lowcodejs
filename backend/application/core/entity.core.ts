@@ -124,6 +124,11 @@ export const E_TABLE_COLLABORATION = {
   RESTRICTED: 'RESTRICTED',
 } as const;
 
+export const E_VISIBILITY = {
+  PUBLIC: 'PUBLIC',
+  SIGILOSO: 'SIGILOSO',
+} as const;
+
 export const E_JWT_TYPE = {
   ACCESS: 'ACCESS',
   REFRESH: 'REFRESH',
@@ -507,6 +512,55 @@ export type ISetting = {
   MIGRATION_STORAGE_LOCATION_AT: Date | null;
   STORAGE_MIGRATION_LAST_RUN_AT: Date | null;
 };
+
+export const E_EXTENSION_TYPE = {
+  PLUGIN: 'PLUGIN',
+  MODULE: 'MODULE',
+  TOOL: 'TOOL',
+} as const;
+
+export type IExtensionTableScope = {
+  mode: 'all' | 'specific';
+  tableIds: string[];
+};
+
+export type IExtensionRequires = {
+  lowcodejs?: string;
+  extensions?: string[];
+};
+
+export type IExtension = Merge<
+  Base,
+  {
+    /** Pacote ao qual a extensão pertence (ex: "core", "marcos-pdf-tools"). */
+    pkg: string;
+    type: ValueOf<typeof E_EXTENSION_TYPE>;
+    /** Identificador único dentro de (pkg, type). */
+    extensionId: string;
+    name: string;
+    description: string | null;
+    version: string;
+    author: string | null;
+    icon: string | null;
+    image: string | null;
+    /** Slot do placement. Apenas para PLUGIN. */
+    slot: string | null;
+    /** URL default do módulo. Apenas para MODULE. */
+    route: string | null;
+    /** Sub-grupo no menu Ferramentas. Apenas para TOOL. */
+    submenu: string | null;
+    enabled: boolean;
+    /** False se o manifesto não existe mais no disco no boot atual. */
+    available: boolean;
+    /** Configuração de escopo por tabela (relevante para PLUGIN). */
+    tableScope: IExtensionTableScope;
+    /** Manifesto completo, para auditoria/diagnóstico. */
+    manifestSnapshot: Record<string, unknown>;
+    requires: IExtensionRequires;
+    /** Settings por tabela: chave = tableId, valor = Record settings do guard. */
+    tableSettings: Record<string, Record<string, unknown>>;
+  }
+>;
 
 export const E_TABLE_PERMISSION = {
   // TABLE

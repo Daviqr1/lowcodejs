@@ -15,6 +15,7 @@
  */
 
 import type {
+  E_EXTENSION_TYPE,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_JWT_TYPE,
@@ -387,6 +388,43 @@ export type IHTTPException = {
 };
 
 export type IHTTPExeptionError<T> = Merge<IHTTPException, { errors: T }>;
+
+export type IExtensionTableScope = {
+  mode: 'all' | 'specific';
+  tableIds: Array<string>;
+};
+
+export type IExtensionRequires = {
+  lowcodejs?: string;
+  extensions?: Array<string>;
+};
+
+export type IExtension = Merge<
+  Base,
+  {
+    pkg: string;
+    type: ValueOf<typeof E_EXTENSION_TYPE>;
+    extensionId: string;
+    name: string;
+    description: string | null;
+    version: string;
+    author: string | null;
+    icon: string | null;
+    image: string | null;
+    slot: string | null;
+    route: string | null;
+    submenu: string | null;
+    enabled: boolean;
+    available: boolean;
+    tableScope: IExtensionTableScope;
+    manifestSnapshot: Record<string, unknown>;
+    requires: IExtensionRequires;
+    supportsScopeAll: boolean;
+    category: 'restrictive' | 'permissive' | null;
+    hasSettingsSchema: boolean;
+    tableSettings?: Record<string, Record<string, unknown>>;
+  }
+>;
 
 export interface ICloneTableResponse {
   tableId: string;

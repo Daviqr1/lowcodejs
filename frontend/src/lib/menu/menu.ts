@@ -1,6 +1,7 @@
 import {
   GroupIcon,
   MenuIcon,
+  PuzzleIcon,
   SettingsIcon,
   TableIcon,
   UserIcon,
@@ -33,6 +34,11 @@ export const getStaticMenusByRole = (
               { title: 'Grupos', url: '/groups', icon: GroupIcon },
               { title: 'Usuários', url: '/users', icon: UsersIcon },
               { title: 'Ferramentas', url: '/tools', icon: WrenchIcon },
+              {
+                title: 'Extensões',
+                url: '/extensions',
+                icon: PuzzleIcon,
+              },
             ],
           },
           {

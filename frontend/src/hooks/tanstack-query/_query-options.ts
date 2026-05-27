@@ -5,6 +5,7 @@ import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
 import type {
+  IExtension,
   IField,
   IGroup,
   IMenu,
@@ -378,4 +379,16 @@ export const setupStatusOptions = () =>
       return data;
     },
     staleTime: 0,
+  });
+
+// ============== EXTENSIONS ==============
+
+export const extensionListOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.extensions.list(),
+    queryFn: async () => {
+      const response = await API.get<Array<IExtension>>('/extensions');
+      return response.data;
+    },
+    staleTime: 30 * 1000,
   });

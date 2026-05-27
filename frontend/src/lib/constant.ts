@@ -19,6 +19,11 @@ export const E_MENU_ITEM_TYPE = {
   SEPARATOR: 'SEPARATOR',
 } as const;
 
+export const E_VISIBILITY = {
+  PUBLIC: 'PUBLIC',
+  SIGILOSO: 'SIGILOSO',
+} as const;
+
 export const E_FIELD_TYPE = {
   TEXT_SHORT: 'TEXT_SHORT',
   TEXT_LONG: 'TEXT_LONG',
@@ -105,6 +110,21 @@ export const E_TABLE_COLLABORATION = {
   OPEN: 'OPEN',
   RESTRICTED: 'RESTRICTED',
 } as const;
+
+export const E_EXTENSION_TYPE = {
+  PLUGIN: 'PLUGIN',
+  MODULE: 'MODULE',
+  TOOL: 'TOOL',
+} as const;
+
+export const EXTENSION_TYPE_LABEL: Record<
+  (typeof E_EXTENSION_TYPE)[keyof typeof E_EXTENSION_TYPE],
+  string
+> = {
+  PLUGIN: 'Plugin',
+  MODULE: 'Módulo',
+  TOOL: 'Ferramenta',
+};
 
 export const E_TOKEN_STATUS = {
   REQUESTED: 'REQUESTED',

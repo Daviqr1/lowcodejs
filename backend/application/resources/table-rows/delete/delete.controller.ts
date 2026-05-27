@@ -35,7 +35,10 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const params = TableRowDeleteParamsValidator.parse(request.params);
-    const result = await this.useCase.execute(params);
+    const result = await this.useCase.execute({
+      ...params,
+      userJwt: request.user,
+    });
 
     if (result.isLeft()) {
       const error = result.value;

@@ -2,17 +2,30 @@ import { getInstanceByToken } from 'fastify-decorators';
 import type { Server as HttpServer } from 'node:http';
 
 import type { IJWTPayload } from '@application/core/entity.core';
+import { loadExtensions } from '@application/core/extensions/loader';
 import { Setting } from '@application/model/setting.model';
+import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
+import ExtensionMongooseRepository from '@application/repositories/extension/extension-mongoose.repository';
+import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
+import FieldMongooseRepository from '@application/repositories/field/field-mongoose.repository';
+import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
+import RowMongooseRepository from '@application/repositories/row/row-mongoose.repository';
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
+import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import StorageService from '@application/services/storage/storage.service';
 import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
+import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import TableSchemaMongooseService from '@application/services/table-schema/table-schema-mongoose.service';
 import { MongooseConnect } from '@config/database.config';
 import { syncStorageEnv } from '@config/setting-env-sync';
 import { Env } from '@start/env';
 import { kernel } from '@start/kernel';
+
+import { injectRowAccessGuardDeps } from '../extensions/core/plugins/row-access/guard';
 
 const SETTING_SYNC_KEYS = [
   'SYSTEM_NAME',
@@ -67,6 +80,39 @@ async function sweepStaleMigrations(): Promise<void> {
   }
 }
 
+async function loadExtensionsRegistry(): Promise<void> {
+  try {
+    const repo = getInstanceByToken<ExtensionContractRepository>(
+      ExtensionMongooseRepository,
+    );
+    await loadExtensions(repo);
+  } catch (error) {
+    console.error('[Extensions] Falha ao carregar registry:', error);
+  }
+}
+
+function injectExtensionGuardsDeps(): void {
+  const fieldRepo = getInstanceByToken<FieldContractRepository>(
+    FieldMongooseRepository,
+  );
+  const tableRepo = getInstanceByToken<TableContractRepository>(
+    TableMongooseRepository,
+  );
+  const rowRepo = getInstanceByToken<RowContractRepository>(
+    RowMongooseRepository,
+  );
+  const tableSchemaService = getInstanceByToken<TableSchemaContractService>(
+    TableSchemaMongooseService,
+  );
+
+  injectRowAccessGuardDeps({
+    fieldRepo,
+    tableRepo,
+    rowRepo,
+    tableSchemaService,
+  });
+}
+
 async function start(): Promise<void> {
   try {
     await loadStorageConfig();
@@ -86,6 +132,8 @@ async function start(): Promise<void> {
     console.info('Socket.IO storage-migration namespace initialized');
 
     await sweepStaleMigrations();
+    await loadExtensionsRegistry();
+    injectExtensionGuardsDeps();
 
     const storageRepository = getInstanceByToken<StorageContractRepository>(
       StorageMongooseRepository,
