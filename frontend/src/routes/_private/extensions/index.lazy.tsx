@@ -12,6 +12,7 @@ import React from 'react';
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
 import { RowAccessConfigSheet } from '@/components/extensions/row-access/row-access-config-sheet';
+import { ConfiguredTablesList } from '@/components/extensions/row-access/configured-tables-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -196,22 +197,10 @@ function ExtensionCard({
           extension.tableSettings &&
           Object.keys(extension.tableSettings).length > 0 && (
             <div className="pt-2 border-t">
-              <p className="text-xs uppercase tracking-wide mb-1">
-                Tabelas configuradas
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {Object.keys(extension.tableSettings).map((tableId) => (
-                  <button
-                    key={tableId}
-                    type="button"
-                    onClick={() => onConfigureRowAccess(extension, tableId)}
-                    className="rounded-md border bg-muted/30 px-2 py-1 font-mono text-[10px] text-foreground hover:bg-muted transition-colors"
-                    title={`Editar config dessa tabela individualmente`}
-                  >
-                    {tableId.slice(-8)}
-                  </button>
-                ))}
-              </div>
+              <ConfiguredTablesList
+                tableIds={Object.keys(extension.tableSettings)}
+                onClick={(tableId) => onConfigureRowAccess(extension, tableId)}
+              />
             </div>
           )}
       </CardContent>
