@@ -131,7 +131,16 @@ export default class ExtensionConfigureTableScopeUseCase {
           // Populate fields so the guard can inspect existing field objects
           const populatedTable = await this.populateFields(table);
 
-          const result = await guard.onTableBound(populatedTable, {});
+          // Prefer tableSettings if already configured for this table; senão
+          // usa defaultSettings do guard (evita Zod error quando guard exige
+          // settings nao-vazios).
+          const existingSettings = existing.tableSettings?.[tableId];
+          const bindSettings =
+            existingSettings && Object.keys(existingSettings).length > 0
+              ? existingSettings
+              : (guard.defaultSettings ?? {});
+
+          const result = await guard.onTableBound(populatedTable, bindSettings);
 
           if (result.isLeft()) {
             await runCompensations(compensations);

@@ -45,7 +45,7 @@ export type GuardWriteCheck =
   | { allowed: false; reason: string };
 
 export interface RowAccessGuard {
-  /** ex: "core:visibility-by-role" */
+  /** ex: "core:row-access" */
   pluginKey: string;
 
   /** Defines composition semantics: restrictive = AND/deny, permissive = OR/allow */
@@ -56,6 +56,13 @@ export interface RowAccessGuard {
 
   /** Zod schema opcional. Service rejeita bind se settings inválidos. */
   settingsSchema?: z.ZodTypeAny;
+
+  /**
+   * Default settings opcional. Quando presente, `configure-table-scope`
+   * passa esses defaults para `onTableBound` ao invés de `{}` —
+   * evita Zod errors em guards que exigem settings.
+   */
+  defaultSettings?: Record<string, unknown>;
 
   /** Roda quando o plugin é vinculado a uma tabela. Pode falhar (Either.left). */
   onTableBound(

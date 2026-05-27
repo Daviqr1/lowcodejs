@@ -25,8 +25,7 @@ import { syncStorageEnv } from '@config/setting-env-sync';
 import { Env } from '@start/env';
 import { kernel } from '@start/kernel';
 
-import { injectDateWindowGuardDeps } from '../extensions/core/plugins/date-window-guard/guard';
-import { injectVisibilityByRoleGuardDeps } from '../extensions/core/plugins/visibility-by-role/guard';
+import { injectRowAccessGuardDeps } from '../extensions/core/plugins/row-access/guard';
 
 const SETTING_SYNC_KEYS = [
   'SYSTEM_NAME',
@@ -106,13 +105,12 @@ function injectExtensionGuardsDeps(): void {
     TableSchemaMongooseService,
   );
 
-  injectVisibilityByRoleGuardDeps({
+  injectRowAccessGuardDeps({
     fieldRepo,
     tableRepo,
     rowRepo,
     tableSchemaService,
   });
-  injectDateWindowGuardDeps({ fieldRepo, tableRepo, tableSchemaService });
 }
 
 async function start(): Promise<void> {
