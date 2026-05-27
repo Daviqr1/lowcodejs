@@ -15,6 +15,8 @@ rotas dinâmicas).
 | list | GET | `/extensions` | MASTER |
 | toggle | PATCH | `/extensions/:_id/toggle` | MASTER |
 | configure-table-scope | PATCH | `/extensions/:_id/table-scope` | MASTER |
+| configure-table-settings | PATCH | `/extensions/:_id/table-settings/:tableId` | MASTER |
+| bulk-configure-table-settings | PATCH | `/extensions/:_id/bulk-table-settings` | MASTER |
 
 ## Middlewares
 
@@ -33,7 +35,16 @@ rotas dinâmicas).
   sumiu do disco) com `EXTENSION_UNAVAILABLE`
 - **configure-table-scope** só aceita extensões do tipo `PLUGIN` —
   `TABLE_SCOPE_NOT_APPLICABLE` em outros tipos. Quando `mode=specific`, exige
-  ao menos um tableId
+  ao menos um tableId. Em novos bindings, chama `guard.onTableBound(table, guard.defaultSettings ?? {})` —
+  para guards com `settingsSchema` exigente (`row-access`), os defaults vêm do plugin.
+- **configure-table-settings** persiste settings para UMA tabela com
+  optimistic lock via `expectedUpdatedAt`. Re-valida via `onTableBound`. Retorna
+  409 em conflito.
+- **bulk-configure-table-settings** aplica a MESMA settings em **N tabelas**
+  (até 50). Para cada tabela: chama `onTableBound`; sucessos viram entries
+  `tableSettings[tableId]`, falhas viram `failed[]`. Une `tableIds` ao
+  `tableScope`. Optimistic lock GLOBAL na extension. Resposta:
+  `{ extension, success: [], failed: [] }`. Usado pelo `<RowAccessConfigSheet>` no frontend.
 
 ## Observações
 

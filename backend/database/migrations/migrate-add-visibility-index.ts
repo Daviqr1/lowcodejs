@@ -1,6 +1,7 @@
 /**
  * Migration: cria index `{ visibility: 1 }` em todas as tabelas no scope do
- * plugin core:visibility-by-role. Speeds up list queries de não-admins.
+ * plugin core:row-access (consolidação dos antigos). Speeds up list queries
+ * de não-admins.
  *
  * Idempotente via marker MIGRATION_VISIBILITY_INDEX_AT no Setting singleton.
  * Roda em todo boot do container; segunda execução é no-op se marker set.
@@ -27,7 +28,7 @@ const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
 const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE || 'lowcodejs_data';
 const FORCE = process.argv.includes('--force');
 const PLUGIN_PKG = 'core';
-const PLUGIN_ID = 'visibility-by-role';
+const PLUGIN_ID = 'row-access';
 const MARKER = 'MIGRATION_VISIBILITY_INDEX_AT';
 
 type SettingMarkerDoc = {

@@ -30,7 +30,7 @@ describe('ExtensionInMemoryRepository.findActiveForTable', () => {
   });
 
   it('retorna PLUGIN enabled+available cujo tableScope.specific inclui o tableId', async () => {
-    await repo.upsert(baseUpsert('visibility-by-role'));
+    await repo.upsert(baseUpsert('row-access'));
     const [ext] = await repo.findMany();
     await repo.toggleEnabled({ _id: ext._id, enabled: true });
     await repo.updateTableScope({
@@ -40,11 +40,11 @@ describe('ExtensionInMemoryRepository.findActiveForTable', () => {
 
     const result = await repo.findActiveForTable('T1');
     expect(result).toHaveLength(1);
-    expect(result[0].extensionId).toBe('visibility-by-role');
+    expect(result[0].extensionId).toBe('row-access');
   });
 
   it('retorna vazio quando o plugin esta disabled', async () => {
-    await repo.upsert(baseUpsert('visibility-by-role'));
+    await repo.upsert(baseUpsert('row-access'));
     const [ext] = await repo.findMany();
     // not calling toggleEnabled, so enabled remains false (default)
     await repo.updateTableScope({
@@ -56,7 +56,7 @@ describe('ExtensionInMemoryRepository.findActiveForTable', () => {
   });
 
   it('retorna a extensao quando mode="all" (cobre todas as tabelas)', async () => {
-    await repo.upsert(baseUpsert('visibility-by-role'));
+    await repo.upsert(baseUpsert('row-access'));
     const [ext] = await repo.findMany();
     await repo.toggleEnabled({ _id: ext._id, enabled: true });
     await repo.updateTableScope({

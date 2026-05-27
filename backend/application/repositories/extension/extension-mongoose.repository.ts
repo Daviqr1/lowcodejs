@@ -6,6 +6,7 @@ import { Extension as Model } from '@application/model/extension.model';
 
 import type {
   ExtensionAvailabilityKey,
+  ExtensionBulkUpdateTableSettingsPayload,
   ExtensionContractRepository,
   ExtensionQueryPayload,
   ExtensionToggleEnabledPayload,
@@ -122,6 +123,19 @@ export default class ExtensionMongooseRepository implements ExtensionContractRep
     return Model.findOneAndUpdate(
       { _id, updatedAt: expectedUpdatedAt },
       { $set: { [`tableSettings.${tableId}`]: settings } },
+      { new: true },
+    ).lean<IExtension | null>();
+  }
+
+  async bulkUpdateTableSettings({
+    _id,
+    tableSettings,
+    tableScope,
+    expectedUpdatedAt,
+  }: ExtensionBulkUpdateTableSettingsPayload): Promise<IExtension | null> {
+    return Model.findOneAndUpdate(
+      { _id, updatedAt: expectedUpdatedAt },
+      { $set: { tableSettings, tableScope } },
       { new: true },
     ).lean<IExtension | null>();
   }

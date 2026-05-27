@@ -43,6 +43,13 @@ export type ExtensionUpdateTableSettingsPayload = {
   expectedUpdatedAt: Date;
 };
 
+export type ExtensionBulkUpdateTableSettingsPayload = {
+  _id: string;
+  tableSettings: Record<string, Record<string, unknown>>;
+  tableScope: IExtensionTableScope;
+  expectedUpdatedAt: Date;
+};
+
 export type ExtensionQueryPayload = {
   type?: ExtensionType;
   enabled?: boolean;
@@ -79,6 +86,14 @@ export abstract class ExtensionContractRepository {
    */
   abstract updateTableSettings(
     payload: ExtensionUpdateTableSettingsPayload,
+  ): Promise<IExtension | null>;
+  /**
+   * Atualiza simultaneamente `tableSettings` (mapa completo) E `tableScope`
+   * (união de tableIds) com optimistic lock GLOBAL. Retorna null em conflito.
+   * Usado pelo endpoint bulk-configure-table-settings.
+   */
+  abstract bulkUpdateTableSettings(
+    payload: ExtensionBulkUpdateTableSettingsPayload,
   ): Promise<IExtension | null>;
   /**
    * Marca como `available: false` toda extensão cuja chave (pkg, type, extensionId)

@@ -3,6 +3,7 @@ import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 
 import type {
   ExtensionAvailabilityKey,
+  ExtensionBulkUpdateTableSettingsPayload,
   ExtensionContractRepository,
   ExtensionQueryPayload,
   ExtensionToggleEnabledPayload,
@@ -128,6 +129,21 @@ export default class ExtensionInMemoryRepository implements ExtensionContractRep
       ...(item.tableSettings ?? {}),
       [tableId]: settings,
     };
+    item.updatedAt = new Date();
+    return item;
+  }
+
+  async bulkUpdateTableSettings({
+    _id,
+    tableSettings,
+    tableScope,
+    expectedUpdatedAt,
+  }: ExtensionBulkUpdateTableSettingsPayload): Promise<IExtension | null> {
+    const item = this.items.find((i) => i._id === _id);
+    if (!item) return null;
+    if (item.updatedAt?.getTime() !== expectedUpdatedAt.getTime()) return null;
+    item.tableSettings = tableSettings;
+    item.tableScope = tableScope;
     item.updatedAt = new Date();
     return item;
   }
