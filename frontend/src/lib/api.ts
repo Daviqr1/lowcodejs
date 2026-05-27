@@ -31,6 +31,12 @@ export const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  paramsSerializer: {
+    // Fastify default querystring parser nao suporta `_ids[]=A&_ids[]=B`,
+    // so `_ids=A&_ids=B` (sem brackets). indexes:null deixa axios serializar
+    // arrays como `key=v1&key=v2`.
+    indexes: null,
+  },
 });
 
 API.interceptors.request.use(async (config) => {

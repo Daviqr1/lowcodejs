@@ -174,13 +174,17 @@ export function RowAccessConfigSheet({
       <SheetContent
         className="sm:max-w-2xl overflow-y-auto"
         // Impede que o Sheet capture cliques destinados aos portals filhos
-        // (TableMultiSelect's Combobox, DropdownMenu, Select). Sem isso, o
-        // primeiro item do dropdown não consegue ser selecionado.
+        // (TableMultiSelect's Combobox = @base-ui/react, DropdownMenu, Select).
+        // Sem isso, items dos dropdowns abertos via portal fora do Sheet não
+        // recebem o click — só keyboard nav funciona.
+        // Seletor cobre TODOS os portals do Base UI (via data-base-ui-portal),
+        // Radix popups (Select/Dropdown via role=listbox/menu) e nossos
+        // próprios data-slots.
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement | null;
           if (
             target?.closest?.(
-              '[data-slot="combobox-content"], [data-slot="combobox-positioner"], [role="listbox"], [role="menu"]',
+              '[data-base-ui-portal], [data-slot="combobox-content"], [data-slot="combobox-positioner"], [data-slot="combobox-list"], [data-slot="combobox-item"], [data-radix-popper-content-wrapper], [role="listbox"], [role="menu"], [role="option"]',
             )
           ) {
             e.preventDefault();
@@ -190,7 +194,7 @@ export function RowAccessConfigSheet({
           const target = e.target as HTMLElement | null;
           if (
             target?.closest?.(
-              '[data-slot="combobox-content"], [data-slot="combobox-positioner"], [role="listbox"], [role="menu"]',
+              '[data-base-ui-portal], [data-slot="combobox-content"], [data-slot="combobox-positioner"], [data-slot="combobox-list"], [data-slot="combobox-item"], [data-radix-popper-content-wrapper], [role="listbox"], [role="menu"], [role="option"]',
             )
           ) {
             e.preventDefault();

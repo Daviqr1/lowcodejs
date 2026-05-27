@@ -42,6 +42,7 @@ export default class TablePaginatedUseCase {
         trashed,
         owner: payload.owner,
         visibility: payload.visibility,
+        _ids: payload._ids,
         sort,
       });
 
@@ -51,6 +52,7 @@ export default class TablePaginatedUseCase {
         trashed,
         owner: payload.owner,
         visibility: payload.visibility,
+        _ids: payload._ids,
       });
 
       const lastPage = Math.ceil(total / payload.perPage);
