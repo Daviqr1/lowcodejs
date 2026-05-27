@@ -308,13 +308,37 @@ async function ensureVisibilityField(
   const existing = findFieldBySlug(populatedFields, slug);
 
   if (existing) {
-    if (!isCompatibleVisibilityDropdown(existing, settings.visibility.values)) {
+    if (existing.type !== E_FIELD_TYPE.DROPDOWN) {
       return left(
         HTTPException.Conflict(
-          `O campo '${slug}' ja existe mas e incompativel (DROPDOWN com valores ${settings.visibility.values.join(', ')} esperado).`,
+          `O campo '${slug}' ja existe mas nao e DROPDOWN.`,
           'VISIBILITY_FIELD_INCOMPATIBLE',
         ),
       );
+    }
+    // Atualiza dropdown options pra refletir settings.values:
+    // - mantem labels/cores customizadas das opcoes existentes
+    // - adiciona novos valores com labels/cores default
+    // - remove opcoes nao mais em settings.values (rows com valor orfao
+    //   continuam funcionando, mas valor nao aparece mais como opcao no form)
+    const existingByIds = new Map(
+      (existing.dropdown ?? []).map((o) => [o.id, o]),
+    );
+    const defaultOpts = buildDropdownOptions(settings.visibility.values);
+    const nextDropdown = defaultOpts.map(
+      (opt) => existingByIds.get(opt.id) ?? opt,
+    );
+
+    const needsUpdate =
+      (existing.dropdown ?? []).length !== nextDropdown.length ||
+      !(existing.dropdown ?? []).every((o, i) => o.id === nextDropdown[i]?.id);
+
+    if (needsUpdate) {
+      const updated = await deps.fieldRepo.update({
+        _id: existing._id,
+        dropdown: nextDropdown,
+      });
+      return right({ wasCreated: false, field: updated });
     }
     return right({ wasCreated: false, field: existing });
   }
