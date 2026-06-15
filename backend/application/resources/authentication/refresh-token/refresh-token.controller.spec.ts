@@ -39,7 +39,7 @@ describe('E2E Refresh Token Controller', () => {
 
     it('deve renovar tokens enviando apenas o refreshToken (cenario de access token expirado)', async () => {
       const { cookies } = await createAuthenticatedUser();
-      const refreshOnly = cookies.filter((c) => c.startsWith('refreshToken='));
+      const refreshOnly = cookies.filter((c) => c.startsWith('refreshToken'));
 
       expect(refreshOnly.length).toBeGreaterThan(0);
 

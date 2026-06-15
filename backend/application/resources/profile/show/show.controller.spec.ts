@@ -29,5 +29,41 @@ describe('E2E Profile Show Controller', () => {
       expect(response.body.email).toBe(user.email);
       expect(response.body.name).toBe(user.name);
     });
+
+    it('deve retornar o perfil da conta ativa apos alternar contas', async () => {
+      const agent = supertest.agent(kernel.server);
+      const first = await createAuthenticatedUser({
+        email: 'first@example.com',
+        name: 'First User',
+      });
+      const second = await createAuthenticatedUser({
+        email: 'second@example.com',
+        name: 'Second User',
+      });
+
+      await agent
+        .post('/authentication/sign-in')
+        .send({ email: first.user.email, password: 'password123' });
+      await agent
+        .post('/authentication/sign-in')
+        .send({ email: second.user.email, password: 'password123' });
+
+      const secondProfile = await agent.get('/profile');
+
+      expect(secondProfile.statusCode).toBe(200);
+      expect(secondProfile.body.email).toBe(second.user.email);
+
+      const switchResponse = await agent
+        .post('/authentication/switch-account')
+        .send({ accountId: first.user._id });
+
+      expect(switchResponse.statusCode).toBe(200);
+      expect(switchResponse.body.activeAccountId).toBe(first.user._id);
+
+      const firstProfile = await agent.get('/profile');
+
+      expect(firstProfile.statusCode).toBe(200);
+      expect(firstProfile.body.email).toBe(first.user.email);
+    });
   });
 });

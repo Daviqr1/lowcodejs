@@ -14,7 +14,9 @@ import {
   setupStatusOptions,
 } from '@/hooks/tanstack-query/_query-options';
 import { useMenuDynamic } from '@/hooks/tanstack-query/use-menu-dynamic';
+import { API } from '@/lib/api';
 import { E_ROLE } from '@/lib/constant';
+import type { IAuthenticationAccounts } from '@/lib/interfaces';
 import { useAuthStore } from '@/stores/authentication';
 
 export const Route = createFileRoute('/_private')({
@@ -39,7 +41,15 @@ export const Route = createFileRoute('/_private')({
       const user = await context.queryClient.ensureQueryData(
         profileDetailOptions(),
       );
-      useAuthStore.getState().setUser(user);
+      const accountsResponse = await API.get<IAuthenticationAccounts>(
+        '/authentication/accounts',
+      );
+      useAuthStore
+        .getState()
+        .setAccounts(
+          accountsResponse.data.accounts,
+          accountsResponse.data.activeAccountId ?? user._id,
+        );
       context.queryClient.prefetchQuery(settingOptions());
     } catch {
       useAuthStore.getState().clear();

@@ -4,14 +4,22 @@ export const SignOutSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Logout do usuário',
   description:
-    'Realiza o logout do usuário atual limpando os cookies de autenticação. Requer token de acesso válido',
+    'Realiza o logout da conta atual ou de todas as contas autenticadas. Requer token de acesso válido',
   security: [{ cookieAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      all: { type: 'boolean' },
+    },
+    additionalProperties: false,
+  },
   response: {
     200: {
       description: 'Logout realizado com sucesso',
       type: 'object',
       properties: {
         message: { type: 'string', enum: ['Logout realizado com sucesso'] },
+        activeAccountId: { type: ['string', 'null'] },
       },
     },
     401: {

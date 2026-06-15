@@ -12,6 +12,10 @@ export const Route = createFileRoute('/_authentication')({
   beforeLoad: async ({ context, location }) => {
     const isResetPassword =
       location.pathname === '/forgot-password/reset-password';
+    const isAddingAccount =
+      typeof location.search === 'object' &&
+      location.search !== null &&
+      'addAccount' in location.search;
 
     if (isResetPassword) return;
 
@@ -22,6 +26,8 @@ export const Route = createFileRoute('/_authentication')({
       const step = setupStatus.currentStep ?? 'admin';
       throw redirect({ to: `/setup/${step}` });
     }
+
+    if (isAddingAccount) return;
 
     try {
       const user = await context.queryClient.ensureQueryData(

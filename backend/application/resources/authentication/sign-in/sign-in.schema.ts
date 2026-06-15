@@ -87,6 +87,15 @@ export const SignInSchema: FastifySchema = {
         },
       },
     },
+    409: {
+      description: 'Conflict - Multi-account limit reached',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [409] },
+        cause: { type: 'string', enum: ['MULTI_ACCOUNT_LIMIT_REACHED'] },
+      },
+    },
     500: {
       description: 'Internal server error - Database or server issues',
       type: 'object',

@@ -5,7 +5,6 @@ import { EyeClosedIcon, EyeIcon, LockIcon, MailIcon } from 'lucide-react';
 import React, { useState } from 'react';
 import * as z from 'zod';
 
-import { Logo } from '@/components/common/layout/logo';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -55,6 +54,7 @@ function RouteComponent(): React.JSX.Element {
 
   const signInMutation = useAuthenticationSignIn({
     async onSuccess(response) {
+      queryClient.clear();
       const role = response.group.slug.toUpperCase();
       const fallbackRoute = ROLE_DEFAULT_ROUTE[role] ?? '/tables';
       const menus = await queryClient.fetchQuery(menuAllOptions());
@@ -103,13 +103,6 @@ function RouteComponent(): React.JSX.Element {
     >
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
-          <Link
-            to="/"
-            className="flex flex-col items-center gap-2 font-medium"
-          >
-            <Logo className="h-8" />
-          </Link>
-
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-xl font-semibold">Entrar</CardTitle>

@@ -4,7 +4,9 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import {
   clearCookieTokens,
-  setCookieTokens,
+  listAuthAccountIds,
+  MAX_AUTH_ACCOUNTS,
+  setAccountCookieTokens,
 } from '@application/utils/cookies.util';
 import { createTokens } from '@application/utils/jwt.util';
 
@@ -42,9 +44,20 @@ export default class {
     }
 
     const tokens = await createTokens(result.value, response);
+    const accountId = result.value._id.toString();
+    const accountIds = listAuthAccountIds(request);
+    const isExistingAccount = accountIds.includes(accountId);
+
+    if (!isExistingAccount && accountIds.length >= MAX_AUTH_ACCOUNTS) {
+      return response.status(409).send({
+        message: 'Limite de contas simultâneas atingido',
+        code: 409,
+        cause: 'MULTI_ACCOUNT_LIMIT_REACHED',
+      });
+    }
 
     clearCookieTokens(response);
-    setCookieTokens(response, { ...tokens });
+    setAccountCookieTokens(response, accountId, { ...tokens });
 
     return response.status(200).send();
   }

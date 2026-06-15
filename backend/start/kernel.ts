@@ -111,6 +111,7 @@ kernel.register(cors, {
     'Access-Control-Request-Method',
     'Access-Control-Request-Headers',
     'X-Timezone',
+    'X-Auth-Account-Id',
   ],
   exposedHeaders: ['Set-Cookie'],
   optionsSuccessStatus: 200,
