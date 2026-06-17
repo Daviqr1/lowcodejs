@@ -7,6 +7,7 @@ import {
   EyeIcon,
   HouseIcon,
   LoaderCircleIcon,
+  PencilIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
@@ -294,6 +295,23 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <EyeIcon className="size-4" />
             <span>Visualizar</span>
           </DropdownMenuItem>
+
+          {!props.menu.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => {
+                sidebar.setOpen(false);
+                router.navigate({
+                  to: '/menus/$menuId',
+                  params: { menuId: props.menu._id },
+                  search: { mode: 'edit' },
+                });
+              }}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
 
           {!props.menu.trashed &&
             props.menu.type !== E_MENU_ITEM_TYPE.SEPARATOR && (

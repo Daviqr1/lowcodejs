@@ -3,6 +3,7 @@ import { ArrowRightIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
 
 import { TableRowActionsMenu } from './table-row-actions-menu';
+import { RowSelectCheckbox } from './use-row-selection';
 
 import { TableRowCategoryCell } from '@/components/common/dynamic-table/table-cells/table-row-category-cell';
 import { TableRowDateCell } from '@/components/common/dynamic-table/table-cells/table-row-date-cell';
@@ -172,6 +173,7 @@ export function TableGridView({
   const permission = useTablePermission(table.data);
 
   const canCreateRow = permission.can('CREATE_ROW');
+  const canSelect = permission.can('UPDATE_ROW');
 
   const visibleHeaders = headers.filter(HeaderFilter).sort(HeaderSorter(order));
 
@@ -250,11 +252,21 @@ export function TableGridView({
               ) : null}
             </CardContent>
             <CardFooter className="inline-flex justify-between items-center p-1">
-              <TableRowActionsMenu
-                slug={slug}
-                row={row}
-                table={table.data}
-              />
+              <div className="flex items-center gap-1">
+                {canSelect && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center pl-1"
+                  >
+                    <RowSelectCheckbox id={row._id} />
+                  </div>
+                )}
+                <TableRowActionsMenu
+                  slug={slug}
+                  row={row}
+                  table={table.data}
+                />
+              </div>
               <Button
                 variant="ghost"
                 className="p-0"

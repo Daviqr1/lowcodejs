@@ -3,6 +3,7 @@ import {
   createLazyFileRoute,
   useParams,
   useRouter,
+  useSearch,
 } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
 import { ArchiveRestoreIcon, PencilIcon, TrashIcon } from 'lucide-react';
@@ -45,7 +46,10 @@ function RouteComponent(): React.JSX.Element {
 
   const { data } = useSuspenseQuery(menuDetailOptions(menuId));
 
-  const [mode, setMode] = React.useState<'show' | 'edit'>('show');
+  const search = useSearch({ from: '/_private/menus/$menuId/' });
+  const [mode, setMode] = React.useState<'show' | 'edit'>(
+    search.mode === 'edit' ? 'edit' : 'show',
+  );
 
   const goBack = (): void => {
     sidebar.setOpen(true);

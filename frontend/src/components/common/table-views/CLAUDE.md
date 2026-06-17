@@ -20,6 +20,9 @@ sistema de tabelas dinamicas a um modo de visualizacao especifico
 | `table-mosaic-view.tsx`     | Layout mosaico com campos dinamicos                      |
 | `table-*-view-skeleton.tsx` | Skeleton de carregamento para cada modo                  |
 | `table-skeleton.tsx`        | Spinner central de carregamento generico                 |
+| `use-row-selection.tsx`     | Context de selecao em lote (Set de ids) + `RowSelectionProvider` e os checkboxes `RowSelectCheckbox`/`RowSelectAllCheckbox`. Compartilhado por list/gallery/card/mosaic |
+| `row-bulk-actions-bar.tsx`  | Barra sticky de acoes em lote (lixeira/restaurar/excluir + "Editar campo"), renderizada uma vez pelo `$slug/index.lazy.tsx` |
+| `bulk-edit-field-dialog.tsx`| Dialog de edicao em massa: escolhe 1 campo (dropdown/categoria/usuario/data/texto curto) e aplica o valor aos selecionados via `PATCH /tables/:slug/rows/bulk-update` |
 
 ## Dependencias principais
 

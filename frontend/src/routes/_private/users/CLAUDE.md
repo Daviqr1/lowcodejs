@@ -28,7 +28,7 @@ empty-trash).
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.tsx`                 | Route config: beforeLoad (guard de role), validateSearch (paginacao + ordenacao + `trashed`), loader via `userListOptions`                                              |
 | `index.lazy.tsx`            | Componente principal: tabela, filtros laterais, paginacao, TrashButton, botao "Novo Usuario" (lista ativa) ou "Esvaziar lixeira" (lista lixeira, MASTER) e dialogs      |
-| `-table-users.tsx`          | Tabela DataTable com checkbox de selecao, colunas Nome/E-mail/Grupo/Status e dropdown de acoes (visualizar / enviar para lixeira / restaurar / excluir permanentemente) |
+| `-table-users.tsx`          | Tabela DataTable com checkbox de selecao, colunas Nome/E-mail/Grupo/Status e dropdown de acoes (visualizar / editar / enviar para lixeira / restaurar / excluir permanentemente). Na BulkActionBar injeta o dropdown "Alterar status" (Ativar/Desativar em lote) |
 | `-table-users-skeleton.tsx` | Skeleton de carregamento da tabela (pendingComponent)                                                                                                                   |
 
 ## Subdiretorios
@@ -46,6 +46,7 @@ empty-trash).
 | `useSuspenseQuery`                                                | `@tanstack/react-query`                               |
 | `useUserSendToTrash` / `useUserRemoveFromTrash` / `useUserDelete` | `@/hooks/tanstack-query/`                             |
 | `useUserBulkTrash` / `useUserBulkRestore` / `useUserBulkDelete`   | `@/hooks/tanstack-query/`                             |
+| `useUserBulkUpdate` (status em lote)                              | `@/hooks/tanstack-query/use-user-bulk-update`         |
 | `useUserEmptyTrash`                                               | `@/hooks/tanstack-query/`                             |
 | `useDataTable`                                                    | `@/hooks/use-data-table`                              |
 | `useSidebar`                                                      | `@/components/ui/sidebar`                             |

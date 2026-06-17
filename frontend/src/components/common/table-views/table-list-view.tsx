@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useParams, useRouter, useSearch } from '@tanstack/react-router';
+import { useParams, useRouter } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArchiveRestoreIcon,
@@ -11,16 +11,16 @@ import {
   PlusIcon,
   Trash2Icon,
   TrashIcon,
-  XIcon,
 } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
+
+import { RowSelectAllCheckbox, RowSelectCheckbox } from './use-row-selection';
 
 import { InteractiveDataTable } from '@/components/common/data-table';
 import { ExtensionSlot } from '@/components/common/extension-slot';
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogClose,
@@ -272,8 +272,6 @@ export function TableListView({
 }: TableListViewProps): React.ReactElement {
   const router = useRouter();
   const { slug } = useParams({ from: '/_private/tables/$slug/' });
-  const search = useSearch({ from: '/_private/tables/$slug/' });
-  const isTrashView = search.trashed === true;
 
   const table_ = useReadTable({ slug });
   const permission = useTablePermission(table_.data);
@@ -282,8 +280,6 @@ export function TableListView({
   const canEditField = permission.can('UPDATE_FIELD');
   const canTrashRow = permission.can('UPDATE_ROW');
   const canRemoveRow = permission.can('REMOVE_ROW');
-
-  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
 
   const fieldColumns = useFieldColumns({
     fields: headers,
@@ -302,26 +298,15 @@ export function TableListView({
         enableResizing: false,
         size: 40,
         header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected()
-                ? true
-                : table.getIsSomePageRowsSelected()
-                  ? 'indeterminate'
-                  : false
-            }
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
-            aria-label="Selecionar todos"
+          <RowSelectAllCheckbox
+            ids={table.getRowModel().rows.map((r) => r.id)}
           />
         ),
         cell: ({ row }) => (
           <div onClick={(e) => e.stopPropagation()}>
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label={`Selecionar registro ${row.id}`}
+            <RowSelectCheckbox
+              id={row.original._id}
+              label={`Selecionar registro ${row.id}`}
             />
           </div>
         ),
@@ -420,7 +405,6 @@ export function TableListView({
     data,
     columns,
     getRowId: (row) => row._id,
-    enableRowSelection: canTrashRow,
     enableColumnResizing: true,
     persistKey: `list-view:${slug}`,
     initialColumnPinning: {
@@ -435,78 +419,6 @@ export function TableListView({
     },
   });
 
-  const selectedRows = table.getSelectedRowModel().rows;
-  const selectedCount = selectedRows.length;
-  const selectedIds = selectedRows.map((r) => r.id);
-
-  const bulkTrash = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-trash');
-      const response = await API.patch<{ modified: number }>(route, { ids });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toast.success(
-        result.modified === 1
-          ? '1 registro enviado para lixeira!'
-          : `${result.modified} registros enviados para lixeira!`,
-        { description: 'Os registros foram movidos para a lixeira' },
-      );
-    },
-  });
-
-  const bulkRestore = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-restore');
-      const response = await API.patch<{ modified: number }>(route, { ids });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toast.success(
-        result.modified === 1
-          ? '1 registro restaurado!'
-          : `${result.modified} registros restaurados!`,
-        { description: 'Os registros foram restaurados da lixeira' },
-      );
-    },
-  });
-
-  const bulkDelete = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-delete');
-      const response = await API.delete<{ deleted: number }>(route, {
-        data: { ids },
-      });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toast.success(
-        result.deleted === 1
-          ? '1 registro excluído permanentemente!'
-          : `${result.deleted} registros excluídos permanentemente!`,
-      );
-    },
-  });
-
-  const [dialogAction, setDialogAction] = React.useState<
-    'trash' | 'restore' | 'delete'
-  >('trash');
-
   return (
     <div data-test-id="table-list-view">
       <InteractiveDataTable
@@ -518,134 +430,6 @@ export function TableListView({
             search: { _id: row._id },
           });
         }}
-      />
-
-      {selectedCount > 0 && (
-        <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
-          <span className="text-sm font-medium">
-            {selectedCount === 1
-              ? '1 registro selecionado'
-              : `${selectedCount} registros selecionados`}
-          </span>
-          {isTrashView ? (
-            <React.Fragment>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setDialogAction('restore');
-                  setShowConfirmDialog(true);
-                }}
-              >
-                <ArchiveRestoreIcon className="size-4" />
-                <span>Restaurar</span>
-              </Button>
-              {canRemoveRow && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setDialogAction('delete');
-                    setShowConfirmDialog(true);
-                  }}
-                >
-                  <Trash2Icon className="size-4" />
-                  <span>Excluir permanentemente</span>
-                </Button>
-              )}
-            </React.Fragment>
-          ) : (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                setDialogAction('trash');
-                setShowConfirmDialog(true);
-              }}
-            >
-              <Trash2Icon className="size-4" />
-              <span>Enviar para lixeira</span>
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => table.resetRowSelection()}
-          >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
-      )}
-
-      <Dialog
-        modal
-        open={showConfirmDialog && dialogAction !== 'delete'}
-        onOpenChange={setShowConfirmDialog}
-      >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogAction === 'trash' && 'Enviar registros para a lixeira'}
-              {dialogAction === 'restore' && 'Restaurar registros da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogAction === 'trash' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será enviado para a lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão enviados para a lixeira.`)}
-              {dialogAction === 'restore' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será restaurado da lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão restaurados da lixeira.`)}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  }
-                  onClick={() => {
-                    if (dialogAction === 'trash') {
-                      bulkTrash.mutateAsync(selectedIds);
-                    }
-                    if (dialogAction === 'restore') {
-                      bulkRestore.mutateAsync(selectedIds);
-                    }
-                  }}
-                >
-                  {(bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending') && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {!(
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  ) && <span>Confirmar</span>}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
-
-      <PermanentDeleteConfirmDialog
-        open={showConfirmDialog && dialogAction === 'delete'}
-        onOpenChange={setShowConfirmDialog}
-        title="Excluir registros permanentemente"
-        description="Essa ação é irreversível. Os registros selecionados serão excluídos permanentemente."
-        itemsCount={selectedCount}
-        isPending={bulkDelete.status === 'pending'}
-        onConfirm={() => bulkDelete.mutateAsync(selectedIds)}
-        testId="bulk-delete-rows-dialog"
       />
     </div>
   );

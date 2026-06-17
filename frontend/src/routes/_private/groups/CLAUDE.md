@@ -28,7 +28,7 @@ param `?trashed=true`.
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `index.tsx`                  | Route config: validacao de search params (page, perPage, search, trashed, order-\*), beforeLoad com guard de role, loader com `groupListOptions`                         |
 | `index.lazy.tsx`             | Componente principal: tabela de grupos, filtro lateral, paginacao, TrashButton, botao "Novo Grupo" (lista ativa) ou "Esvaziar lixeira" (lista lixeira, MASTER) e dialogs |
-| `-table-groups.tsx`          | Tabela DataTable com checkbox de selecao, colunas nome/descricao, dropdown de acoes (visualizar / enviar para lixeira / restaurar / excluir permanentemente)             |
+| `-table-groups.tsx`          | Tabela DataTable com checkbox de selecao, colunas nome/descricao, dropdown de acoes (visualizar / editar / enviar para lixeira / restaurar / excluir permanentemente). "Editar" abre `/groups/$groupId?mode=edit` |
 | `-table-groups-skeleton.tsx` | Skeleton de loading para a tabela, usado como `pendingComponent`                                                                                                         |
 
 ## Subdiretorios

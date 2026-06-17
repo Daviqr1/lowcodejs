@@ -17,15 +17,20 @@ type BulkActionBarProps = {
   onDelete?: () => void;
   isTrashing?: boolean;
   isRestoring?: boolean;
+  extraActions?: React.ReactNode; // ações extras na lista ativa
 };
 ```
 
 ## Comportamento
 
-- Lista ativa (`isTrashView=false`): exibe "Enviar para lixeira".
+- Lista ativa (`isTrashView=false`): exibe `extraActions` (se houver) + "Enviar
+  para lixeira".
 - Lista lixeira (`isTrashView=true`): exibe "Restaurar" e, se `canDelete`,
   "Excluir permanentemente".
 - Botão "X" sempre disponível para limpar seleção.
+- `extraActions` é um slot livre para ações específicas de cada tela. Ex.: a tela
+  de Usuários injeta um dropdown "Alterar status" (Ativar/Desativar) que chama
+  `useUserBulkUpdate`.
 
 ## Padrão
 

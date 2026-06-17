@@ -13,6 +13,8 @@ export type BulkActionBarProps = {
   onDelete?: () => void;
   isTrashing?: boolean;
   isRestoring?: boolean;
+  /** Ações extras exibidas na lista ativa (ex.: alterar status em lote). */
+  extraActions?: React.ReactNode;
 };
 
 export function BulkActionBar(props: BulkActionBarProps): React.JSX.Element {
@@ -39,6 +41,8 @@ export function BulkActionBar(props: BulkActionBarProps): React.JSX.Element {
       </div>
 
       <div className="flex items-center gap-2">
+        {!props.isTrashView && props.extraActions}
+
         {!props.isTrashView && props.onTrash && (
           <Button
             type="button"

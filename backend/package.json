@@ -9,6 +9,7 @@
     "start": "node build/bin/server.js",
     "build": "tsc -b && tsup",
     "seed": "node --import @swc-node/register/esm-register database/seeders/main.ts",
+    "seed:test-users": "node --import @swc-node/register/esm-register database/seeders/dev/seed-test-users.ts",
     "seed:prod": "node database/seeders/main.js",
     "prepare": "husky",
     "test": "vitest",

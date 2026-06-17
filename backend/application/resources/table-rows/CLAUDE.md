@@ -18,6 +18,7 @@ CRUD e operacoes especiais em registros (rows) de tabelas dinamicas.
 | delete | DELETE | `/tables/:slug/rows/:_id` | Sim | REMOVE_ROW |
 | send-to-trash | PATCH | `/tables/:slug/rows/:_id/trash` | Sim | UPDATE_ROW |
 | remove-from-trash | PATCH | `/tables/:slug/rows/:_id/restore` | Sim | UPDATE_ROW |
+| bulk-update | PATCH | `/tables/:slug/rows/bulk-update` | Sim | UPDATE_ROW |
 | bulk-trash | PATCH | `/tables/:slug/rows/bulk-trash` | Sim | UPDATE_ROW |
 | bulk-restore | PATCH | `/tables/:slug/rows/bulk-restore` | Sim | UPDATE_ROW |
 | reaction | POST | `/tables/:slug/rows/:_id/reaction` | Sim | UPDATE_ROW |

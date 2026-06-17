@@ -5,6 +5,7 @@ import {
   EllipsisIcon,
   EyeIcon,
   LoaderCircleIcon,
+  PencilIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
@@ -76,6 +77,7 @@ type ActionsCellProps = {
   onRemoveFromTrash: (group: IGroup) => void;
   onPermanentDelete: (group: IGroup) => void;
   onView: (group: IGroup) => void;
+  onEdit: (group: IGroup) => void;
 };
 
 function ActionsCell(props: ActionsCellProps): React.JSX.Element {
@@ -102,6 +104,16 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <EyeIcon className="size-4" />
             <span>Visualizar</span>
           </DropdownMenuItem>
+
+          {!props.group.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => props.onEdit(props.group)}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
 
           {!props.group.trashed && !isSystemGroup && (
             <DropdownMenuItem
@@ -203,6 +215,7 @@ function buildColumns(params: {
   onRemoveFromTrash: (group: IGroup) => void;
   onPermanentDelete: (group: IGroup) => void;
   onView: (group: IGroup) => void;
+  onEdit: (group: IGroup) => void;
 }): Array<ColumnDef<IGroup, unknown>> {
   const cols: Array<ColumnDef<IGroup, unknown>> = [];
 
@@ -296,6 +309,7 @@ function buildColumns(params: {
           onRemoveFromTrash={params.onRemoveFromTrash}
           onPermanentDelete={params.onPermanentDelete}
           onView={params.onView}
+          onEdit={params.onEdit}
         />
       ),
     });
@@ -339,6 +353,18 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
       router.navigate({
         to: '/groups/$groupId',
         params: { groupId },
+      });
+    },
+    [sidebar, router],
+  );
+
+  const navigateToEditGroup = React.useCallback(
+    (groupId: string) => {
+      sidebar.setOpen(false);
+      router.navigate({
+        to: '/groups/$groupId',
+        params: { groupId },
+        search: { mode: 'edit' },
       });
     },
     [sidebar, router],
@@ -450,8 +476,15 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         onRemoveFromTrash: (group) => setSingleRestoreGroup(group),
         onPermanentDelete: (group) => setSingleDeleteGroup(group),
         onView: (group) => navigateToGroup(group._id),
+        onEdit: (group) => navigateToEditGroup(group._id),
       }),
-    [canTrash, isMaster, isAnySinglePending, navigateToGroup],
+    [
+      canTrash,
+      isMaster,
+      isAnySinglePending,
+      navigateToGroup,
+      navigateToEditGroup,
+    ],
   );
 
   const leftPinning: Array<string> = [];

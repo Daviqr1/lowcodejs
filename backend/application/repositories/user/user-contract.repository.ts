@@ -43,6 +43,8 @@ export type UserUpdateManyPayload = {
   data: {
     trashed?: boolean;
     trashedAt?: Date | null;
+    status?: ValueOf<typeof E_USER_STATUS>;
+    group?: string;
   };
 };
 

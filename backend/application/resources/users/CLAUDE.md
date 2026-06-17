@@ -23,6 +23,7 @@ Gerenciamento de usuarios da plataforma (CRUD).
 | export-csv | GET | `/users/exports/csv` | Exporta usuarios em CSV (MASTER/ADMINISTRATOR; cap 500.000 linhas) |
 | show | GET | `/users/:_id` | Buscar usuario por ID |
 | update | PATCH | `/users/:_id` | Atualizar usuario |
+| bulk-update | PATCH | `/users/bulk-update` | Alterar status (ACTIVE/INACTIVE) de varios usuarios (exclui o proprio) |
 
 ## Auth
 

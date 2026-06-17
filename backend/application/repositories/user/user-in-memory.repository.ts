@@ -137,6 +137,7 @@ export default class UserInMemoryRepository implements UserContractRepository {
     for (const user of filtered) {
       if (data.trashed !== undefined) user.trashed = data.trashed;
       if (data.trashedAt !== undefined) user.trashedAt = data.trashedAt;
+      if (data.status !== undefined) user.status = data.status;
       user.updatedAt = new Date();
     }
 

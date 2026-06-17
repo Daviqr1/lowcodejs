@@ -2,6 +2,7 @@ import { useParams, useRouter } from '@tanstack/react-router';
 import React from 'react';
 
 import { TableRowActionsMenu } from './table-row-actions-menu';
+import { RowSelectCheckbox } from './use-row-selection';
 
 import { TableRowCategoryCell } from '@/components/common/dynamic-table/table-cells/table-row-category-cell';
 import { TableRowDateCell } from '@/components/common/dynamic-table/table-cells/table-row-date-cell';
@@ -17,6 +18,7 @@ import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/
 import { FieldTitle } from '@/components/common/field-title';
 import { Badge } from '@/components/ui/badge';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, ILayoutFields, IRow } from '@/lib/interfaces';
 import { resolveLayoutField } from '@/lib/layout-field-resolver';
@@ -180,6 +182,8 @@ export function TableMosaicView({
   const router = useRouter();
   const { slug } = useParams({ from: '/_private/tables/$slug/' });
   const table = useReadTable({ slug });
+  const permission = useTablePermission(table.data);
+  const canSelect = permission.can('UPDATE_ROW');
 
   const visibleHeaders = headers.filter(HeaderFilter).sort(HeaderSorter(order));
 
@@ -256,11 +260,21 @@ export function TableMosaicView({
                   )}
                 </div>
               </div>
-              <TableRowActionsMenu
-                slug={slug}
-                row={row}
-                table={table.data}
-              />
+              <div className="flex items-center gap-1">
+                {canSelect && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center"
+                  >
+                    <RowSelectCheckbox id={row._id} />
+                  </div>
+                )}
+                <TableRowActionsMenu
+                  slug={slug}
+                  row={row}
+                  table={table.data}
+                />
+              </div>
             </div>
 
             {descField ? (

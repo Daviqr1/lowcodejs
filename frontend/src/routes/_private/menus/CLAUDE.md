@@ -26,7 +26,7 @@ colunas (nome, slug, tipo, criado por, criado em).
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `index.tsx`                 | Route config: validacao de search params (page, perPage, search, trashed, order-\*), beforeLoad com guard de role, loader com `menuListOptions`                                      |
 | `index.lazy.tsx`            | Componente principal: header com TrashButton/FilterTrigger, botao "Novo Menu" (lista ativa) ou "Esvaziar lixeira" (lixeira, MASTER), FilterSidebar, TableMenus, Pagination e dialogs |
-| `-table-menus.tsx`          | Tabela DataTable com checkbox de selecao, colunas (nome, slug, tipo, criado por, criado em, acoes), BulkActionBar, dialogs de hard delete com captcha                                |
+| `-table-menus.tsx`          | Tabela DataTable com checkbox de selecao, colunas (nome, slug, tipo, criado por, criado em, acoes), dropdown com visualizar / editar (`/menus/$menuId?mode=edit`) / pagina inicial / lixeira, BulkActionBar, dialogs de hard delete com captcha |
 | `-table-menus-skeleton.tsx` | Skeleton de carregamento da tabela                                                                                                                                                   |
 | `-separator-info.tsx`       | Banner informativo exibido quando o tipo do menu e SEPARATOR                                                                                                                         |
 

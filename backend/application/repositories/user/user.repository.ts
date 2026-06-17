@@ -211,6 +211,8 @@ export default class UserMongooseRepository implements UserContractRepository {
     const updateData: Record<string, unknown> = {};
     if (data.trashed !== undefined) updateData['trashed'] = data.trashed;
     if (data.trashedAt !== undefined) updateData['trashedAt'] = data.trashedAt;
+    if (data.status !== undefined) updateData['status'] = data.status;
+    if (data.group !== undefined) updateData['group'] = data.group;
 
     const result = await Model.updateMany(where, { $set: updateData });
     return result.modifiedCount;

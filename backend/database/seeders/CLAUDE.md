@@ -16,6 +16,15 @@ na primeira execução da UI.
 | `1720465893-settings.seed.ts`     | Setting singleton. Se já existe MASTER, marca `SETUP_COMPLETED=true`. Caso contrário, usa `$setOnInsert: {}` (não sobrescreve configs existentes) |
 | `1778025600-demo-users.seed.ts`   | **Gated por `DEMO_MODE=true`**. Cria/atualiza 2 usuários públicos (`admin@admin.com` → ADMINISTRATOR, `registered@registered.com` → REGISTERED) com `$set` em todos os campos (incluindo password re-hashado a cada execução). Throw se grupos ausentes. No-op silencioso quando `DEMO_MODE=false` |
 
+## Seeds de desenvolvimento (`dev/`)
+
+Não são descobertos pelo `main.ts` (nome não termina em `.seed.ts`) nem rodam no
+boot. Servem apenas para popular dados de teste localmente.
+
+| Arquivo                  | Comando                  | Descrição                                                                                          |
+| ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `dev/seed-test-users.ts` | `npm run seed:test-users`| Cria N usuários `*@demo.com` (default 25, `-- --count=N`), status/grupos variados, senha `Teste@123`. Idempotente: recria os `*@demo.com` a cada execução |
+
 ## Padrões
 
 - **Idempotência**: usa upsert (`bulkWrite`/`findOneAndUpdate` com `upsert: true`)

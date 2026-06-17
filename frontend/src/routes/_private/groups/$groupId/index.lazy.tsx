@@ -3,6 +3,7 @@ import {
   createLazyFileRoute,
   useParams,
   useRouter,
+  useSearch,
 } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
 import React from 'react';
@@ -38,7 +39,10 @@ function RouteComponent(): React.JSX.Element {
 
   const { data } = useSuspenseQuery(groupDetailOptions(groupId));
 
-  const [mode, setMode] = React.useState<'show' | 'edit'>('show');
+  const search = useSearch({ from: '/_private/groups/$groupId/' });
+  const [mode, setMode] = React.useState<'show' | 'edit'>(
+    search.mode === 'edit' ? 'edit' : 'show',
+  );
 
   const goBack = (): void => {
     sidebar.setOpen(true);

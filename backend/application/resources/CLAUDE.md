@@ -24,11 +24,11 @@ Cada operacao (ex: `users/create/`) contem:
 | Recurso | Base Route | Operacoes | Auth | Entidade |
 |---------|-----------|-----------|------|----------|
 | `authentication/` | `/authentication` | sign-in, sign-up, sign-out, magic-link, refresh-token, request-code, validate-code, reset-password | Misto | User, ValidationToken |
-| `users/` | `/users` | create, paginated, export-csv, show, update | Sim | User |
+| `users/` | `/users` | create, paginated, export-csv, show, update, bulk-update, bulk-trash, bulk-restore, bulk-delete, send-to-trash, remove-from-trash, empty-trash, delete | Sim | User |
 | `user-groups/` | `/user-group` | create, paginated, list, export-csv, show, update | Sim | UserGroup |
 | `table-base/` | `/tables` | create, paginated, export-csv, show, update, delete, send-to-trash, remove-from-trash | Misto | Table |
 | `table-fields/` | `/tables/:slug/fields` | create, show, update, delete, send-to-trash, remove-from-trash, add-category, delete-category | Sim | Field |
-| `table-rows/` | `/tables/:slug/rows` | create, paginated, export-csv, show, update, delete, send-to-trash, remove-from-trash, bulk-trash, bulk-restore, reaction, evaluation, forum-message | Misto | Row (dinamico) |
+| `table-rows/` | `/tables/:slug/rows` | create, paginated, export-csv, show, update, delete, send-to-trash, remove-from-trash, bulk-update, bulk-trash, bulk-restore, reaction, evaluation, forum-message | Misto | Row (dinamico) |
 | `group-fields/` | `/tables/:slug/groups/:groupSlug/fields` | create, list, show, update, send-to-trash | Sim | Field (embedded) |
 | `group-rows/` | `/tables/:slug/rows/:rowId/groups/:groupSlug` | create, list, export-csv, show, update, delete | Sim | Row (embedded) |
 | `menu/` | `/menu` | create, list, paginated, export-csv, show, update, send-to-trash, delete, remove-from-trash, reorder | Sim | Menu |

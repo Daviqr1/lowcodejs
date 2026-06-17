@@ -271,6 +271,12 @@ export type RowAutoSavePayload = {
   data: Record<string, unknown>;
 };
 
+export type RowBulkUpdatePayload = {
+  slug: string;
+  ids: Array<string>;
+  data: Record<string, unknown>;
+};
+
 // ============== PROFILE ==============
 export type ProfileUpdatePayload = {
   name: string;

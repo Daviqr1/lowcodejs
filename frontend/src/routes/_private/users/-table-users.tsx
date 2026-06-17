@@ -5,6 +5,8 @@ import {
   EllipsisIcon,
   EyeIcon,
   LoaderCircleIcon,
+  PencilIcon,
+  PowerIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
@@ -42,6 +44,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useUserBulkDelete } from '@/hooks/tanstack-query/use-user-bulk-delete';
 import { useUserBulkRestore } from '@/hooks/tanstack-query/use-user-bulk-restore';
 import { useUserBulkTrash } from '@/hooks/tanstack-query/use-user-bulk-trash';
+import { useUserBulkUpdate } from '@/hooks/tanstack-query/use-user-bulk-update';
 import { useUserDelete } from '@/hooks/tanstack-query/use-user-delete';
 import { useUserRemoveFromTrash } from '@/hooks/tanstack-query/use-user-remove-from-trash';
 import { useUserSendToTrash } from '@/hooks/tanstack-query/use-user-send-to-trash';
@@ -77,6 +80,7 @@ type ActionsCellProps = {
   onRemoveFromTrash: (user: IUser) => void;
   onPermanentDelete: (user: IUser) => void;
   onView: (user: IUser) => void;
+  onEdit: (user: IUser) => void;
 };
 
 function ActionsCell(props: ActionsCellProps): React.JSX.Element {
@@ -101,6 +105,16 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <EyeIcon className="size-4" />
             <span>Visualizar</span>
           </DropdownMenuItem>
+
+          {!props.user.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => props.onEdit(props.user)}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
 
           {!props.user.trashed && (
             <DropdownMenuItem
@@ -198,6 +212,7 @@ function buildColumns(params: {
   onRemoveFromTrash: (user: IUser) => void;
   onPermanentDelete: (user: IUser) => void;
   onView: (user: IUser) => void;
+  onEdit: (user: IUser) => void;
 }): Array<ColumnDef<IUser, unknown>> {
   const cols: Array<ColumnDef<IUser, unknown>> = [];
 
@@ -342,6 +357,7 @@ function buildColumns(params: {
           onRemoveFromTrash={params.onRemoveFromTrash}
           onPermanentDelete={params.onPermanentDelete}
           onView={params.onView}
+          onEdit={params.onEdit}
         />
       ),
     });
@@ -386,6 +402,18 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
       router.navigate({
         to: '/users/$userId',
         params: { userId },
+      });
+    },
+    [sidebar, router],
+  );
+
+  const navigateToEditUser = React.useCallback(
+    (userId: string) => {
+      sidebar.setOpen(false);
+      router.navigate({
+        to: '/users/$userId',
+        params: { userId },
+        search: { mode: 'edit' },
       });
     },
     [sidebar, router],
@@ -488,6 +516,22 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     },
   });
 
+  const bulkUpdateStatus = useUserBulkUpdate({
+    onSuccess(result) {
+      tableRef.current?.resetRowSelection();
+      const message =
+        result.modified === 1
+          ? '1 usuário atualizado!'
+          : result.modified.toString().concat(' usuários atualizados!');
+      toastSuccess(message, 'O status dos usuários foi alterado');
+    },
+    onError(error) {
+      handleApiError(error, {
+        context: 'Erro ao alterar o status dos usuários',
+      });
+    },
+  });
+
   const isAnySinglePending =
     sendToTrash.isPending || removeFromTrash.isPending || userDelete.isPending;
 
@@ -501,8 +545,15 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
         onRemoveFromTrash: (user) => setSingleRestoreUser(user),
         onPermanentDelete: (user) => setSingleDeleteUser(user),
         onView: (user) => navigateToUser(user._id),
+        onEdit: (user) => navigateToEditUser(user._id),
       }),
-    [canTrash, isMaster, isAnySinglePending, navigateToUser],
+    [
+      canTrash,
+      isMaster,
+      isAnySinglePending,
+      navigateToUser,
+      navigateToEditUser,
+    ],
   );
 
   const leftPinning: Array<string> = [];
@@ -554,6 +605,54 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
           onDelete={() => setBulkDeleteOpen(true)}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
+          extraActions={
+            <DropdownMenu
+              dir="ltr"
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-test-id="bulk-user-status-btn"
+                  disabled={bulkUpdateStatus.isPending}
+                >
+                  {bulkUpdateStatus.isPending ? (
+                    <LoaderCircleIcon className="size-4 animate-spin" />
+                  ) : (
+                    <PowerIcon className="size-4" />
+                  )}
+                  <span>Alterar status</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Definir status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() =>
+                    bulkUpdateStatus.mutate({
+                      ids: selectedIds,
+                      status: E_USER_STATUS.ACTIVE,
+                    })
+                  }
+                >
+                  <span>Ativar</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() =>
+                    bulkUpdateStatus.mutate({
+                      ids: selectedIds,
+                      status: E_USER_STATUS.INACTIVE,
+                    })
+                  }
+                >
+                  <span>Desativar</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
         />
       )}
 
