@@ -272,7 +272,7 @@ export function TableErrors({
         {
           onSuccess: () => {
             if (nextResolved) {
-              toast.success('Erro marcado como resolvido', {
+              toast.success('Marcado como resolvido', {
                 description: 'Saiu da lista "Em aberto".',
                 action: {
                   label: 'Ver resolvidos',
@@ -280,7 +280,7 @@ export function TableErrors({
                 },
               });
             } else {
-              toast.success('Erro reaberto', {
+              toast.success('Reaberto', {
                 action: {
                   label: 'Ver em aberto',
                   onClick: () => onViewResolved(false),
