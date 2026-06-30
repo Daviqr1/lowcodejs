@@ -5,6 +5,7 @@ import {
   PuzzleIcon,
   SettingsIcon,
   TableIcon,
+  TriangleAlertIcon,
   UserIcon,
   UsersIcon,
   WrenchIcon,
@@ -58,6 +59,7 @@ const SYSTEM_ITEMS: Array<CapabilityMenuItem> = [
     capability: E_AREA_CAPABILITY.MANAGE_TOOLS,
   },
   { title: 'Histórico de ações', url: '/logs', icon: HistoryIcon },
+  { title: 'Histórico de erros', url: '/error-logs', icon: TriangleAlertIcon },
 ];
 
 // Monta os menus estaticos a partir das capacidades resolvidas do usuario, nao
