@@ -18,38 +18,37 @@ Usuario MASTER **nao** tem seed: e criado via Setup Wizard na UI na primeira exe
 
 ## Migrations (`migrations/`)
 
-One-time, idempotentes via marcadores persistidos no documento Setting
-singleton. Diferente de seeders, NAO seguem o padrao `<timestamp>-<nome>` —
-sao scripts manuais executados via npm script dedicado.
+One-time (`NN-migrate-*.ts`), idempotentes via marcadores persistidos no
+documento Setting singleton. Rodam **automaticamente** no boot Docker: o
+`docker-entry-point.sh` loopa `scripts/migrations/*.sh` (que invocam o `.ts`
+irmao) em ordem numerica (01→27) antes dos seeders. No 2o boot em diante sao
+no-op. **Nao ha `npm run migrate:*`** — em dev local (`npm run dev`) elas nao
+rodam.
 
-| Arquivo | Descricao |
-|---------|-----------|
-| `migrate-dual-connection.ts` | Copia collections dinamicas do DB system (`DB_DATABASE`) para o DB data (`DB_DATA_DATABASE`). Le `tables` no source, copia cada slug para o target via `insertMany` (ignora duplicatas). Marca `Setting.MIGRATION_DUAL_CONNECTION_AT` ao final. Skip silencioso se marcador ja setado (a menos que `--force`) |
-| `migrate-backfill-relationship-create-records.ts` | Backfill de `allowCreateRelationshipRecords=false` em Field docs onde a propriedade ainda nao existe (nunca sobrescreve). Marcador `MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT` |
-| `migrate-backfill-row-slugs.ts` | Backfill de `sharedRowSlug` em rows dinamicas sem slug, usando o mesmo algoritmo do create/update; tabelas legadas sem `rowSlugFieldId` ganham fallback (primeiro TEXT_SHORT ativo, persistido na table) |
-| `migrate-backfill-storage-location.ts` | Backfill de `location` e `migration_status` em Storage docs faltantes (driver lido do Setting, nao de env). Marcador `MIGRATION_STORAGE_LOCATION_AT` |
-| `migrate-extension-slots.ts` | Renomeia `slot: string \| null` para `slots: string[]` em todos os docs da collection `extensions` e remove o campo antigo. Marcador `MIGRATION_EXTENSION_SLOTS_AT` |
-| `migrate-group-native-fields.ts` | Garante os campos nativos no nivel raiz da tabela (`FIELD_NATIVE_LIST` + `fieldOrder*`) e em cada `Table.groups[*]` (`FIELD_GROUP_NATIVE_LIST`), criando os faltantes na collection `fields`. Idempotente por slug. Marcador versionado `MIGRATION_NATIVE_FIELDS_AT` (re-roda uma vez em bases que so tinham `MIGRATION_GROUP_NATIVE_FIELDS_AT`, p/ backfill de `updatedAt`/`updater`) |
-| `migrate-relationship-table-id.ts` | Backfill de `relationship.table._id` em Fields RELATIONSHIP (lookup por slug), tornando refs slug-independentes. Marcador `MIGRATION_RELATIONSHIP_TABLE_ID_AT` |
-| `migrate-row-status-trashed.ts` | Introduz `status`/`draftAt` em rows dinamicas (e itens FIELD_GROUP embedded) e remove o boolean `trashed` — trash passa a ser derivado de `trashedAt`. Roda no DB data |
-| `migrate-backfill-logger-audit.ts` | Backfilla nos logs de `ROW` os campos `creator`/`updater`/`objectCreatedAt`/`objectUpdatedAt` do registro referenciado (lidos da ROW via dual-connection). Marcador `MIGRATION_LOGGER_AUDIT_AT` |
+A lista completa e ordenada (marker + proposito de cada uma) vive em:
+
+- `database/migrations/CLAUDE.md` — tabela por arquivo `.ts` + marker + pattern.
+- `scripts/migrations/CLAUDE.md` — wrappers `.sh`, ordem de boot e `_lib.sh`.
+
+Fora do boot ha um remodel **manual**: `migrate-fieldgroup-to-relationship.ts`
+(sem wrapper `.sh`) — converte um `FIELD_GROUP` falso-relacionamento numa tabela
+independente. Destrutivo, exige `--apply --i-have-backup`.
 
 ### Execucao
 
 ```bash
-# Copia (idempotente — skip se ja migrado)
-npm run seed                                     # primeiro: seed
-npm run migrate:dual-connection                  # depois: migracao
-# Em container, ambos rodam automaticamente via docker-entrypoint.sh
+# Rodar uma migration a mao (dev local ou debug) — via wrapper .sh
+sh scripts/migrations/01-migrate-dual-connection.sh            # skip se ja marcado
+sh scripts/migrations/01-migrate-dual-connection.sh --force    # ignora marker
 
-# Re-executar copia mesmo com marcador setado
-npm run migrate:dual-connection -- --force
+# Ou direto no TS (equivalente)
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --force
 
-# Apagar collections do DB system apos copia (MANUAL, apenas apos validacao em prod)
-npm run migrate:dual-connection -- --drop-source
-
-# Idem em producao (dentro do container)
-docker exec -it low-code-js-api npm run migrate:dual-connection:prod -- --drop-source
+# Apagar collections do DB system apos a copia dual-connection
+# (MANUAL, apenas apos validacao em prod + backup)
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --drop-source
 ```
 
 Pre-requisitos para `--drop-source` em producao:

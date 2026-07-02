@@ -335,8 +335,8 @@ bin/server.ts:
 4. initChatSocket(httpServer, jwtDecode) - Socket.IO para chat
 ```
 
-Em container Docker, o `docker-entrypoint.sh` roda ANTES do servidor:
-1. `npm run migrate:dual-connection` (idempotente — no-op se ja migrado)
+Em container Docker, o `docker-entry-point.sh` roda ANTES do servidor:
+1. Migrations: loop sobre `scripts/migrations/*.sh` em ordem (01→27), idempotentes
 2. `npm run seed` (idempotente — upsert)
 3. Inicia o servidor
 
@@ -628,48 +628,48 @@ no core. Documentação canônica em `backend/extensions/CLAUDE.md`.
 
 ## Migrations
 
-Execucao: `database/migrations/migrate-dual-connection.ts`. Migracao one-time
-(idempotente via marcadores no Setting singleton) que copia as collections
-dinamicas do DB system para o DB data. Roda automaticamente no
-`docker-entrypoint.sh`; no segundo boot em diante e no-op com 1 query.
+Migracoes one-time (`database/migrations/NN-migrate-*.ts`, 01→27), idempotentes
+via marcadores no Setting singleton. Rodam **automaticamente** no boot Docker: o
+`docker-entry-point.sh` loopa `scripts/migrations/*.sh` (wrappers que invocam o
+`.ts` irmao via `_lib.sh`) em ordem, antes dos seeders. No 2o boot em diante sao
+no-op. **Nao existem `npm run migrate:*`** — em dev local (`npm run dev`) elas
+nao rodam.
 
-Comandos:
-- `npm run migrate:dual-connection` — copia (skip se `MIGRATION_DUAL_CONNECTION_AT` ja setado)
-- `npm run migrate:dual-connection -- --force` — re-executa ignorando marcador
-- `npm run migrate:dual-connection -- --drop-source` — apaga collections do DB
-  system apos copia (manual, executar apenas apos validar em producao + backup)
+Tabela completa (marker + proposito de cada uma) em `database/migrations/CLAUDE.md`
+e `scripts/migrations/CLAUDE.md`. Rodar uma a mao:
 
-Marcadores persistidos no Setting:
-- `MIGRATION_DUAL_CONNECTION_AT` — timestamp da copia bem-sucedida
-- `MIGRATION_DUAL_CONNECTION_DROPPED_AT` — timestamp do drop bem-sucedido
+```bash
+sh scripts/migrations/01-migrate-dual-connection.sh --force   # via wrapper
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --force # direto no TS
+```
+
+**Dual-connection (01)** — copia as collections dinamicas do DB system para o DB
+data. Markers `MIGRATION_DUAL_CONNECTION_AT` (copia) e
+`MIGRATION_DUAL_CONNECTION_DROPPED_AT` (drop via `--drop-source`, manual, so apos
+validar prod + backup; recusa se a copia nunca completou).
 
 ### Migrations de relacionamento (cardinalidade)
 
-No boot Docker, `docker-entry-point.sh` loopa `scripts/migrations/*.sh` em ordem
-alfabetica; as de relacionamento sao 14→15→16 (lift-out-of-groups →
-embedded-to-links → backfill-endpoint-flags), idempotentes via marker no Setting.
-Em **dev local** (`npm run dev`, sem Docker) elas nao rodam — use os npm scripts:
-
-- `npm run migrate:relationship` — roda as 3 em ordem (14→15→16)
-- `npm run migrate:relationship-lift-out-of-groups` / `-embedded-to-links` /
-  `-endpoint-flags` — avulsas (mesma ordem se rodadas a mao)
-- Cada uma aceita `-- --force` p/ reexecutar ignorando o marker
-
-### Migration 19 — validações de campo
-
-`19-field-validations.sh` → `migrate-field-validations.ts`: backfill de
-`validations: []` em Field docs sem a propriedade (marker
-`MIGRATION_FIELD_VALIDATIONS_AT`). Roda no boot Docker pelo mesmo loop; **sem npm
-script** (convenção do projeto). Não deriva regras do `format` (legado segue
-validando) — evita validação dupla.
+Dependem de ordem entre si: 14 (lift-out-of-groups) → 15 (embedded-to-links) →
+16 (endpoint-flags) → 17 (links-to-fk) → 18 (mirror), com reparos posteriores 23,
+25, 26 e 27. Idempotentes via marker; as 14→17 **retem** o marker se sobrar
+campo/definition pendente e **reprocessam no proximo boot** (nao abortam o boot).
+Rodar avulsa: `sh scripts/migrations/16-migrate-backfill-relationship-endpoint-flags.sh --force`.
 
 Pos-migracao **todo** campo `RELATIONSHIP` fica top-level e materializado
-(`relationship.relationshipId` + campo-espelho); o passo 16 falha alto (nao grava
-marker) se sobrar campo sem `relationshipId`. Os links sao a unica fonte de
-verdade — nao ha fallback embedded.
+(`relationship.relationshipId` + campo-espelho); o passo 16 loga falha e **nao
+grava o marker** se sobrar campo sem `relationshipId` (reprocessa no boot). Os
+links/FK sao a fonte de verdade — nao ha fallback embedded.
 
-**Remodel manual (one-off, fora do boot):**
-`npm run migrate:fieldgroup-to-relationship -- --table=<slug> --group=<id|slug> --i-have-backup`
-converte um `FIELD_GROUP` usado como falso-relacionamento (subdoc embedded) numa
+**Remodel manual (one-off, fora do boot, sem wrapper `.sh`):**
+
+```bash
+node --import @swc-node/register/esm-register \
+  database/migrations/migrate-fieldgroup-to-relationship.ts \
+  --table=<slug> --group=<id|slug> --apply --i-have-backup
+```
+
+Converte um `FIELD_GROUP` usado como falso-relacionamento (subdoc embedded) numa
 tabela independente + `RelationshipDefinition` + links. Destrutivo, exige backup,
 nao idempotente-por-marker (depende de decisao humana por tabela).
