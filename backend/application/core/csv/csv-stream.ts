@@ -75,9 +75,7 @@ export function buildCsvStream<TRow extends Record<string, unknown>>(opts: {
   // `AsyncParser.parse` despacha AsyncIterable como objeto único (bug interno
   // da lib), então convertemos para Readable em objectMode antes.
   const input = Readable.from(opts.source, { objectMode: true });
-  // A tipagem de `@json2csv/node` declara o retorno como o próprio parser, mas
-  // em runtime `parse` devolve um Readable (ver comentário acima). Sem tipo
-  // público que expresse isso, a asserção dupla é inevitável aqui.
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return parser.parse(input) as unknown as Readable;
+  // `parse` retorna JSON2CSVNodeTransform, que estende Transform → Readable —
+  // já é atribuível ao retorno `Readable` sem asserção.
+  return parser.parse(input);
 }
