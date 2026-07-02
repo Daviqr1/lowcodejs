@@ -82,6 +82,34 @@ Classe `RowPayloadValidator` com metodo estatico `validate(payload, fields, grou
   As validacoes **configuraveis** (is-unique, ranges, etc.) ficam em
   `validations/` + `FieldValidationService`, nao aqui.
 
+### `field-slug.core.ts`
+
+Classe `FieldSlug` (estatica): `normalize`/`suggest`/`getError`/`resolve`/
+`suggestUnique` para slugs de campo (via `slugify`, `^[a-z0-9]+(-[a-z0-9]+)*$`,
+2–80 chars). `suggestUnique` desambigua com sufixo `-N`.
+
+### `menu-visibility.core.ts`
+
+Classe `MenuVisibility` (estatica): avalia o binding `visibility` de um menu e da
+cadeia de ancestrais (pai oculto esconde a subarvore). `bindingAllows` +
+`isVisible`. Compartilhada entre sidebar de menu e exibicao de paginas.
+
+### `row-ownership.core.ts`
+
+`resolveCreatorId(creator)` — normaliza o dono de uma row (string, ObjectId ou
+`{ _id }` populado) em `string | null`. Usada no enforcement "apenas as suas"
+(perfil contributor) nos use-cases de update/delete/send-to-trash.
+
+### `row-password-helper.core.ts`
+
+Helpers de campos TEXT_SHORT+PASSWORD: `hashPasswordFields` (bcrypt, pula ja
+hasheados/mascarados), `stripMaskedPasswordFields` (descarta vazios/mascara no
+update) e `maskPasswordFields` (mascara na leitura com `••••••••`).
+
+### `object-id.util.ts`
+
+`isValidObjectId(id)` — wrapper de `mongoose.Types.ObjectId.isValid`.
+
 ### `controllers.ts`
 
 Carrega dinamicamente todos os `*.controller.ts` de `resources/` para registro
@@ -103,7 +131,17 @@ manter lista manual.
   awaited em `start/kernel.ts` antes do bootstrap dos controllers
 - Usa `injectablesHolder.injectService()` do fastify-decorators
 
-## Subdiretorio: `table/`
+## Subdiretorios
+
+| Subpasta      | Responsabilidade                                                                 | Doc |
+| ------------- | -------------------------------------------------------------------------------- | --- |
+| `table/`      | Sandbox VM de scripts de usuario (beforeSave/afterSave/onLoad)                    | `table/CLAUDE.md` |
+| `validations/`| Camada unica de validacao de valor configuravel por campo (`field.validations[]`)| `validations/CLAUDE.md` |
+| `csv/`        | Utilitarios puros de exportacao CSV (filename, format, streaming em batches)      | `csv/CLAUDE.md` |
+| `extensions/` | Infra core de extensoes: loader de boot, schema Zod do manifest, contrato de guard| `extensions/CLAUDE.md` |
+| `logger/`     | Resolve auditoria (creator/updater/datas) da ROW referenciada por um log          | `logger/CLAUDE.md` |
+
+### `table/`
 
 Sistema de sandbox para execucao de scripts de usuario (beforeSave, afterSave,
 onLoad).
