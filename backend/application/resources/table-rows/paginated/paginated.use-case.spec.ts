@@ -101,6 +101,39 @@ describe('Table Row Paginated Use Case', () => {
     }
   });
 
+  it('excludeSelfId: oculta o próprio registro dos candidatos (auto-relacionamento)', async () => {
+    const table = await tableInMemoryRepository.create({
+      name: 'Produtos',
+      slug: 'produtos',
+      _schema: {},
+      fields: [],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    const self = await rowRepository.create({
+      table,
+      data: { nome: 'Produto A' },
+    });
+    await rowRepository.create({ table, data: { nome: 'Produto B' } });
+
+    const result = await sut.execute({
+      slug: 'produtos',
+      page: 1,
+      perPage: 20,
+      excludeSelfId: self._id,
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.data).toHaveLength(1);
+      expect(result.value.meta.total).toBe(1);
+      expect(result.value.data.some((row) => row._id === self._id)).toBe(false);
+    }
+  });
+
   it('deve retornar erro TABLE_NOT_FOUND quando tabela nao existir', async () => {
     const result = await sut.execute({
       slug: 'non-existent',

@@ -317,4 +317,49 @@ describe('RelationshipDeletionService', () => {
     const mirror = fieldRepository.items.find((f) => f._id === sourceFieldId);
     expect(mirror?.trashed).toBe(true);
   });
+
+  it('cleanupTable em auto-relacionamento remove links e definition sem espelho a limpar', async () => {
+    // source e target são a mesma tabela (pedidos): ambos os campos saem no
+    // deleteMany da exclusão da tabela; cleanupTable só zera links + definition.
+    const filhos = await fieldRepository.create({
+      ...FIELD_BASE,
+      name: 'Filhos',
+      slug: 'filhos',
+      type: E_FIELD_TYPE.RELATIONSHIP,
+      multiple: true,
+    });
+    const pai = await fieldRepository.create({
+      ...FIELD_BASE,
+      name: 'Pai',
+      slug: 'pai',
+      type: E_FIELD_TYPE.RELATIONSHIP,
+      multiple: false,
+    });
+    const definition = await definitionRepository.create({
+      name: 'Hierarquia',
+      source: {
+        table: { _id: pedidos._id, slug: pedidos.slug },
+        field: { _id: filhos._id, slug: 'filhos' },
+        visible: true,
+        label: 'Filhos',
+      },
+      target: {
+        table: { _id: pedidos._id, slug: pedidos.slug },
+        field: { _id: pai._id, slug: 'pai' },
+        visible: true,
+        label: 'Pai',
+      },
+      onDelete: E_RELATIONSHIP_ON_DELETE.SET_NULL,
+    });
+    await linkRepository.create({
+      relationshipId: definition._id,
+      sourceId: 'row1',
+      targetId: 'row2',
+    });
+
+    await sut.cleanupTable(pedidos._id);
+
+    expect(await definitionRepository.findById(definition._id)).toBeNull();
+    expect(linkRepository.items).toHaveLength(0);
+  });
 });
