@@ -15,8 +15,9 @@
  *   MIGRATION_LOGGER_AUDIT_AT
  *
  * Usage:
- *   npm run migrate:logger-audit            # backfill (skips if already migrated)
- *   npm run migrate:logger-audit -- --force # re-run, ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/13-migrate-backfill-logger-audit.ts            # backfill (skips if already migrated)
+ *   node --import @swc-node/register/esm-register database/migrations/13-migrate-backfill-logger-audit.ts -- --force # re-run, ignoring marker
+ *   (no boot Docker roda via scripts/migrations/13-migrate-backfill-logger-audit.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

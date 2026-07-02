@@ -18,8 +18,9 @@
  *   MIGRATION_ROW_STATUS_TRASHED_AT
  *
  * Usage:
- *   npm run migrate:row-status-trashed            # backfill (skips if already done)
- *   npm run migrate:row-status-trashed -- --force # re-run, ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/07-migrate-row-status-trashed.ts            # backfill (skips if already done)
+ *   node --import @swc-node/register/esm-register database/migrations/07-migrate-row-status-trashed.ts -- --force # re-run, ignoring marker
+ *   (no boot Docker roda via scripts/migrations/07-migrate-row-status-trashed.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

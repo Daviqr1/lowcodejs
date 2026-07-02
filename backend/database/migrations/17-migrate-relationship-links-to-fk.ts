@@ -23,8 +23,9 @@
  *   MIGRATION_RELATIONSHIP_LINKS_TO_FK_AT
  *
  * Usage:
- *   npm run migrate:relationship-links-to-fk
- *   npm run migrate:relationship-links-to-fk -- --force
+ *   node --import @swc-node/register/esm-register database/migrations/17-migrate-relationship-links-to-fk.ts
+ *   node --import @swc-node/register/esm-register database/migrations/17-migrate-relationship-links-to-fk.ts -- --force
+ *   (no boot Docker roda via scripts/migrations/17-migrate-relationship-links-to-fk.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

@@ -17,9 +17,9 @@
  *  - NÃO é idempotente por marker: depende de decisão humana por tabela/grupo.
  *
  * Usage:
- *   npm run migrate:fieldgroup-to-relationship -- --table=equipamento --group=agendamentos
- *   npm run migrate:fieldgroup-to-relationship -- --table=equipamento --group=agendamentos --apply --i-have-backup
- *   npm run migrate:fieldgroup-to-relationship -- --table=equipamento --group=agendamentos --apply --i-have-backup --drop-group
+ *   node --import @swc-node/register/esm-register database/migrations/migrate-fieldgroup-to-relationship.ts --table=equipamento --group=agendamentos
+ *   node --import @swc-node/register/esm-register database/migrations/migrate-fieldgroup-to-relationship.ts --table=equipamento --group=agendamentos --apply --i-have-backup
+ *   node --import @swc-node/register/esm-register database/migrations/migrate-fieldgroup-to-relationship.ts --table=equipamento --group=agendamentos --apply --i-have-backup --drop-group
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

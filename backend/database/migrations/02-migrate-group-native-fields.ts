@@ -17,8 +17,9 @@
  *   MIGRATION_NATIVE_FIELDS_AT
  *
  * Usage:
- *   npm run migrate:group-native-fields            # backfill (skips if already migrated)
- *   npm run migrate:group-native-fields -- --force # re-run, ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/02-migrate-group-native-fields.ts            # backfill (skips if already migrated)
+ *   node --import @swc-node/register/esm-register database/migrations/02-migrate-group-native-fields.ts -- --force # re-run, ignoring marker
+ *   (no boot Docker roda via scripts/migrations/02-migrate-group-native-fields.sh)
  *
  * Environment variables required:
  *   DATABASE_URL - MongoDB connection string

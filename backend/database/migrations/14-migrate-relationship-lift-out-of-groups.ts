@@ -20,8 +20,9 @@
  *   MIGRATION_RELATIONSHIP_LIFT_OUT_AT
  *
  * Usage:
- *   npm run migrate:relationship-lift-out-of-groups
- *   npm run migrate:relationship-lift-out-of-groups -- --force
+ *   node --import @swc-node/register/esm-register database/migrations/14-migrate-relationship-lift-out-of-groups.ts
+ *   node --import @swc-node/register/esm-register database/migrations/14-migrate-relationship-lift-out-of-groups.ts -- --force
+ *   (no boot Docker roda via scripts/migrations/14-migrate-relationship-lift-out-of-groups.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

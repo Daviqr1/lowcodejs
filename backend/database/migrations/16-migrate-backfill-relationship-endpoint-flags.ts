@@ -22,8 +22,9 @@
  *   MIGRATION_RELATIONSHIP_ENDPOINT_FLAGS_AT
  *
  * Usage:
- *   npm run migrate:relationship-endpoint-flags
- *   npm run migrate:relationship-endpoint-flags -- --force
+ *   node --import @swc-node/register/esm-register database/migrations/16-migrate-backfill-relationship-endpoint-flags.ts
+ *   node --import @swc-node/register/esm-register database/migrations/16-migrate-backfill-relationship-endpoint-flags.ts -- --force
+ *   (no boot Docker roda via scripts/migrations/16-migrate-backfill-relationship-endpoint-flags.sh)
  *
  * Environment variables required:
  *   DATABASE_URL - MongoDB connection string
@@ -235,9 +236,10 @@ async function migrate(): Promise<void> {
     if (unmaterialized > 0) {
       logger.failed(
         `${unmaterialized} campo(s) RELATIONSHIP ainda sem relationshipId ou dentro de grupo. ` +
-          `Marker NÃO gravado (reprocessa no próximo boot). Rode "npm run migrate:relationship" ` +
+          `Marker NÃO gravado (reprocessa no próximo boot). Para rodar à mão, execute em ordem ` +
+          `scripts/migrations/14, 15 e 16 (ex.: "sh scripts/migrations/16-migrate-backfill-relationship-endpoint-flags.sh --force"); ` +
           `e, para FIELD_GROUP usado como falso-relacionamento, ` +
-          `"npm run migrate:fieldgroup-to-relationship -- --table=<slug> --group=<id|slug> --i-have-backup".`,
+          `"node --import @swc-node/register/esm-register database/migrations/migrate-fieldgroup-to-relationship.ts --table=<slug> --group=<id|slug> --apply --i-have-backup".`,
       );
       return;
     }

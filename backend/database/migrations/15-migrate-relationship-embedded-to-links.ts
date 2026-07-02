@@ -24,8 +24,9 @@
  *   MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT
  *
  * Usage:
- *   npm run migrate:relationship-embedded-to-links
- *   npm run migrate:relationship-embedded-to-links -- --force
+ *   node --import @swc-node/register/esm-register database/migrations/15-migrate-relationship-embedded-to-links.ts
+ *   node --import @swc-node/register/esm-register database/migrations/15-migrate-relationship-embedded-to-links.ts -- --force
+ *   (no boot Docker roda via scripts/migrations/15-migrate-relationship-embedded-to-links.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string

@@ -8,9 +8,10 @@
  * Safe to run on every container boot — second run is a no-op (single findOne).
  *
  * Usage:
- *   npm run migrate:dual-connection                     # copy (skips if already migrated)
- *   npm run migrate:dual-connection -- --force          # copy again, ignoring marker
- *   npm run migrate:dual-connection -- --drop-source    # drop source collections (requires prior migration)
+ *   node --import @swc-node/register/esm-register database/migrations/01-migrate-dual-connection.ts                 # copy (skips if already migrated)
+ *   node --import @swc-node/register/esm-register database/migrations/01-migrate-dual-connection.ts -- --force       # copy again, ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/01-migrate-dual-connection.ts -- --drop-source # drop source collections (requires prior migration)
+ *   (no boot Docker roda via scripts/migrations/01-migrate-dual-connection.sh)
  *
  * Environment variables required:
  *   DATABASE_URL     - MongoDB connection string
@@ -183,7 +184,7 @@ async function migrate(): Promise<void> {
     if (DROP_SOURCE) {
       if (!setting?.MIGRATION_DUAL_CONNECTION_AT) {
         logger.failed(
-          'cópia ainda não registrada — rode `npm run migrate:dual-connection` antes do drop',
+          'cópia ainda não registrada — rode `sh scripts/migrations/01-migrate-dual-connection.sh` antes do drop',
         );
         process.exit(1);
       }

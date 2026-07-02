@@ -13,8 +13,9 @@
  * Safe to run on every container boot — segunda execução é no-op.
  *
  * Uso:
- *   npm run migrate:extension-slots           # roda (skip se já migrado)
- *   npm run migrate:extension-slots -- --force # re-executa ignorando marker
+ *   node --import @swc-node/register/esm-register database/migrations/05-migrate-extension-slots.ts            # roda (skip se já migrado)
+ *   node --import @swc-node/register/esm-register database/migrations/05-migrate-extension-slots.ts -- --force # re-executa ignorando marker
+ *   (no boot Docker roda via scripts/migrations/05-migrate-extension-slots.sh)
  */
 
 import { config } from 'dotenv';

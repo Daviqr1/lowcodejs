@@ -11,8 +11,9 @@
  * backfills the _id. This makes relationship references slug-independent.
  *
  * Usage:
- *   npm run migrate:relationship-table-id           # backfill (skips if already done)
- *   npm run migrate:relationship-table-id -- --force # re-run ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/06-migrate-relationship-table-id.ts            # backfill (skips if already done)
+ *   node --import @swc-node/register/esm-register database/migrations/06-migrate-relationship-table-id.ts -- --force # re-run ignoring marker
+ *   (no boot Docker roda via scripts/migrations/06-migrate-relationship-table-id.sh)
  *
  * Environment variables required:
  *   DATABASE_URL - MongoDB connection string

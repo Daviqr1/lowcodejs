@@ -12,8 +12,9 @@
  * boot (and therefore before syncStorageEnv).
  *
  * Usage:
- *   npm run migrate:backfill-storage-location           # backfill (skips if already done)
- *   npm run migrate:backfill-storage-location -- --force # re-run ignoring marker
+ *   node --import @swc-node/register/esm-register database/migrations/03-migrate-backfill-storage-location.ts            # backfill (skips if already done)
+ *   node --import @swc-node/register/esm-register database/migrations/03-migrate-backfill-storage-location.ts -- --force # re-run ignoring marker
+ *   (wrapper .sh 03 está desativado — o backfill roda pela feature de storage-migration)
  *
  * Environment variables required:
  *   DATABASE_URL - MongoDB connection string
