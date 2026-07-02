@@ -96,6 +96,13 @@ export default class TableRowPaginatedUseCase {
         }
       }
 
+      // Auto-relacionamento: remove o próprio registro editado dos candidatos.
+      // Em relacionamento com outra tabela é no-op (o _id não aparece na lista).
+      if (payload.excludeSelfId) {
+        if (excludeIds) excludeIds.push(payload.excludeSelfId);
+        else excludeIds = [payload.excludeSelfId];
+      }
+
       const rows = await this.rowRepository.findMany({
         table,
         rawFilters: payload,

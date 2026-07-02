@@ -135,6 +135,11 @@ export default class RowInMemoryRepository implements RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'excludeLinked' ||
+          key === 'relationshipId' ||
+          key === 'excludeSide' ||
+          key === 'excludeForRecordId' ||
+          key === 'excludeSelfId' ||
           String(key).startsWith('order-')
         ) {
           continue;
@@ -189,6 +194,11 @@ export default class RowInMemoryRepository implements RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'excludeLinked' ||
+          key === 'relationshipId' ||
+          key === 'excludeSide' ||
+          key === 'excludeForRecordId' ||
+          key === 'excludeSelfId' ||
           String(key).startsWith('order-')
         ) {
           continue;

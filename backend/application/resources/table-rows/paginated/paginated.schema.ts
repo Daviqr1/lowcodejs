@@ -57,6 +57,11 @@ export const TableRowPaginatedSchema: FastifySchema = {
         description: 'Filtrar apenas por visibilidade pública (opcional)',
         examples: ['true', 'false'],
       },
+      excludeSelfId: {
+        type: 'string',
+        description:
+          'Auto-relacionamento: oculta o próprio registro editado da lista de candidatos (opcional). Sem efeito quando a tabela-alvo é outra.',
+      },
     },
     additionalProperties: true,
   },

@@ -15,6 +15,9 @@ export const TableRowPaginatedQueryValidator = z
     relationshipId: z.string().trim().optional(),
     excludeSide: z.enum(['source', 'target']).optional(),
     excludeForRecordId: z.string().trim().optional(),
+    // Auto-relacionamento: oculta o próprio registro editado da lista de
+    // candidatos (só tem efeito quando a tabela-alvo é a própria).
+    excludeSelfId: z.string().trim().optional(),
   })
   .loose();
 
