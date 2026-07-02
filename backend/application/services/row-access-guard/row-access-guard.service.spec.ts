@@ -1,4 +1,7 @@
 /* eslint-disable no-unused-vars */
+// Specs constroem mocks parciais de entidades do domínio via asserção; tipá-los
+// por completo aqui seria só ruído de teste.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { right } from '@application/core/either.core';

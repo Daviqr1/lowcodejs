@@ -64,10 +64,7 @@ function toAnthropicMessages(messages: Array<LlmChatMessage>): {
         for (const tc of msg.tool_calls) {
           let input: Record<string, unknown> = {};
           try {
-            input = JSON.parse(tc.function.arguments || '{}') as Record<
-              string,
-              unknown
-            >;
+            input = JSON.parse(tc.function.arguments || '{}');
           } catch {
             input = {};
           }
@@ -93,12 +90,14 @@ function toAnthropicMessages(messages: Array<LlmChatMessage>): {
       ];
       while (i + 1 < messages.length && messages[i + 1]?.role === 'tool') {
         i++;
-        const next = messages[i] as Extract<LlmChatMessage, { role: 'tool' }>;
-        blocks.push({
-          type: 'tool_result',
-          tool_use_id: next.tool_call_id,
-          content: next.content,
-        });
+        const next = messages[i];
+        if (next && next.role === 'tool') {
+          blocks.push({
+            type: 'tool_result',
+            tool_use_id: next.tool_call_id,
+            content: next.content,
+          });
+        }
       }
       out.push({ role: 'user', content: blocks });
     }
@@ -120,8 +119,8 @@ function toAnthropicTools(
 function parseClaudeResponse(
   data: Record<string, unknown>,
 ): LlmChatCompletionResult {
-  const content = data.content as Array<Record<string, unknown>> | undefined;
-  if (!content) {
+  const content = data.content;
+  if (!Array.isArray(content)) {
     throw new Error('Resposta Anthropic sem content');
   }
 
@@ -155,7 +154,7 @@ function parseClaudeResponse(
     assistantMessage.tool_calls = toolCallList;
   }
 
-  const stopReason = data.stop_reason as string;
+  const stopReason = data.stop_reason;
   if (stopReason === 'tool_use' && toolCallList.length > 0) {
     return { message: assistantMessage, finishReason: 'tool_calls' };
   }
@@ -195,7 +194,7 @@ export function createClaudeProvider(config: ClaudeConfig): LlmChatProvider {
       let data: Record<string, unknown> = {};
       if (raw) {
         try {
-          data = JSON.parse(raw) as Record<string, unknown>;
+          data = JSON.parse(raw);
         } catch {
           throw new Error(
             `Resposta inválida da Anthropic: ${raw.slice(0, 200)}`,
@@ -204,10 +203,17 @@ export function createClaudeProvider(config: ClaudeConfig): LlmChatProvider {
       }
 
       if (!response.ok) {
-        const err = data.error as { message?: string } | undefined;
-        throw new Error(
-          `Anthropic API ${response.status}: ${err?.message ?? raw.slice(0, 300)}`,
-        );
+        let errMessage = raw.slice(0, 300);
+        const err = data.error;
+        if (
+          err &&
+          typeof err === 'object' &&
+          'message' in err &&
+          typeof err.message === 'string'
+        ) {
+          errMessage = err.message;
+        }
+        throw new Error(`Anthropic API ${response.status}: ${errMessage}`);
       }
 
       return parseClaudeResponse(data);

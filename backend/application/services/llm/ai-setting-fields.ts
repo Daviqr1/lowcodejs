@@ -35,12 +35,14 @@ export function resolveLlmConfig(
     isConfigured = Boolean(apiKey?.trim() && model?.trim());
   }
 
+  let resolvedBaseUrl = setting?.LLM_BASE_URL?.trim() || null;
+  if (provider === 'ollama') resolvedBaseUrl = baseUrl;
+
   return {
     provider,
     apiKey,
     model,
-    baseUrl:
-      provider === 'ollama' ? baseUrl : setting?.LLM_BASE_URL?.trim() || null,
+    baseUrl: resolvedBaseUrl,
     isConfigured,
   };
 }
@@ -64,14 +66,14 @@ export function prepareAiSettingsForSave(
 ): SettingUpdatePayload {
   const provider = parseAiLlmProvider(payload.AI_LLM_PROVIDER);
 
-  const llmKey =
-    payload.LLM_API_KEY === undefined || payload.LLM_API_KEY === null
-      ? undefined
-      : payload.LLM_API_KEY.trim() || undefined;
-  const openAiKey =
-    payload.OPENAI_API_KEY === undefined || payload.OPENAI_API_KEY === null
-      ? undefined
-      : payload.OPENAI_API_KEY.trim() || undefined;
+  let llmKey: string | undefined;
+  if (payload.LLM_API_KEY !== undefined && payload.LLM_API_KEY !== null) {
+    llmKey = payload.LLM_API_KEY.trim() || undefined;
+  }
+  let openAiKey: string | undefined;
+  if (payload.OPENAI_API_KEY !== undefined && payload.OPENAI_API_KEY !== null) {
+    openAiKey = payload.OPENAI_API_KEY.trim() || undefined;
+  }
 
   if (llmKey !== undefined) {
     payload.LLM_API_KEY = llmKey;

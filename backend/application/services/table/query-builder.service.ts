@@ -202,12 +202,16 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
 
       if (queryKey in query) {
         const sortValue = query[queryKey]?.toString();
-        order[col.slug] = sortValue === 'asc' ? 1 : -1;
+        let direction: 1 | -1 = -1;
+        if (sortValue === 'asc') direction = 1;
+        order[col.slug] = direction;
       }
     }
 
     if (Object.keys(order).length === 0 && tableOrder?.field) {
-      order[tableOrder.field] = tableOrder.direction === 'asc' ? 1 : -1;
+      let direction: 1 | -1 = -1;
+      if (tableOrder.direction === 'asc') direction = 1;
+      order[tableOrder.field] = direction;
     }
 
     return order;

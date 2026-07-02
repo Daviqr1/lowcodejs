@@ -254,9 +254,8 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
     if (recipientIds.length === 0) return;
     const rowId = readString(asRecord(row)._id);
     const snippet = buildSnippet(commentText);
-    const title = cardTitle
-      ? `Você foi mencionado em "${cardTitle}"`
-      : 'Você foi mencionado em um card';
+    let title = 'Você foi mencionado em um card';
+    if (cardTitle) title = `Você foi mencionado em "${cardTitle}"`;
     await this.notificationService.notify({
       userIds: recipientIds,
       type: E_NOTIFICATION_TYPE.KANBAN_COMMENT_MENTION,

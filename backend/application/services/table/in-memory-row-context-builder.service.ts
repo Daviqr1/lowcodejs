@@ -10,7 +10,7 @@ export default class InMemoryRowContextBuilder implements RowContextBuilderContr
     this._forcedErrors.set(method, error);
   }
 
-  transform<T extends Record<string, any>>(
+  transform<T extends Record<string, unknown>>(
     rowJson: T,
     _fields: IField[],
     _userId?: string,

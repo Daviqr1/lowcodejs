@@ -35,15 +35,23 @@ async function postChatCompletions(
   let data: Record<string, unknown> = {};
   if (text) {
     try {
-      data = JSON.parse(text) as Record<string, unknown>;
+      data = JSON.parse(text);
     } catch {
       throw new Error(`Resposta inválida da API: ${text.slice(0, 200)}`);
     }
   }
 
   if (!response.ok) {
-    const err = data.error as { message?: string } | undefined;
-    const msg = err?.message ?? text.slice(0, 300) ?? response.statusText;
+    let msg = text.slice(0, 300) || response.statusText;
+    const err = data.error;
+    if (
+      err &&
+      typeof err === 'object' &&
+      'message' in err &&
+      typeof err.message === 'string'
+    ) {
+      msg = err.message;
+    }
     throw new Error(`API retornou ${response.status}: ${msg}`);
   }
 
@@ -53,31 +61,29 @@ async function postChatCompletions(
 function parseOpenAiResponse(
   data: Record<string, unknown>,
 ): LlmChatCompletionResult {
-  const choices = data.choices as Array<Record<string, unknown>> | undefined;
-  const choice = choices?.[0];
-  if (!choice) {
+  const choices = data.choices;
+  if (!Array.isArray(choices) || !choices[0]) {
     throw new Error('Resposta da API sem choices');
   }
+  const choice = choices[0];
 
-  const msg = choice.message as Record<string, unknown>;
-  const role = msg.role as string;
-  if (role !== 'assistant') {
+  const msg = choice.message;
+  if (!msg || msg.role !== 'assistant') {
     throw new Error('Resposta inesperada: role não é assistant');
   }
 
-  const finish = (choice.finish_reason as string) ?? 'stop';
-  const toolCallsRaw = msg.tool_calls as
-    | Array<Record<string, unknown>>
-    | undefined;
+  let finish = 'stop';
+  if (choice.finish_reason) finish = String(choice.finish_reason);
+  const toolCallsRaw = msg.tool_calls;
 
   const assistantMessage: LlmChatMessage = {
     role: 'assistant',
-    content: (msg.content as string | null) ?? null,
+    content: msg.content ?? null,
   };
 
-  if (toolCallsRaw && toolCallsRaw.length > 0) {
+  if (Array.isArray(toolCallsRaw) && toolCallsRaw.length > 0) {
     assistantMessage.tool_calls = toolCallsRaw.map((tc) => {
-      const fn = tc.function as Record<string, unknown>;
+      const fn = tc.function;
       return {
         id: String(tc.id ?? ''),
         type: 'function' as const,
@@ -90,10 +96,9 @@ function parseOpenAiResponse(
     return { message: assistantMessage, finishReason: 'tool_calls' };
   }
 
-  return {
-    message: assistantMessage,
-    finishReason: finish === 'tool_calls' ? 'tool_calls' : 'stop',
-  };
+  let finishReason: 'tool_calls' | 'stop' = 'stop';
+  if (finish === 'tool_calls') finishReason = 'tool_calls';
+  return { message: assistantMessage, finishReason };
 }
 
 export function createOpenAiCompatProvider(

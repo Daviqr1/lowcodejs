@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-s3';
 import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 
 import { getS3Client } from '@config/storage.config';
 
@@ -106,8 +106,13 @@ export default class S3StorageService implements StorageContractService {
       throw new Error(`[Storage S3] Empty body for ${filename}`);
     }
 
+    const body = result.Body;
+    if (!(body instanceof Readable)) {
+      throw new Error(`[Storage S3] Unexpected body type for ${filename}`);
+    }
+
     return {
-      stream: result.Body as Readable,
+      stream: body,
       size: result.ContentLength ?? 0,
       mimetype: result.ContentType ?? 'application/octet-stream',
     };

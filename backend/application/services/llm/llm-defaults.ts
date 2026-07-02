@@ -36,9 +36,7 @@ export function parseAiLlmProvider(
   value: string | null | undefined,
 ): AiLlmProvider {
   const normalized = (value ?? '').trim().toLowerCase();
-  const values = Object.values(E_AI_LLM_PROVIDER) as Array<string>;
-  if (values.includes(normalized)) {
-    return normalized as AiLlmProvider;
-  }
+  const match = Object.values(E_AI_LLM_PROVIDER).find((v) => v === normalized);
+  if (match) return match;
   return E_AI_LLM_PROVIDER.OPENAI;
 }

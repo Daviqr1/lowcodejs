@@ -74,23 +74,17 @@ export default class RowMemberNotificationService implements RowMemberNotificati
     const titleField = (table.fields ?? []).find(
       (f) => f.slug === table.layoutFields?.title || f.slug === 'titulo',
     );
-    const cardTitle = titleField
-      ? readString((nextRow as Record<string, unknown>)[titleField.slug])
-      : '';
-    const rowId = readString((nextRow as Record<string, unknown>)._id);
+    let cardTitle = '';
+    if (titleField) cardTitle = readString(nextRow[titleField.slug]);
+    const rowId = readString(nextRow._id);
 
     const aggregatedNewIds = new Set<string>();
     for (const field of userFields) {
-      const before = previousRow
-        ? new Set(
-            normalizeIdList(
-              (previousRow as Record<string, unknown>)[field.slug],
-            ),
-          )
-        : new Set<string>();
-      const after = normalizeIdList(
-        (nextRow as Record<string, unknown>)[field.slug],
-      );
+      let before = new Set<string>();
+      if (previousRow) {
+        before = new Set(normalizeIdList(previousRow[field.slug]));
+      }
+      const after = normalizeIdList(nextRow[field.slug]);
       for (const id of after) {
         if (!before.has(id) && id !== actorUserId) {
           aggregatedNewIds.add(id);
@@ -100,17 +94,20 @@ export default class RowMemberNotificationService implements RowMemberNotificati
 
     if (aggregatedNewIds.size === 0) return;
 
-    const baseTitle = isKanban
-      ? cardTitle
-        ? `Você foi atribuído ao card "${cardTitle}"`
-        : 'Você foi atribuído a um card'
-      : cardTitle
-        ? `Você foi adicionado ao evento "${cardTitle}"`
-        : 'Você foi adicionado a um evento';
+    let baseTitle: string;
+    if (isKanban) {
+      baseTitle = 'Você foi atribuído a um card';
+      if (cardTitle) baseTitle = `Você foi atribuído ao card "${cardTitle}"`;
+    } else {
+      baseTitle = 'Você foi adicionado a um evento';
+      if (cardTitle) baseTitle = `Você foi adicionado ao evento "${cardTitle}"`;
+    }
 
-    const body = isKanban
-      ? `No quadro ${table.name}`
-      : `Na agenda ${table.name}`;
+    let body = `Na agenda ${table.name}`;
+    if (isKanban) body = `No quadro ${table.name}`;
+
+    let actionLabel = 'Abrir evento';
+    if (isKanban) actionLabel = 'Abrir card';
 
     await this.notificationService.notify({
       userIds: Array.from(aggregatedNewIds),
@@ -120,7 +117,7 @@ export default class RowMemberNotificationService implements RowMemberNotificati
       action: {
         type: 'route',
         href: `/tables/${table.slug}?rowId=${rowId}`,
-        label: isKanban ? 'Abrir card' : 'Abrir evento',
+        label: actionLabel,
       },
       source: {
         tableSlug: table.slug,

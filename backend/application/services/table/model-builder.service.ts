@@ -97,12 +97,13 @@ export default class MongooseModelBuilder implements ModelBuilderContractService
       if (Array.isArray(value) && value[0]?.type === 'Embedded') {
         let embeddedSchema = value[0].schema || {};
 
-        const group = Array.isArray(table.groups)
-          ? table.groups.find((g: IGroupConfiguration) => g.slug === key)
-          : undefined;
+        let group: IGroupConfiguration | undefined;
+        if (Array.isArray(table.groups)) {
+          group = table.groups.find((g: IGroupConfiguration) => g.slug === key);
+        }
 
         if (group && Array.isArray(group.fields) && group.fields.length > 0) {
-          embeddedSchema = this.schema.build(group.fields as IField[]);
+          embeddedSchema = this.schema.build(group.fields);
         } else if (Object.keys(embeddedSchema).length === 0 && group?._schema) {
           embeddedSchema = group._schema;
         }
@@ -173,13 +174,15 @@ export default class MongooseModelBuilder implements ModelBuilderContractService
 
     if (table?.methods?.beforeSave?.code) {
       schema.pre('save', async function (next): Promise<void> {
+        let userAction: 'novo_registro' | 'editar_registro' = 'editar_registro';
+        if (this.isNew) userAction = 'novo_registro';
         const result = await executeScript({
           code: table?.methods?.beforeSave?.code!,
           doc: this,
           tableSlug: table.slug,
           fields: MongooseModelBuilder.mapFieldsForSandbox(table.fields ?? []),
           context: {
-            userAction: this.isNew ? 'novo_registro' : 'editar_registro',
+            userAction,
             executionMoment: 'antes_salvar',
             userId: this.creator?.toString(),
             isNew: this.isNew,
@@ -202,13 +205,15 @@ export default class MongooseModelBuilder implements ModelBuilderContractService
 
     if (table?.methods?.afterSave?.code) {
       schema.post('save', async function (doc, next): Promise<void> {
+        let userAction: 'novo_registro' | 'editar_registro' = 'editar_registro';
+        if (doc.isNew) userAction = 'novo_registro';
         const result = await executeScript({
           code: table?.methods?.afterSave?.code!,
           doc,
           tableSlug: table.slug,
           fields: MongooseModelBuilder.mapFieldsForSandbox(table.fields ?? []),
           context: {
-            userAction: doc.isNew ? 'novo_registro' : 'editar_registro',
+            userAction,
             executionMoment: 'depois_salvar',
             userId: doc.creator?.toString(),
             isNew: doc.isNew,

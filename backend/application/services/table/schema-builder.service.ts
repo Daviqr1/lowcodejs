@@ -258,6 +258,9 @@ export default class MongooseSchemaBuilder implements SchemaBuilderContractServi
       };
     }
 
+    // Os guardas `field.type in mapper` acima garantem a chave; o TS não
+    // estreita a chave do índice a partir do operador `in`.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return mapper[field.type as keyof typeof mapper];
   }
 

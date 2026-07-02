@@ -18,11 +18,13 @@ export default class StorageService implements StorageContractService {
   private readonly s3 = new S3StorageService();
 
   private get impl(): StorageContractService {
-    return getStorageDriver() === 's3' ? this.s3 : this.local;
+    if (getStorageDriver() === 's3') return this.s3;
+    return this.local;
   }
 
   forDriver(driver: 'local' | 's3'): StorageContractService {
-    return driver === 's3' ? this.s3 : this.local;
+    if (driver === 's3') return this.s3;
+    return this.local;
   }
 
   async upload(

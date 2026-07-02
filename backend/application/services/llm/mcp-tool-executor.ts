@@ -37,10 +37,7 @@ export async function executeMcpTool(params: {
 
     let contentStr = '';
     if (result.content && Array.isArray(result.content)) {
-      for (const content of result.content as Array<{
-        type: string;
-        text?: string;
-      }>) {
+      for (const content of result.content) {
         if (content.type === 'text') {
           contentStr += content.text || '';
         } else {
@@ -51,8 +48,8 @@ export async function executeMcpTool(params: {
       contentStr = String(result);
     }
 
-    const preview =
-      contentStr.length > 150 ? contentStr.slice(0, 150) + '...' : contentStr;
+    let preview = contentStr;
+    if (contentStr.length > 150) preview = contentStr.slice(0, 150) + '...';
 
     socket.emit(E_CHAT_EVENT.TOOL_RESULT, { name: toolName, preview });
 
@@ -68,7 +65,8 @@ export async function executeMcpTool(params: {
 
     return contentStr;
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    let errorMsg = String(err);
+    if (err instanceof Error) errorMsg = err.message;
 
     socket.emit(E_CHAT_EVENT.TOOL_ERROR, {
       name: toolName,

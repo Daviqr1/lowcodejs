@@ -1,3 +1,6 @@
+// Specs constroem mocks parciais de entidades do domínio (ITable/IRow/IUser/
+// IField) via asserção; tipá-los por completo aqui seria só ruído de teste.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -248,9 +251,9 @@ describe('KanbanCommentMentionService', () => {
     expect(result.changed).toBe(true);
     expect(result.data?.comentarios).toBeDefined();
     const updatedItem = (
-      result.data!.comentarios as Array<Record<string, any>>
+      result.data!.comentarios as Array<Record<string, unknown>>
     )[0];
-    const notifiedIds = JSON.parse(updatedItem['mencoes-notificadas']);
+    const notifiedIds = JSON.parse(String(updatedItem['mencoes-notificadas']));
     expect(new Set(notifiedIds)).toEqual(new Set([maria._id, joao._id]));
 
     const sentEmail = emailService.getLastEmail();

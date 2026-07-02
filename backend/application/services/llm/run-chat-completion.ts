@@ -61,7 +61,7 @@ function buildLlmTools(
     function: {
       name: tool.name,
       description: tool.description || '',
-      parameters: (tool.inputSchema as Record<string, unknown>) || {
+      parameters: tool.inputSchema || {
         type: 'object',
         properties: {},
       },
@@ -123,10 +123,7 @@ export async function runChatCompletion(params: {
     for (const toolCall of msg.tool_calls) {
       let toolArgs: Record<string, unknown> = {};
       try {
-        toolArgs = JSON.parse(toolCall.function.arguments || '{}') as Record<
-          string,
-          unknown
-        >;
+        toolArgs = JSON.parse(toolCall.function.arguments || '{}');
       } catch {
         toolArgs = {};
       }
