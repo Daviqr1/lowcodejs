@@ -14,16 +14,32 @@ const inertDeps: ValidationDeps = {
 };
 
 function makeContext(overrides: Partial<IField> = {}): ValidationContext {
-  // Mock parcial de IField: as specs de regras puras só tocam slug/type/
-  // multiple/validations. Construir o IField completo aqui seria ruído.
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const field = {
+  // IField completo: as specs de regras puras só tocam slug/type/multiple/
+  // validations, mas montamos o shape inteiro para dispensar asserção.
+  const field: IField = {
+    _id: 'field-id',
+    createdAt: new Date(),
+    updatedAt: null,
+    trashed: false,
+    trashedAt: null,
+    name: 'Campo',
     slug: 'campo',
     type: E_FIELD_TYPE.TEXT_SHORT,
+    required: false,
     multiple: false,
+    format: null,
+    showInFilter: false,
+    widthInForm: null,
+    widthInList: null,
+    widthInDetail: null,
+    defaultValue: null,
+    relationship: null,
+    dropdown: [],
+    category: [],
+    group: null,
     validations: [],
     ...overrides,
-  } as IField;
+  };
 
   return {
     field,
