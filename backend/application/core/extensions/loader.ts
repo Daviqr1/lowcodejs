@@ -69,7 +69,9 @@ export async function loadExtensions(
         if (!existsSync(manifestPath)) continue;
 
         try {
-          const raw = JSON.parse(await readFile(manifestPath, 'utf-8'));
+          const raw: Record<string, unknown> = JSON.parse(
+            await readFile(manifestPath, 'utf-8'),
+          );
           const manifest = ManifestSchema.parse({ ...raw, type });
 
           if (manifest.id !== extensionId) {
@@ -95,7 +97,7 @@ export async function loadExtensions(
               route: manifest.route ?? null,
               configRoute: manifest.configRoute ?? null,
               submenu: manifest.tool?.submenu ?? null,
-              manifestSnapshot: raw as Record<string, unknown>,
+              manifestSnapshot: raw,
               requires: manifest.requires ?? {},
               permissions: { view: manifest.permissions?.view ?? [] },
             },

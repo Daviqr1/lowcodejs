@@ -2,7 +2,7 @@ import type { FastifyReply } from 'fastify';
 
 import {
   E_JWT_TYPE,
-  type E_ROLE,
+  E_ROLE,
   type IJWTPayload,
   type IUser,
 } from '@application/core/entity.core';
@@ -16,10 +16,14 @@ export const createTokens = async (
   user: Pick<IUser, '_id' | 'email' | 'group'>,
   response: FastifyReply,
 ): Promise<TokenPair> => {
+  const slug = user?.group?.slug?.toUpperCase();
+  const role =
+    Object.values(E_ROLE).find((item) => item === slug) ?? E_ROLE.REGISTERED;
+
   const jwt: IJWTPayload = {
     sub: user._id.toString(),
     email: user.email,
-    role: user?.group?.slug?.toUpperCase() as keyof typeof E_ROLE,
+    role,
     type: E_JWT_TYPE.ACCESS,
   };
 

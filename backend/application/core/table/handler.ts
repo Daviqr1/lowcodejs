@@ -8,7 +8,7 @@ import type {
 
 export interface ExecuteScriptParams {
   code: string;
-  doc: Record<string, any>;
+  doc: Record<string, unknown>;
   tableSlug: string;
   fields: FieldDefinition[];
   context: ExecutionContext;
@@ -54,13 +54,15 @@ export async function executeScript(
     result.logs = [...logs, ...result.logs];
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error in executeScript:', error);
+    let message = 'Erro desconhecido na execução';
+    if (error instanceof Error) message = error.message;
     return {
       success: false,
       error: {
         type: 'unknown',
-        message: error.message ?? 'Erro desconhecido na execução',
+        message,
       },
       logs,
     };
@@ -73,7 +75,7 @@ export async function executeScript(
  */
 export async function HandlerFunctionAsync(
   code: string,
-  doc: Record<string, any>,
+  doc: Record<string, unknown>,
   slug: string,
   fields: string[],
   context: {

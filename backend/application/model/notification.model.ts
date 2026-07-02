@@ -72,9 +72,6 @@ export const Schema = new mongoose.Schema(
 Schema.index({ userId: 1, read: 1, createdAt: -1 });
 Schema.index({ userId: 1, trashed: 1, createdAt: -1 });
 
-export const Notification = (mongoose?.models?.Notification ||
-  mongoose.model<Entity>(
-    'Notification',
-    Schema,
-    'notifications',
-  )) as mongoose.Model<Entity>;
+export const Notification: mongoose.Model<Entity> =
+  mongoose?.models?.Notification ||
+  mongoose.model<Entity>('Notification', Schema, 'notifications');

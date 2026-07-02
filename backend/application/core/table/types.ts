@@ -53,7 +53,7 @@ export interface ExecutionContext {
    * create. Permite ao script comparar valor anterior × novo (ex.: detectar
    * novas mensagens adicionadas a um grupo).
    */
-  previous?: Record<string, any> | null;
+  previous?: Record<string, unknown> | null;
 }
 
 export interface FieldDefinition {
@@ -84,9 +84,9 @@ export interface EmailResult {
 }
 
 export interface FieldApi {
-  get(slug: string): any;
-  set(slug: string, value: any): void;
-  getAll(): Record<string, any>;
+  get(slug: string): unknown;
+  set(slug: string, value: unknown): void;
+  getAll(): Record<string, unknown>;
   getLabel(slug: string, value?: string): string;
 }
 
@@ -100,7 +100,7 @@ export interface ContextApi {
   /** True quando disparado pelo hook de save do Mongoose (ver ExecutionContext). */
   readonly reentrant: boolean;
   /** Registro antes do save (update) ou null (create). */
-  readonly previous: Record<string, any> | null;
+  readonly previous: Record<string, unknown> | null;
 }
 
 export interface SandboxUser {
@@ -148,7 +148,7 @@ export interface EmailApi {
     to: string[],
     subject: string,
     message: string,
-    data?: Record<string, any>,
+    data?: Record<string, unknown>,
   ): Promise<EmailResult>;
 }
 
@@ -168,12 +168,12 @@ export interface SandboxGlobals {
   notify: NotifyApi;
   utils: UtilsApi;
   console: {
-    log: (...args: any[]) => void;
+    log: (...args: unknown[]) => void;
 
-    warn: (...args: any[]) => void;
+    warn: (...args: unknown[]) => void;
 
-    error: (...args: any[]) => void;
+    error: (...args: unknown[]) => void;
   };
   // Builtins will be added dynamically
-  [key: string]: any;
+  [key: string]: unknown;
 }

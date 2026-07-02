@@ -14,6 +14,9 @@ const inertDeps: ValidationDeps = {
 };
 
 function makeContext(overrides: Partial<IField> = {}): ValidationContext {
+  // Mock parcial de IField: as specs de regras puras só tocam slug/type/
+  // multiple/validations. Construir o IField completo aqui seria ruído.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const field = {
     slug: 'campo',
     type: E_FIELD_TYPE.TEXT_SHORT,

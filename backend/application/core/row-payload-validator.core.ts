@@ -174,14 +174,13 @@ export class RowPayloadValidator {
           if (typeof item !== 'object' || item === null) {
             return `Item no índice ${i} deve ser um objeto`;
           }
+          const record: Record<string, unknown> = { ...item };
 
           // Validate each field in the group
           for (const groupField of groupConfig.fields) {
             if (groupField.native) continue; // Skip native fields
             if (groupField.trashed) continue; // Skip trashed fields
-            const fieldValue = (item as Record<string, unknown>)[
-              groupField.slug
-            ];
+            const fieldValue = record[groupField.slug];
             const fieldError = RowPayloadValidator.validateFieldValue(
               fieldValue,
               groupField,
@@ -244,6 +243,7 @@ export class RowPayloadValidator {
       }
     }
 
-    return Object.keys(errors).length > 0 ? errors : null;
+    if (Object.keys(errors).length > 0) return errors;
+    return null;
   }
 }

@@ -214,5 +214,5 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const Table = (mongoose?.models?.Table ||
-  mongoose.model<Entity>('Table', Schema, 'tables')) as mongoose.Model<Entity>;
+export const Table: mongoose.Model<Entity> =
+  mongoose?.models?.Table || mongoose.model<Entity>('Table', Schema, 'tables');

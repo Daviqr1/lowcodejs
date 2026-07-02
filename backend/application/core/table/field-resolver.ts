@@ -10,7 +10,10 @@ export function normalizeSlug(slug: string): string {
  * Resolves a field value from a document by slug
  * Handles both normalized (underscore) and original (hyphen) formats
  */
-export function resolveFieldValue(doc: Record<string, any>, slug: string): any {
+export function resolveFieldValue(
+  doc: Record<string, unknown>,
+  slug: string,
+): unknown {
   // Try the original slug first
   if (slug in doc) {
     return doc[slug];
@@ -37,7 +40,7 @@ export function resolveFieldValue(doc: Record<string, any>, slug: string): any {
  * - "true"/"false" → Boolean
  * - ISO date strings → Date
  */
-export function convertValue(value: any): any {
+export function convertValue(value: unknown): unknown {
   if (value === null || value === undefined) {
     return value;
   }
@@ -60,7 +63,8 @@ export function convertValue(value: any): any {
   // Number conversion (only for non-empty strings that look like numbers)
   if (trimmed !== '' && !isNaN(Number(trimmed))) {
     const numValue = Number(trimmed);
-    return Number.isInteger(numValue) ? numValue : parseFloat(trimmed);
+    if (Number.isInteger(numValue)) return numValue;
+    return parseFloat(trimmed);
   }
 
   // ISO date string conversion

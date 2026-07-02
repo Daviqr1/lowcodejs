@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { E_FIELD_FORMAT, E_FIELD_TYPE, type IField } from './entity.core';
 
 export async function hashPasswordFields(
-  payload: Record<string, any>,
+  payload: Record<string, unknown>,
   fields: IField[],
 ): Promise<void> {
   const passwordFields = fields.filter(
@@ -26,7 +26,7 @@ export async function hashPasswordFields(
 }
 
 export function stripMaskedPasswordFields(
-  payload: Record<string, any>,
+  payload: Record<string, unknown>,
   fields: IField[],
 ): void {
   const passwordFields = fields.filter(
@@ -43,7 +43,7 @@ export function stripMaskedPasswordFields(
 }
 
 export function maskPasswordFields(
-  row: Record<string, any>,
+  row: Record<string, unknown>,
   fields: IField[],
 ): void {
   const passwordFields = fields.filter(

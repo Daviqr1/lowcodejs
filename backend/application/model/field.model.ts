@@ -151,7 +151,7 @@ const Group = new mongoose.Schema(
   },
 );
 
-function validateCategory(Category: any[] | null): boolean {
+function validateCategory(Category: unknown[] | null): boolean {
   // null é válido
   if (Category === null) return true;
 
@@ -159,14 +159,17 @@ function validateCategory(Category: any[] | null): boolean {
   if (Category.length === 0) return true;
 
   // Verificar se todos os elementos têm a estrutura correta
-  return Category.every(
-    (item) =>
-      item &&
-      typeof item === 'object' &&
+  return Category.every((item) => {
+    if (typeof item !== 'object' || item === null) return false;
+    return (
+      'id' in item &&
       typeof item.id === 'string' &&
+      'label' in item &&
       typeof item.label === 'string' &&
-      Array.isArray(item.children),
-  );
+      'children' in item &&
+      Array.isArray(item.children)
+    );
+  });
 }
 
 const Category = new mongoose.Schema(
@@ -351,7 +354,7 @@ export const Schema = new mongoose.Schema(
     timestamps: true,
     id: false,
     toJSON: {
-      transform: function (_doc, ret: any) {
+      transform: function (_doc, ret: Record<string, unknown>) {
         // Garantir valores padrão para dropdown e category
         if (ret.dropdown === undefined) {
           ret.dropdown = null;
@@ -365,5 +368,5 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const Field = (mongoose?.models?.Field ||
-  mongoose.model<Entity>('Field', Schema, 'fields')) as mongoose.Model<Entity>;
+export const Field: mongoose.Model<Entity> =
+  mongoose?.models?.Field || mongoose.model<Entity>('Field', Schema, 'fields');

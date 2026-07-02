@@ -68,5 +68,5 @@ const Schema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export const Logger = (mongoose?.models?.Logger ||
-  mongoose.model<Entity>('Logger', Schema, 'logs')) as mongoose.Model<Entity>;
+export const Logger: mongoose.Model<Entity> =
+  mongoose?.models?.Logger || mongoose.model<Entity>('Logger', Schema, 'logs');

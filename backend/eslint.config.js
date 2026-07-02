@@ -57,6 +57,26 @@ export default [
     },
   },
   {
+    // code-style aplicado à camada de aplicação (application/**). Mantém o gate
+    // restrito ao código de negócio; demais diretórios (bin, database, test,
+    // extensions) não são forçados por estas regras.
+    files: ['application/**/*.ts'],
+    rules: {
+      // code-style: sem ternário como control-flow (?? / ?. / && seguem livres,
+      // não são ternários). Cada hit legítimo inline usa disable pontual.
+      'no-ternary': 'error',
+      // code-style: sem `as` (assertion). `as const` continua permitido.
+      '@typescript-eslint/consistent-type-assertions': [
+        'error',
+        {
+          assertionStyle: 'never',
+        },
+      ],
+      // code-style: sem `any` desnecessário.
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  {
     ignores: ['node_modules', 'build'],
   },
 ];

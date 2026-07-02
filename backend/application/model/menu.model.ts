@@ -108,5 +108,5 @@ Schema.index({ isInitial: 1 });
 // Schema.index({ slug: 1 }, { unique: true });
 // Schema.index({ trashed: 1 });
 
-export const Menu = (mongoose?.models?.Menu ||
-  mongoose.model<Entity>('Menu', Schema, 'menus')) as mongoose.Model<Entity>;
+export const Menu: mongoose.Model<Entity> =
+  mongoose?.models?.Menu || mongoose.model<Entity>('Menu', Schema, 'menus');

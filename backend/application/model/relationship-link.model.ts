@@ -33,9 +33,6 @@ Schema.index({ relationshipId: 1, sourceId: 1, targetId: 1 }, { unique: true });
 Schema.index({ relationshipId: 1, sourceId: 1, order: 1 });
 Schema.index({ relationshipId: 1, targetId: 1, order: 1 });
 
-export const RelationshipLink = (mongoose?.models?.RelationshipLink ||
-  mongoose.model<Entity>(
-    'RelationshipLink',
-    Schema,
-    'relationship-links',
-  )) as mongoose.Model<Entity>;
+export const RelationshipLink: mongoose.Model<Entity> =
+  mongoose?.models?.RelationshipLink ||
+  mongoose.model<Entity>('RelationshipLink', Schema, 'relationship-links');

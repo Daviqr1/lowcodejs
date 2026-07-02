@@ -75,9 +75,6 @@ const Schema = new mongoose.Schema(
   { timestamps: true, id: false },
 );
 
-export const Setting = (mongoose?.models?.Setting ||
-  mongoose.model<Entity>(
-    'Setting',
-    Schema,
-    'settings',
-  )) as mongoose.Model<Entity>;
+export const Setting: mongoose.Model<Entity> =
+  mongoose?.models?.Setting ||
+  mongoose.model<Entity>('Setting', Schema, 'settings');

@@ -56,10 +56,10 @@ Schema.index({ 'target.table._id': 1 });
 // do boot falhar enquanto o banco ainda tem duplicatas.
 Schema.index({ 'source.field._id': 1 });
 
-export const RelationshipDefinition = (mongoose?.models
-  ?.RelationshipDefinition ||
+export const RelationshipDefinition: mongoose.Model<Entity> =
+  mongoose?.models?.RelationshipDefinition ||
   mongoose.model<Entity>(
     'RelationshipDefinition',
     Schema,
     'relationship-definitions',
-  )) as mongoose.Model<Entity>;
+  );

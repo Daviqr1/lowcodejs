@@ -24,9 +24,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const UserGroup = (mongoose?.models?.UserGroup ||
-  mongoose.model<Entity>(
-    'UserGroup',
-    Schema,
-    'user-groups',
-  )) as mongoose.Model<Entity>;
+export const UserGroup: mongoose.Model<Entity> =
+  mongoose?.models?.UserGroup ||
+  mongoose.model<Entity>('UserGroup', Schema, 'user-groups');
