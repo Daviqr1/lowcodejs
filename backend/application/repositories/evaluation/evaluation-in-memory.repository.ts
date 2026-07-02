@@ -31,6 +31,8 @@ export default class EvaluationInMemoryRepository implements EvaluationContractR
     const evaluation: IEvaluation = {
       ...payload,
       _id: crypto.randomUUID(),
+      // Double de teste: guarda apenas o ref { _id }, não o IUser populado.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       user: { _id: payload.user } as IUser,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -48,7 +50,7 @@ export default class EvaluationInMemoryRepository implements EvaluationContractR
   ): Promise<IEvaluation | null> {
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if ((i.user as IUser)?._id !== user) return false;
+      if (i.user?._id !== user) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
       return true;
     });
@@ -59,9 +61,7 @@ export default class EvaluationInMemoryRepository implements EvaluationContractR
     let filtered = this.items;
 
     if (payload?.user) {
-      filtered = filtered.filter(
-        (e) => (e.user as IUser)?._id === payload.user,
-      );
+      filtered = filtered.filter((e) => e.user?._id === payload.user);
     }
 
     if (payload?.page && payload?.perPage) {

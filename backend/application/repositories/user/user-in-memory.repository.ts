@@ -33,6 +33,8 @@ export default class UserInMemoryRepository implements UserContractRepository {
       ...payload,
       _id: crypto.randomUUID(),
       status: E_USER_STATUS.ACTIVE,
+      // Double de teste: guarda apenas o ref { _id }, não o grupo populado.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       group: { _id: payload.group } as IUser['group'],
       groups: (payload.groups ?? []).map((id) => ({
         _id: id,
@@ -103,8 +105,9 @@ export default class UserInMemoryRepository implements UserContractRepository {
     // Filtro por grupo
     if (payload?.group) {
       filtered = filtered.filter((user) => {
-        const groupId =
-          typeof user.group === 'string' ? user.group : user.group?._id;
+        let groupId: string | undefined;
+        if (typeof user.group === 'string') groupId = user.group;
+        if (typeof user.group !== 'string') groupId = user.group?._id;
         return groupId === payload.group;
       });
     }

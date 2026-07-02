@@ -118,21 +118,23 @@ export default class MenuMongooseRepository implements MenuContractRepository {
       take = payload.perPage;
     }
 
-    const sortOption =
-      payload?.sort && Object.keys(payload.sort).length > 0
-        ? payload.sort
-        : { order: 'asc' as const, name: 'asc' as const };
+    let sortOption: Record<string, 'asc' | 'desc'> = {
+      order: 'asc',
+      name: 'asc',
+    };
+    if (payload?.sort && Object.keys(payload.sort).length > 0) {
+      sortOption = payload.sort;
+    }
 
-    const hasOwnerSort = sortOption && 'owner.name' in sortOption;
+    const hasOwnerSort = 'owner.name' in sortOption;
 
     if (hasOwnerSort) {
       const aggregationSort: Record<string, 1 | -1> = {};
       for (const [key, dir] of Object.entries(sortOption)) {
-        if (key === 'owner.name') {
-          aggregationSort['_ownerName'] = dir === 'asc' ? 1 : -1;
-        } else {
-          aggregationSort[key] = dir === 'asc' ? 1 : -1;
-        }
+        let direction: 1 | -1 = -1;
+        if (dir === 'asc') direction = 1;
+        if (key === 'owner.name') aggregationSort['_ownerName'] = direction;
+        if (key !== 'owner.name') aggregationSort[key] = direction;
       }
 
       const docs = await Model.aggregate([
@@ -152,12 +154,13 @@ export default class MenuMongooseRepository implements MenuContractRepository {
         },
         { $sort: aggregationSort },
         { $skip: skip ?? 0 },
+        // eslint-disable-next-line no-ternary -- spread condicional de stage do pipeline
         ...(take ? [{ $limit: take }] : []),
         { $project: { _ownerDoc: 0, _ownerName: 0 } },
       ]);
 
       const populated = await Model.populate(docs, this.populateOptions);
-      return populated.map((doc: any) => ({
+      return populated.map((doc) => ({
         ...doc,
         _id: doc._id.toString(),
         table: this.toId(doc.table),

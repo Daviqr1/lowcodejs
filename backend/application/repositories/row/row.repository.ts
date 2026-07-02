@@ -175,10 +175,10 @@ export default class RowMongooseRepository implements RowContractRepository {
 
     // Mescla fragmento do guardQuery via $and para que o row-access-guard
     // possa restringir a listagem sem conhecer a query base.
-    let query: Record<string, unknown> =
-      payload.guardQuery && Object.keys(payload.guardQuery).length > 0
-        ? { $and: [baseQuery, payload.guardQuery] }
-        : baseQuery;
+    let query: Record<string, unknown> = baseQuery;
+    if (payload.guardQuery && Object.keys(payload.guardQuery).length > 0) {
+      query = { $and: [baseQuery, payload.guardQuery] };
+    }
 
     if (payload.excludeIds && payload.excludeIds.length > 0) {
       const excludeObjectIds = payload.excludeIds.map(
@@ -255,8 +255,8 @@ export default class RowMongooseRepository implements RowContractRepository {
         _id: { $nin: excludeIds.map((id) => new mongoose.Types.ObjectId(id)) },
       });
     }
-    const query: Record<string, unknown> =
-      parts.length === 1 ? parts[0] : { $and: parts };
+    let query: Record<string, unknown> = { $and: parts };
+    if (parts.length === 1) query = parts[0];
     return model.countDocuments(query);
   }
 
@@ -420,7 +420,8 @@ export default class RowMongooseRepository implements RowContractRepository {
     if (!row) throw new Error('Row not found');
 
     const currentItems = row.get(payload.groupFieldSlug);
-    const groupData = Array.isArray(currentItems) ? [...currentItems] : [];
+    let groupData: unknown[] = [];
+    if (Array.isArray(currentItems)) groupData = [...currentItems];
     groupData.push(payload.data);
 
     row.set(payload.groupFieldSlug, groupData);
@@ -525,13 +526,16 @@ export default class RowMongooseRepository implements RowContractRepository {
     const { _id, id, createdAt, updatedAt, ...data } = row;
     const doc = new model(data);
     if (creator) {
-      (doc as any).creator = creator;
+      doc.set('creator', creator);
     }
-    const result = await doc.collection.insertOne((doc as any).toObject());
+    const result = await doc.collection.insertOne(doc.toObject());
+    // Modelo dinâmico: toObject() não expõe createdAt/updatedAt/trashedAt no
+    // tipo estático, embora existam em runtime (timestamps do schema).
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return {
-      ...(doc as any).toObject(),
+      ...doc.toObject(),
       _id: result.insertedId.toString(),
-    } as IRow;
+    } as unknown as IRow;
   }
 
   // ── Resolver helpers (csv-import) ─────────────────────────

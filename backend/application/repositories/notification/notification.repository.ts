@@ -50,7 +50,7 @@ export default class NotificationMongooseRepository implements NotificationContr
         readAt: null,
       })),
     );
-    return docs.map((d) => this.transform(d as InstanceType<typeof Model>));
+    return docs.map((d) => this.transform(d));
   }
 
   async findById(_id: string): Promise<INotification | null> {

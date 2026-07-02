@@ -113,21 +113,20 @@ export default class TableMongooseRepository implements TableContractRepository 
       take = payload.perPage;
     }
 
-    const sortOption =
-      payload?.sort && Object.keys(payload.sort).length > 0
-        ? payload.sort
-        : { createdAt: 'desc' as const };
+    let sortOption: Record<string, 'asc' | 'desc'> = { createdAt: 'desc' };
+    if (payload?.sort && Object.keys(payload.sort).length > 0) {
+      sortOption = payload.sort;
+    }
 
-    const hasOwnerSort = sortOption && 'owner.name' in sortOption;
+    const hasOwnerSort = 'owner.name' in sortOption;
 
     if (hasOwnerSort) {
       const aggregationSort: Record<string, 1 | -1> = {};
       for (const [key, dir] of Object.entries(sortOption)) {
-        if (key === 'owner.name') {
-          aggregationSort['_ownerName'] = dir === 'asc' ? 1 : -1;
-        } else {
-          aggregationSort[key] = dir === 'asc' ? 1 : -1;
-        }
+        let direction: 1 | -1 = -1;
+        if (dir === 'asc') direction = 1;
+        if (key === 'owner.name') aggregationSort['_ownerName'] = direction;
+        if (key !== 'owner.name') aggregationSort[key] = direction;
       }
 
       const docs = await Model.aggregate([
@@ -147,17 +146,20 @@ export default class TableMongooseRepository implements TableContractRepository 
         },
         { $sort: aggregationSort },
         { $skip: skip ?? 0 },
+        // eslint-disable-next-line no-ternary -- spread condicional de stage do pipeline
         ...(take ? [{ $limit: take }] : []),
         { $project: { _ownerDoc: 0, _ownerName: 0 } },
       ]);
 
       const populated = await Model.populate(docs, this.populateOptions);
       return populated.map((doc): ITable => {
-        const plain: Record<string, unknown> =
-          typeof doc.toJSON === 'function'
-            ? doc.toJSON({ flattenObjectIds: true })
-            : { ...doc };
-        plain['_id'] = plain['_id'] ? String(plain['_id']) : '';
+        let plain: Record<string, unknown> = { ...doc };
+        if (typeof doc.toJSON === 'function') {
+          plain = doc.toJSON({ flattenObjectIds: true });
+        }
+        let id = '';
+        if (plain['_id']) id = String(plain['_id']);
+        plain['_id'] = id;
         assertITable(plain);
         return plain;
       });

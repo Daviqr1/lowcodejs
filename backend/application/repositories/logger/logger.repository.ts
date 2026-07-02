@@ -112,10 +112,10 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
       take = payload.perPage;
     }
 
-    const sortOption =
-      payload?.sort && Object.keys(payload.sort).length > 0
-        ? payload.sort
-        : { createdAt: 'desc' as const };
+    let sortOption: Record<string, 'asc' | 'desc'> = { createdAt: 'desc' };
+    if (payload?.sort && Object.keys(payload.sort).length > 0) {
+      sortOption = payload.sort;
+    }
 
     const loggers = await Model.find(where)
       .populate(this.populateOptions)

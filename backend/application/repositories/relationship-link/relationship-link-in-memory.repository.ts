@@ -156,7 +156,8 @@ export default class RelationshipLinkInMemoryRepository implements RelationshipL
     relationshipId: string,
     side: RelationshipLinkSide,
   ): Promise<string[]> {
-    const field = side === 'source' ? 'sourceId' : 'targetId';
+    let field: 'sourceId' | 'targetId' = 'targetId';
+    if (side === 'source') field = 'sourceId';
     return this.items
       .filter((link) => link.relationshipId === relationshipId)
       .map((link) => link[field]);

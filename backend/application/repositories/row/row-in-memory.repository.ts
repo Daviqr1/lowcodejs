@@ -30,13 +30,14 @@ function matchesGuardQuery(
 
   for (const [key, condition] of Object.entries(query)) {
     if (key === '$and') {
-      const parts = condition as Record<string, unknown>[];
-      if (!parts.every((part) => matchesGuardQuery(row, part))) return false;
+      if (!Array.isArray(condition)) continue;
+      if (!condition.every((part) => matchesGuardQuery(row, part)))
+        return false;
       continue;
     }
     if (key === '$or') {
-      const parts = condition as Record<string, unknown>[];
-      if (!parts.some((part) => matchesGuardQuery(row, part))) return false;
+      if (!Array.isArray(condition)) continue;
+      if (!condition.some((part) => matchesGuardQuery(row, part))) return false;
       continue;
     }
 
@@ -46,11 +47,11 @@ function matchesGuardQuery(
       typeof condition === 'object' &&
       !Array.isArray(condition)
     ) {
-      const ops = condition as Record<string, unknown>;
-      if ('$in' in ops) {
-        const allowed = ops['$in'] as unknown[];
-        const rowValue = Array.isArray(fieldVal) ? fieldVal[0] : fieldVal;
-        if (!allowed.includes(rowValue)) return false;
+      if ('$in' in condition) {
+        const allowed = condition['$in'];
+        let rowValue = fieldVal;
+        if (Array.isArray(fieldVal)) rowValue = fieldVal[0];
+        if (Array.isArray(allowed) && !allowed.includes(rowValue)) return false;
       }
     } else {
       if (fieldVal !== condition) return false;
@@ -93,14 +94,14 @@ export default class RowInMemoryRepository implements RowContractRepository {
     const collection = this.getCollection(payload.table.slug);
 
     const row: IRow = {
-      _id: randomUUID(),
       status: 'published',
       draftAt: null,
       trashedAt: null,
       ...payload.data,
+      _id: randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as IRow;
+    };
 
     collection.push(row);
     return { ...row };
@@ -111,7 +112,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const row = collection.find((item) => {
       for (const [key, value] of Object.entries(payload.query)) {
-        if ((item as Record<string, unknown>)[key] !== value) return false;
+        if (item[key] !== value) return false;
       }
       return true;
     });
@@ -125,7 +126,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const rawFilters = payload.rawFilters ?? {};
     const result = collection.filter((item) => {
-      const row = item as Record<string, unknown>;
+      const row = item;
       if (row['trashedAt'] != null) return false;
       for (const [key, value] of Object.entries(rawFilters)) {
         if (
@@ -179,11 +180,11 @@ export default class RowInMemoryRepository implements RowContractRepository {
   ): Promise<number> {
     const collection = this.getCollection(table.slug);
     const filters = rawFilters ?? {};
-    const excludeSet =
-      excludeIds && excludeIds.length > 0 ? new Set(excludeIds) : null;
+    let excludeSet: Set<string> | null = null;
+    if (excludeIds && excludeIds.length > 0) excludeSet = new Set(excludeIds);
 
     return collection.filter((item) => {
-      const row = item as Record<string, unknown>;
+      const row = item;
       if (row['trashedAt'] != null) return false;
       if (excludeSet && excludeSet.has(String(row['_id']))) return false;
       for (const [key, value] of Object.entries(filters)) {
@@ -239,8 +240,9 @@ export default class RowInMemoryRepository implements RowContractRepository {
     collection[index] = {
       ...collection[index],
       ...payload.data,
+      _id: collection[index]._id,
       updatedAt: new Date(),
-    } as IRow;
+    };
 
     return { ...collection[index] };
   }
@@ -360,7 +362,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     if (!row) throw new Error('Row not found');
 
-    (row as Record<string, unknown>)[payload.field] = payload.value;
+    row[payload.field] = payload.value;
     row.updatedAt = new Date();
 
     return { ...row };
@@ -376,18 +378,15 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     if (!row) throw new Error('Row not found');
 
-    const currentItems = (row as Record<string, unknown>)[
-      payload.groupFieldSlug
-    ];
-    const groupData: Record<string, unknown>[] = Array.isArray(currentItems)
-      ? [...currentItems]
-      : [];
+    const currentItems = row[payload.groupFieldSlug];
+    let groupData: Record<string, unknown>[] = [];
+    if (Array.isArray(currentItems)) groupData = [...currentItems];
 
     groupData.push({ _id: randomUUID(), ...payload.data });
-    (row as Record<string, unknown>)[payload.groupFieldSlug] = groupData;
+    row[payload.groupFieldSlug] = groupData;
     row.updatedAt = new Date();
 
-    return JSON.parse(JSON.stringify(row)) as IRow;
+    return JSON.parse(JSON.stringify(row));
   }
 
   async updateGroupItem(
@@ -401,7 +400,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     if (!row) throw new Error('Row not found');
 
-    const items = (row as Record<string, unknown>)[payload.groupFieldSlug];
+    const items = row[payload.groupFieldSlug];
     if (!Array.isArray(items)) throw new Error('Group field not found');
 
     const item = items.find(
@@ -423,7 +422,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     if (!row) return false;
 
-    const items = (row as Record<string, unknown>)[payload.groupFieldSlug];
+    const items = row[payload.groupFieldSlug];
     if (!Array.isArray(items)) return false;
 
     const index = items.findIndex(
@@ -448,17 +447,17 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const row = collection.find((item) => {
       for (const [key, value] of Object.entries(filter)) {
-        if ((item as Record<string, unknown>)[key] !== value) return false;
+        if (item[key] !== value) return false;
       }
       return true;
     });
 
     if (!row) return null;
 
-    const setData = (update as { $set?: Record<string, unknown> }).$set;
-    if (setData) {
+    const setData = update['$set'];
+    if (setData && typeof setData === 'object') {
       for (const [key, value] of Object.entries(setData)) {
-        (row as Record<string, unknown>)[key] = value;
+        row[key] = value;
       }
     }
 
@@ -471,7 +470,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     let count = 0;
 
     for (const row of collection) {
-      const record = row as Record<string, unknown>;
+      const record = row;
       let matches = true;
       for (const [key, condition] of Object.entries(payload.filter)) {
         if (
@@ -479,9 +478,8 @@ export default class RowInMemoryRepository implements RowContractRepository {
           typeof condition === 'object' &&
           !Array.isArray(condition)
         ) {
-          const ops = condition as Record<string, unknown>;
-          if ('$exists' in ops) {
-            const shouldExist = ops['$exists'] as boolean;
+          if ('$exists' in condition) {
+            const shouldExist = Boolean(condition['$exists']);
             const fieldExists = key in record && record[key] !== undefined;
             if (shouldExist !== fieldExists) {
               matches = false;
@@ -498,9 +496,8 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
       if (!matches) continue;
 
-      const setData = (payload.update as { $set?: Record<string, unknown> })
-        .$set;
-      if (setData) {
+      const setData = payload.update['$set'];
+      if (setData && typeof setData === 'object') {
         for (const [key, value] of Object.entries(setData)) {
           record[key] = value;
         }
@@ -522,7 +519,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
   ): Promise<void> {
     const collection = this.getCollection(table.slug);
     for (const row of collection) {
-      const record = row as Record<string, unknown>;
+      const record = row;
       if (Object.prototype.hasOwnProperty.call(record, oldSlug)) {
         record[newSlug] = record[oldSlug];
         delete record[oldSlug];
@@ -534,7 +531,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     const collection = this.getCollection(table.slug);
     return collection
       .filter((row) => row.trashedAt == null)
-      .map((row) => ({ ...row })) as Record<string, unknown>[];
+      .map((row) => ({ ...row }));
   }
 
   // ── Resolver helpers (csv-import) ─────────────────────────
@@ -577,7 +574,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     let count = 0;
 
     for (const row of collection) {
-      const record = row as Record<string, unknown>;
+      const record = row;
       const value = record[fieldSlug];
       if (!Array.isArray(value)) continue;
 
@@ -622,15 +619,15 @@ export default class RowInMemoryRepository implements RowContractRepository {
     delete data.createdAt;
     delete data.updatedAt;
     const newRow: IRow = {
-      _id: randomUUID(),
       ...data,
+      _id: randomUUID(),
       creator: creator ?? null,
       status: 'published',
       draftAt: null,
       trashedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as IRow;
+    };
     collection.push(newRow);
     return { ...newRow };
   }

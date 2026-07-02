@@ -163,14 +163,15 @@ export default class RelationshipLinkMongooseRepository implements RelationshipL
     relationshipId: string,
     side: RelationshipLinkSide,
   ): Promise<string[]> {
-    const field = side === 'source' ? 'sourceId' : 'targetId';
+    let field: 'sourceId' | 'targetId' = 'targetId';
+    if (side === 'source') field = 'sourceId';
     const links = await Model.find(
       { relationshipId },
       { [field]: 1, _id: 0 },
     ).lean();
     const ids: string[] = [];
     for (const link of links) {
-      const id = link[field as keyof typeof link];
+      const id = link[field];
       if (id) ids.push(String(id));
     }
     return ids;

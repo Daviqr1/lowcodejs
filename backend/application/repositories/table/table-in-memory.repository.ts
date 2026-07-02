@@ -17,6 +17,21 @@ import type {
   TableUpdatePayload,
 } from './table-contract.repository';
 
+// Refs mínimos para o double de teste: guardam apenas { _id }, não a entidade
+// populada. As asserções refletem esse shape parcial intencional.
+function storageRef(id: string): IStorage {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return { _id: id } as IStorage;
+}
+function userRef(id: string): IUser {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return { _id: id } as IUser;
+}
+function fieldRef(id: string): IField {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return { _id: id } as IField;
+}
+
 export default class TableInMemoryRepository implements TableContractRepository {
   items: ITable[] = [];
   private _forcedErrors = new Map<string, Error>();
@@ -35,19 +50,22 @@ export default class TableInMemoryRepository implements TableContractRepository 
 
   async create(payload: TableCreatePayload): Promise<ITable> {
     this._checkError('create');
+    let logo: IStorage | null = null;
+    if (payload.logo) logo = storageRef(payload.logo);
     const table: ITable = {
       _id: crypto.randomUUID(),
       _schema: payload._schema ?? {},
       name: payload.name,
       description: payload.description ?? null,
-      logo: payload.logo ? ({ _id: payload.logo } as IStorage) : null,
+      logo,
       slug: payload.slug,
-      fields: (payload.fields ?? []).map(
-        (f) => (typeof f === 'object' ? f : { _id: f }) as IField,
-      ),
-      type: payload.type ?? ('TABLE' as typeof E_TABLE_TYPE.TABLE),
-      style: payload.style ?? ('LIST' as typeof E_TABLE_STYLE.LIST),
-      owner: { _id: payload.owner } as IUser,
+      fields: (payload.fields ?? []).map((f) => {
+        if (typeof f === 'object') return f;
+        return fieldRef(f);
+      }),
+      type: payload.type ?? 'TABLE',
+      style: payload.style ?? 'LIST',
+      owner: userRef(payload.owner),
       permissions: payload.permissions ?? null,
       members: payload.members ?? [],
       fieldOrderList: payload.fieldOrderList ?? [],
@@ -133,7 +151,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
     if (payload?.owner?.length) {
       const ownerIds = payload.owner;
       filtered = filtered.filter((t) =>
-        ownerIds.includes(String((t.owner as IUser)?._id)),
+        ownerIds.includes(String(t.owner?._id)),
       );
     }
 
@@ -154,13 +172,14 @@ export default class TableInMemoryRepository implements TableContractRepository 
     if (!table) throw new Error('Table not found');
 
     if (payload.logo !== undefined) {
-      table.logo = payload.logo ? ({ _id: payload.logo } as IStorage) : null;
+      table.logo = null;
+      if (payload.logo) table.logo = storageRef(payload.logo);
     }
     if (payload.fields !== undefined) {
-      table.fields = payload.fields.map((f) => ({ _id: f }) as IField);
+      table.fields = payload.fields.map((f) => fieldRef(f));
     }
     if (payload.owner !== undefined) {
-      table.owner = { _id: payload.owner } as IUser;
+      table.owner = userRef(payload.owner);
     }
     if (payload.permissions !== undefined) {
       table.permissions = payload.permissions;

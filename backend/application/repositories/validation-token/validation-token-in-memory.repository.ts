@@ -38,6 +38,8 @@ export default class ValidationTokenInMemoryRepository implements ValidationToke
       updatedAt: new Date(),
       trashedAt: null,
       trashed: false,
+      // Double de teste: ref mínimo de usuário (só _id + toString).
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       user: { _id: userId, toString: () => userId } as unknown as IUser,
     };
     this.items.push(token);

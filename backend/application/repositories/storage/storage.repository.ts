@@ -54,7 +54,12 @@ export default class StorageMongooseRepository implements StorageContractReposit
 
   async createMany(payload: StorageCreatePayload[]): Promise<IStorage[]> {
     const storages = await Model.insertMany(payload);
-    return storages.map((s) => this.transform(s as InstanceType<typeof Model>));
+    // insertMany retorna MergeType (torna `location` opcional) que não bate com
+    // InstanceType<typeof Model>; em runtime é o documento completo.
+    return storages.map((s) =>
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      this.transform(s as InstanceType<typeof Model>),
+    );
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IStorage | null> {

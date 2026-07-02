@@ -49,6 +49,9 @@ export default class SettingInMemoryRepository implements SettingContractReposit
         OPENAI_API_KEY: null,
         AI_ASSISTANT_ENABLED: false,
       };
+      // Double de teste: MODEL_CLONE_TABLES chega como string[] no payload, mas
+      // ISetting o tipa como Table[]. A conversão dupla reflete essa diferença.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       this.item = Object.assign(base, payload) as unknown as ISetting;
     } else {
       Object.assign(this.item, payload);
