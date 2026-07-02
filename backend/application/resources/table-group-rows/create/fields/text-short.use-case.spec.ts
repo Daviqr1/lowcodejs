@@ -1,3 +1,5 @@
+// Spec constrói mocks parciais de entidades do domínio via asserção.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 

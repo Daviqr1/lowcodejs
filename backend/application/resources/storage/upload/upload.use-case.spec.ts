@@ -1,3 +1,5 @@
+// Spec constrói mocks parciais de entidades do domínio via asserção.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import type { MultipartFile } from '@fastify/multipart';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

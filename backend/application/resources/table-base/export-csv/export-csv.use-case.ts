@@ -38,10 +38,16 @@ const FIELDS: CsvField[] = [
 function ownerName(owner: ITable['owner']): string {
   if (!owner) return '';
   if (typeof owner === 'string') return owner;
-  return (owner as IUser).name ?? (owner as IUser)._id ?? '';
+  return owner.name ?? owner._id ?? '';
 }
 
 function toCsvRow(table: ITable): Record<string, unknown> {
+  let trashed = 'false';
+  if (table.trashed) trashed = 'true';
+  let createdAt = '';
+  if (table.createdAt) createdAt = new Date(table.createdAt).toISOString();
+  let updatedAt = '';
+  if (table.updatedAt) updatedAt = new Date(table.updatedAt).toISOString();
   return {
     _id: table._id,
     name: table.name ?? '',
@@ -49,9 +55,9 @@ function toCsvRow(table: ITable): Record<string, unknown> {
     type: table.type ?? '',
     style: table.style ?? '',
     owner: ownerName(table.owner),
-    trashed: table.trashed ? 'true' : 'false',
-    createdAt: table.createdAt ? new Date(table.createdAt).toISOString() : '',
-    updatedAt: table.updatedAt ? new Date(table.updatedAt).toISOString() : '',
+    trashed,
+    createdAt,
+    updatedAt,
   };
 }
 

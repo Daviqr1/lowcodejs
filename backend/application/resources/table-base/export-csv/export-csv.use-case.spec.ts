@@ -10,7 +10,9 @@ import TableExportCsvUseCase from './export-csv.use-case';
 async function streamToString(stream: Readable): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    let buf = chunk;
+    if (typeof chunk === 'string') buf = Buffer.from(chunk);
+    chunks.push(buf);
   }
   return Buffer.concat(chunks).toString('utf-8');
 }

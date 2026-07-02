@@ -40,7 +40,7 @@ function buildFields(tableFields: IField[]): {
 function toCsvRow(row: IRow, fields: IField[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const field of fields) {
-    const raw = (row as Record<string, unknown>)[field.slug];
+    const raw = row[field.slug];
     out[field.slug] = formatCellValue(raw, { fieldType: field.type });
   }
   return out;

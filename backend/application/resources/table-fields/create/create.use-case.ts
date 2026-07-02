@@ -75,9 +75,11 @@ export default class TableFieldCreateUseCase {
         }
       }
 
+      let slugInput: string | undefined;
+      if (payload.tableSlug) slugInput = payload.slug;
       const resolvedSlug = FieldSlug.resolve({
         name: payload.name,
-        slug: payload.tableSlug ? payload.slug : undefined,
+        slug: slugInput,
       });
 
       if (resolvedSlug.error) {

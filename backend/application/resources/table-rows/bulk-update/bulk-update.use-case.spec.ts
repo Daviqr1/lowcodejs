@@ -1,3 +1,5 @@
+// Spec constrói mocks parciais de entidades do domínio via asserção.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { E_TABLE_STYLE } from '@application/core/entity.core';

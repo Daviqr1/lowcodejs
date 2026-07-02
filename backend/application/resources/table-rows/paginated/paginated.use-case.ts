@@ -45,9 +45,11 @@ export default class TableRowPaginatedUseCase {
       // Gantt, que precisam de todos os registros para agrupar corretamente —
       // um limite fixo truncava as colunas quando a tabela tinha muitos rows.
       const fetchAll = payload.perPage <= 0;
-      const skip = fetchAll ? 0 : (payload.page - 1) * payload.perPage;
+      let skip = 0;
+      if (!fetchAll) skip = (payload.page - 1) * payload.perPage;
       // No Mongoose, limit(0) equivale a "sem limite" (retorna tudo).
-      const limit = fetchAll ? 0 : payload.perPage;
+      let limit = 0;
+      if (!fetchAll) limit = payload.perPage;
 
       const table = await this.tableRepository.findBySlug(payload.slug);
 
@@ -124,16 +126,19 @@ export default class TableRowPaginatedUseCase {
           `total=${total}`,
       );
 
-      const perPage = fetchAll ? total : payload.perPage;
-      const page = fetchAll ? 1 : payload.page;
-      const lastPage = fetchAll ? 1 : Math.ceil(total / payload.perPage);
+      let perPage = payload.perPage;
+      if (fetchAll) perPage = total;
+      let page = payload.page;
+      if (fetchAll) page = 1;
+      let lastPage = Math.ceil(total / payload.perPage);
+      if (fetchAll) lastPage = 1;
 
       const meta: IMeta = {
         total,
         perPage,
         page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       const hidden = await this.fieldVisibility.hiddenSlugs({

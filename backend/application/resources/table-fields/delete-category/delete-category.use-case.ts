@@ -27,6 +27,8 @@ type Payload = TableFieldDeleteCategoryPayload;
 
 function collectIds(node: ICategory): Array<string> {
   const ids = [node.id];
+  // ICategory.children é unknown[]; a árvore é recursivamente ICategory.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const children = (node.children ?? []) as Array<ICategory>;
   for (const child of children) {
     ids.push(...collectIds(child));
@@ -52,6 +54,8 @@ function removeCategoryNode(
       if (!node.children?.length) return node;
 
       const result = removeCategoryNode(
+        // ICategory.children é unknown[]; a árvore é recursivamente ICategory.
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         node.children as Array<ICategory>,
         categoryId,
       );
@@ -106,7 +110,7 @@ export default class TableFieldDeleteCategoryUseCase {
 
       let existingCategories: Array<ICategory> = [];
       if (Array.isArray(field.category)) {
-        existingCategories = field.category as Array<ICategory>;
+        existingCategories = field.category;
       }
 
       const { updated, removedIds } = removeCategoryNode(

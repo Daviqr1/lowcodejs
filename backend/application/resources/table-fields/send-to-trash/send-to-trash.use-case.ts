@@ -72,9 +72,10 @@ export default class TableFieldSendToTrashUseCase {
         trashedAt: new Date(),
       });
 
-      const fields = table.fields.map((f) =>
-        f._id === field._id ? updatedField : f,
-      );
+      const fields = table.fields.map((f) => {
+        if (f._id === field._id) return updatedField;
+        return f;
+      });
 
       const _schema = this.schemaBuilder.build(fields);
 

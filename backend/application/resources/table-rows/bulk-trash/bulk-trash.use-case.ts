@@ -41,10 +41,10 @@ export default class BulkTrashUseCase {
 
       // Filtra os ids pelo guard — rows negadas são simplesmente ignoradas
       // (comportamento consistente com __ownOnly que já filtra silenciosamente).
-      const actorUserId =
-        typeof payload.__actorUserId === 'string'
-          ? payload.__actorUserId
-          : undefined;
+      let actorUserId: string | undefined;
+      if (typeof payload.__actorUserId === 'string') {
+        actorUserId = payload.__actorUserId;
+      }
       const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
       const tableId = table._id.toString();
 
@@ -66,7 +66,8 @@ export default class BulkTrashUseCase {
               null,
               'delete',
             );
-            return dec.decision !== 'deny' ? id : null;
+            if (dec.decision !== 'deny') return id;
+            return null;
           }),
         );
         allowedIds = guardChecks.filter((id): id is string => id !== null);

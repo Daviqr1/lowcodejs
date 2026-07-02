@@ -33,10 +33,13 @@ export default class {
       schema: TableRowUpdateSchema,
     },
   })
-  async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
+  async handle(
+    request: FastifyRequest<{ Body: Record<string, unknown> }>,
+    response: FastifyReply,
+  ): Promise<void> {
     const params = TableRowUpdateParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
-      ...(request.body as Record<string, any>),
+      ...request.body,
       ...params,
       ...(request?.user?.sub && { __actorUserId: request.user.sub }),
       ...(request.ownership?.ownOnly && { __ownOnly: true }),

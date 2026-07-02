@@ -44,7 +44,7 @@ export default class ProfileUpdateUseCase {
       }
 
       const isMatch = await this.passwordService.compare(
-        payload.currentPassword as string,
+        payload.currentPassword ?? '',
         user.password,
       );
 
@@ -58,7 +58,7 @@ export default class ProfileUpdateUseCase {
         );
 
       const password = await this.passwordService.hash(
-        payload.newPassword as string,
+        payload.newPassword ?? '',
       );
 
       const updated = await this.userRepository.update({

@@ -83,7 +83,7 @@ export default class TableFieldDeleteUseCase {
 
       // Remove o campo da tabela e reconstrói o schema
       const remainingFields = table.fields.filter((f) => f._id !== field._id);
-      const _schema = this.schemaBuilder.build(remainingFields as IField[]);
+      const _schema = this.schemaBuilder.build(remainingFields);
 
       await this.tableRepository.update({
         _id: table._id,
@@ -137,7 +137,7 @@ export default class TableFieldDeleteUseCase {
       if (g.slug !== targetGroup.slug) return g;
 
       const updatedFields = g.fields.filter((f) => f._id !== field._id);
-      const groupSchema = this.schemaBuilder.build(updatedFields as IField[]);
+      const groupSchema = this.schemaBuilder.build(updatedFields);
 
       return {
         ...g,
@@ -148,7 +148,7 @@ export default class TableFieldDeleteUseCase {
 
     // Reconstrói o schema da tabela pai com os grupos atualizados
     const parentSchema = this.schemaBuilder.build(
-      parentTable.fields as IField[],
+      parentTable.fields,
       updatedGroups,
     );
 

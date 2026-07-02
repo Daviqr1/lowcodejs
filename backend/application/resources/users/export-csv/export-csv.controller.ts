@@ -34,11 +34,15 @@ export default class {
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const query = UserExportCsvQueryValidator.parse(request.query);
 
+    const user =
+      (request?.user && {
+        _id: request.user.sub,
+        role: request.user.role,
+      }) ||
+      undefined;
     const result = await this.useCase.execute({
       ...query,
-      user: request?.user
-        ? { _id: request.user.sub, role: request.user.role }
-        : undefined,
+      user,
     });
 
     if (result.isLeft()) {

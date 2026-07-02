@@ -148,9 +148,10 @@ export default class TableFieldUpdateUseCase {
           }),
         });
 
-        const fields = table.fields.map((f) =>
-          f._id === field._id ? updatedField : f,
-        );
+        const fields = table.fields.map((f) => {
+          if (f._id === field._id) return updatedField;
+          return f;
+        });
         const groups = table.groups || [];
         const _schema = this.schemaBuilder.build(fields, groups);
 
@@ -193,9 +194,11 @@ export default class TableFieldUpdateUseCase {
       // espelha o create e evita confundir o slug do campo com o slug da tabela
       // quando o caller passa apenas `slug` (= tabela).
       const oldSlug = field.slug;
+      let slugInput: string | undefined;
+      if (payload.tableSlug) slugInput = payload.slug;
       const resolvedSlug = FieldSlug.resolve({
         name: payload.name,
-        slug: payload.tableSlug ? payload.slug : undefined,
+        slug: slugInput,
       });
 
       if (resolvedSlug.error) {
@@ -285,9 +288,10 @@ export default class TableFieldUpdateUseCase {
         });
       }
 
-      const fields = table.fields.map((f) =>
-        f._id === field._id ? updatedField : f,
-      );
+      const fields = table.fields.map((f) => {
+        if (f._id === field._id) return updatedField;
+        return f;
+      });
 
       const _schema = this.schemaBuilder.build(fields, groups);
 
@@ -387,10 +391,13 @@ export default class TableFieldUpdateUseCase {
     if (payloadRelId !== fieldRelId) return false;
 
     // group: comparar por slug
-    const payloadGroupSlug =
-      typeof payload.group === 'string'
-        ? payload.group
-        : (payload.group?.slug ?? null);
+    let payloadGroupSlug: string | null = null;
+    if (typeof payload.group === 'string') {
+      payloadGroupSlug = payload.group;
+    }
+    if (typeof payload.group === 'object') {
+      payloadGroupSlug = payload.group?.slug ?? null;
+    }
     const fieldGroupSlug = field.group?.slug ?? null;
     if (payloadGroupSlug !== fieldGroupSlug) return false;
 

@@ -74,10 +74,10 @@ export default class TableRowUpdateUseCase {
       }
 
       // Verifica permissão de escrita (update) via guard.
-      const actorUserId =
-        typeof payload.__actorUserId === 'string'
-          ? payload.__actorUserId
-          : undefined;
+      let actorUserId: string | undefined;
+      if (typeof payload.__actorUserId === 'string') {
+        actorUserId = payload.__actorUserId;
+      }
       const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
       const tableId = table._id.toString();
 
@@ -99,16 +99,17 @@ export default class TableRowUpdateUseCase {
       }
 
       // Sanitiza payload (ex: preservar valor de visibility quando não permitido).
+      const payloadRecord: Record<string, unknown> = payload;
       const sanitized = await this.rowAccessGuard.composeSanitize(
         tableId,
-        payload as Record<string, unknown>,
+        payloadRecord,
         ctx,
         table,
         'update',
         currentRow,
       );
       for (const key of Object.keys(sanitized)) {
-        (payload as Record<string, unknown>)[key] = sanitized[key];
+        payloadRecord[key] = sanitized[key];
       }
 
       // Descarta escritas em campos ocultos no formulario para o solicitante.
@@ -196,7 +197,7 @@ export default class TableRowUpdateUseCase {
           .map((f) => f.slug);
         const userFieldSlugs = new Set(userFieldList);
 
-        const mergedData: Record<string, any> = {
+        const mergedData: Record<string, unknown> = {
           ...existing,
           ...payload,
         };
@@ -205,19 +206,22 @@ export default class TableRowUpdateUseCase {
         // espelhando o create. Assim o script enxerga os responsáveis atuais
         // (e não os anteriores). Os campos USER não são gravados de volta no
         // payload (loop abaixo), então isso afeta apenas a visão do script.
-        const scriptDoc: Record<string, any> = { ...mergedData };
+        const scriptDoc: Record<string, unknown> = { ...mergedData };
         if (userFieldList.length > 0) {
-          const extractId = (value: any): string => {
+          const extractId = (value: unknown): string => {
             if (!value) return '';
             if (typeof value === 'string') return value;
-            if (typeof value === 'object') return String(value._id ?? '');
+            if (typeof value === 'object' && '_id' in value) {
+              return String(value._id ?? '');
+            }
             return String(value);
           };
 
           const allUserIds: string[] = [];
           for (const slug of userFieldList) {
             const val = mergedData[slug];
-            const items = Array.isArray(val) ? val : [val];
+            let items: unknown[] = [val];
+            if (Array.isArray(val)) items = val;
             for (const item of items) {
               const id = extractId(item);
               if (id) allUserIds.push(id);
@@ -236,7 +240,7 @@ export default class TableRowUpdateUseCase {
               const val = mergedData[slug];
               if (Array.isArray(val)) {
                 scriptDoc[slug] = val.map(
-                  (item: any) => userMap.get(extractId(item)) ?? item,
+                  (item) => userMap.get(extractId(item)) ?? item,
                 );
               } else {
                 const id = extractId(val);
@@ -246,6 +250,10 @@ export default class TableRowUpdateUseCase {
           }
         }
 
+        let scriptCreatorId: string | undefined;
+        if (typeof payload.creator === 'string') {
+          scriptCreatorId = payload.creator;
+        }
         const result = await this.scriptExecutionService.execute({
           code: beforeSaveCode,
           doc: scriptDoc,
@@ -254,8 +262,7 @@ export default class TableRowUpdateUseCase {
           context: {
             userAction: 'editar_registro',
             executionMoment: 'antes_salvar',
-            userId:
-              typeof payload.creator === 'string' ? payload.creator : undefined,
+            userId: scriptCreatorId,
             isNew: false,
             viaSaveHook: false,
             previous: existing,

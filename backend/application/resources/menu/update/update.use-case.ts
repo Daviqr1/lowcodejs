@@ -251,8 +251,8 @@ export default class MenuUpdateUseCase {
       }
 
       const currentParentId = getMenuId(existingMenu.parent);
-      const nextParentId =
-        payload.parent !== undefined ? payload.parent : currentParentId;
+      let nextParentId = currentParentId;
+      if (payload.parent !== undefined) nextParentId = payload.parent;
       const parentChanged =
         payload.parent !== undefined && payload.parent !== currentParentId;
 
@@ -276,10 +276,10 @@ export default class MenuUpdateUseCase {
         const siblingsWithoutCurrent = siblings.filter(
           (menu) => menu._id !== payload._id,
         );
-        const requestedOrder =
-          typeof updatePayload.order === 'number'
-            ? updatePayload.order
-            : siblingsWithoutCurrent.length;
+        let requestedOrder = siblingsWithoutCurrent.length;
+        if (typeof updatePayload.order === 'number') {
+          requestedOrder = updatePayload.order;
+        }
         const nextOrder = Math.min(
           Math.max(requestedOrder, 0),
           siblingsWithoutCurrent.length,
@@ -292,7 +292,10 @@ export default class MenuUpdateUseCase {
 
         updatePayload.order = nextOrder;
 
+        // updatePayload é montado como Record<string, unknown> (builder
+        // incremental); em runtime sempre carrega `_id`.
         const updated = await this.menuRepository.update(
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           updatePayload as RepositoryMenuUpdatePayload,
         );
 
@@ -312,7 +315,10 @@ export default class MenuUpdateUseCase {
         return right(updated);
       }
 
+      // updatePayload é montado como Record<string, unknown> (builder
+      // incremental); em runtime sempre carrega `_id`.
       const updated = await this.menuRepository.update(
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         updatePayload as RepositoryMenuUpdatePayload,
       );
 

@@ -33,19 +33,36 @@ const FIELDS: CsvField[] = [
   { label: 'Atualizado em', value: 'updatedAt' },
 ];
 
+function buildSort(
+  sort: Record<string, 'asc' | 'desc'>,
+): Record<string, 'asc' | 'desc'> {
+  if (Object.keys(sort).length > 0) return sort;
+  return { order: 'asc' };
+}
+
 function toCsvRow(menu: IMenu): Record<string, unknown> {
+  let table = '';
+  if (typeof menu.table === 'string') table = menu.table;
+  let parent = '';
+  if (typeof menu.parent === 'string') parent = menu.parent;
+  let isInitial = 'false';
+  if (menu.isInitial) isInitial = 'true';
+  let createdAt = '';
+  if (menu.createdAt) createdAt = new Date(menu.createdAt).toISOString();
+  let updatedAt = '';
+  if (menu.updatedAt) updatedAt = new Date(menu.updatedAt).toISOString();
   return {
     _id: menu._id,
     name: menu.name ?? '',
     slug: menu.slug ?? '',
     type: menu.type ?? '',
-    table: typeof menu.table === 'string' ? menu.table : '',
-    parent: typeof menu.parent === 'string' ? menu.parent : '',
+    table,
+    parent,
     url: menu.url ?? '',
     order: menu.order ?? 0,
-    isInitial: menu.isInitial ? 'true' : 'false',
-    createdAt: menu.createdAt ? new Date(menu.createdAt).toISOString() : '',
-    updatedAt: menu.updatedAt ? new Date(menu.updatedAt).toISOString() : '',
+    isInitial,
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -87,7 +104,7 @@ export default class MenuExportCsvUseCase {
             perPage,
             search: p.search,
             trashed: p.trashed ?? false,
-            sort: Object.keys(p.sort).length > 0 ? p.sort : { order: 'asc' },
+            sort: buildSort(p.sort),
           });
           return batch.map(toCsvRow);
         },

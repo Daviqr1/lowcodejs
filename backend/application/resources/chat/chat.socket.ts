@@ -63,8 +63,10 @@ function extractCookieValue(
 
 function getErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return String(err);
-  const cause = (err as Error & { cause?: unknown }).cause;
-  const causeMsg = cause instanceof Error ? ` — causa: ${cause.message}` : '';
+  const errWithCause: Error & { cause?: unknown } = err;
+  const cause = errWithCause.cause;
+  let causeMsg = '';
+  if (cause instanceof Error) causeMsg = ` — causa: ${cause.message}`;
   return err.message + causeMsg;
 }
 
@@ -98,7 +100,8 @@ function formatChatUserError(err: unknown): string {
   }
 
   const full = getErrorMessage(err);
-  return full.length > 400 ? `${full.slice(0, 400)}…` : full;
+  if (full.length > 400) return `${full.slice(0, 400)}…`;
+  return full;
 }
 
 class NodeHttpTransport implements Transport {
@@ -119,14 +122,16 @@ class NodeHttpTransport implements Transport {
   async send(message: JSONRPCMessage): Promise<void> {
     const isNotification = !('id' in message);
     if (isNotification) {
-      this.post(message).catch((err: unknown) =>
-        this.onerror?.(err instanceof Error ? err : new Error(String(err))),
-      );
+      this.post(message).catch((err: unknown) => {
+        let error = new Error(String(err));
+        if (err instanceof Error) error = err;
+        this.onerror?.(error);
+      });
       return;
     }
     const response = await this.post(message);
     if (response !== null && this.onmessage) {
-      this.onmessage(response as JSONRPCMessage);
+      this.onmessage(response);
     }
   }
 
@@ -139,10 +144,12 @@ class NodeHttpTransport implements Transport {
     timeoutMs = 15000,
   ): Promise<JSONRPCMessage | null> {
     return new Promise((resolve, reject) => {
-      const mod = this.url.protocol === 'https:' ? https : http;
+      let mod: typeof http | typeof https = http;
+      if (this.url.protocol === 'https:') mod = https;
       const data = JSON.stringify(body);
-      const port =
-        this.url.port || (this.url.protocol === 'https:' ? '443' : '80');
+      let defaultPort = '80';
+      if (this.url.protocol === 'https:') defaultPort = '443';
+      const port = this.url.port || defaultPort;
 
       const req = mod.request(
         {
@@ -173,7 +180,7 @@ class NodeHttpTransport implements Transport {
                   eventData += line.slice(6);
                 } else if (line.trim() === '' && eventData) {
                   try {
-                    const msg = JSON.parse(eventData) as JSONRPCMessage;
+                    const msg: JSONRPCMessage = JSON.parse(eventData);
                     this.onmessage?.(msg);
                   } catch {
                     /* ignore */
@@ -197,7 +204,8 @@ class NodeHttpTransport implements Transport {
               return;
             }
             try {
-              resolve(JSON.parse(chunks) as JSONRPCMessage);
+              const parsed: JSONRPCMessage = JSON.parse(chunks);
+              resolve(parsed);
             } catch {
               reject(
                 new Error(`Resposta inválida do MCP: ${chunks.slice(0, 200)}`),

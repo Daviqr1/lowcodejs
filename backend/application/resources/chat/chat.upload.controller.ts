@@ -89,7 +89,8 @@ export default class {
         extracted_text: extracted,
       });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      let errorMsg = String(err);
+      if (err instanceof Error) errorMsg = err.message;
       return response.status(400).send({
         error: `Erro ao processar PDF: ${errorMsg}`,
       });

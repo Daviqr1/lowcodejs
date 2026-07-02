@@ -48,9 +48,12 @@ export default class TableRowReactionUseCase {
         );
 
       const fieldValue = row[payload.field];
-      const existingIds: string[] = Array.isArray(fieldValue)
-        ? fieldValue.flatMap((r: { toString(): string }) => r?.toString())
-        : [];
+      let existingIds: string[] = [];
+      if (Array.isArray(fieldValue)) {
+        existingIds = fieldValue.flatMap((r: { toString(): string }) =>
+          r?.toString(),
+        );
+      }
 
       let oldReactionId: string | null = null;
 

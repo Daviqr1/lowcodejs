@@ -1,3 +1,5 @@
+// Spec constrói mocks parciais de entidades do domínio via asserção.
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -94,9 +96,8 @@ async function createForumTable(
   repo: TableInMemoryRepository,
   overrides?: Record<string, unknown>,
 ): Promise<import('@application/core/entity.core').ITable> {
-  const payload = overrides
-    ? { ...FORUM_TABLE_PAYLOAD, ...overrides }
-    : FORUM_TABLE_PAYLOAD;
+  let payload = FORUM_TABLE_PAYLOAD;
+  if (overrides) payload = { ...FORUM_TABLE_PAYLOAD, ...overrides };
   const table = await repo.create(payload);
   table.fields = [MESSAGES_FIELD];
   return table;

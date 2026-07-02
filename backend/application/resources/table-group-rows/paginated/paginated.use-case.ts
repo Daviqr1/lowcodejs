@@ -83,7 +83,7 @@ export default class GroupRowPaginatedUseCase {
         perPage,
         page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       const paginated = allItems.slice(skip, skip + perPage);

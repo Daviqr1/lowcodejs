@@ -41,10 +41,7 @@ export default class {
 
     const result = await this.useCase.execute({
       _id,
-      tableSettings: body.tableSettings as Record<
-        string,
-        Record<string, unknown>
-      >,
+      tableSettings: body.tableSettings,
     });
 
     if (result.isLeft()) {

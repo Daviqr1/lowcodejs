@@ -117,7 +117,10 @@ export const FieldTipSchema = z
   .max(500)
   .nullable()
   .default(null)
-  .transform((value) => (value && value.length > 0 ? value : null));
+  .transform((value) => {
+    if (value && value.length > 0) return value;
+    return null;
+  });
 export const FieldHtmlContentSchema = z
   .string()
   .trim()
@@ -209,7 +212,8 @@ export function normalizeDefaultValue(
 
   if (ARRAY_DEFAULT_VALUE_TYPES.has(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (typeof defaultValue === 'string' && defaultValue) {
       return [defaultValue];

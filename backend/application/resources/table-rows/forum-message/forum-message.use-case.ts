@@ -611,7 +611,8 @@ export default class ForumMessageUseCase {
   }
 
   private resolveForumConfig(table: ITable): ForumConfig | null {
-    const fields = Array.isArray(table.fields) ? table.fields : [];
+    let fields: typeof table.fields = [];
+    if (Array.isArray(table.fields)) fields = table.fields;
     const messagesField =
       fields.find((field) => field.slug === 'mensagens') ??
       fields.find((field) => field.type === E_FIELD_TYPE.FIELD_GROUP);
@@ -848,19 +849,23 @@ export default class ForumMessageUseCase {
   }): Promise<void> {
     if (opts.emails.length === 0) return;
     try {
-      const snippet = opts.messageText
-        ? opts.messageText
-            .replace(/<[^>]*>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .trim()
-            .slice(0, 200)
-        : '';
+      let snippet = '';
+      if (opts.messageText) {
+        snippet = opts.messageText
+          .replace(/<[^>]*>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .trim()
+          .slice(0, 200);
+      }
 
       const data: Record<string, string> = {};
       if (opts.tableName) data['Tabela'] = opts.tableName;
       if (opts.channelName) data['Canal'] = opts.channelName;
-      if (snippet)
-        data['Mensagem'] = snippet + (snippet.length >= 200 ? '...' : '');
+      if (snippet) {
+        let ellipsis = '';
+        if (snippet.length >= 200) ellipsis = '...';
+        data['Mensagem'] = snippet + ellipsis;
+      }
       if (opts.tableSlug) {
         data['Acessar'] = Env.APP_CLIENT_URL + '/tables/' + opts.tableSlug;
       }
@@ -905,17 +910,17 @@ export default class ForumMessageUseCase {
   }): Promise<void> {
     if (!opts.recipientId || opts.recipientId === opts.actorUserId) return;
 
-    const snippet = opts.messageText
-      ? opts.messageText
-          .replace(/<[^>]*>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .trim()
-          .slice(0, 200)
-      : '';
+    let snippet = '';
+    if (opts.messageText) {
+      snippet = opts.messageText
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim()
+        .slice(0, 200);
+    }
 
-    const title = opts.channelName
-      ? `Nova resposta em #${opts.channelName}`
-      : 'Alguém respondeu sua mensagem';
+    let title = 'Alguém respondeu sua mensagem';
+    if (opts.channelName) title = `Nova resposta em #${opts.channelName}`;
 
     await this.notificationService.notify({
       userIds: [opts.recipientId],
@@ -955,17 +960,17 @@ export default class ForumMessageUseCase {
     );
     if (recipients.length === 0) return;
 
-    const snippet = opts.messageText
-      ? opts.messageText
-          .replace(/<[^>]*>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .trim()
-          .slice(0, 200)
-      : '';
+    let snippet = '';
+    if (opts.messageText) {
+      snippet = opts.messageText
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim()
+        .slice(0, 200);
+    }
 
-    const title = opts.channelName
-      ? `Você foi mencionado em #${opts.channelName}`
-      : 'Você foi mencionado em uma mensagem';
+    let title = 'Você foi mencionado em uma mensagem';
+    if (opts.channelName) title = `Você foi mencionado em #${opts.channelName}`;
 
     await this.notificationService.notify({
       userIds: recipients,

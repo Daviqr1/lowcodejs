@@ -32,16 +32,23 @@ const FIELDS: CsvField[] = [
 ];
 
 function toCsvRow(group: IGroup): Record<string, unknown> {
+  let permissionsCount = 0;
+  if (Array.isArray(group.permissions)) {
+    permissionsCount = group.permissions.length;
+  }
+  let createdAt = '';
+  if (group.createdAt) createdAt = new Date(group.createdAt).toISOString();
+  let updatedAt = '';
+  if (group.updatedAt) updatedAt = new Date(group.updatedAt).toISOString();
+
   return {
     _id: group._id,
     name: group.name ?? '',
     slug: group.slug ?? '',
     description: group.description ?? '',
-    permissionsCount: Array.isArray(group.permissions)
-      ? group.permissions.length
-      : 0,
-    createdAt: group.createdAt ? new Date(group.createdAt).toISOString() : '',
-    updatedAt: group.updatedAt ? new Date(group.updatedAt).toISOString() : '',
+    permissionsCount,
+    createdAt,
+    updatedAt,
   };
 }
 

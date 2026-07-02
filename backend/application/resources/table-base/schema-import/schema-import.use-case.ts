@@ -84,8 +84,8 @@ export default class SchemaImportUseCase {
       try {
         parsed = yaml.load(payload.yaml, { schema: yaml.FAILSAFE_SCHEMA });
       } catch (yamlError) {
-        const message =
-          yamlError instanceof Error ? yamlError.message : 'YAML inválido';
+        let message = 'YAML inválido';
+        if (yamlError instanceof Error) message = yamlError.message;
         return left(
           HTTPException.BadRequest(`YAML inválido: ${message}`, 'INVALID_YAML'),
         );
@@ -138,7 +138,8 @@ export default class SchemaImportUseCase {
           batchTables.set(slug, tableRef);
           created.push(summary);
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Erro ao criar';
+          let message = 'Erro ao criar';
+          if (err instanceof Error) message = err.message;
           errors.push({ name: tableDef.name, message });
         }
       }
@@ -169,7 +170,8 @@ export default class SchemaImportUseCase {
             },
           });
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Erro';
+          let message = 'Erro';
+          if (err instanceof Error) message = err.message;
           errors.push({
             name: pending.ownerTableName,
             message: `Falha ao resolver relacionamento: ${message}`,
@@ -324,14 +326,15 @@ export default class SchemaImportUseCase {
     fieldDef: SchemaImportField,
     fieldSlug: string,
   ): FieldCreatePayload {
-    const dropdown =
-      fieldDef.type === E_FIELD_TYPE.DROPDOWN
-        ? fieldDef.options.map((opt) => ({
-            id: crypto.randomUUID(),
-            label: opt.label,
-            color: opt.color ?? null,
-          }))
-        : [];
+    let dropdown: Array<{ id: string; label: string; color: string | null }> =
+      [];
+    if (fieldDef.type === E_FIELD_TYPE.DROPDOWN) {
+      dropdown = fieldDef.options.map((opt) => ({
+        id: crypto.randomUUID(),
+        label: opt.label,
+        color: opt.color ?? null,
+      }));
+    }
 
     return {
       name: fieldDef.name,
@@ -341,6 +344,9 @@ export default class SchemaImportUseCase {
       locked: false,
       required: fieldDef.required,
       multiple: fieldDef.multiple,
+      // fieldDef.format vem do zod como string validada pelo enum; o pipe não
+      // estreita para o union tipado do E_FIELD_FORMAT.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       format: fieldDef.format as ValueOf<typeof E_FIELD_FORMAT> | null,
       showInFilter: fieldDef.showInFilter,
       permissions: buildFieldPermissions(

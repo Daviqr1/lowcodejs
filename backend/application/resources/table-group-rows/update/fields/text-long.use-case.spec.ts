@@ -1,3 +1,6 @@
+// Specs constroem mocks parciais de entidades e operam sobre dados dinâmicos de
+// row (asserção + any); tipá-los por completo aqui seria só ruído de teste.
+/* eslint-disable @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { E_FIELD_FORMAT } from '@application/core/entity.core';

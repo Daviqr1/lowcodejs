@@ -17,12 +17,12 @@ type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = MenuPaginatedPayload;
 
 function getParentId(menu: Entity): string | null {
-  const parent = menu.parent as unknown;
+  const parent: unknown = menu.parent;
 
   if (!parent) return null;
   if (typeof parent === 'string') return parent;
   if (typeof parent === 'object' && '_id' in parent) {
-    return String((parent as { _id: string })._id);
+    return String(parent._id);
   }
 
   return null;
@@ -32,7 +32,8 @@ function sortByPosition(menus: Entity[], direction: 'asc' | 'desc'): Entity[] {
   return [...menus].sort((a, b) => {
     const orderDiff = (a.order ?? 0) - (b.order ?? 0);
     if (orderDiff !== 0) {
-      return direction === 'asc' ? orderDiff : -orderDiff;
+      if (direction === 'asc') return orderDiff;
+      return -orderDiff;
     }
 
     return a.name.localeCompare(b.name);
@@ -48,7 +49,8 @@ function flattenByHierarchy(
 
   for (const menu of menus) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -135,7 +137,7 @@ export default class MenuPaginatedUseCase {
         perPage: payload.perPage,
         page: payload.page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       return right({

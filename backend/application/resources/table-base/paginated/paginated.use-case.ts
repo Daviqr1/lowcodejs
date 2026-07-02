@@ -56,7 +56,7 @@ export default class TablePaginatedUseCase {
         perPage: payload.perPage,
         page: payload.page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       return right({

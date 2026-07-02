@@ -54,8 +54,8 @@ export default class TableRowCreateUseCase {
       }
 
       // Verifica permissão de escrita (create) via guard.
-      const creatorId =
-        typeof payload.creator === 'string' ? payload.creator : undefined;
+      let creatorId: string | undefined;
+      if (typeof payload.creator === 'string') creatorId = payload.creator;
       const ctx = await this.rowAccessGuard.resolveContext(creatorId);
       const tableId = table._id.toString();
 
@@ -77,9 +77,10 @@ export default class TableRowCreateUseCase {
       }
 
       // Sanitiza payload antes de validar/salvar (ex: forçar valor de visibility).
+      const payloadRecord: Record<string, unknown> = payload;
       const sanitized = await this.rowAccessGuard.composeSanitize(
         tableId,
-        payload as Record<string, unknown>,
+        payloadRecord,
         ctx,
         table,
         'create',
@@ -87,7 +88,7 @@ export default class TableRowCreateUseCase {
       );
       // Copia de volta as chaves sanitizadas para o payload mutável.
       for (const key of Object.keys(sanitized)) {
-        (payload as Record<string, unknown>)[key] = sanitized[key];
+        payloadRecord[key] = sanitized[key];
       }
 
       // Descarta escritas em campos ocultos no formulario para o solicitante.
@@ -150,7 +151,7 @@ export default class TableRowCreateUseCase {
 
       await this.rowPasswordService.hash(payload, table.fields);
 
-      const createData: Record<string, any> = {
+      const createData: Record<string, unknown> = {
         ...payload,
         creator: payload.creator ?? null,
         // Espelha creator em updater para que "Modificado por" apareça
@@ -176,14 +177,14 @@ export default class TableRowCreateUseCase {
           .filter((f) => f.type === 'USER')
           .map((f) => f.slug);
 
-        const scriptDoc: Record<string, any> = { ...createData };
+        const scriptDoc: Record<string, unknown> = { ...createData };
 
         if (userFieldSlugs.length > 0) {
           const allUserIds: string[] = [];
           for (const slug of userFieldSlugs) {
             const val = createData[slug];
             if (Array.isArray(val)) {
-              allUserIds.push(...val.filter((v: any) => typeof v === 'string'));
+              allUserIds.push(...val.filter((v) => typeof v === 'string'));
             } else if (typeof val === 'string' && val) {
               allUserIds.push(val);
             }
@@ -200,7 +201,7 @@ export default class TableRowCreateUseCase {
               const val = createData[slug];
               if (Array.isArray(val)) {
                 scriptDoc[slug] = val.map(
-                  (id: any) => userMap.get(String(id)) ?? id,
+                  (id) => userMap.get(String(id)) ?? id,
                 );
               } else if (typeof val === 'string' && userMap.has(val)) {
                 scriptDoc[slug] = userMap.get(val);
@@ -260,7 +261,7 @@ export default class TableRowCreateUseCase {
         table,
         previousRow: null,
         nextRow: row,
-        actorUserId: typeof payload.creator === 'string' ? payload.creator : '',
+        actorUserId: creatorId ?? '',
       });
 
       this.rowPasswordService.mask(row, table.fields);

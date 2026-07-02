@@ -23,7 +23,8 @@ export const TableFieldUpdateBodyValidator = z
       .nullable()
       .default(null)
       .transform((value) => {
-        return value ? new Date(value) : null;
+        if (value) return new Date(value);
+        return null;
       }),
   })
   .merge(TableFieldBaseSchema);

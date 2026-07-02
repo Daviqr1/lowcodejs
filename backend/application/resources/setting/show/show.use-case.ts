@@ -153,6 +153,7 @@ export default class SettingShowUseCase {
           getDocumentTemplateEntry(),
           getForumTemplateEntry(),
           getCalendarTemplateEntry(),
+          // eslint-disable-next-line no-ternary -- spread condicional das tabelas de clone
           ...(Array.isArray(setting.MODEL_CLONE_TABLES)
             ? setting.MODEL_CLONE_TABLES
             : []),

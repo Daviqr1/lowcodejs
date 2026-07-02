@@ -33,10 +33,13 @@ export default class {
       schema: GroupRowCreateSchema,
     },
   })
-  async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
+  async handle(
+    request: FastifyRequest<{ Body: Record<string, unknown> }>,
+    response: FastifyReply,
+  ): Promise<void> {
     const params = GroupRowCreateParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
-      ...(request.body as Record<string, any>),
+      ...request.body,
       ...params,
       ...(request?.user?.sub && { creator: request.user.sub }),
     });

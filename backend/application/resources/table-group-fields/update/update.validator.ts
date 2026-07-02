@@ -20,7 +20,8 @@ export const GroupFieldUpdateBodyValidator = z
       .nullable()
       .default(null)
       .transform((value) => {
-        return value ? new Date(value) : null;
+        if (value) return new Date(value);
+        return null;
       }),
   })
   .merge(TableFieldBaseSchema);

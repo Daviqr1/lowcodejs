@@ -87,9 +87,10 @@ export default class GroupFieldSendToTrashUseCase {
       const updatedGroups = table.groups.map((g) => {
         if (g.slug !== targetGroup.slug) return g;
 
-        const updatedFields = g.fields.map((f) =>
-          f._id === field._id ? updatedField : f,
-        );
+        const updatedFields = g.fields.map((f) => {
+          if (f._id === field._id) return updatedField;
+          return f;
+        });
         const groupSchema = this.schemaBuilder.build(updatedFields);
 
         return {

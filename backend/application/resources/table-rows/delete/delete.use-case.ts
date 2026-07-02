@@ -75,10 +75,10 @@ export default class TableRowDeleteUseCase {
       }
 
       // Verifica permissão de delete via guard.
-      const actorUserId =
-        typeof payload.__actorUserId === 'string'
-          ? payload.__actorUserId
-          : undefined;
+      let actorUserId: string | undefined;
+      if (typeof payload.__actorUserId === 'string') {
+        actorUserId = payload.__actorUserId;
+      }
       const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
       const tableId = table._id.toString();
 

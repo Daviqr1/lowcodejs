@@ -170,7 +170,7 @@ export default class MenuCreateUseCase {
         slug,
         owner: payload.owner,
         order,
-      } as RepositoryMenuCreatePayload);
+      });
 
       if (created.isInitial) {
         await this.menuRepository.setOnlyInitial(created._id);

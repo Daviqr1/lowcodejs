@@ -46,7 +46,7 @@ function mergeSetCookies(
 
   for (const setCookies of setCookieArrays) {
     if (!setCookies) continue;
-    const headers = Array.isArray(setCookies) ? setCookies : [setCookies];
+    const headers = [setCookies].flat();
     for (const header of headers) {
       // The first segment of a Set-Cookie header is always "name=value"
       const firstSegment = header.split(';')[0].trim();
