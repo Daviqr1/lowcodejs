@@ -33,6 +33,8 @@ echo "🚀 Preparando o banco de dados"
 echo ""
 echo "Migrations"
 for script in "$SCRIPT_DIR/scripts/migrations"/*.sh; do
+  # Pula helpers/partials (`_lib.sh` etc) — não são migrations, são sourced.
+  case "$(basename "$script")" in _*) continue ;; esac
   sh "$script" $FORCE_FLAG
 done
 echo "✓ Migrations concluídas"

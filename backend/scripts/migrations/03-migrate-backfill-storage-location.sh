@@ -4,24 +4,7 @@
 # que não os possuem. Necessário após a feature de storage-migration.
 # Idempotente: skip se marker MIGRATION_STORAGE_LOCATION_AT já setado.
 set -e
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -d "/app/database/migrations" ]; then
-  MIGRATION_DIR="/app/database/migrations"
-else
-  MIGRATION_DIR="$(cd "$SCRIPT_DIR/../../database/migrations" && pwd)"
-fi
-
-runas() {
-  if command -v su-exec >/dev/null 2>&1; then
-    su-exec 1001:1001 "$@"
-  else
-    "$@"
-  fi
-}
-
-# if [ -f "$MIGRATION_DIR/03-migrate-backfill-storage-location.ts" ]; then
-#   runas node --import @swc-node/register/esm-register "$MIGRATION_DIR/03-migrate-backfill-storage-location.ts"
-# else
-#   runas node "$MIGRATION_DIR/03-migrate-backfill-storage-location.js"
-# fi
+. "$(dirname "$0")/_lib.sh"
+# Desativado: o backfill roda pela própria feature de storage-migration.
+# Não reative sem confirmar que a feature não cobre o backfill.
+# run_migration "03-migrate-backfill-storage-location" "$@"
