@@ -356,12 +356,14 @@ export const relationshipRowsOptions = (params: {
   search?: string;
   page?: number;
   perPage?: number;
+  excludeSelfId?: string;
 }) =>
   queryOptions({
     queryKey: queryKeys.relationships.rows(
       params.fieldSlug,
       params.tableSlug,
       params.search,
+      params.excludeSelfId,
     ),
     queryFn: async () => {
       const response = await API.get<Paginated<IRow>>(
@@ -371,6 +373,9 @@ export const relationshipRowsOptions = (params: {
             page: params.page ?? 1,
             perPage: params.perPage ?? 10,
             ...(params.search && { search: params.search }),
+            ...(params.excludeSelfId && {
+              excludeSelfId: params.excludeSelfId,
+            }),
           },
         },
       );
@@ -389,6 +394,7 @@ export const relationshipRowsInfiniteOptions = (params: {
   relationshipId?: string;
   excludeSide?: 'source' | 'target';
   excludeForRecordId?: string;
+  excludeSelfId?: string;
 }) =>
   infiniteQueryOptions({
     queryKey: queryKeys.relationships.infinite(
@@ -397,6 +403,7 @@ export const relationshipRowsInfiniteOptions = (params: {
       params.search,
       params.excludeLinked,
       params.excludeForRecordId,
+      params.excludeSelfId,
     ),
     queryFn: async ({ pageParam }) => {
       const response = await API.get<Paginated<IRow>>(
@@ -406,6 +413,9 @@ export const relationshipRowsInfiniteOptions = (params: {
             page: pageParam,
             perPage: params.perPage ?? 10,
             ...(params.search && { search: params.search }),
+            ...(params.excludeSelfId && {
+              excludeSelfId: params.excludeSelfId,
+            }),
             ...(params.excludeLinked &&
               params.relationshipId &&
               params.excludeSide && {

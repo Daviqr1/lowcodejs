@@ -81,6 +81,9 @@ function RelationshipSelectExistingSheetContent({
     search: debouncedSearch || undefined,
     page,
     perPage,
+    // Auto-relacionamento: não oferecer o próprio registro como candidato.
+    // No-op quando a tabela-alvo é outra (o _id nunca aparece na lista).
+    ...(recordId && { excludeSelfId: recordId }),
   });
 
   const linksQuery = useRelationshipLinksList({

@@ -17,6 +17,7 @@ interface UseRelationshipRowsReadPaginatedInfiniteParams {
   relationshipId?: string;
   excludeSide?: 'source' | 'target';
   excludeForRecordId?: string;
+  excludeSelfId?: string;
 }
 
 export function useRelationshipRowsReadPaginatedInfinite(

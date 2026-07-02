@@ -694,6 +694,9 @@ function DefaultRelationshipField({
       fieldSlug: field.slug,
       search: debouncedQuery,
       perPage: 10,
+      // Auto-relacionamento: não oferecer o próprio registro como candidato.
+      // No-op quando a tabela-alvo é outra (o _id nunca aparece na lista).
+      ...(rowId && { excludeSelfId: rowId }),
       ...(shouldExcludeLinked && {
         excludeLinked: true,
         relationshipId: relConfig?.relationshipId ?? undefined,
