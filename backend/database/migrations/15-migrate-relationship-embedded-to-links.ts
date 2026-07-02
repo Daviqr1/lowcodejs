@@ -273,6 +273,24 @@ async function migrateField(
       slug: field.slug,
     },
   );
+  // Idempotência: se já existe def não-trashed para este campo source (execução
+  // anterior ou materialização pela app), religa o campo e sai — nunca duplica
+  // def/espelho (era o gap que gerava as duplicatas). O índice UNIQUE parcial da
+  // migration 28 também impediria o insert; guardar aqui evita o E11000.
+  const existingDef = await defsCol.findOne({
+    trashed: { $ne: true },
+    'source.field._id': field._id,
+  });
+  if (existingDef) {
+    await systemDb
+      .collection('fields')
+      .updateOne(
+        { _id: field._id },
+        { $set: { 'relationship.relationshipId': existingDef._id } },
+      );
+    return 'skipped';
+  }
+
   const mirrorDoc = buildMirrorFieldDoc({
     _id: mirrorFieldId,
     name: sourceTable.name ?? sourceTable.slug,

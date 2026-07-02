@@ -437,6 +437,21 @@ async function materializeField(
   }
 
   const definitionId = new mongoose.Types.ObjectId();
+  // Idempotência: se já existe def não-trashed para este campo source, religa o
+  // campo e sai — nunca duplica def/espelho (era o gap que gerava as duplicatas).
+  // O índice UNIQUE parcial da migration 28 também impediria o insert.
+  const existingDef = await defsCol.findOne({
+    trashed: { $ne: true },
+    'source.field._id': field._id,
+  });
+  if (existingDef) {
+    await fieldsCol.updateOne(
+      { _id: field._id },
+      { $set: { 'relationship.relationshipId': existingDef._id } },
+    );
+    return 'materialized';
+  }
+
   const mirrorFieldId = new mongoose.Types.ObjectId();
   const mirrorSlug = `${sourceTable.slug}__rel_${field.slug}`;
 
