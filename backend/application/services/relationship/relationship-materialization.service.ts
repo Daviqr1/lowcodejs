@@ -67,6 +67,33 @@ export default class RelationshipMaterializationService implements RelationshipM
       );
     }
 
+    // Guarda de dedup: um campo source deve ter no máximo UMA definition. Se já
+    // existe (re-materialização — o gap que gerou as duplicatas nas migrations
+    // 15/23 e no double-submit), religa o campo à existente em vez de criar
+    // outra def + outro espelho. Idempotente.
+    const existing = await this.definitionRepository.findBySourceField(
+      sourceField._id,
+    );
+    if (existing) {
+      if (sourceField.relationship?.relationshipId !== existing._id) {
+        await this.fieldRepository.update({
+          _id: sourceField._id,
+          relationship: {
+            ...sourceField.relationship,
+            table: ref,
+            field: sourceField.relationship?.field ?? existing.target.field,
+            order: sourceField.relationship?.order ?? 'asc',
+            relationshipId: existing._id,
+            side: 'source',
+          },
+        });
+      }
+      return right({
+        definitionId: existing._id,
+        mirrorFieldId: existing.target.field._id,
+      });
+    }
+
     const mirrorSlug = this.resolveMirrorSlug(
       sourceTable,
       sourceField,

@@ -50,6 +50,11 @@ export const Schema = new mongoose.Schema(
 // montar tabs do detalhe §10.2).
 Schema.index({ 'source.table._id': 1 });
 Schema.index({ 'target.table._id': 1 });
+// Lookup de dedup: def nao-trashed por campo source (findBySourceField). O
+// indice UNIQUE parcial (garantia dura de 1 def por source.field) e criado na
+// migration 28 apos consolidar as duplicatas — declara-lo aqui faria o autoIndex
+// do boot falhar enquanto o banco ainda tem duplicatas.
+Schema.index({ 'source.field._id': 1 });
 
 export const RelationshipDefinition = (mongoose?.models
   ?.RelationshipDefinition ||

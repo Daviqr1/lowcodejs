@@ -54,6 +54,17 @@ export default class RelationshipDefinitionMongooseRepository implements Relatio
     return definitions.map((definition) => this.transform(definition));
   }
 
+  async findBySourceField(
+    fieldId: string,
+  ): Promise<IRelationshipDefinition | null> {
+    const definition = await Model.findOne({
+      trashed: { $ne: true },
+      'source.field._id': fieldId,
+    });
+    if (!definition) return null;
+    return this.transform(definition);
+  }
+
   async findMany(options?: FindOptions): Promise<IRelationshipDefinition[]> {
     const where: Record<string, unknown> = {};
     if (options?.trashed !== undefined) {

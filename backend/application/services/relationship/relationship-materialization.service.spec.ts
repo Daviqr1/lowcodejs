@@ -129,6 +129,39 @@ describe('RelationshipMaterializationService', () => {
     expect(mirror!.multiple).toBe(false);
   });
 
+  it('dedup: re-materializar o mesmo campo source não cria definition duplicada', async () => {
+    const source = await createSourceField(true);
+
+    const first = await sut.materialize({
+      sourceField: source,
+      sourceTable: pedidos,
+      onDelete: E_RELATIONSHIP_ON_DELETE.SET_NULL,
+      mirrorMultiple: false,
+      mirrorVisible: false,
+    });
+    if (!first.isRight()) throw new Error('Expected right');
+
+    // Simula o gap das migrations 15/23 / double-submit: re-materializa com o
+    // objeto `source` STALE (sem relationshipId religado). A guarda deve achar a
+    // definition existente por source.field._id e reusá-la.
+    const second = await sut.materialize({
+      sourceField: source,
+      sourceTable: pedidos,
+      onDelete: E_RELATIONSHIP_ON_DELETE.SET_NULL,
+      mirrorMultiple: false,
+      mirrorVisible: false,
+    });
+
+    expect(second.isRight()).toBe(true);
+    if (!second.isRight()) throw new Error('Expected right');
+
+    // Continua só 1 definition e 1 espelho — sem duplicar.
+    const active = definitionRepository.items.filter((d) => !d.trashed);
+    expect(active).toHaveLength(1);
+    expect(second.value.definitionId).toBe(first.value.definitionId);
+    expect(second.value.mirrorFieldId).toBe(first.value.mirrorFieldId);
+  });
+
   it('falha quando a tabela alvo não existe', async () => {
     const source = await fieldRepository.create({
       name: 'Inexistente',

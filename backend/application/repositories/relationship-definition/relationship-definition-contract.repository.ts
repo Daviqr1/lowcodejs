@@ -32,6 +32,12 @@ export abstract class RelationshipDefinitionContractRepository {
   ): Promise<IRelationshipDefinition | null>;
   // Definicoes que tocam uma tabela em qualquer lado (source ou target).
   abstract findByTable(tableId: string): Promise<IRelationshipDefinition[]>;
+  // Definicao nao-trashed cujo lado source e o campo informado. Um campo source
+  // deve ter no maximo UMA definition — usado como guarda de dedup na
+  // materializacao (evita duplicar def/espelho ao re-materializar).
+  abstract findBySourceField(
+    fieldId: string,
+  ): Promise<IRelationshipDefinition | null>;
   abstract findMany(options?: FindOptions): Promise<IRelationshipDefinition[]>;
   abstract update(
     payload: RelationshipDefinitionUpdatePayload,

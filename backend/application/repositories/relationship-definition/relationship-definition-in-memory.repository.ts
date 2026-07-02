@@ -52,6 +52,15 @@ export default class RelationshipDefinitionInMemoryRepository implements Relatio
     );
   }
 
+  async findBySourceField(
+    fieldId: string,
+  ): Promise<IRelationshipDefinition | null> {
+    const definition = this.items.find(
+      (item) => !item.trashed && item.source.field._id === fieldId,
+    );
+    return definition ?? null;
+  }
+
   async findMany(options?: FindOptions): Promise<IRelationshipDefinition[]> {
     return this.items.filter((item) => {
       if (options?.trashed !== undefined)
