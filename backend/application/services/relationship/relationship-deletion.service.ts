@@ -47,6 +47,19 @@ export default class RelationshipDeletionService implements RelationshipDeletion
     const now = new Date();
 
     for (const definition of definitions) {
+      // Auto-relacionamento (§4.5): source e target são a mesma tabela, então
+      // ambos os campos (original + espelho) já saem no deleteMany da exclusão
+      // da tabela. Não há espelho em outra tabela para limpar — só os
+      // links/definition.
+      if (
+        definition.source.table._id === tableId &&
+        definition.target.table._id === tableId
+      ) {
+        await this.linkRepository.deleteByRelationship(definition._id);
+        await this.definitionRepository.delete(definition._id);
+        continue;
+      }
+
       let mirrorFieldId: string | null = null;
       let mirrorTableId: string | null = null;
 
