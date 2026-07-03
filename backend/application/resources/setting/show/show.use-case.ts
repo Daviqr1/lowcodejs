@@ -4,7 +4,7 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import { E_AI_LLM_PROVIDER } from '@application/core/entity.core';
-import type { ISetting } from '@application/core/entity.core';
+import type { ISetting, ITable } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
 import { projectAiSettingsFields } from '@application/services/llm/ai-setting-fields';
@@ -19,7 +19,7 @@ const FORUM_TEMPLATE_ID = 'FORUM_TEMPLATE';
 const CALENDAR_TEMPLATE_ID = 'CALENDAR_TEMPLATE';
 
 function getKanbanTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -31,7 +31,7 @@ function getKanbanTemplateEntry(): Pick<
 }
 
 function getCardsTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -43,7 +43,7 @@ function getCardsTemplateEntry(): Pick<
 }
 
 function getMosaicTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -55,7 +55,7 @@ function getMosaicTemplateEntry(): Pick<
 }
 
 function getDocumentTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -67,7 +67,7 @@ function getDocumentTemplateEntry(): Pick<
 }
 
 function getForumTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -79,7 +79,7 @@ function getForumTemplateEntry(): Pick<
 }
 
 function getCalendarTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {

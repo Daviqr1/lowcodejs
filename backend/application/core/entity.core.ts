@@ -759,7 +759,10 @@ export type ISetting = {
   FILE_UPLOAD_ACCEPTED: string;
   FILE_UPLOAD_MAX_FILES_PER_UPLOAD: number;
   PAGINATION_PER_PAGE: number;
-  MODEL_CLONE_TABLES: ITable[];
+  // Refs das tabelas de clonagem. Sao ids (string) quando nao populado — como
+  // chega no payload de update e como o double de teste guarda — e ITable apos o
+  // populate do repositorio Mongoose no get.
+  MODEL_CLONE_TABLES: Array<string | ITable>;
   LOGO_SMALL_URL?: string | null;
   LOGO_LARGE_URL?: string | null;
   LOGO_SMALL_DARK_URL?: string | null;
