@@ -159,9 +159,9 @@ export function TableKanbanView({
 
   const orderedListOptions = React.useMemo(() => {
     const byId = new Map(listOptions.map((opt) => [opt.id, opt] as const));
-    return columnOrder.map((id) => byId.get(id)).filter(Boolean) as Array<
-      (typeof listOptions)[number]
-    >;
+    return columnOrder
+      .map((id) => byId.get(id))
+      .filter((opt): opt is (typeof listOptions)[number] => opt !== undefined);
   }, [columnOrder, listOptions]);
 
   const activeFields = React.useMemo(
@@ -572,11 +572,12 @@ export function TableKanbanView({
 
   // Nome do primeiro relacionamento selecionado, candidato a semear o título.
   const relationshipSeedLabel = useStore(createForm.store, (state) => {
-    const values = state.values as Record<string, unknown>;
+    const values: Record<string, unknown> = state.values;
     for (const slug of relationshipFieldSlugs) {
       const value = values[slug];
       if (Array.isArray(value) && value.length > 0) {
-        const label = (value[0] as { label?: unknown }).label;
+        const first: { label?: unknown } = value[0];
+        const label = first.label;
         if (typeof label === 'string' && label.trim()) return label.trim();
       }
     }
@@ -586,7 +587,7 @@ export function TableKanbanView({
   React.useEffect(() => {
     if (!isCreateCardOpen || !fields.title || !relationshipSeedLabel) return;
     const titleSlug = fields.title.slug;
-    const values = createForm.store.state.values as Record<string, unknown>;
+    const values: Record<string, unknown> = createForm.store.state.values;
     const currentTitle = String(values[titleSlug] ?? '').trim();
     // Só preenche quando vazio; se já houver texto, não sobrescreve.
     if (currentTitle) return;
@@ -782,12 +783,12 @@ export function TableKanbanView({
       if (activeType !== 'card') return;
 
       const activeId = String(active.id);
-      const sourceColumn = active.data.current?.columnId as string;
+      const sourceColumn: string = active.data.current?.columnId;
       const overColumnId = over.data.current?.columnId;
 
       // overColumnId vem do data.current do dnd-kit (tipagem frouxa).
       let targetColumn = overColumnId ?? String(over.id);
-      if (overType === 'card') targetColumn = overColumnId as string;
+      if (overType === 'card') targetColumn = overColumnId;
 
       if (!fields.list) return;
 

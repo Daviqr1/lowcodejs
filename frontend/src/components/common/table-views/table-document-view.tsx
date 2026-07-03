@@ -232,6 +232,8 @@ export function TableDocumentView({
           onSelect={setSelectedCategoryId}
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen((v) => !v)}
+          // placeholder defensivo: a view so roda com categoryField presente,
+          // mas o tipo permite undefined e DocumentSidebar exige IField.
           categoryField={categoryField ?? ({} as IField)}
         />
       </div>

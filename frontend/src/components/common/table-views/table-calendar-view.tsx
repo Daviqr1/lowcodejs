@@ -212,6 +212,8 @@ export function TableCalendarView({
 
       for (const field of allExtraFields) {
         if (field.slug in payload.extraValues) {
+          // extraValues e Record<string, unknown> (dados dinamicos do form);
+          // mountRowValue espera FieldValue — cast forcado pelo valor runtime.
           dataPayload[field.slug] = mountRowValue(
             payload.extraValues[field.slug] as Parameters<
               typeof mountRowValue
