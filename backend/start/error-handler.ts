@@ -79,9 +79,9 @@ export function GlobalErrorHandler(
 
     const errors = validation.reduce(
       (acc: Record<string, string>, err: ValidationError) => {
-        const field = err.instancePath
-          ? err.instancePath.slice(1)
-          : err.params?.errors?.[0]?.params?.missingProperty || 'unknown';
+        let field =
+          err.params?.errors?.[0]?.params?.missingProperty || 'unknown';
+        if (err.instancePath) field = err.instancePath.slice(1);
 
         if (err.message && field) {
           acc[field] = err.message;
