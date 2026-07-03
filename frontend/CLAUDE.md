@@ -390,3 +390,51 @@ Tipos em `IExtension` (lib/interfaces.ts), enum `E_EXTENSION_TYPE`
 | Utilitario         | kebab-case.ts                | `handle-api-error.ts`        |
 | Store              | kebab-case.ts                | `authentication.ts`          |
 | Tipo/Interface     | I{Nome} ou E\_{NOME}         | `IUser`, `E_ROLE`            |
+
+## Convencoes de Codigo
+
+Tres regras de estilo aplicadas em todo o `src/` e `extensions/` (excecoes:
+`routeTree.gen.ts` gerado e `components/ui/**` shadcn).
+
+### 1. Sem ternario de atribuicao/controle
+
+Nao usar ternario para atribuir valor ou escolher fluxo. Preferir `if` classico.
+Manter `??`, `?.` e `&&`/`||` short-circuit (nao sao ternario).
+
+```ts
+// Evitar
+const status = active ? 'on' : 'off';
+
+// Preferir
+let status = 'off';
+if (active) status = 'on';
+```
+
+Em JSX, renderizar cada caso com seu proprio short-circuit:
+
+```tsx
+// Evitar
+{isOpen ? <Panel /> : <Placeholder />}
+
+// Preferir
+{isOpen && <Panel />}
+{!isOpen && <Placeholder />}
+```
+
+Para props que exigem um de dois valores nao-booleanos, usar short-circuit
+`(cond && 'a') || 'b'` (ex.: `type={(show && 'text') || 'password'}`) ou
+precomputar com `let` + `if` antes do JSX.
+
+### 2. Sem `any` desnecessario
+
+Preferir `type` proprio, inferencia ou `unknown` + narrow. `any` so onde a lib
+forca (ex.: render props dinamicos do TanStack Form, index signature de `IRow`),
+sempre com comentario curto justificando.
+
+### 3. Sem `as` (preferir `satisfies`)
+
+`as const` e permitido. Para o resto, preferir `satisfies` ou corrigir o tipo na
+origem. Onde a lib genuinamente forca (dados dinamicos de runtime), manter o
+minimo com comentario; nunca introduzir `as`/`any` novo.
+
+Commits: Conventional Commits atomicos em pt-BR (`refactor(escopo): ...`).
