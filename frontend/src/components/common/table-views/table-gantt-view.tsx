@@ -572,10 +572,11 @@ export function TableGanttView({
                       group.rows.map((ganttRow) => {
                         const isDragging =
                           dragState?.rowId === ganttRow.row._id;
-                        const bar = isDragging
-                          ? getDraggedBarStyle(ganttRow)
-                          : computeBarStyle(ganttRow.start, ganttRow.end);
+                        let bar = computeBarStyle(ganttRow.start, ganttRow.end);
+                        if (isDragging) bar = getDraggedBarStyle(ganttRow);
                         const barColor = ganttRow.status?.color ?? '#6b7280';
+                        let cursor: string | undefined;
+                        if (createDrag && !isDragging) cursor = 'crosshair';
 
                         return (
                           <div
@@ -583,10 +584,7 @@ export function TableGanttView({
                             className="relative border-b"
                             style={{
                               height: ROW_HEIGHT,
-                              cursor:
-                                createDrag && !isDragging
-                                  ? 'crosshair'
-                                  : undefined,
+                              cursor,
                             }}
                             onMouseDown={(e) =>
                               handleTimelineMouseDown(e, group.option.id)

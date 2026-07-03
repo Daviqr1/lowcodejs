@@ -72,12 +72,11 @@ export function RowBulkActionsBar({
       setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
-      toast.success(
-        result.modified === 1
-          ? '1 registro enviado para lixeira!'
-          : `${result.modified} registros enviados para lixeira!`,
-        { description: 'Os registros foram movidos para a lixeira' },
-      );
+      let message = `${result.modified} registros enviados para lixeira!`;
+      if (result.modified === 1) message = '1 registro enviado para lixeira!';
+      toast.success(message, {
+        description: 'Os registros foram movidos para a lixeira',
+      });
     },
   });
 
@@ -91,12 +90,11 @@ export function RowBulkActionsBar({
       setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
-      toast.success(
-        result.modified === 1
-          ? '1 registro restaurado!'
-          : `${result.modified} registros restaurados!`,
-        { description: 'Os registros foram restaurados da lixeira' },
-      );
+      let message = `${result.modified} registros restaurados!`;
+      if (result.modified === 1) message = '1 registro restaurado!';
+      toast.success(message, {
+        description: 'Os registros foram restaurados da lixeira',
+      });
     },
   });
 
@@ -112,11 +110,10 @@ export function RowBulkActionsBar({
       setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
-      toast.success(
-        result.deleted === 1
-          ? '1 registro excluído permanentemente!'
-          : `${result.deleted} registros excluídos permanentemente!`,
-      );
+      let message = `${result.deleted} registros excluídos permanentemente!`;
+      if (result.deleted === 1)
+        message = '1 registro excluído permanentemente!';
+      toast.success(message);
     },
   });
 
@@ -128,12 +125,11 @@ export function RowBulkActionsBar({
     <React.Fragment>
       <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
         <span className="text-sm font-medium">
-          {selectedCount === 1
-            ? '1 registro selecionado'
-            : `${selectedCount} registros selecionados`}
+          {selectedCount === 1 && '1 registro selecionado'}
+          {selectedCount !== 1 && `${selectedCount} registros selecionados`}
         </span>
 
-        {isTrashView ? (
+        {isTrashView && (
           <React.Fragment>
             <Button
               variant="outline"
@@ -160,7 +156,8 @@ export function RowBulkActionsBar({
               </Button>
             )}
           </React.Fragment>
-        ) : (
+        )}
+        {!isTrashView && (
           <React.Fragment>
             {hasEditableFields && (
               <Button
@@ -209,13 +206,17 @@ export function RowBulkActionsBar({
             </DialogTitle>
             <DialogDescription>
               {dialogAction === 'trash' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será enviado para a lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão enviados para a lixeira.`)}
+                selectedCount === 1 &&
+                'Ao confirmar essa ação, 1 registro será enviado para a lixeira.'}
+              {dialogAction === 'trash' &&
+                selectedCount !== 1 &&
+                `Ao confirmar essa ação, ${selectedCount} registros serão enviados para a lixeira.`}
               {dialogAction === 'restore' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será restaurado da lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão restaurados da lixeira.`)}
+                selectedCount === 1 &&
+                'Ao confirmar essa ação, 1 registro será restaurado da lixeira.'}
+              {dialogAction === 'restore' &&
+                selectedCount !== 1 &&
+                `Ao confirmar essa ação, ${selectedCount} registros serão restaurados da lixeira.`}
             </DialogDescription>
           </DialogHeader>
           <section>

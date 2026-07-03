@@ -105,12 +105,9 @@ function RowActionsCell({
     },
   });
 
-  const activeMutation =
-    dialogType === 'trash'
-      ? trashMutation
-      : dialogType === 'restore'
-        ? restoreMutation
-        : deleteMutation;
+  let activeMutation = deleteMutation;
+  if (dialogType === 'trash') activeMutation = trashMutation;
+  if (dialogType === 'restore') activeMutation = restoreMutation;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -316,28 +313,30 @@ export function TableListView({
     cols.push(...fieldColumns);
 
     if (canTrashRow || canRemoveRow) {
+      let actionsHeader: (() => React.ReactElement) | undefined;
+      if (canCreateField) {
+        actionsHeader = (): React.ReactElement => (
+          <Button
+            variant="outline"
+            className="cursor-pointer size-6"
+            onClick={() => {
+              router.navigate({
+                to: '/tables/$slug/field/create',
+                replace: true,
+                params: { slug },
+              });
+            }}
+          >
+            <PlusIcon className="size-4" />
+          </Button>
+        );
+      }
       cols.push({
         id: '_actions',
         enableHiding: false,
         enableResizing: false,
         size: 80,
-        header: canCreateField
-          ? (): React.ReactElement => (
-              <Button
-                variant="outline"
-                className="cursor-pointer size-6"
-                onClick={() => {
-                  router.navigate({
-                    to: '/tables/$slug/field/create',
-                    replace: true,
-                    params: { slug },
-                  });
-                }}
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-            )
-          : undefined,
+        header: actionsHeader,
         cell: ({ row }) => (
           <RowActionsCell
             row={row.original}
@@ -401,6 +400,12 @@ export function TableListView({
     table_.data,
   ]);
 
+  let leftPinning: Array<string> = [];
+  if (canTrashRow) leftPinning = ['_select'];
+  let rightPinId = '_navigate';
+  if (canTrashRow || canRemoveRow) rightPinId = '_actions';
+  else if (canCreateField) rightPinId = '_create_field';
+
   const table = useDataTable({
     data,
     columns,
@@ -408,14 +413,8 @@ export function TableListView({
     enableColumnResizing: true,
     persistKey: `list-view:${slug}`,
     initialColumnPinning: {
-      left: canTrashRow ? ['_select'] : [],
-      right: [
-        canTrashRow || canRemoveRow
-          ? '_actions'
-          : canCreateField
-            ? '_create_field'
-            : '_navigate',
-      ],
+      left: leftPinning,
+      right: [rightPinId],
     },
   });
 

@@ -96,9 +96,8 @@ export function BulkEditFieldDialog({
         <DialogHeader>
           <DialogTitle>Editar campo em massa</DialogTitle>
           <DialogDescription>
-            {count === 1
-              ? '1 registro selecionado. '
-              : `${count} registros selecionados. `}
+            {count === 1 && '1 registro selecionado. '}
+            {count !== 1 && `${count} registros selecionados. `}
             Escolha um campo e o novo valor a ser aplicado.
           </DialogDescription>
         </DialogHeader>
@@ -190,21 +189,19 @@ function BulkEditValueForm({
 
   const bulkUpdate = useBulkUpdateTableRows({
     onSuccess(result) {
-      const failed = result.errors ? Object.keys(result.errors).length : 0;
+      let failed = 0;
+      if (result.errors) failed = Object.keys(result.errors).length;
 
-      toast.success(
-        result.modified === 1
-          ? '1 registro atualizado!'
-          : `${result.modified} registros atualizados!`,
-        { description: 'O campo selecionado foi aplicado aos registros.' },
-      );
+      let successMessage = `${result.modified} registros atualizados!`;
+      if (result.modified === 1) successMessage = '1 registro atualizado!';
+      toast.success(successMessage, {
+        description: 'O campo selecionado foi aplicado aos registros.',
+      });
 
       if (failed > 0) {
-        toast.warning(
-          failed === 1
-            ? '1 registro não pôde ser atualizado'
-            : `${failed} registros não puderam ser atualizados`,
-        );
+        let warnMessage = `${failed} registros não puderam ser atualizados`;
+        if (failed === 1) warnMessage = '1 registro não pôde ser atualizado';
+        toast.warning(warnMessage);
       }
 
       onDone();

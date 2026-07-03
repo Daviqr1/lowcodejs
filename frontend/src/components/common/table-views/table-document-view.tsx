@@ -174,10 +174,12 @@ export function TableDocumentView({
     });
   }, [filteredRows, categoryField, categoryOrderMap]);
 
-  const getHeadingLevel = (row: IRow): number =>
-    categoryField
-      ? rowHeadingLevelFromLeaf(row, categoryField.slug, depthMap)
-      : 2;
+  const getHeadingLevel = (row: IRow): number => {
+    if (categoryField) {
+      return rowHeadingLevelFromLeaf(row, categoryField.slug, depthMap);
+    }
+    return 2;
+  };
 
   async function handlePrint(): Promise<void> {
     const blob = await pdf(

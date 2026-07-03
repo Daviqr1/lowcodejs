@@ -64,10 +64,14 @@ export function TableCalendarView({
   const searchParams = useRouterState({ select: (s) => s.location.search });
   const deepLinkRowIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    const rowIdParam =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).rowId
-        : undefined;
+    let rowIdParam: unknown;
+    if (
+      typeof searchParams === 'object' &&
+      searchParams !== null &&
+      'rowId' in searchParams
+    ) {
+      rowIdParam = searchParams.rowId;
+    }
     if (typeof rowIdParam !== 'string' || !rowIdParam) return;
     if (deepLinkRowIdRef.current === rowIdParam) return;
     const exists = rowsState.some((row) => row._id === rowIdParam);
@@ -197,9 +201,10 @@ export function TableCalendarView({
       if (fieldsMap.endField)
         dataPayload[fieldsMap.endField.slug] = payload.end.toISOString();
       if (fieldsMap.colorField) {
-        dataPayload[fieldsMap.colorField.slug] = payload.colorOptionId
-          ? [payload.colorOptionId]
-          : [];
+        const colorSlug = fieldsMap.colorField.slug;
+        if (payload.colorOptionId)
+          dataPayload[colorSlug] = [payload.colorOptionId];
+        else dataPayload[colorSlug] = [];
       }
 
       for (const field of allExtraFields) {

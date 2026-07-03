@@ -282,17 +282,16 @@ export function TableKanbanView({
       if (!fields.list) {
         throw new Error('Campo de lista não encontrado');
       }
-      const dropdown = fields.list.dropdown.map((opt) =>
-        opt.id === payload.optionId
-          ? {
-              ...opt,
-              label: payload.label,
-              color: payload.color,
-              sortField: payload.sortField,
-              sortDirection: payload.sortDirection,
-            }
-          : opt,
-      );
+      const dropdown = fields.list.dropdown.map((opt) => {
+        if (opt.id !== payload.optionId) return opt;
+        return {
+          ...opt,
+          label: payload.label,
+          color: payload.color,
+          sortField: payload.sortField,
+          sortDirection: payload.sortDirection,
+        };
+      });
       const response = await API.put<IField>(
         '/tables/'.concat(tableSlug).concat('/fields/').concat(fields.list._id),
         buildListFieldPayload(fields.list, dropdown),
@@ -408,10 +407,14 @@ export function TableKanbanView({
   const searchParams = useRouterState({ select: (s) => s.location.search });
   const deepLinkRowIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    const rowIdParam =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).rowId
-        : undefined;
+    let rowIdParam: unknown;
+    if (
+      typeof searchParams === 'object' &&
+      searchParams !== null &&
+      'rowId' in searchParams
+    ) {
+      rowIdParam = searchParams.rowId;
+    }
     if (typeof rowIdParam !== 'string' || !rowIdParam) return;
     if (deepLinkRowIdRef.current === rowIdParam) return;
     const target = rowsState.find((row) => row._id === rowIdParam);
@@ -774,20 +777,17 @@ export function TableKanbanView({
       const sourceColumn = active.data.current?.columnId as string;
       const overColumnId = over.data.current?.columnId;
 
-      const targetColumn =
-        overType === 'card'
-          ? (overColumnId as string)
-          : (overColumnId ?? String(over.id));
+      // overColumnId vem do data.current do dnd-kit (tipagem frouxa).
+      let targetColumn = overColumnId ?? String(over.id);
+      if (overType === 'card') targetColumn = overColumnId as string;
 
       if (!fields.list) return;
 
       const orderSlug = await ensureOrderField();
 
       const sourceRows = columns.byStatus[sourceColumn] ?? [];
-      const targetRows =
-        sourceColumn === targetColumn
-          ? sourceRows
-          : (columns.byStatus[targetColumn] ?? []);
+      let targetRows = columns.byStatus[targetColumn] ?? [];
+      if (sourceColumn === targetColumn) targetRows = sourceRows;
 
       const sourceIds = sourceRows.map((row) => row._id);
       const targetIds = targetRows.map((row) => row._id);
@@ -810,14 +810,12 @@ export function TableKanbanView({
         nextTargetIds = nextSourceIds;
       } else {
         nextSourceIds.splice(fromIndex, 1);
-        const insertAt =
-          overType === 'card'
-            ? targetIds.indexOf(String(over.id))
-            : targetIds.length;
-        const index =
-          insertAt === -1 || insertAt > nextTargetIds.length
-            ? nextTargetIds.length
-            : insertAt;
+        let insertAt = targetIds.length;
+        if (overType === 'card') insertAt = targetIds.indexOf(String(over.id));
+        let index = insertAt;
+        if (insertAt === -1 || insertAt > nextTargetIds.length) {
+          index = nextTargetIds.length;
+        }
         nextTargetIds.splice(index, 0, activeId);
       }
 
