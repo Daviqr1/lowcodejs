@@ -63,7 +63,8 @@ function normalizeDefaultValue(
 
   if (arrayTypes.includes(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (defaultValue) return [defaultValue];
     return null;
@@ -71,14 +72,16 @@ function normalizeDefaultValue(
 
   // TEXT_SHORT, TEXT_LONG, DATE → string
   if (Array.isArray(defaultValue)) {
-    return defaultValue.length > 0 ? defaultValue[0] : null;
+    if (defaultValue.length > 0) return defaultValue[0];
+    return null;
   }
   return defaultValue || null;
 }
 
 function normalizeTip(tip: string): string | null {
   const normalized = tip.trim();
-  return normalized.length > 0 ? normalized : null;
+  if (normalized.length > 0) return normalized;
+  return null;
 }
 
 export const Route = createLazyFileRoute(
@@ -124,18 +127,21 @@ function RouteComponent(): React.JSX.Element {
     });
   };
 
+  let headerTitle = 'Detalhes do campo';
+  if (
+    _read.status === 'success' &&
+    _read.data.type === E_FIELD_TYPE.FIELD_GROUP
+  ) {
+    headerTitle = 'Detalhes do grupo de campos';
+  }
+
   return (
     <PageShell data-test-id="field-detail-page">
       {/* Header */}
       <PageShell.Header borderBottom={false}>
         <PageHeader
           onBack={goBack}
-          title={
-            _read.status === 'success' &&
-            _read.data.type === E_FIELD_TYPE.FIELD_GROUP
-              ? 'Detalhes do grupo de campos'
-              : 'Detalhes do campo'
-          }
+          title={headerTitle}
         >
           {_read.status === 'success' &&
             mode === 'show' &&
@@ -327,9 +333,10 @@ function FieldUpdateContent({
         if (!old) return old;
         return {
           ...old,
-          fields: old.fields.map((f) =>
-            f._id === response._id ? response : f,
-          ),
+          fields: old.fields.map((f) => {
+            if (f._id === response._id) return response;
+            return f;
+          }),
         };
       });
 
@@ -343,9 +350,10 @@ function FieldUpdateContent({
               if (t.slug === slug) {
                 return {
                   ...t,
-                  fields: t.fields.map((f) =>
-                    f._id === response._id ? response : f,
-                  ),
+                  fields: t.fields.map((f) => {
+                    if (f._id === response._id) return response;
+                    return f;
+                  }),
                 };
               }
               return t;
@@ -465,6 +473,63 @@ function FieldUpdateContent({
         };
       }
 
+      let required = value.required;
+      if (value.trashed) required = false;
+
+      // value.format vem do formulário como string; o campo aceita o enum.
+      let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
+
+      let dropdown: typeof value.dropdown = [];
+      if (hasDropdown) dropdown = value.dropdown.map((item) => item);
+
+      let allowCustomDropdownOptions = false;
+      if (value.type === E_FIELD_TYPE.DROPDOWN) {
+        allowCustomDropdownOptions = value.allowCustomDropdownOptions;
+      }
+
+      let allowCreateRelationshipRecords = false;
+      if (value.type === E_FIELD_TYPE.RELATIONSHIP) {
+        allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
+      }
+
+      let relationship: IField['relationship'] = null;
+      if (hasRelationship) {
+        let labelParts: typeof value.relationship.labelParts = [];
+        if (value.relationship.customLabel) {
+          labelParts = value.relationship.labelParts;
+        }
+        relationship = {
+          table: {
+            _id: value.relationship.tableId,
+            slug: value.relationship.tableSlug,
+          },
+          field: {
+            _id: value.relationship.fieldId,
+            slug: value.relationship.fieldSlug,
+          },
+          order: (value.relationship.order || 'asc') as 'asc' | 'desc',
+          customLabel: value.relationship.customLabel,
+          labelParts,
+          labelSeparator: value.relationship.labelSeparator || ' - ',
+          visible: value.relationship.sourceVisible,
+          onDelete: value.relationship.onDelete,
+          mirror: {
+            multiple: value.relationship.mirrorMultiple,
+            visible: value.relationship.mirrorVisible,
+            label: value.relationship.mirrorLabel || undefined,
+          },
+          formMode: value.relationship.formMode,
+          max: value.relationship.max ?? null,
+        };
+      }
+
+      let category: typeof value.category = [];
+      if (hasCategory) category = value.category;
+
+      let trashedAt: string | null = null;
+      if (value.trashed) trashedAt = new Date().toISOString();
+
       const payload: Partial<IField> & {
         trashed?: boolean;
         trashedAt?: string | null;
@@ -473,57 +538,23 @@ function FieldUpdateContent({
         tip: normalizeTip(value.tip),
         label: nextLabel,
         type: value.type,
-        required: value.trashed ? false : value.required,
+        required,
         multiple: value.multiple,
         showInFilter: value.showInFilter,
         permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
-        format: value.format
-          ? (value.format as ValueOf<typeof E_FIELD_FORMAT>)
-          : null,
+        format,
         validations: value.validations,
         defaultValue: normalizeDefaultValue(value.type, value.defaultValue),
-        dropdown: hasDropdown ? value.dropdown.map((item) => item) : [],
-        allowCustomDropdownOptions:
-          value.type === E_FIELD_TYPE.DROPDOWN
-            ? value.allowCustomDropdownOptions
-            : false,
-        allowCreateRelationshipRecords:
-          value.type === E_FIELD_TYPE.RELATIONSHIP
-            ? value.allowCreateRelationshipRecords
-            : false,
-        relationship: hasRelationship
-          ? {
-              table: {
-                _id: value.relationship.tableId,
-                slug: value.relationship.tableSlug,
-              },
-              field: {
-                _id: value.relationship.fieldId,
-                slug: value.relationship.fieldSlug,
-              },
-              order: (value.relationship.order || 'asc') as 'asc' | 'desc',
-              customLabel: value.relationship.customLabel,
-              labelParts: value.relationship.customLabel
-                ? value.relationship.labelParts
-                : [],
-              labelSeparator: value.relationship.labelSeparator || ' - ',
-              visible: value.relationship.sourceVisible,
-              onDelete: value.relationship.onDelete,
-              mirror: {
-                multiple: value.relationship.mirrorMultiple,
-                visible: value.relationship.mirrorVisible,
-                label: value.relationship.mirrorLabel || undefined,
-              },
-              formMode: value.relationship.formMode,
-              max: value.relationship.max ?? null,
-            }
-          : null,
-        category: hasCategory ? value.category : [],
+        dropdown,
+        allowCustomDropdownOptions,
+        allowCreateRelationshipRecords,
+        relationship,
+        category,
         htmlContent,
         trashed: value.trashed,
-        trashedAt: value.trashed ? new Date().toISOString() : null,
+        trashedAt,
       };
 
       // slug e a "url"/chave tecnica, editavel so em campos nao-nativos. Campos

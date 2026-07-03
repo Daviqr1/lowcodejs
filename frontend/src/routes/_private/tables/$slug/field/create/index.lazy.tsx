@@ -166,6 +166,57 @@ function RouteComponent(): React.JSX.Element {
         };
       }
 
+      // value.format vem do formulário como string; o campo aceita o enum.
+      let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
+
+      let dropdown: typeof value.dropdown = [];
+      if (hasDropdown) dropdown = value.dropdown.map((item) => item);
+
+      let allowCustomDropdownOptions = false;
+      if (value.type === E_FIELD_TYPE.DROPDOWN) {
+        allowCustomDropdownOptions = value.allowCustomDropdownOptions;
+      }
+
+      let allowCreateRelationshipRecords = false;
+      if (value.type === E_FIELD_TYPE.RELATIONSHIP) {
+        allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
+      }
+
+      let relationship: IField['relationship'] = null;
+      if (hasRelationship) {
+        let labelParts: typeof value.relationship.labelParts = [];
+        if (value.relationship.customLabel) {
+          labelParts = value.relationship.labelParts;
+        }
+        relationship = {
+          table: {
+            _id: value.relationship.tableId,
+            slug: value.relationship.tableSlug,
+          },
+          field: {
+            _id: value.relationship.fieldId,
+            slug: value.relationship.fieldSlug,
+          },
+          order: (value.relationship.order || 'asc') as 'asc' | 'desc',
+          customLabel: value.relationship.customLabel,
+          labelParts,
+          labelSeparator: value.relationship.labelSeparator || ' - ',
+          visible: value.relationship.sourceVisible,
+          onDelete: value.relationship.onDelete as
+            | 'CASCADE'
+            | 'SET_NULL'
+            | 'RESTRICT',
+          mirror: {
+            multiple: value.relationship.mirrorMultiple,
+            visible: value.relationship.mirrorVisible,
+            label: value.relationship.mirrorLabel || undefined,
+          },
+          formMode: value.relationship.formMode,
+          max: value.relationship.max ?? null,
+        };
+      }
+
       const payload: Partial<IField> = {
         name: value.name,
         slug: value.slug,
@@ -178,50 +229,13 @@ function RouteComponent(): React.JSX.Element {
         permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
-        format: value.format
-          ? (value.format as ValueOf<typeof E_FIELD_FORMAT>)
-          : null,
+        format,
         validations: value.validations,
         defaultValue: normalizeDefaultValue(value.type, value.defaultValue),
-        dropdown: hasDropdown ? value.dropdown.map((item) => item) : [],
-        allowCustomDropdownOptions:
-          value.type === E_FIELD_TYPE.DROPDOWN
-            ? value.allowCustomDropdownOptions
-            : false,
-        allowCreateRelationshipRecords:
-          value.type === E_FIELD_TYPE.RELATIONSHIP
-            ? value.allowCreateRelationshipRecords
-            : false,
-        relationship: hasRelationship
-          ? {
-              table: {
-                _id: value.relationship.tableId,
-                slug: value.relationship.tableSlug,
-              },
-              field: {
-                _id: value.relationship.fieldId,
-                slug: value.relationship.fieldSlug,
-              },
-              order: (value.relationship.order || 'asc') as 'asc' | 'desc',
-              customLabel: value.relationship.customLabel,
-              labelParts: value.relationship.customLabel
-                ? value.relationship.labelParts
-                : [],
-              labelSeparator: value.relationship.labelSeparator || ' - ',
-              visible: value.relationship.sourceVisible,
-              onDelete: value.relationship.onDelete as
-                | 'CASCADE'
-                | 'SET_NULL'
-                | 'RESTRICT',
-              mirror: {
-                multiple: value.relationship.mirrorMultiple,
-                visible: value.relationship.mirrorVisible,
-                label: value.relationship.mirrorLabel || undefined,
-              },
-              formMode: value.relationship.formMode,
-              max: value.relationship.max ?? null,
-            }
-          : null,
+        dropdown,
+        allowCustomDropdownOptions,
+        allowCreateRelationshipRecords,
+        relationship,
         category: hasCategory ? convertTreeNodeToCategory(value.category) : [],
         htmlContent,
       };
@@ -254,16 +268,18 @@ function RouteComponent(): React.JSX.Element {
   }
 
   // Blocked types for field-group tables or when in group context
-  const blockedTypes =
+  let blockedTypes: Array<ValueOf<typeof E_FIELD_TYPE>> = [];
+  if (
     !!groupSlug ||
     (table.status === 'success' && table.data.type === E_TABLE_TYPE.FIELD_GROUP)
-      ? [
-          E_FIELD_TYPE.FIELD_GROUP,
-          E_FIELD_TYPE.REACTION,
-          E_FIELD_TYPE.EVALUATION,
-          E_FIELD_TYPE.RELATIONSHIP,
-        ]
-      : [];
+  ) {
+    blockedTypes = [
+      E_FIELD_TYPE.FIELD_GROUP,
+      E_FIELD_TYPE.REACTION,
+      E_FIELD_TYPE.EVALUATION,
+      E_FIELD_TYPE.RELATIONSHIP,
+    ];
+  }
 
   const isPending =
     _create.status === 'pending' || _createGroupField.status === 'pending';
@@ -277,17 +293,18 @@ function RouteComponent(): React.JSX.Element {
     });
   };
 
+  let headerTitle = 'Novo campo';
+  if (defaultFieldType === E_FIELD_TYPE.FIELD_GROUP) {
+    headerTitle = 'Novo grupo de campos';
+  }
+
   return (
     <PageShell data-test-id="create-field-page">
       {/* Header */}
       <PageShell.Header borderBottom={false}>
         <PageHeader
           onBack={goBack}
-          title={
-            defaultFieldType === E_FIELD_TYPE.FIELD_GROUP
-              ? 'Novo grupo de campos'
-              : 'Novo campo'
-          }
+          title={headerTitle}
         />
       </PageShell.Header>
 
