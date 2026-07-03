@@ -84,12 +84,9 @@ function isRowAccessPlugin(extension: IExtension): boolean {
 }
 
 function TypeBadge({ type }: { type: IExtension['type'] }): React.JSX.Element {
-  const Icon =
-    type === E_EXTENSION_TYPE.PLUGIN
-      ? PuzzleIcon
-      : type === E_EXTENSION_TYPE.TOOL
-        ? WrenchIcon
-        : PackageIcon;
+  let Icon = PackageIcon;
+  if (type === E_EXTENSION_TYPE.PLUGIN) Icon = PuzzleIcon;
+  if (type === E_EXTENSION_TYPE.TOOL) Icon = WrenchIcon;
 
   return (
     <Badge
@@ -120,7 +117,9 @@ function getTableScopeLabel(extension: IExtension): string | null {
   if (extension.type !== E_EXTENSION_TYPE.PLUGIN) return null;
   if (extension.tableScope.mode === 'all') return 'Todas as tabelas';
   const count = extension.tableScope.tableIds.length;
-  return `${count} tabela${count === 1 ? '' : 's'} selecionada${count === 1 ? '' : 's'}`;
+  let plural = 's';
+  if (count === 1) plural = '';
+  return `${count} tabela${plural} selecionada${plural}`;
 }
 
 interface ExtensionCardProps {
@@ -142,10 +141,9 @@ function ExtensionCard({
   const navigate = useNavigate();
   const toggle = useExtensionToggle({
     onSuccess(_data) {
-      toast.success(
-        _data.enabled ? 'Extensão ativada' : 'Extensão desativada',
-        { description: extension.name },
-      );
+      let message = 'Extensão desativada';
+      if (_data.enabled) message = 'Extensão ativada';
+      toast.success(message, { description: extension.name });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao alternar extensão' });
@@ -218,11 +216,13 @@ function ExtensionCard({
                 variant="outline"
                 size="sm"
                 className="cursor-pointer"
-                onClick={() =>
-                  isRowAccessPlugin(extension)
-                    ? onConfigureRowAccess(extension)
-                    : onConfigureTableScope(extension)
-                }
+                onClick={() => {
+                  if (isRowAccessPlugin(extension)) {
+                    onConfigureRowAccess(extension);
+                  } else {
+                    onConfigureTableScope(extension);
+                  }
+                }}
                 data-test-id={`extension-configure-${extension._id}`}
               >
                 <SettingsIcon className="size-4" />
@@ -283,10 +283,9 @@ function ExtensionTableRow({
   const navigate = useNavigate();
   const toggle = useExtensionToggle({
     onSuccess(_data) {
-      toast.success(
-        _data.enabled ? 'Extensão ativada' : 'Extensão desativada',
-        { description: extension.name },
-      );
+      let message = 'Extensão desativada';
+      if (_data.enabled) message = 'Extensão ativada';
+      toast.success(message, { description: extension.name });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao alternar extensão' });
@@ -329,11 +328,8 @@ function ExtensionTableRow({
         {extension.author ?? '-'}
       </TableCell>
       <TableCell>
-        {tableScopeLabel ? (
-          <span className="text-sm">{tableScopeLabel}</span>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        )}
+        {tableScopeLabel && <span className="text-sm">{tableScopeLabel}</span>}
+        {!tableScopeLabel && <span className="text-muted-foreground">-</span>}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
@@ -355,11 +351,13 @@ function ExtensionTableRow({
             variant="outline"
             size="sm"
             className="cursor-pointer"
-            onClick={() =>
-              isRowAccessPlugin(extension)
-                ? onConfigureRowAccess(extension)
-                : onConfigureTableScope(extension)
-            }
+            onClick={() => {
+              if (isRowAccessPlugin(extension)) {
+                onConfigureRowAccess(extension);
+              } else {
+                onConfigureTableScope(extension);
+              }
+            }}
             data-test-id={`extension-table-configure-${extension._id}`}
           >
             <SettingsIcon className="size-4" />
@@ -497,13 +495,15 @@ function TableScopeSheet({
           <Button
             type="button"
             disabled={!canSave || isPending}
-            onClick={() =>
+            onClick={() => {
+              let scopeTableIds: typeof tableIds = [];
+              if (mode === 'specific') scopeTableIds = tableIds;
               configure.mutate({
                 _id: extension._id,
                 mode,
-                tableIds: mode === 'specific' ? tableIds : [],
-              })
-            }
+                tableIds: scopeTableIds,
+              });
+            }}
             data-test-id="extension-scope-save-btn"
           >
             {isPending && <Spinner />}
@@ -601,9 +601,10 @@ function RouteComponent(): React.JSX.Element {
   );
 
   const toggleTypeFilter = React.useCallback((type: TypeFilter): void => {
-    setTypeFilter((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
-    );
+    setTypeFilter((prev) => {
+      if (prev.includes(type)) return prev.filter((t) => t !== type);
+      return [...prev, type];
+    });
   }, []);
 
   return (
@@ -658,12 +659,14 @@ function RouteComponent(): React.JSX.Element {
             </span>
             {TYPE_FILTERS.map((type) => {
               const active = typeFilter.includes(type);
+              let variant: 'default' | 'outline' = 'outline';
+              if (active) variant = 'default';
               return (
                 <Button
                   key={type}
                   type="button"
                   size="sm"
-                  variant={active ? 'default' : 'outline'}
+                  variant={variant}
                   className="h-7 px-2.5 cursor-pointer"
                   onClick={() => toggleTypeFilter(type)}
                   data-test-id={`extensions-type-${type.toLowerCase()}`}
@@ -683,12 +686,14 @@ function RouteComponent(): React.JSX.Element {
             </span>
             {STATUS_FILTERS.map((option) => {
               const active = statusFilter === option.value;
+              let variant: 'default' | 'outline' = 'outline';
+              if (active) variant = 'default';
               return (
                 <Button
                   key={option.value}
                   type="button"
                   size="sm"
-                  variant={active ? 'default' : 'outline'}
+                  variant={variant}
                   className="h-7 px-2.5 cursor-pointer"
                   onClick={() => setStatusFilter(option.value)}
                   data-test-id={`extensions-status-${option.value}`}
@@ -712,9 +717,10 @@ function RouteComponent(): React.JSX.Element {
                 variant="outline"
                 className="h-8 cursor-pointer shadow-none"
               >
-                {viewMode === 'gallery' ? (
+                {viewMode === 'gallery' && (
                   <LayoutDashboardIcon className="size-4" />
-                ) : (
+                )}
+                {viewMode !== 'gallery' && (
                   <LayoutListIcon className="size-4" />
                 )}
                 Exibição

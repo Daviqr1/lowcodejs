@@ -44,7 +44,8 @@ import { handleApiError } from '@/lib/handle-api-error';
 const rootApi = getRouteApi('__root__');
 
 function driverLabel(driver: 'local' | 's3'): string {
-  return driver === 'local' ? 'Local (filesystem)' : 'Amazon S3';
+  if (driver === 'local') return 'Local (filesystem)';
+  return 'Amazon S3';
 }
 
 function formatPercent(processed: number, total: number): number {
@@ -74,8 +75,8 @@ export function StorageMigrationCard(): React.JSX.Element | null {
   const canCleanup = status.data?.can_cleanup ?? false;
 
   const showBanner = filesOnPrevious > 0 || failedCount > 0;
-  const showCleanupCard =
-    canCleanup === false ? false : !showBanner && canCleanup;
+  let showCleanupCard = !showBanner && canCleanup;
+  if (canCleanup === false) showCleanupCard = false;
 
   // Auto-open modal when migration is running, even if user reloads page.
   React.useEffect(() => {
@@ -113,9 +114,10 @@ export function StorageMigrationCard(): React.JSX.Element | null {
         <Alert className="mb-4">
           <ArrowRightLeftIcon className="size-4" />
           <AlertTitle>
-            {filesOnPrevious > 0
-              ? `${filesOnPrevious} arquivo(s) ainda no driver "${driverLabel(status.data.previous_driver)}"`
-              : `${failedCount} arquivo(s) falharam na última migração`}
+            {filesOnPrevious > 0 &&
+              `${filesOnPrevious} arquivo(s) ainda no driver "${driverLabel(status.data.previous_driver)}"`}
+            {filesOnPrevious <= 0 &&
+              `${failedCount} arquivo(s) falharam na última migração`}
           </AlertTitle>
           <AlertDescription>
             <div className="flex items-center justify-between flex-wrap gap-2 mt-2">

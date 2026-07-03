@@ -54,7 +54,8 @@ function numberOrNull(value: string): number | null {
 
 function secretOrUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
+  if (trimmed) return trimmed;
+  return undefined;
 }
 
 function buildSettingFormValues(data: ISetting): SettingUpdateFormValues {

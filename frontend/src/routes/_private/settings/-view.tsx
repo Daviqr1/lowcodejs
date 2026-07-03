@@ -116,9 +116,10 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
         <CardContent className="space-y-4">
           <div className="space-y-1">
             <p className="text-sm font-medium">Driver</p>
-            {data.STORAGE_DRIVER === 's3' ? (
+            {data.STORAGE_DRIVER === 's3' && (
               <Badge variant="default">S3</Badge>
-            ) : (
+            )}
+            {data.STORAGE_DRIVER !== 's3' && (
               <Badge variant="secondary">Local</Badge>
             )}
           </div>
@@ -147,7 +148,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Credenciais</p>
                 <p className="text-sm text-muted-foreground font-mono">
-                  {data.STORAGE_ACCESS_KEY ? '••••••••' : '-'}
+                  {data.STORAGE_ACCESS_KEY && '••••••••'}
+                  {!data.STORAGE_ACCESS_KEY && '-'}
                 </p>
               </div>
             </>
@@ -168,25 +170,27 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <p className="text-sm font-medium">Logo Pequeno</p>
-              {data.LOGO_SMALL_URL ? (
+              {data.LOGO_SMALL_URL && (
                 <img
                   src={data.LOGO_SMALL_URL}
                   alt="Logo pequeno"
                   className="h-12 w-auto border rounded"
                 />
-              ) : (
+              )}
+              {!data.LOGO_SMALL_URL && (
                 <p className="text-sm text-muted-foreground">-</p>
               )}
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">Logo Grande</p>
-              {data.LOGO_LARGE_URL ? (
+              {data.LOGO_LARGE_URL && (
                 <img
                   src={data.LOGO_LARGE_URL}
                   alt="Logo grande"
                   className="h-16 w-auto border rounded"
                 />
-              ) : (
+              )}
+              {!data.LOGO_LARGE_URL && (
                 <p className="text-sm text-muted-foreground">-</p>
               )}
             </div>
@@ -264,7 +268,7 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
         <CardContent>
           <div className="space-y-1">
             <p className="text-sm font-medium">Tabelas selecionadas</p>
-            {data.MODEL_CLONE_TABLES.length > 0 ? (
+            {data.MODEL_CLONE_TABLES.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-1">
                 {data.MODEL_CLONE_TABLES.map((table) => (
                   <Badge
@@ -275,7 +279,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
                   </Badge>
                 ))}
               </div>
-            ) : (
+            )}
+            {data.MODEL_CLONE_TABLES.length === 0 && (
               <p className="text-sm text-muted-foreground">-</p>
             )}
           </div>
@@ -305,9 +310,10 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium">Histórico do Chat</p>
-            {data.CHAT_HISTORY_ENABLED ? (
+            {data.CHAT_HISTORY_ENABLED && (
               <Badge variant="default">Habilitado</Badge>
-            ) : (
+            )}
+            {!data.CHAT_HISTORY_ENABLED && (
               <Badge variant="secondary">Desabilitado</Badge>
             )}
           </div>
@@ -320,7 +326,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           <div className="space-y-1">
             <p className="text-sm font-medium">Chave da API</p>
             <p className="text-sm text-muted-foreground font-mono">
-              {data.LLM_API_KEY || data.OPENAI_API_KEY ? '••••••••' : '-'}
+              {(data.LLM_API_KEY || data.OPENAI_API_KEY) && '••••••••'}
+              {!(data.LLM_API_KEY || data.OPENAI_API_KEY) && '-'}
             </p>
           </div>
           {data.AI_LLM_PROVIDER === 'ollama' && (
@@ -347,7 +354,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           <div className="space-y-1">
             <p className="text-sm font-medium">Token MCP</p>
             <p className="text-sm text-muted-foreground font-mono">
-              {data.MCP_SERVER_TOKEN ? '••••••••' : '-'}
+              {data.MCP_SERVER_TOKEN && '••••••••'}
+              {!data.MCP_SERVER_TOKEN && '-'}
             </p>
           </div>
           <div className="space-y-1">
@@ -372,7 +380,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           <div className="space-y-1">
             <p className="text-sm font-medium">Database URL</p>
             <p className="text-sm text-muted-foreground font-mono">
-              {data.DATABASE_URL ? '••••••••••••••••' : '-'}
+              {data.DATABASE_URL && '••••••••••••••••'}
+              {!data.DATABASE_URL && '-'}
             </p>
           </div>
         </CardContent>
@@ -414,7 +423,8 @@ export function SettingView({ data }: SettingViewProps): React.JSX.Element {
           <div className="space-y-1">
             <p className="text-sm font-medium">Email Password</p>
             <p className="text-sm text-muted-foreground">
-              {data.EMAIL_PROVIDER_PASSWORD ? '••••••••' : 'Não configurado'}
+              {data.EMAIL_PROVIDER_PASSWORD && '••••••••'}
+              {!data.EMAIL_PROVIDER_PASSWORD && 'Não configurado'}
             </p>
           </div>
           <div className="space-y-1">

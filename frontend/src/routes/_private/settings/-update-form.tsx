@@ -446,14 +446,17 @@ export const UpdateSettingFormFields = withForm({
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
-                        {isS3 ? 'Ativo' : 'Inativo'}
+                        {isS3 && 'Ativo'}
+                        {!isS3 && 'Inativo'}
                       </span>
                       <Switch
                         data-test-id="settings-storage-driver-switch"
                         checked={isS3}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked ? 's3' : 'local')
-                        }
+                        onCheckedChange={(checked) => {
+                          let driver: 'local' | 's3' = 'local';
+                          if (checked) driver = 's3';
+                          field.handleChange(driver);
+                        }}
                         disabled={isDisabled}
                       />
                     </div>
@@ -589,7 +592,8 @@ export const UpdateSettingFormFields = withForm({
                                 id={field.name}
                                 name={field.name}
                                 type={
-                                  show.storageAccessKey ? 'text' : 'password'
+                                  (show.storageAccessKey && 'text') ||
+                                  'password'
                                 }
                                 placeholder="Access Key"
                                 value={field.state.value}
@@ -645,7 +649,8 @@ export const UpdateSettingFormFields = withForm({
                                 id={field.name}
                                 name={field.name}
                                 type={
-                                  show.storageSecretKey ? 'text' : 'password'
+                                  (show.storageSecretKey && 'text') ||
+                                  'password'
                                 }
                                 placeholder="Secret Key"
                                 value={field.state.value}
@@ -1339,7 +1344,9 @@ export const UpdateSettingFormFields = withForm({
                                   disabled={isDisabled}
                                   id={field.name}
                                   name={field.name}
-                                  type={show.llmApiKey ? 'text' : 'password'}
+                                  type={
+                                    (show.llmApiKey && 'text') || 'password'
+                                  }
                                   placeholder="Cole a chave da API..."
                                   value={field.state.value}
                                   onBlur={field.handleBlur}
@@ -1361,11 +1368,8 @@ export const UpdateSettingFormFields = withForm({
                                       }))
                                     }
                                   >
-                                    {show.llmApiKey ? (
-                                      <EyeClosedIcon />
-                                    ) : (
-                                      <EyeIcon />
-                                    )}
+                                    {show.llmApiKey && <EyeClosedIcon />}
+                                    {!show.llmApiKey && <EyeIcon />}
                                   </InputGroupButton>
                                 </InputGroupAddon>
                               </InputGroup>
@@ -1515,7 +1519,7 @@ export const UpdateSettingFormFields = withForm({
                         disabled={isDisabled}
                         id={field.name}
                         name={field.name}
-                        type={show.mcpToken ? 'text' : 'password'}
+                        type={(show.mcpToken && 'text') || 'password'}
                         placeholder="seu-token-secreto"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -1531,7 +1535,8 @@ export const UpdateSettingFormFields = withForm({
                             setShow((s) => ({ ...s, mcpToken: !s.mcpToken }))
                           }
                         >
-                          {show.mcpToken ? <EyeClosedIcon /> : <EyeIcon />}
+                          {show.mcpToken && <EyeClosedIcon />}
+                          {!show.mcpToken && <EyeIcon />}
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>
@@ -1572,9 +1577,9 @@ export const UpdateSettingFormFields = withForm({
                               id={field.name}
                               name={field.name}
                               placeholder={
-                                provider === E_AI_LLM_PROVIDER.OLLAMA
-                                  ? 'llama3.2'
-                                  : 'openai/gpt-4o-mini'
+                                (provider === E_AI_LLM_PROVIDER.OLLAMA &&
+                                  'llama3.2') ||
+                                'openai/gpt-4o-mini'
                               }
                               value={field.state.value}
                               onBlur={field.handleBlur}
@@ -1646,7 +1651,7 @@ export const UpdateSettingFormFields = withForm({
                     disabled
                     defaultValue={settingData.DATABASE_URL}
                     value={settingData.DATABASE_URL}
-                    type={show.databaseUrl ? 'text' : 'password'}
+                    type={(show.databaseUrl && 'text') || 'password'}
                     placeholder="mongodb://localhost:27017/lowcodejs"
                   />
                   <InputGroupAddon align="inline-end">
@@ -1922,7 +1927,7 @@ export const UpdateSettingFormFields = withForm({
                         disabled={isDisabled}
                         id={field.name}
                         name={field.name}
-                        type={show.emailPassword ? 'text' : 'password'}
+                        type={(show.emailPassword && 'text') || 'password'}
                         placeholder="••••••••"
                         value={field.state.value}
                         onBlur={field.handleBlur}
