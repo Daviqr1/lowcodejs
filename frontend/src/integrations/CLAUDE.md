@@ -17,6 +17,8 @@ Setup e configuração das integrações com TanStack Form e TanStack Query.
   acesso ao estado do form em componentes filhos
 - `use-field-validation.ts`: hook que combina `field.state.meta.isTouched` +
   `field.state.meta.errors` em uma interface consistente
+- `use-api-error-auto-clear.ts`: limpa os erros de servidor (slot `onServer`) do
+  form quando o usuário edita qualquer campo
 - `fields/`: 45 componentes de campo em 4 categorias (base, rich, table-config,
   table-row) — registrados todos no `createFormHook`
 

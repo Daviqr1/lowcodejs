@@ -6,11 +6,12 @@ para todos os formularios da aplicacao.
 
 ## Arquivos
 
-| Arquivo                   | Descricao                                                                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `form-hook.ts`            | Cria o hook principal com `createFormHook`, registrando todos os field components e exportando `useAppForm` e `withForm`             |
-| `form-context.ts`         | Cria os contextos React com `createFormHookContexts`, exportando `fieldContext`, `formContext`, `useFieldContext` e `useFormContext` |
-| `use-field-validation.ts` | Hook utilitario que encapsula logica de validacao de campo (touched + invalid)                                                       |
+| Arquivo                       | Descricao                                                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `form-hook.ts`                | Cria o hook principal com `createFormHook`, registrando todos os field components e exportando `useAppForm` e `withForm`               |
+| `form-context.ts`             | Cria os contextos React com `createFormHookContexts`, exportando `fieldContext`, `formContext`, `useFieldContext` e `useFormContext`   |
+| `use-field-validation.ts`     | Hook utilitario que encapsula logica de validacao de campo (touched + invalid)                                                         |
+| `use-api-error-auto-clear.ts` | Observa `state.values` (useStore) e limpa os erros do slot `onServer` do errorMap via `clearApiFieldErrors` quando qualquer campo muda |
 
 ## useAppForm e withForm
 
