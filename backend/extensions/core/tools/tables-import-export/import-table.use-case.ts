@@ -224,10 +224,16 @@ export default class ImportTableUseCase {
         if (!t.structure) continue;
         const originalSlug = t.structure.slug;
         const rename = renames.get(originalSlug);
+        let newSlug = originalSlug;
+        let newName = t.structure.name;
+        if (rename) {
+          newSlug = rename.slug;
+          newName = rename.name;
+        }
         tableSlugToInfo.set(originalSlug, {
           originalSlug,
-          newSlug: rename ? rename.slug : originalSlug,
-          newName: rename ? rename.name : t.structure.name,
+          newSlug,
+          newName,
           structure: t.structure,
         });
       }
@@ -1349,7 +1355,8 @@ export default class ImportTableUseCase {
       }
     }
 
-    const updatedGroups = info.groups ? [...info.groups] : [];
+    let updatedGroups: typeof info.groups = [];
+    if (info.groups) updatedGroups = [...info.groups];
     for (const [gi, group] of (info.structure.groups || []).entries()) {
       const gconf = updatedGroups[gi];
       if (!gconf) continue;
@@ -1459,8 +1466,10 @@ export default class ImportTableUseCase {
     }
 
     for (const row of rows) {
-      const originalRowId = row._originalId ? String(row._originalId) : null;
-      const newRowId = originalRowId ? myMap.get(originalRowId) : null;
+      let originalRowId: string | null = null;
+      if (row._originalId) originalRowId = String(row._originalId);
+      let newRowId: string | null | undefined = null;
+      if (originalRowId) newRowId = myMap.get(originalRowId);
       if (!newRowId) continue;
 
       const updateData: Record<string, unknown> = {};
@@ -1588,7 +1597,8 @@ export default class ImportTableUseCase {
       }
 
       // Itens folha em conflito podem ter sido renomeados; pais nunca.
-      const rename = isParent ? undefined : menuRenames.get(menu.slug);
+      let rename = undefined;
+      if (!isParent) rename = menuRenames.get(menu.slug);
       const slug = rename?.slug ?? menu.slug;
       const name = rename?.name ?? menu.name;
 

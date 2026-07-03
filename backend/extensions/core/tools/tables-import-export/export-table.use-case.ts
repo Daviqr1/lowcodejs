@@ -40,15 +40,16 @@ function toIdString(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'object' && value !== null) {
-    const v = value as {
+    const v: {
       _id?: unknown;
       _bsontype?: string;
       toString?: () => string;
-    };
+    } = value;
     // Mongoose/BSON ObjectId expõe um getter `_id` que retorna a si mesmo —
     // tratar ObjectId direto pelo toString evita recursão infinita.
     if (v._bsontype === 'ObjectId' || v._bsontype === 'ObjectID') {
-      return typeof v.toString === 'function' ? v.toString() : String(value);
+      if (typeof v.toString === 'function') return v.toString();
+      return String(value);
     }
     // Guard contra auto-referência (`v._id === value`) por segurança extra.
     if (v._id && v._id !== value) return toIdString(v._id);
@@ -259,6 +260,8 @@ export default class ExportTableUseCase {
   }
 
   private exportField(field: IField): ExportedField {
+    let group: { slug: string } | null = null;
+    if (field.group) group = { slug: field.group.slug };
     return {
       name: field.name,
       slug: field.slug,
@@ -283,7 +286,7 @@ export default class ExportTableUseCase {
         : null,
       dropdown: field.dropdown || [],
       category: field.category || [],
-      group: field.group ? { slug: field.group.slug } : null,
+      group,
     };
   }
 
@@ -400,7 +403,8 @@ export default class ExportTableUseCase {
         if (collected.has(id)) break;
         collected.set(id, current);
         const parentId = toIdString(current.parent);
-        current = parentId ? menuById.get(parentId) : undefined;
+        current = undefined;
+        if (parentId) current = menuById.get(parentId);
       }
     }
 
