@@ -52,10 +52,19 @@ export default class BullMQStorageMigrationQueueService implements StorageMigrat
     const jobs = await queue.getJobs(['active', 'waiting', 'delayed']);
     if (jobs.length === 0) return null;
     const job = jobs[0];
-    // BullMQ getState() retorna um union mais amplo (inclui 'unknown'/estados
-    // presos) do que ActiveJobInfo['state']; em runtime é um dos estados válidos.
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const state = (await job.getState()) as ActiveJobInfo['state'];
+    // BullMQ getState() retorna um union mais amplo (waiting-children,
+    // prioritized) do que ActiveJobInfo['state']; estreita por checagem.
+    const rawState = await job.getState();
+    let state: ActiveJobInfo['state'] = 'unknown';
+    if (
+      rawState === 'waiting' ||
+      rawState === 'active' ||
+      rawState === 'delayed' ||
+      rawState === 'completed' ||
+      rawState === 'failed'
+    ) {
+      state = rawState;
+    }
     let name: ActiveJobInfo['name'] = 'migrate';
     if (job.name === 'cleanup') name = 'cleanup';
     let progress = 0;

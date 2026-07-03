@@ -18,6 +18,12 @@ import { FieldGroupBuilderContractService } from './field-group-builder-contract
 import MongooseFieldGroupBuilder from './field-group-builder.service';
 import { SchemaBuilderContractService } from './schema-builder-contract.service';
 
+// Type-guard: estreita uma chave arbitrária para `keyof` do objeto, permitindo o
+// index-access sem asserção quando a presença já foi garantida por guarda.
+function hasKey<T extends object>(obj: T, key: PropertyKey): key is keyof T {
+  return key in obj;
+}
+
 @Service()
 export default class MongooseSchemaBuilder implements SchemaBuilderContractService {
   // Seam puro/stateless da fatia FIELD_GROUP. Em producao o DI injeta o impl
@@ -258,10 +264,15 @@ export default class MongooseSchemaBuilder implements SchemaBuilderContractServi
       };
     }
 
-    // Os guardas `field.type in mapper` acima garantem a chave; o TS não
-    // estreita a chave do índice a partir do operador `in`.
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    return mapper[field.type as keyof typeof mapper];
+    // Os guardas acima cobrem `!(field.type in mapper)`; hasKey estreita a chave
+    // para o index-access sem asserção.
+    if (hasKey(mapper, field.type)) return mapper[field.type];
+    return {
+      [field.slug]: {
+        type: FieldTypeMapper[field.type] || 'String',
+        required: Boolean(field.required || false),
+      },
+    };
   }
 
   build(fields: IField[], groups?: IGroupConfiguration[]): ITableSchema {

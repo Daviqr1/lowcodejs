@@ -312,6 +312,15 @@ async function handleCleanup(
   deps.namespace.emit(STORAGE_MIGRATION_EVENT.COMPLETED, completedEvt);
 }
 
+// BullMQ entrega `Job` genérico; `job.name` discrimina o payload. Type-guards
+// estreitam sem asserção.
+function isMigrateJob(job: Job): job is Job<MigrateJobPayload> {
+  return job.name === STORAGE_MIGRATION_JOB.MIGRATE;
+}
+function isCleanupJob(job: Job): job is Job<CleanupJobPayload> {
+  return job.name === STORAGE_MIGRATION_JOB.CLEANUP;
+}
+
 export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
   if (cachedWorker) return cachedWorker;
 
@@ -319,14 +328,10 @@ export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
     STORAGE_MIGRATION_QUEUE_NAME,
     async (job: Job) => {
       try {
-        if (job.name === STORAGE_MIGRATION_JOB.MIGRATE) {
-          // BullMQ entrega Job genérico; job.name discrimina o payload, mas o TS
-          // não estreita o genérico de Job a partir dessa comparação.
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-          await handleMigrate(job as Job<MigrateJobPayload>, deps);
-        } else if (job.name === STORAGE_MIGRATION_JOB.CLEANUP) {
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-          await handleCleanup(job as Job<CleanupJobPayload>, deps);
+        if (isMigrateJob(job)) {
+          await handleMigrate(job, deps);
+        } else if (isCleanupJob(job)) {
+          await handleCleanup(job, deps);
         } else {
           console.warn(
             `[StorageMigration Worker] Job desconhecido: ${job.name}`,
