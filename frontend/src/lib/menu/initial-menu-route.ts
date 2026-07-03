@@ -29,7 +29,8 @@ function buildChildrenByParent(
 
   for (const menu of menus) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -51,6 +52,7 @@ function toInitialRoute(menu: IMenu): InitialMenuRoute | null {
 
   return {
     type: 'internal',
+    // URL vem do backend como string; o router exige a união literal de rotas.
     to: menu.url.replace(/\/$/, '') as LinkProps['to'],
   };
 }
@@ -89,5 +91,6 @@ export function resolveInitialMenuRoute(
     childrenByParent,
   );
 
-  return firstDescendant ? toInitialRoute(firstDescendant) : null;
+  if (firstDescendant) return toInitialRoute(firstDescendant);
+  return null;
 }

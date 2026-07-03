@@ -21,6 +21,7 @@ export function handleApiError(
     return;
   }
 
+  // error.response.data é `any` do Axios; assumimos o contrato de erro do backend.
   const errorData = error.response.data as IHTTPExeptionError<
     Record<string, string>
   >;

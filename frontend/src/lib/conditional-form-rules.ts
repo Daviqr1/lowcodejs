@@ -58,7 +58,7 @@ export function extractConditionalValueIds(value: unknown): Array<string> {
     return value
       .map((item) => {
         if (item && typeof item === 'object') {
-          return extractObjectValue(item as SearchableValue);
+          return extractObjectValue(item);
         }
         return toStringValue(item);
       })
@@ -67,11 +67,13 @@ export function extractConditionalValueIds(value: unknown): Array<string> {
 
   if (value && typeof value === 'object') {
     const objectValue = extractObjectValue(value);
-    return objectValue ? [objectValue] : [];
+    if (objectValue) return [objectValue];
+    return [];
   }
 
   const scalarValue = toStringValue(value);
-  return scalarValue ? [scalarValue] : [];
+  if (scalarValue) return [scalarValue];
+  return [];
 }
 
 export function doesConditionalRuleMatch(
@@ -159,6 +161,7 @@ export function omitHiddenConditionalValues<T extends ConditionalFormValues>(
       .map((field) => field.slug),
   );
 
+  // Coerção genérica: Object.fromEntries perde o tipo T do parâmetro.
   return Object.fromEntries(
     Object.entries(values).filter(([key]) => !hiddenSlugs.has(key)),
   ) as T;

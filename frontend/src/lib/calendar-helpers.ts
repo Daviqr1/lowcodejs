@@ -41,12 +41,15 @@ function firstValue(value: unknown): unknown {
   return value;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function toText(value: unknown): string {
   if (value === null || value === undefined) return '';
   if (Array.isArray(value)) return String(value[0] ?? '');
-  if (typeof value === 'object') {
-    const item = value as Record<string, unknown>;
-    return String(item.label ?? item.name ?? item.value ?? '');
+  if (isRecord(value)) {
+    return String(value.label ?? value.name ?? value.value ?? '');
   }
   return String(value);
 }
@@ -74,10 +77,10 @@ export function resolveCalendarFields(
       (f) =>
         !f.trashed && f.type === E_FIELD_TYPE.DATE && f._id !== startField?._id,
     );
-  const endField =
-    resolvedEnd && resolvedEnd._id !== startField?._id
-      ? resolvedEnd
-      : undefined;
+  let endField: IField | undefined;
+  if (resolvedEnd && resolvedEnd._id !== startField?._id) {
+    endField = resolvedEnd;
+  }
 
   return {
     titleField:
@@ -120,9 +123,8 @@ export function resolveCalendarFields(
 
 export function isCalendarTemplate(table?: ITable | null): boolean {
   if (!table) return false;
-  const fields = Array.isArray(table.fields)
-    ? table.fields.filter(Boolean)
-    : [];
+  let fields: Array<IField> = [];
+  if (Array.isArray(table.fields)) fields = table.fields.filter(Boolean);
   const resolved = resolveCalendarFields(fields);
 
   return Boolean(
@@ -140,18 +142,22 @@ export function parseRowDateValue(value: unknown): Date | null {
   const raw = firstValue(value);
 
   if (!raw) return null;
-  if (raw instanceof Date) return isValid(raw) ? raw : null;
+  if (raw instanceof Date) {
+    if (isValid(raw)) return raw;
+    return null;
+  }
 
-  if (typeof raw === 'object') {
-    const item = raw as Record<string, unknown>;
-    const nested = item.date ?? item.value ?? item.start ?? item.end;
+  if (isRecord(raw)) {
+    const nested = raw.date ?? raw.value ?? raw.start ?? raw.end;
     if (!nested) return null;
     const parsedNested = new Date(String(nested));
-    return isValid(parsedNested) ? parsedNested : null;
+    if (isValid(parsedNested)) return parsedNested;
+    return null;
   }
 
   const parsed = new Date(String(raw));
-  return isValid(parsed) ? parsed : null;
+  if (isValid(parsed)) return parsed;
+  return null;
 }
 
 function resolveEventColor(
@@ -165,10 +171,9 @@ function resolveEventColor(
   const raw = firstValue(row[colorField.slug]);
   if (!raw) return { color: DEFAULT_EVENT_COLOR, colorLabel: null };
 
-  if (typeof raw === 'object') {
-    const item = raw as Record<string, unknown>;
-    const color = String(item.color ?? '').trim();
-    const label = String(item.label ?? '').trim() || null;
+  if (isRecord(raw)) {
+    const color = String(raw.color ?? '').trim();
+    const label = String(raw.label ?? '').trim() || null;
     if (color) return { color, colorLabel: label };
   }
 
@@ -198,34 +203,34 @@ export function normalizeCalendarEvents(
       const start = parseRowDateValue(row[resolved.startField!.slug]);
       if (!start) return null;
 
-      const rawEnd = resolved.endField
-        ? parseRowDateValue(row[resolved.endField.slug])
-        : null;
-      const end =
-        rawEnd && rawEnd.getTime() > start.getTime()
-          ? rawEnd
-          : addMinutes(start, 30);
+      let rawEnd: Date | null = null;
+      if (resolved.endField) {
+        rawEnd = parseRowDateValue(row[resolved.endField.slug]);
+      }
+      let end = addMinutes(start, 30);
+      if (rawEnd && rawEnd.getTime() > start.getTime()) end = rawEnd;
 
       const title =
         toText(row[resolved.titleField!.slug]).trim() || 'Sem título';
-      const description = resolved.descriptionField
-        ? stripHtml(toText(row[resolved.descriptionField.slug]))
-        : '';
+      let description = '';
+      if (resolved.descriptionField) {
+        description = stripHtml(toText(row[resolved.descriptionField.slug]));
+      }
       const { color, colorLabel } = resolveEventColor(row, resolved.colorField);
 
-      const rawParticipants = resolved.participantsField
-        ? row[resolved.participantsField.slug]
-        : null;
-      const participants: Array<{ _id: string; name: string }> = Array.isArray(
-        rawParticipants,
-      )
-        ? rawParticipants
-            .filter(
-              (p: unknown): p is { _id: string; name: string } =>
-                typeof p === 'object' && p !== null && 'name' in p,
-            )
-            .map((p) => ({ _id: String(p._id), name: String(p.name) }))
-        : [];
+      let rawParticipants: unknown = null;
+      if (resolved.participantsField) {
+        rawParticipants = row[resolved.participantsField.slug];
+      }
+      let participants: Array<{ _id: string; name: string }> = [];
+      if (Array.isArray(rawParticipants)) {
+        participants = rawParticipants
+          .filter(
+            (p: unknown): p is { _id: string; name: string } =>
+              typeof p === 'object' && p !== null && 'name' in p,
+          )
+          .map((p) => ({ _id: String(p._id), name: String(p.name) }));
+      }
 
       return {
         row,
@@ -280,5 +285,6 @@ export function toDateTimeLocalInputValue(
 export function parseDateTimeLocalInputValue(value: string): Date | null {
   if (!value.trim()) return null;
   const parsed = new Date(value);
-  return isValid(parsed) ? parsed : null;
+  if (isValid(parsed)) return parsed;
+  return null;
 }

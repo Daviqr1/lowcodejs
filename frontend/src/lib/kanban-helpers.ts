@@ -47,7 +47,7 @@ export function getFieldBySlug(
   type?: IField['type'],
 ): IField | undefined {
   return fields.find(
-    (f) => !f.trashed && f.slug === slug && (type ? f.type === type : true),
+    (f) => !f.trashed && f.slug === slug && (!type || f.type === type),
   );
 }
 
@@ -64,20 +64,32 @@ export function normalizeRowValue(value: unknown): Array<string> {
   return [String(value)];
 }
 
+function extractId(item: unknown): string {
+  if (typeof item === 'object' && item !== null) {
+    if ('_id' in item && item._id != null) return String(item._id);
+    if ('value' in item && item.value != null) return String(item.value);
+  }
+  return String(item);
+}
+
+function toUserOption(user: unknown): { value: string; label: string } {
+  const value = extractId(user);
+  let label = String(user);
+  if (typeof user === 'object' && user !== null) {
+    if ('name' in user && user.name) label = String(user.name);
+    else if ('email' in user && user.email) label = String(user.email);
+    else if ('label' in user && user.label) label = String(user.label);
+  }
+  return { value, label };
+}
+
 export function normalizeIdList(value: unknown): Array<string> {
   if (Array.isArray(value)) {
-    return value
-      .map((item: any) =>
-        typeof item === 'object' && item !== null
-          ? (item._id ?? item.value ?? String(item))
-          : String(item),
-      )
-      .filter(Boolean);
+    return value.map(extractId).filter(Boolean);
   }
 
   if (typeof value === 'object' && value !== null) {
-    const item = value as any;
-    return [item._id ?? item.value ?? String(item)].filter(Boolean);
+    return [extractId(value)].filter(Boolean);
   }
 
   if (value === null || value === undefined || value === '') return [];
@@ -133,9 +145,10 @@ export function getUserInitials(user: Partial<IUser> | string): string {
   const name = user.name || user.email || '';
   if (!name) return 'U';
   const parts = name.trim().split(/\s+/);
-  const initials = parts
-    .slice(0, 2)
-    .map((p) => (p[0] ? p[0].toUpperCase() : ''));
+  const initials = parts.slice(0, 2).map((p) => {
+    if (p[0]) return p[0].toUpperCase();
+    return '';
+  });
   return initials.join('') || 'U';
 }
 
@@ -145,8 +158,8 @@ export function getMembersFromRow(
 ): Array<IUser | string> {
   if (!field) return [];
   const raw = row[field.slug];
-  if (Array.isArray(raw)) return raw as Array<IUser | string>;
-  if (raw) return [raw as IUser | string];
+  if (Array.isArray(raw)) return raw;
+  if (raw) return [raw];
   return [];
 }
 
@@ -154,13 +167,14 @@ export function getProgressValue(row: IRow, field?: IField): number | null {
   if (!field) return null;
   const raw = row[field.slug];
   if (raw === null || raw === undefined || raw === '') return null;
-  const parsed = typeof raw === 'number' ? raw : Number(raw);
+  let parsed = Number(raw);
+  if (typeof raw === 'number') parsed = raw;
   if (Number.isNaN(parsed)) return null;
   return Math.max(0, Math.min(100, parsed));
 }
 
 export function getTaskCompletionPercent(
-  tasks: Array<Record<string, any>>,
+  tasks: Array<Record<string, unknown>>,
 ): number {
   if (tasks.length === 0) return 0;
   const completed = tasks.filter((task) =>
@@ -195,7 +209,8 @@ export function buildListFieldPayload(
 
 export function parseOrderValue(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
-  const parsed = typeof value === 'number' ? value : Number(value);
+  let parsed = Number(value);
+  if (typeof value === 'number') parsed = value;
   if (Number.isNaN(parsed)) return null;
   return parsed;
 }
@@ -265,8 +280,8 @@ export function columnHeaderStyleFromColor(
 export function buildPayloadFromRow(
   row: IRow,
   fields: Array<IField>,
-): Record<string, any> {
-  const payload: Record<string, any> = {};
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
 
   for (const field of fields) {
     if (field.trashed || field.native) continue;
@@ -283,7 +298,8 @@ export function buildPayloadFromRow(
         payload[field.slug] = normalizeIdList(value);
         break;
       case E_FIELD_TYPE.FIELD_GROUP:
-        payload[field.slug] = Array.isArray(value) ? value : [];
+        if (Array.isArray(value)) payload[field.slug] = value;
+        if (!Array.isArray(value)) payload[field.slug] = [];
         break;
       default:
         payload[field.slug] = value ?? null;
@@ -296,32 +312,29 @@ export function buildPayloadFromRow(
 export function buildDefaultValuesFromRow(
   row: IRow,
   fields: Array<IField>,
-): Record<string, any> {
-  const defaults: Record<string, any> = {};
+): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {};
 
   for (const field of fields) {
     const value = row[field.slug];
 
     switch (field.type) {
       case E_FIELD_TYPE.USER: {
-        const users = Array.isArray(value) ? value : value ? [value] : [];
-        defaults[field.slug] = users.map((user: any) => ({
-          value: user._id ?? user.value ?? user,
-          label: user.name || user.email || user.label || String(user),
-        }));
+        let users: Array<unknown> = [];
+        if (Array.isArray(value)) users = value;
+        if (!Array.isArray(value) && value) users = [value];
+        defaults[field.slug] = users.map(toUserOption);
         break;
       }
       case E_FIELD_TYPE.DROPDOWN: {
         if (field.multiple) {
-          defaults[field.slug] = Array.isArray(value)
-            ? value
-            : value
-              ? [value]
-              : [];
+          let dropdownValue: Array<unknown> = [];
+          if (Array.isArray(value)) dropdownValue = value;
+          else if (value) dropdownValue = [value];
+          defaults[field.slug] = dropdownValue;
         } else {
-          defaults[field.slug] = Array.isArray(value)
-            ? (value[0] ?? null)
-            : (value ?? null);
+          if (Array.isArray(value)) defaults[field.slug] = value[0] ?? null;
+          else defaults[field.slug] = value ?? null;
         }
         break;
       }

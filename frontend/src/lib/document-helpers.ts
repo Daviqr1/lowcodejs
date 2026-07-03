@@ -14,7 +14,11 @@ export function headerSorter(order: Array<string>) {
   return (a: IField, b: IField): number => {
     const idxA = order.indexOf(a._id);
     const idxB = order.indexOf(b._id);
-    return (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB);
+    let rankA = idxA;
+    if (idxA === -1) rankA = Infinity;
+    let rankB = idxB;
+    if (idxB === -1) rankB = Infinity;
+    return rankA - rankB;
   };
 }
 
@@ -78,7 +82,7 @@ export function buildDocBlocks(
 
   blocks.push({
     id: `block-${titleField?.slug}`,
-    titleField: titleField as IField,
+    titleField: titleField!,
     bodyField,
   });
 
@@ -86,7 +90,8 @@ export function buildDocBlocks(
 }
 
 export function getStr(v: unknown): string {
-  return typeof v === 'string' ? v : '';
+  if (typeof v === 'string') return v;
+  return '';
 }
 
 export function rowMatchesCategory(
@@ -150,12 +155,9 @@ export function rowLeafLabel(
   labelMap: Map<string, string>,
 ): string | null {
   const v = row[categorySlug];
-  const leaf =
-    Array.isArray(v) && v.length
-      ? v[v.length - 1]
-      : typeof v === 'string'
-        ? v
-        : null;
+  let leaf: string | null = null;
+  if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
+  else if (typeof v === 'string') leaf = v;
 
   if (!leaf) return null;
   return labelMap.get(leaf) ?? null;

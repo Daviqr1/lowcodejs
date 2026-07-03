@@ -131,7 +131,8 @@ export function buildCreateRowDefaultValues(
       case E_FIELD_TYPE.DROPDOWN:
       case E_FIELD_TYPE.CATEGORY: {
         const arr = toDefaultArray(field.defaultValue);
-        defaults[field.slug] = arr.length > 0 ? arr : [];
+        if (arr.length > 0) defaults[field.slug] = arr;
+        if (arr.length === 0) defaults[field.slug] = [];
         break;
       }
       case E_FIELD_TYPE.FILE:
@@ -140,7 +141,8 @@ export function buildCreateRowDefaultValues(
       case E_FIELD_TYPE.RELATIONSHIP:
       case E_FIELD_TYPE.USER: {
         const opts = toDefaultSearchableOptions(field.defaultValue);
-        defaults[field.slug] = opts.length > 0 ? opts : [];
+        if (opts.length > 0) defaults[field.slug] = opts;
+        if (opts.length === 0) defaults[field.slug] = [];
         break;
       }
       // @ts-ignore
@@ -174,8 +176,9 @@ export type FieldValue =
   | null;
 
 function toArray<T>(value: unknown): Array<T> {
-  if (Array.isArray(value)) return value as Array<T>;
+  if (Array.isArray(value)) return value;
   if (value === null || value === undefined) return [];
+  // Coerção genérica: valor dinâmico de campo sem forma conhecida em runtime.
   return [value as T];
 }
 
@@ -253,14 +256,12 @@ export function buildUpdateRowDefaultValues(
       }
       case E_FIELD_TYPE.USER: {
         const users = toArray<IUser>(value);
-        defaults[field.slug] = users.map((user) => ({
-          value:
-            typeof user === 'object' && user !== null ? user._id : String(user),
-          label:
-            typeof user === 'object' && user !== null
-              ? user.name
-              : String(user),
-        }));
+        defaults[field.slug] = users.map((user) => {
+          if (typeof user === 'object' && user !== null) {
+            return { value: user._id, label: user.name };
+          }
+          return { value: String(user), label: String(user) };
+        });
         break;
       }
       default:
@@ -335,6 +336,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
         return [];
       }
 
+      // FieldValue é união ampla; em runtime este caso é sempre Array<string>.
       const options = Array.from<string>(value as Array<string>);
 
       const hasItem = options.length > 0;
@@ -349,8 +351,8 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       return [];
     }
     case E_FIELD_TYPE.DATE: {
-      if (value !== '' && value !== null) {
-        return value as string;
+      if (typeof value === 'string' && value !== '') {
+        return value;
       }
 
       return null;
@@ -358,7 +360,15 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
     case E_FIELD_TYPE.FILE: {
       if (value === null) return [];
 
-      const { storages } = value as unknown as { storages: Array<IStorage> };
+      let storages: Array<IStorage> = [];
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        'storages' in value &&
+        Array.isArray(value.storages)
+      ) {
+        storages = value.storages;
+      }
 
       const hasItem = storages.length > 0;
 
@@ -376,6 +386,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
     case E_FIELD_TYPE.RELATIONSHIP: {
       if (value === null) return [];
 
+      // FieldValue é união ampla; em runtime este caso é Array<SearchableOption>.
       const options = Array.from<SearchableOption>(
         value as Array<SearchableOption>,
       );
@@ -395,6 +406,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
     case E_FIELD_TYPE.CATEGORY: {
       if (value === null) return [];
 
+      // FieldValue é união ampla; em runtime este caso é sempre Array<string>.
       const options = Array.from<string>(value as Array<string>);
 
       const hasItem = options.length > 0;
@@ -413,6 +425,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
     case E_FIELD_TYPE.USER: {
       if (value === null) return [];
 
+      // FieldValue é união ampla; em runtime este caso é Array<SearchableOption>.
       const options = Array.from<SearchableOption>(
         value as Array<SearchableOption>,
       );
@@ -430,7 +443,9 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       return [];
     }
     default:
-      return value !== null ? (value as string) : null;
+      if (value === null) return null;
+      if (typeof value === 'string') return value;
+      return String(value);
   }
 }
 

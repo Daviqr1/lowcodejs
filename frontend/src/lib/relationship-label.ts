@@ -60,7 +60,8 @@ function resolveDropdownValue(
   value: unknown,
   options: Array<IDropdown>,
 ): string {
-  const ids = Array.isArray(value) ? value : [value];
+  let ids: Array<unknown> = [value];
+  if (Array.isArray(value)) ids = value;
   return ids
     .map((id) => {
       if (id === null || id === undefined) return '';
@@ -99,6 +100,10 @@ function pickObjectDisplay(obj: Record<string, unknown>): string {
  * - arrays juntam os valores resolvidos por vírgula (dropdown múltiplo ou
  *   relacionamento múltiplo populado).
  */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function resolveTerminal(value: unknown): string {
   if (value === null || value === undefined) return '';
 
@@ -109,8 +114,8 @@ function resolveTerminal(value: unknown): string {
       .join(', ');
   }
 
-  if (typeof value === 'object') {
-    return pickObjectDisplay(value as Record<string, unknown>);
+  if (isRecord(value)) {
+    return pickObjectDisplay(value);
   }
 
   return scalarToString(value);
@@ -148,10 +153,10 @@ export function resolveRelationshipValue(
     const key = keys[index];
     if (Array.isArray(current)) current = current[0];
     if (current === null || current === undefined) return '';
-    if (typeof current !== 'object') return '';
+    if (!isRecord(current)) return '';
 
     const field = currentFields?.find((item) => item.slug === key);
-    current = (current as Record<string, unknown>)[key];
+    current = current[key];
 
     if (index === keys.length - 1) {
       terminalField = field;
@@ -198,9 +203,11 @@ export function resolveRelationshipLabel(
     if (parts.length > 0) return parts.join(separator);
   }
 
-  const single = relConfig.field?.slug
-    ? resolveRelationshipValue(row, relConfig.field.slug, fields)
-    : '';
+  let single = '';
+  if (relConfig.field?.slug) {
+    single = resolveRelationshipValue(row, relConfig.field.slug, fields);
+  }
 
-  return single !== '' ? single : fallback;
+  if (single !== '') return single;
+  return fallback;
 }

@@ -40,27 +40,24 @@ export function resolveLoggerNavigateTarget(
       return { to: '/extensions' };
 
     case E_LOGGER_OBJECT_TYPE.USER:
-      return id
-        ? { to: '/users/$userId', params: { userId: id } }
-        : { to: '/users' };
+      if (id) return { to: '/users/$userId', params: { userId: id } };
+      return { to: '/users' };
 
     case E_LOGGER_OBJECT_TYPE.USER_GROUP:
-      return id
-        ? { to: '/groups/$groupId', params: { groupId: id } }
-        : { to: '/groups' };
+      if (id) return { to: '/groups/$groupId', params: { groupId: id } };
+      return { to: '/groups' };
 
     case E_LOGGER_OBJECT_TYPE.MENU:
-      return id
-        ? { to: '/menus/$menuId', params: { menuId: id } }
-        : { to: '/menus' };
+      if (id) return { to: '/menus/$menuId', params: { menuId: id } };
+      return { to: '/menus' };
 
     case E_LOGGER_OBJECT_TYPE.PAGE:
-      return id ? { to: '/pages/$slug', params: { slug: id } } : null;
+      if (id) return { to: '/pages/$slug', params: { slug: id } };
+      return null;
 
     case E_LOGGER_OBJECT_TYPE.TABLE:
-      return id
-        ? { to: '/tables/$slug', params: { slug: id } }
-        : { to: '/tables' };
+      if (id) return { to: '/tables/$slug', params: { slug: id } };
+      return { to: '/tables' };
 
     case E_LOGGER_OBJECT_TYPE.ROW: {
       const rowMatch = matchTableRow(url);
