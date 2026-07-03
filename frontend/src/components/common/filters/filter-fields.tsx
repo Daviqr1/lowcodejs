@@ -179,7 +179,7 @@ export function useFilterState(
       }
 
       if (field.type === E_FIELD_TYPE.DROPDOWN && Array.isArray(value)) {
-        const values = (value as Array<string>).filter(Boolean);
+        const values = value.filter(Boolean);
         if (values.length > 0) {
           filters[field.slug] = values.join(',');
         }
@@ -198,7 +198,7 @@ export function useFilterState(
           field.type === E_FIELD_TYPE.RELATIONSHIP) &&
         Array.isArray(value)
       ) {
-        const values = (value as Array<string>).filter(Boolean);
+        const values = value.filter(Boolean);
         if (values.length > 0) {
           filters[field.slug] = values.join(',');
         }
@@ -209,7 +209,7 @@ export function useFilterState(
         field.type === E_FIELD_TYPE.CREATED_AT ||
         field.type === E_FIELD_TYPE.UPDATED_AT
       ) {
-        const dateValue = filterValues[field.slug] as DatepickerValue | null;
+        const dateValue: DatepickerValue | null = filterValues[field.slug];
 
         if (dateValue?.startDate) {
           filters[`${field.slug}-initial`] = format(
@@ -792,7 +792,8 @@ export function FilterRelationship({
         if (cached) return cached;
         const fromList = allItems.find((row) => row._id === id);
         if (fromList) return fromList;
-        // placeholder mínimo para id ainda não resolvido no cache/lista
+        // placeholder mínimo para id ainda não resolvido no cache/lista;
+        // IRow exige `creator` e demais campos, por isso o cast e inevitavel aqui.
         return { _id: id } as IRow;
       })
       .filter((row): row is IRow => row !== null);
