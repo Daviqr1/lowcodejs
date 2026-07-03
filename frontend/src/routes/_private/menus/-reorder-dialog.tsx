@@ -430,8 +430,7 @@ export function MenuReorderDialog({
 
     const activeIdValue = String(active.id);
     const overId = String(over.id);
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
 
     if (
       isDescendant(tree, activeIdValue, overId) ||
@@ -462,8 +461,7 @@ export function MenuReorderDialog({
 
     const activeIdValue = String(active.id);
     const overId = String(over.id);
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
     const mode = getDropMode(event, scope === 'all') ?? 'after';
 
     if (

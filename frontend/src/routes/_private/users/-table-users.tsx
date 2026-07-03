@@ -64,6 +64,11 @@ import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/users/';
 
+// Aliases com index de string: consultam os mappers (as const) por slug/status
+// dinamico sem assertion `keyof`.
+const GROUP_LABELS: Record<string, string> = USER_GROUP_MAPPER;
+const STATUS_LABELS: Record<string, string> = USER_STATUS_MAPPER;
+
 function getCheckboxState(
   allSelected: boolean,
   someSelected: boolean,
@@ -283,12 +288,7 @@ function buildColumns(params: {
       ),
       cell: ({ row }) => {
         const group = row.original.group;
-        if (group.slug in USER_GROUP_MAPPER) {
-          return USER_GROUP_MAPPER[
-            group.slug as keyof typeof USER_GROUP_MAPPER
-          ];
-        }
-        return group.slug;
+        return GROUP_LABELS[group.slug] || group.slug;
       },
     },
     {
@@ -314,9 +314,7 @@ function buildColumns(params: {
                 'bg-destructive/10 text-destructive',
             )}
           >
-            {status in USER_STATUS_MAPPER &&
-              USER_STATUS_MAPPER[status as keyof typeof USER_STATUS_MAPPER]}
-            {!(status in USER_STATUS_MAPPER) && status}
+            {STATUS_LABELS[status] || status}
           </Badge>
         );
       },

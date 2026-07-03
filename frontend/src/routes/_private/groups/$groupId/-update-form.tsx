@@ -10,7 +10,7 @@ import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_ROLE } from '@/lib/constant';
 import { UserGroupUpdateBodySchema } from '@/lib/schemas';
 
-const RoleMapper = {
+const RoleMapper: Record<string, string> = {
   [E_ROLE.ADMINISTRATOR]: 'Administrador',
   [E_ROLE.REGISTERED]: 'Registrado',
   [E_ROLE.MANAGER]: 'Gerente',
@@ -56,7 +56,7 @@ export const UpdateGroupFormFields = withForm({
               data-test-id="group-slug-input"
               disabled
               type="text"
-              value={RoleMapper[slug as keyof typeof RoleMapper] || slug}
+              value={RoleMapper[slug] || slug}
               readOnly
               className="bg-muted"
             />

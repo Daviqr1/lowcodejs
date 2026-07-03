@@ -61,7 +61,7 @@ import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/menus/';
 
-const TypeMapper = {
+const TypeMapper: Record<string, string> = {
   [E_MENU_ITEM_TYPE.PAGE]: 'Página',
   [E_MENU_ITEM_TYPE.TABLE]: 'Tabela',
   [E_MENU_ITEM_TYPE.FORM]: 'Formulário',
@@ -507,7 +507,7 @@ function buildColumns(params: {
                 ))}
               </span>
             )}
-            {getValue() as string}
+            {getValue<string>()}
             {row.original.isInitial && (
               <Badge className="ml-1 gap-1 border-transparent bg-primary/10 text-primary hover:bg-primary/10">
                 <HouseIcon className="size-3" />
@@ -530,7 +530,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }) => (
-        <span className="text-muted-foreground">{getValue() as string}</span>
+        <span className="text-muted-foreground">{getValue<string>()}</span>
       ),
     },
     {
@@ -545,7 +545,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }): React.ReactElement => {
-        const type = getValue() as string;
+        const type = getValue<string>();
         return (
           <Badge
             className={cn(
@@ -562,7 +562,7 @@ function buildColumns(params: {
                 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
             )}
           >
-            {TypeMapper[type as keyof typeof TypeMapper] || 'N/A'}
+            {TypeMapper[type] || 'N/A'}
           </Badge>
         );
       },
@@ -580,7 +580,7 @@ function buildColumns(params: {
       meta: { label: 'Criado por' },
       cell: ({ getValue }) => (
         <span className="text-sm text-muted-foreground">
-          {getValue() as string}
+          {getValue<string>()}
         </span>
       ),
     },
@@ -596,7 +596,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }): React.ReactElement => {
-        const date = getValue() as string | undefined;
+        const date = getValue<string | undefined>();
         return (
           <span className="text-sm text-muted-foreground">
             {formatDate(date)}

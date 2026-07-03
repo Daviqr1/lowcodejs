@@ -55,6 +55,10 @@ import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/groups/';
 
+// Alias com index de string: permite consultar o mapper (as const) por slug
+// dinamico sem assertion `keyof`.
+const GROUP_LABELS: Record<string, string> = USER_GROUP_MAPPER;
+
 const SYSTEM_GROUP_SLUGS = new Set<string>([
   E_ROLE.MASTER,
   E_ROLE.ADMINISTRATOR,
@@ -268,13 +272,7 @@ function buildColumns(params: {
       ),
       cell: ({ row }): React.ReactElement => {
         const group = row.original;
-        return (
-          <>
-            {group.slug in USER_GROUP_MAPPER &&
-              USER_GROUP_MAPPER[group.slug as keyof typeof USER_GROUP_MAPPER]}
-            {!(group.slug in USER_GROUP_MAPPER) && group.name}
-          </>
-        );
+        return <>{GROUP_LABELS[group.slug] || group.name}</>;
       },
     },
     {
