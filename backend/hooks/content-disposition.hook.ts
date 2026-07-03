@@ -62,7 +62,8 @@ const HASH_NAME_PATTERN = /^\d{1,8}$/;
 
 function isStaticFilename(filename: string): boolean {
   const dotIndex = filename.lastIndexOf('.');
-  const stem = dotIndex === -1 ? filename : filename.slice(0, dotIndex);
+  let stem = filename;
+  if (dotIndex !== -1) stem = filename.slice(0, dotIndex);
   return !HASH_NAME_PATTERN.test(stem);
 }
 
@@ -165,7 +166,8 @@ export async function StorageContentDispositionHook(
   // doc is absent from Mongo (legacy or just-uploaded race), fall back to
   // local — the historical default driver.
   const primary = meta?.location ?? 'local';
-  const secondary = primary === 'local' ? 's3' : 'local';
+  let secondary: 'local' | 's3' = 'local';
+  if (primary === 'local') secondary = 's3';
 
   try {
     await DRIVER_HANDLERS[primary](filename, request, response);

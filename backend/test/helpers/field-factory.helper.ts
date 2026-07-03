@@ -7,7 +7,6 @@ import {
   type ICategory,
   type IDropdown,
   type IField,
-  type IFieldConfigurationGroup,
   type IFieldConfigurationRelationship,
   type ValueOf,
 } from '@application/core/entity.core';
@@ -45,7 +44,7 @@ function buildField(overrides: FieldOverrides): IField {
     ...FIELD_BASE,
     _id: crypto.randomUUID(),
     ...overrides,
-  } as IField;
+  };
 }
 
 export function makeTextShortField(overrides?: FieldOverrides): IField {
@@ -145,7 +144,7 @@ export function makeFieldGroupField(
     name: 'Grupo',
     slug: groupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    group: { slug: groupSlug } as IFieldConfigurationGroup,
+    group: { slug: groupSlug },
     ...overrides,
   });
 }

@@ -64,6 +64,19 @@ function registerAjvErrors(
   return ajv(instance);
 }
 
+// `error` no handler é Record<string, unknown>; narra `error.validation` (AJV)
+// para ValidationError[] sem asserção.
+function toValidationErrors(value: unknown): ValidationError[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is ValidationError =>
+      !!item &&
+      typeof item === 'object' &&
+      'message' in item &&
+      'instancePath' in item,
+  );
+}
+
 const kernel = fastify<Server>({
   logger: false,
   ajv: {
@@ -155,17 +168,16 @@ kernel.setErrorHandler((error: Record<string, unknown>, request, response) => {
   }
 
   if (error instanceof ZodError) {
-    const fieldErrors = z.flattenError(error).fieldErrors as Record<
-      string,
-      string[]
-    >;
+    const { fieldErrors } = z.flattenError(error);
 
-    const errors = Object.entries(fieldErrors).reduce(
-      (acc, [key, [value]]) => {
-        acc[key] = value;
+    const errors = Object.entries(fieldErrors).reduce<Record<string, string>>(
+      (acc, [key, messages]) => {
+        if (Array.isArray(messages) && typeof messages[0] === 'string') {
+          acc[key] = messages[0];
+        }
         return acc;
       },
-      {} as Record<string, string>,
+      {},
     );
 
     return response.status(400).send({
@@ -177,7 +189,7 @@ kernel.setErrorHandler((error: Record<string, unknown>, request, response) => {
   }
 
   if (error.code === 'FST_ERR_VALIDATION') {
-    const validation = error.validation as ValidationError[];
+    const validation = toValidationErrors(error.validation);
 
     const errors = validation.reduce(
       (acc: Record<string, string>, err: ValidationError) => {

@@ -26,6 +26,14 @@ const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
   DELETE: E_LOGGER_ACTION_TYPE.DELETE,
 };
 
+// Narrow para dados dinâmicos de request (query/params) sem asserção.
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value));
+  }
+  return {};
+}
+
 /**
  * Ordem importa: mais específico primeiro.
  * Rotas aninhadas como /tables/:slug/rows/:id/groups/:groupSlug
@@ -140,7 +148,8 @@ function resolveAction(method: string): keyof typeof E_LOGGER_ACTION_TYPE {
 /**
  * Prioridade de params nomeados pelo Fastify (ex: :rowId, :fieldId, :_id).
  */
-function resolveObjectId(params: FastifyRequest['params'] = {}): string | null {
+function resolveObjectId(params: unknown = {}): string | null {
+  const record = asRecord(params);
   const priority = [
     'itemId',
     'messageId',
@@ -153,8 +162,8 @@ function resolveObjectId(params: FastifyRequest['params'] = {}): string | null {
   ];
 
   for (const key of priority) {
-    const value = (params as Record<string, string>)?.[key];
-    if (value) return value;
+    const value = record[key];
+    if (typeof value === 'string' && value) return value;
   }
 
   return null;
@@ -207,16 +216,17 @@ export async function LoggerUserActionHook(
       }
     }
 
-    const query = request.query as Record<string, unknown> | undefined;
-    const routeParams = request.params as Record<string, unknown> | undefined;
-    const hasQuery = !!query && Object.keys(query).length > 0;
-    const hasParams = !!routeParams && Object.keys(routeParams).length > 0;
+    const query = asRecord(request.query);
+    const routeParams = asRecord(request.params);
+    const hasQuery = Object.keys(query).length > 0;
+    const hasParams = Object.keys(routeParams).length > 0;
 
     const contentParts: Record<string, unknown> = {};
     if (body) contentParts.body = body;
     if (hasQuery) contentParts.query = query;
     if (hasParams) contentParts.params = routeParams;
-    const content = Object.keys(contentParts).length > 0 ? contentParts : null;
+    let content: Record<string, unknown> | null = null;
+    if (Object.keys(contentParts).length > 0) content = contentParts;
 
     const action = resolveAction(method);
     const object = resolveObject(routePattern);
