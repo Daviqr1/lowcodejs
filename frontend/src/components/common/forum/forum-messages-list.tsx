@@ -88,7 +88,8 @@ export function ForumMessagesList({
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          const messageId = (entry.target as HTMLElement).dataset.messageId;
+          if (!(entry.target instanceof HTMLElement)) continue;
+          const messageId = entry.target.dataset.messageId;
           if (!messageId || !trackedSet.has(messageId)) continue;
           onMentionMessageVisible(messageId);
         }
