@@ -464,12 +464,10 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 usuário enviado para lixeira!'
-          : result.modified
-              .toString()
-              .concat(' usuários enviados para lixeira!');
+      let message = result.modified
+        .toString()
+        .concat(' usuários enviados para lixeira!');
+      if (result.modified === 1) message = '1 usuário enviado para lixeira!';
       toast.success(message, {
         description: 'Os usuários foram movidos para a lixeira',
       });
@@ -485,10 +483,8 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 usuário restaurado!'
-          : result.modified.toString().concat(' usuários restaurados!');
+      let message = result.modified.toString().concat(' usuários restaurados!');
+      if (result.modified === 1) message = '1 usuário restaurado!';
       toast.success(message, {
         description: 'Os usuários foram restaurados da lixeira',
       });
@@ -502,12 +498,10 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 usuário excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' usuários excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' usuários excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 usuário excluído permanentemente!';
       toast.success(message, {
         description: 'Os usuários foram excluídos permanentemente',
       });
@@ -522,10 +516,8 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
   const bulkUpdateStatus = useUserBulkUpdate({
     onSuccess(result) {
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 usuário atualizado!'
-          : result.modified.toString().concat(' usuários atualizados!');
+      let message = result.modified.toString().concat(' usuários atualizados!');
+      if (result.modified === 1) message = '1 usuário atualizado!';
       toast.success(message, {
         description: 'O status dos usuários foi alterado',
       });
@@ -616,9 +608,10 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
                   data-test-id="bulk-user-status-btn"
                   disabled={bulkUpdateStatus.isPending}
                 >
-                  {bulkUpdateStatus.isPending ? (
+                  {bulkUpdateStatus.isPending && (
                     <LoaderCircleIcon className="size-4 animate-spin" />
-                  ) : (
+                  )}
+                  {!bulkUpdateStatus.isPending && (
                     <PowerIcon className="size-4" />
                   )}
                   <span>Alterar status</span>

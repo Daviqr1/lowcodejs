@@ -102,7 +102,8 @@ function buildTree(menus: Array<IMenu>): Array<MenuTreeNode> {
 
   for (const node of nodeById.values()) {
     const parentId = getParentId(node.menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(node);
@@ -277,9 +278,8 @@ function getDropMode(
   }
 
   if (!allowNest) {
-    return activeCenterY < overRect.top + overRect.height / 2
-      ? 'before'
-      : 'after';
+    if (activeCenterY < overRect.top + overRect.height / 2) return 'before';
+    return 'after';
   }
 
   return 'nest';
@@ -304,10 +304,12 @@ function SortableMenuNode({
     data: { parentId },
   });
 
+  let opacity = 1;
+  if (isDragging) opacity = 0.55;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.55 : 1,
+    opacity,
     marginLeft: `${level * 24}px`,
   };
 
@@ -343,11 +345,8 @@ function SortableMenuNode({
           <GripVerticalIcon className="size-4" />
         </button>
         <span className="inline-flex size-7 items-center justify-center rounded bg-muted text-muted-foreground">
-          {node.children.length > 0 ? (
-            <FolderTreeIcon className="size-4" />
-          ) : (
-            <TableIcon className="size-4" />
-          )}
+          {node.children.length > 0 && <FolderTreeIcon className="size-4" />}
+          {node.children.length === 0 && <TableIcon className="size-4" />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{node.menu.name}</p>
@@ -485,23 +484,25 @@ export function MenuReorderDialog({
     }
 
     const nextParentId = findParentIdByNodeId(updated, overId) ?? overParentId;
-    const targetList =
-      nextParentId === null
-        ? updated
-        : (findNodeById(updated, nextParentId)?.children ?? []);
+    let targetList = updated;
+    if (nextParentId !== null) {
+      targetList = findNodeById(updated, nextParentId)?.children ?? [];
+    }
     const overIndex = targetList.findIndex((node) => node.menu._id === overId);
     let insertIndex = targetList.length;
     if (overIndex !== -1) {
-      insertIndex = mode === 'after' ? overIndex + 1 : overIndex;
+      insertIndex = overIndex;
+      if (mode === 'after') insertIndex = overIndex + 1;
     }
 
     setTree(insertNodeAt(updated, nextParentId, insertIndex, removed));
   };
 
-  const activeNode = activeId ? findNodeById(tree, activeId) : null;
+  let activeNode = null;
+  if (activeId) activeNode = findNodeById(tree, activeId);
   const isLoading = status === 'pending';
   const canRenderOverlay = typeof document !== 'undefined';
-  const visibleTree = scope === 'root' ? tree : tree;
+  const visibleTree = tree;
 
   const renderNodes = (
     nodes: Array<MenuTreeNode>,
@@ -565,13 +566,13 @@ export function MenuReorderDialog({
               onDragCancel={handleDragCancel}
             >
               <div className="space-y-1">
-                {scope === 'root'
-                  ? renderNodes(
-                      visibleTree.map((node) => ({ ...node, children: [] })),
-                      0,
-                      null,
-                    )
-                  : renderNodes(visibleTree, 0, null)}
+                {scope === 'root' &&
+                  renderNodes(
+                    visibleTree.map((node) => ({ ...node, children: [] })),
+                    0,
+                    null,
+                  )}
+                {scope !== 'root' && renderNodes(visibleTree, 0, null)}
               </div>
               {canRenderOverlay &&
                 createPortal(
@@ -588,7 +589,7 @@ export function MenuReorderDialog({
           <div className="mr-auto inline-flex rounded-md border bg-background p-1">
             <Button
               type="button"
-              variant={scope === 'root' ? 'secondary' : 'ghost'}
+              variant={(scope === 'root' && 'secondary') || 'ghost'}
               size="sm"
               className="h-8"
               onClick={() => setScope('root')}
@@ -598,7 +599,7 @@ export function MenuReorderDialog({
             </Button>
             <Button
               type="button"
-              variant={scope === 'all' ? 'secondary' : 'ghost'}
+              variant={(scope === 'all' && 'secondary') || 'ghost'}
               size="sm"
               className="h-8"
               onClick={() => setScope('all')}

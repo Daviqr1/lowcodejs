@@ -67,12 +67,10 @@ function RouteComponent(): React.JSX.Element {
   const emptyTrash = useMenuEmptyTrash({
     onSuccess(result) {
       setEmptyTrashOpen(false);
-      const message =
-        result.deleted === 1
-          ? '1 menu excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' menus excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' menus excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 menu excluído permanentemente!';
       toast.success(message, {
         description: 'A lixeira de menus foi esvaziada',
       });

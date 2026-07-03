@@ -85,7 +85,10 @@ function sortByPosition(
 ): Array<IMenu> {
   return [...menus].sort((a, b) => {
     const orderDiff = (a.order ?? 0) - (b.order ?? 0);
-    if (orderDiff !== 0) return direction === 'asc' ? orderDiff : -orderDiff;
+    if (orderDiff !== 0) {
+      if (direction === 'asc') return orderDiff;
+      return -orderDiff;
+    }
     return a.name.localeCompare(b.name);
   });
 }
@@ -99,7 +102,8 @@ function buildMenuPositionLabels(
 
   for (const menu of data) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -115,9 +119,9 @@ function buildMenuPositionLabels(
     );
 
     siblings.forEach((menu, index) => {
-      const label = parentLabel
-        ? parentLabel.concat('.').concat(String(index + 1))
-        : String(menu.order ?? index);
+      let label = String(menu.order ?? index);
+      if (parentLabel)
+        label = parentLabel.concat('.').concat(String(index + 1));
 
       labels.set(menu._id, label);
       appendLabels(menu._id, label);
@@ -139,7 +143,8 @@ function sortMenuDataByHierarchy(
 
   for (const menu of data) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -327,9 +332,8 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
               >
                 <HouseIcon className="size-4" />
                 <span>
-                  {props.menu.isInitial
-                    ? 'Página inicial atual'
-                    : 'Definir como página inicial'}
+                  {props.menu.isInitial && 'Página inicial atual'}
+                  {!props.menu.isInitial && 'Definir como página inicial'}
                 </span>
               </DropdownMenuItem>
             )}
@@ -479,8 +483,10 @@ function buildColumns(params: {
       ),
       cell: ({ row, getValue }) => {
         const positionLabel = params.getPositionLabel(row.original);
+        let parentDepth = 0;
+        if (hasParent(row.original)) parentDepth = 1;
         const depth = Math.max(
-          hasParent(row.original) ? 1 : 0,
+          parentDepth,
           positionLabel.split('.').length - 1,
         );
 
@@ -681,10 +687,10 @@ export function TableMenus({
     onSuccess(result) {
       setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 menu enviado para lixeira!'
-          : result.modified.toString().concat(' menus enviados para lixeira!');
+      let message = result.modified
+        .toString()
+        .concat(' menus enviados para lixeira!');
+      if (result.modified === 1) message = '1 menu enviado para lixeira!';
       toast.success(message, {
         description: 'Os menus foram movidos para a lixeira',
       });
@@ -698,10 +704,8 @@ export function TableMenus({
     onSuccess(result) {
       setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 menu restaurado!'
-          : result.modified.toString().concat(' menus restaurados!');
+      let message = result.modified.toString().concat(' menus restaurados!');
+      if (result.modified === 1) message = '1 menu restaurado!';
       toast.success(message, {
         description: 'Os menus foram restaurados da lixeira',
       });
@@ -715,12 +719,10 @@ export function TableMenus({
     onSuccess(result) {
       setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 menu excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' menus excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' menus excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 menu excluído permanentemente!';
       toast.success(message, {
         description: 'Os menus foram excluídos permanentemente',
       });

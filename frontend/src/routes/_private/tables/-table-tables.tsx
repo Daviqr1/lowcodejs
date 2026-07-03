@@ -420,6 +420,8 @@ export function TableTables({
     return cols;
   }, [canSelect]);
 
+  let leftPinning: Array<string> = [];
+  if (canSelect) leftPinning = ['_select'];
   const table = useDataTable({
     data,
     columns: allColumns,
@@ -428,7 +430,7 @@ export function TableTables({
     enableColumnResizing: true,
     persistKey: 'admin:tables',
     initialColumnPinning: {
-      left: canSelect ? ['_select'] : [],
+      left: leftPinning,
       right: ['actions'],
     },
   });
@@ -451,12 +453,11 @@ export function TableTables({
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
-      toast.success(
-        result.modified === 1
-          ? '1 tabela enviada para lixeira!'
-          : `${result.modified} tabelas enviadas para lixeira!`,
-        { description: 'As tabelas foram movidas para a lixeira' },
-      );
+      let message = `${result.modified} tabelas enviadas para lixeira!`;
+      if (result.modified === 1) message = '1 tabela enviada para lixeira!';
+      toast.success(message, {
+        description: 'As tabelas foram movidas para a lixeira',
+      });
     },
   });
 
@@ -476,23 +477,21 @@ export function TableTables({
       });
 
       if (result.modified > 0) {
-        toast.success(
-          result.modified === 1
-            ? '1 tabela restaurada!'
-            : `${result.modified} tabelas restauradas!`,
-          { description: 'As tabelas foram restauradas da lixeira' },
-        );
+        let message = `${result.modified} tabelas restauradas!`;
+        if (result.modified === 1) message = '1 tabela restaurada!';
+        toast.success(message, {
+          description: 'As tabelas foram restauradas da lixeira',
+        });
       }
 
       if (result.skipped && result.skipped.length > 0) {
-        toast.warning(
-          result.skipped.length === 1
-            ? '1 tabela não foi restaurada'
-            : `${result.skipped.length} tabelas não foram restauradas`,
-          {
-            description: `Já existe uma tabela ativa com o mesmo slug: ${result.skipped.join(', ')}. Renomeie ou exclua a tabela ativa antes de restaurar.`,
-          },
-        );
+        let warnMessage = `${result.skipped.length} tabelas não foram restauradas`;
+        if (result.skipped.length === 1) {
+          warnMessage = '1 tabela não foi restaurada';
+        }
+        toast.warning(warnMessage, {
+          description: `Já existe uma tabela ativa com o mesmo slug: ${result.skipped.join(', ')}. Renomeie ou exclua a tabela ativa antes de restaurar.`,
+        });
       }
     },
   });
@@ -512,11 +511,9 @@ export function TableTables({
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
-      toast.success(
-        result.deleted === 1
-          ? '1 tabela excluída permanentemente!'
-          : `${result.deleted} tabelas excluídas permanentemente!`,
-      );
+      let message = `${result.deleted} tabelas excluídas permanentemente!`;
+      if (result.deleted === 1) message = '1 tabela excluída permanentemente!';
+      toast.success(message);
     },
   });
 
@@ -540,11 +537,10 @@ export function TableTables({
       {selectedCount > 0 && (
         <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
           <span className="text-sm font-medium">
-            {selectedCount === 1
-              ? '1 tabela selecionada'
-              : `${selectedCount} tabelas selecionadas`}
+            {selectedCount === 1 && '1 tabela selecionada'}
+            {selectedCount !== 1 && `${selectedCount} tabelas selecionadas`}
           </span>
-          {isTrashView ? (
+          {isTrashView && (
             <React.Fragment>
               {canUpdateTable && (
                 <Button
@@ -573,20 +569,19 @@ export function TableTables({
                 </Button>
               )}
             </React.Fragment>
-          ) : (
-            canRemoveTable && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  setDialogAction('trash');
-                  setShowConfirmDialog(true);
-                }}
-              >
-                <Trash2Icon className="size-4" />
-                <span>Enviar para lixeira</span>
-              </Button>
-            )
+          )}
+          {!isTrashView && canRemoveTable && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setDialogAction('trash');
+                setShowConfirmDialog(true);
+              }}
+            >
+              <Trash2Icon className="size-4" />
+              <span>Enviar para lixeira</span>
+            </Button>
           )}
           <Button
             variant="ghost"
@@ -611,13 +606,17 @@ export function TableTables({
             </DialogTitle>
             <DialogDescription>
               {dialogAction === 'trash' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 tabela será enviada para a lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} tabelas serão enviadas para a lixeira.`)}
+                selectedCount === 1 &&
+                'Ao confirmar essa ação, 1 tabela será enviada para a lixeira.'}
+              {dialogAction === 'trash' &&
+                selectedCount !== 1 &&
+                `Ao confirmar essa ação, ${selectedCount} tabelas serão enviadas para a lixeira.`}
               {dialogAction === 'restore' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 tabela será restaurada da lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} tabelas serão restauradas da lixeira.`)}
+                selectedCount === 1 &&
+                'Ao confirmar essa ação, 1 tabela será restaurada da lixeira.'}
+              {dialogAction === 'restore' &&
+                selectedCount !== 1 &&
+                `Ao confirmar essa ação, ${selectedCount} tabelas serão restauradas da lixeira.`}
             </DialogDescription>
           </DialogHeader>
           <section>

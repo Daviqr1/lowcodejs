@@ -48,9 +48,9 @@ function RouteComponent(): React.JSX.Element {
   const { data } = useSuspenseQuery(menuDetailOptions(menuId));
 
   const search = useSearch({ from: '/_private/menus/$menuId/' });
-  const [mode, setMode] = React.useState<'show' | 'edit'>(
-    search.mode === 'edit' ? 'edit' : 'show',
-  );
+  let initialMode: 'show' | 'edit' = 'show';
+  if (search.mode === 'edit') initialMode = 'edit';
+  const [mode, setMode] = React.useState<'show' | 'edit'>(initialMode);
 
   const goBack = (): void => {
     sidebar.setOpen(true);
@@ -158,7 +158,7 @@ function MenuUpdateContent({
         url: value.url || null,
         icon: value.icon || null,
         order,
-        isInitial: value.type === 'SEPARATOR' ? false : value.isInitial,
+        isInitial: value.type !== 'SEPARATOR' && value.isInitial,
         extension: value.extension ?? null,
         visibility: value.visibility,
       });
