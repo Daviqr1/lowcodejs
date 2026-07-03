@@ -53,6 +53,10 @@ import { useAuthStore } from '@/stores/authentication';
 const FORUM_SYNC_INTERVAL_MS = 5000;
 const FORUM_MENTIONS_STORAGE_KEY_PREFIX = 'forum-mentions-unseen';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 type ForumRealtimeSubscriptionArgs = {
   enabled: boolean;
   intervalMs: number;
@@ -159,15 +163,16 @@ export function TableForumView({
         `${FORUM_MENTIONS_STORAGE_KEY_PREFIX}:${tableSlug}:${currentUserId || 'anonymous'}`,
       );
       if (!raw) return {};
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed: Record<string, unknown> = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return {};
       return Object.fromEntries(
-        Object.entries(parsed).map(([channelId, value]) => [
-          channelId,
-          Array.isArray(value)
-            ? value.map((item) => String(item)).filter(Boolean)
-            : [],
-        ]),
+        Object.entries(parsed).map(([channelId, value]) => {
+          let normalized: Array<string> = [];
+          if (Array.isArray(value)) {
+            normalized = value.map((item) => String(item)).filter(Boolean);
+          }
+          return [channelId, normalized];
+        }),
       );
     } catch {
       return {};
@@ -186,14 +191,12 @@ export function TableForumView({
   // mensagem específica.
   const searchParams = useRouterState({ select: (s) => s.location.search });
   React.useEffect(() => {
-    const channelId =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).channelId
-        : undefined;
-    const messageId =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).messageId
-        : undefined;
+    let channelId: unknown;
+    let messageId: unknown;
+    if (isRecord(searchParams)) {
+      channelId = searchParams.channelId;
+      messageId = searchParams.messageId;
+    }
     if (typeof channelId === 'string' && channelId) {
       setActiveRowId(channelId);
     }
@@ -252,19 +255,20 @@ export function TableForumView({
         setSeenMentionIdsByChannel({});
         return;
       }
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed: Record<string, unknown> = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') {
         setSeenMentionIdsByChannel({});
         return;
       }
       setSeenMentionIdsByChannel(
         Object.fromEntries(
-          Object.entries(parsed).map(([channelId, value]) => [
-            channelId,
-            Array.isArray(value)
-              ? value.map((item) => String(item)).filter(Boolean)
-              : [],
-          ]),
+          Object.entries(parsed).map(([channelId, value]) => {
+            let normalized: Array<string> = [];
+            if (Array.isArray(value)) {
+              normalized = value.map((item) => String(item)).filter(Boolean);
+            }
+            return [channelId, normalized];
+          }),
         ),
       );
     } catch {
@@ -400,7 +404,7 @@ export function TableForumView({
           type: E_FIELD_TYPE.USER,
           multiple: true,
         },
-      ] as Array<Pick<IField, 'slug' | 'type' | 'multiple'>>,
+      ] satisfies Array<Pick<IField, 'slug' | 'type' | 'multiple'>>,
     [],
   );
 
@@ -414,6 +418,7 @@ export function TableForumView({
       return groupFields;
     }
 
+    // fallback só define os campos usados pelo fórum (slug/type/multiple).
     return fallbackGroupFields as Array<IField>;
   }, [fallbackGroupFields, groupFields]);
 
@@ -444,51 +449,66 @@ export function TableForumView({
   const rawMessages = React.useMemo(() => {
     if (!activeRow || !messagesField) return [];
     const value = activeRow[messagesField.slug];
-    return Array.isArray(value) ? value : [];
+    if (Array.isArray(value)) return value;
+    return [];
   }, [activeRow, messagesField]);
 
   const messages = React.useMemo<Array<ForumMessage>>(() => {
     return rawMessages.map((message: Record<string, unknown>, index) => {
-      const messageRecord =
-        message && typeof message === 'object' ? message : {};
-      const idValue = messageIdField
-        ? messageRecord[messageIdField.slug]
-        : null;
+      let messageRecord: Record<string, unknown> = {};
+      if (message && typeof message === 'object') messageRecord = message;
+
+      let idValue: unknown = null;
+      if (messageIdField) idValue = messageRecord[messageIdField.slug];
       const id = normalizeId(idValue) ?? `message-${index}`;
-      const text = messageTextField
-        ? ((messageRecord[messageTextField.slug] as string) ?? '')
-        : '';
-      const authorList = messageAuthorField
-        ? normalizeUserList(messageRecord[messageAuthorField.slug])
-        : [];
+
+      let text = '';
+      if (messageTextField) {
+        const rawText = messageRecord[messageTextField.slug];
+        if (typeof rawText === 'string') text = rawText;
+      }
+
+      let authorList: ReturnType<typeof normalizeUserList> = [];
+      if (messageAuthorField) {
+        authorList = normalizeUserList(messageRecord[messageAuthorField.slug]);
+      }
       const author = authorList[0] ?? null;
-      const authorId =
-        typeof author === 'string'
-          ? author
-          : author && '_id' in author
-            ? author._id
-            : null;
-      const dateRecordValue = messageDateField
-        ? messageRecord[messageDateField.slug]
-        : null;
-      const dateLabel =
-        typeof dateRecordValue === 'string' && dateRecordValue
-          ? format(new Date(dateRecordValue), 'dd/MM/yyyy HH:mm', {
-              locale: ptBR,
-            })
-          : '';
-      const attachments = messageAttachmentsField
-        ? normalizeStorageList(messageRecord[messageAttachmentsField.slug])
-        : [];
-      const mentions = messageMentionsField
-        ? normalizeUserList(messageRecord[messageMentionsField.slug])
-        : [];
-      const replyTo = messageReplyField
-        ? (messageRecord[messageReplyField.slug] as string | null)
-        : null;
-      const reactions = messageReactionsField
-        ? parseReactions(messageRecord[messageReactionsField.slug])
-        : [];
+      let authorId: string | null = null;
+      if (typeof author === 'string') authorId = author;
+      else if (author && '_id' in author) authorId = author._id;
+
+      let dateRecordValue: unknown = null;
+      if (messageDateField) {
+        dateRecordValue = messageRecord[messageDateField.slug];
+      }
+      let dateLabel = '';
+      if (typeof dateRecordValue === 'string' && dateRecordValue) {
+        dateLabel = format(new Date(dateRecordValue), 'dd/MM/yyyy HH:mm', {
+          locale: ptBR,
+        });
+      }
+      let dateValue: string | null = null;
+      if (typeof dateRecordValue === 'string') dateValue = dateRecordValue;
+
+      let attachments: ReturnType<typeof normalizeStorageList> = [];
+      if (messageAttachmentsField) {
+        attachments = normalizeStorageList(
+          messageRecord[messageAttachmentsField.slug],
+        );
+      }
+      let mentions: ReturnType<typeof normalizeUserList> = [];
+      if (messageMentionsField) {
+        mentions = normalizeUserList(messageRecord[messageMentionsField.slug]);
+      }
+      let replyTo: string | null = null;
+      if (messageReplyField) {
+        const rawReply = messageRecord[messageReplyField.slug];
+        if (typeof rawReply === 'string') replyTo = rawReply;
+      }
+      let reactions: ReturnType<typeof parseReactions> = [];
+      if (messageReactionsField) {
+        reactions = parseReactions(messageRecord[messageReactionsField.slug]);
+      }
 
       return {
         id,
@@ -496,7 +516,7 @@ export function TableForumView({
         author,
         authorId,
         dateLabel,
-        dateValue: typeof dateRecordValue === 'string' ? dateRecordValue : null,
+        dateValue,
         attachments,
         mentions,
         replyTo,
@@ -539,42 +559,50 @@ export function TableForumView({
 
     for (const row of rowsState) {
       const rawChannelMessages = row[messagesField.slug];
-      const channelMessages = Array.isArray(rawChannelMessages)
-        ? rawChannelMessages
-        : [];
+      let channelMessages: Array<unknown> = [];
+      if (Array.isArray(rawChannelMessages)) {
+        channelMessages = rawChannelMessages;
+      }
 
       for (let index = 0; index < channelMessages.length; index += 1) {
-        const messageRecord =
-          channelMessages[index] && typeof channelMessages[index] === 'object'
-            ? (channelMessages[index] as Record<string, unknown>)
-            : {};
+        const candidate = channelMessages[index];
+        let messageRecord: Record<string, unknown> = {};
+        if (isRecord(candidate)) messageRecord = candidate;
 
         const mentionIds = normalizeIdList(
           messageRecord[messageMentionsField.slug],
         );
         if (!mentionIds.includes(currentUserId)) continue;
-        const seenIds = messageMentionSeenField
-          ? normalizeIdList(messageRecord[messageMentionSeenField.slug])
-          : [];
+        let seenIds: Array<string> = [];
+        if (messageMentionSeenField) {
+          seenIds = normalizeIdList(
+            messageRecord[messageMentionSeenField.slug],
+          );
+        }
         if (seenIds.includes(currentUserId)) continue;
 
-        const authorCandidates = messageAuthorField
-          ? normalizeIdList(messageRecord[messageAuthorField.slug])
-          : [];
+        let authorCandidates: Array<string> = [];
+        if (messageAuthorField) {
+          authorCandidates = normalizeIdList(
+            messageRecord[messageAuthorField.slug],
+          );
+        }
         const authorId = authorCandidates[0] ?? null;
         if (authorId && authorId === currentUserId) continue;
 
         const messageId =
           (messageIdField && normalizeId(messageRecord[messageIdField.slug])) ??
           `message-${index}`;
-        const rawDate = messageDateField
-          ? messageRecord[messageDateField.slug]
-          : null;
-        const dateValue = typeof rawDate === 'string' ? rawDate : null;
-        const dateLabel =
-          dateValue && !Number.isNaN(new Date(dateValue).getTime())
-            ? format(new Date(dateValue), 'dd/MM/yyyy HH:mm', { locale: ptBR })
-            : '';
+        let rawDate: unknown = null;
+        if (messageDateField) rawDate = messageRecord[messageDateField.slug];
+        let dateValue: string | null = null;
+        if (typeof rawDate === 'string') dateValue = rawDate;
+        let dateLabel = '';
+        if (dateValue && !Number.isNaN(new Date(dateValue).getTime())) {
+          dateLabel = format(new Date(dateValue), 'dd/MM/yyyy HH:mm', {
+            locale: ptBR,
+          });
+        }
 
         const list = next.get(row._id) ?? [];
         list.push({
@@ -894,9 +922,8 @@ export function TableForumView({
           },
         },
       );
-      const nextRows = Array.isArray(response.data?.data)
-        ? response.data.data
-        : [];
+      let nextRows: typeof rowsState = [];
+      if (Array.isArray(response.data?.data)) nextRows = response.data.data;
       setRowsState(nextRows);
     } finally {
       channelsPollingRef.current.inFlight = false;
@@ -973,14 +1000,16 @@ export function TableForumView({
       }
       const label = resolveChannelLabel(row);
       const description = resolveChannelDescription(row);
-      const privacy = channelPrivacyField
-        ? Array.isArray(row[channelPrivacyField.slug])
-          ? String(row[channelPrivacyField.slug]?.[0] ?? 'publico')
-          : String(row[channelPrivacyField.slug] ?? 'publico')
-        : 'publico';
-      const members = channelMembersField
-        ? normalizeIdList(row[channelMembersField.slug])
-        : [];
+      let privacy = 'publico';
+      if (channelPrivacyField) {
+        const raw = row[channelPrivacyField.slug];
+        if (Array.isArray(raw)) privacy = String(raw?.[0] ?? 'publico');
+        else privacy = String(raw ?? 'publico');
+      }
+      let members: Array<string> = [];
+      if (channelMembersField) {
+        members = normalizeIdList(row[channelMembersField.slug]);
+      }
       editChannelForm.reset({ label, description, privacy, members });
       editChannelForm.setFieldValue('label', label);
       editChannelForm.setFieldValue('description', description);
@@ -1210,14 +1239,19 @@ export function TableForumView({
         entries.push({ emoji, users: [currentUserId] });
       } else {
         const hasUser = existing.users.includes(currentUserId);
-        existing.users = hasUser
-          ? existing.users.filter((id) => id !== currentUserId)
-          : [...existing.users, currentUserId];
+        if (hasUser) {
+          existing.users = existing.users.filter((id) => id !== currentUserId);
+        } else {
+          existing.users = [...existing.users, currentUserId];
+        }
       }
 
       const nextMessages = [...rawMessages];
+      const rawBase = rawMessages[messageIndex];
+      let baseRecord: Record<string, unknown> = {};
+      if (isRecord(rawBase)) baseRecord = rawBase;
       const base = {
-        ...(rawMessages[messageIndex] as Record<string, unknown>),
+        ...baseRecord,
         [messageReactionsField.slug]: serializeReactions(entries),
       };
       nextMessages[messageIndex] = base;
@@ -1304,17 +1338,18 @@ export function TableForumView({
     ],
   );
 
-  const channelTitle =
-    activeRow && channelField
-      ? String(activeRow[channelField.slug] ?? 'Canal')
-      : 'Canal';
-  const channelDescription =
-    activeRow && typeof activeRow['descricao'] === 'string'
-      ? activeRow['descricao']
-      : '';
-  const replyMessage = replyToId
-    ? (messages.find((message) => message.id === replyToId) ?? null)
-    : null;
+  let channelTitle = 'Canal';
+  if (activeRow && channelField) {
+    channelTitle = String(activeRow[channelField.slug] ?? 'Canal');
+  }
+  let channelDescription = '';
+  if (activeRow && typeof activeRow['descricao'] === 'string') {
+    channelDescription = activeRow['descricao'];
+  }
+  let replyMessage: (typeof messages)[number] | null = null;
+  if (replyToId) {
+    replyMessage = messages.find((message) => message.id === replyToId) ?? null;
+  }
 
   return (
     <div
@@ -1468,9 +1503,8 @@ export function TableForumView({
                       <AtSignIcon className="size-4" />
                       <span>
                         Mencionado
-                        {activeChannelPrimaryMentionAlert.dateLabel
-                          ? ` • ${activeChannelPrimaryMentionAlert.dateLabel}`
-                          : ''}
+                        {activeChannelPrimaryMentionAlert.dateLabel &&
+                          ` • ${activeChannelPrimaryMentionAlert.dateLabel}`}
                       </span>
                       <ArrowDownIcon className="size-4" />
                     </Button>
