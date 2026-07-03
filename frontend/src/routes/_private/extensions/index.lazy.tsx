@@ -376,7 +376,10 @@ function ExtensionTableRow({
               size="sm"
               className="cursor-pointer"
               data-test-id={`extension-table-config-route-${extension._id}`}
-              onClick={() => navigate({ to: extension.configRoute as any })}
+              onClick={() =>
+                // @ts-expect-error configRoute e uma rota dinamica (string)
+                navigate({ to: extension.configRoute })
+              }
             >
               <SettingsIcon className="size-4" />
               Configurar
