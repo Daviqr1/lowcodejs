@@ -50,7 +50,7 @@ async function loadStorageConfig(): Promise<void> {
   const setting = await Setting.findOne().lean();
 
   if (setting) {
-    syncStorageEnv(setting as never);
+    syncStorageEnv(setting);
     console.info(`[Storage] Driver: ${setting.STORAGE_DRIVER ?? 'local'}`);
   } else {
     console.info('[Storage] Nenhum Setting encontrado, usando driver local');
@@ -58,11 +58,12 @@ async function loadStorageConfig(): Promise<void> {
 }
 
 async function syncSettingsFromDatabase(): Promise<void> {
-  const settings = await Setting.findOne().lean();
+  const settings: Record<string, unknown> | null =
+    await Setting.findOne().lean();
   if (!settings) return;
 
   for (const key of SETTING_SYNC_KEYS) {
-    const value = (settings as Record<string, unknown>)[key];
+    const value = settings[key];
     if (value !== undefined && value !== null) {
       process.env[key] = String(value);
     }
