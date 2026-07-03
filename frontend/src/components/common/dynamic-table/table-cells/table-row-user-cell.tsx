@@ -1,4 +1,8 @@
-import type { IField, IRow, IUser } from '@/lib/interfaces';
+import type { IField, IRow } from '@/lib/interfaces';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 interface TableRowUserCellProps {
   row: IRow;
@@ -18,9 +22,8 @@ export function TableRowUserCell({
   }
 
   const values = rawValues.map<string>((item) => {
-    if (typeof item === 'object' && item !== null) {
-      const user = item as IUser;
-      return user.name || user.email || user._id;
+    if (isRecord(item)) {
+      return String(item.name || item.email || item._id || '');
     }
     return String(item);
   });

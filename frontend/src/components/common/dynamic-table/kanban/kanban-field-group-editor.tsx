@@ -92,8 +92,9 @@ function getStoragesFromGroupRow(
   const raw = groupRow[fileField.slug];
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (item: any) => item && typeof item === 'object' && item.url,
-  ) as Array<IStorage>;
+    (item: any): item is IStorage =>
+      item && typeof item === 'object' && item.url,
+  );
 }
 
 function getAuthorFromGroupRow(groupRow: Record<string, any>): IUser | null {

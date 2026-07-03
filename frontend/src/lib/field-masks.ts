@@ -55,7 +55,7 @@ export function getInputTypeForFormat(
 
 export function getInputModeForFormat(
   format: string | null | undefined,
-): string | undefined {
+): 'numeric' | 'decimal' | 'email' | 'url' | 'tel' | undefined {
   switch (format) {
     case E_FIELD_FORMAT.INTEGER:
       return 'numeric';

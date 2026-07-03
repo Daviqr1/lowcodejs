@@ -18,7 +18,7 @@ export function TableRowReactionCell({
   row,
   tableSlug,
 }: TableRowReactionCellProps): React.JSX.Element {
-  const summary = (row[field.slug] ?? {}) as IReactionSummary;
+  const summary: IReactionSummary = row[field.slug] ?? {};
   const likeCount = summary._likeCount ?? 0;
   const unlikeCount = summary._unlikeCount ?? 0;
   const userLike = summary._userReaction === E_REACTION_TYPE.LIKE;

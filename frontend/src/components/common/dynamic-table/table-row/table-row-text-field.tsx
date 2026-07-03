@@ -106,9 +106,7 @@ function TableRowTextFieldDefault({
           id={formField.name}
           name={formField.name}
           type={inputType}
-          inputMode={
-            inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']
-          }
+          inputMode={inputMode}
           placeholder={`Digite ${resolveFieldLabel(field, 'form').toLowerCase()}`}
           value={formField.state.value || ''}
           onBlur={formField.handleBlur}

@@ -105,10 +105,11 @@ export function KanbanColumn({
     if (!option.color) return undefined;
     const rgb = hexToRgb(option.color);
     if (!rgb) return undefined;
-    return {
-      ['--kanban-scroll-thumb' as string]: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
-      ['--kanban-scroll-thumb-hover' as string]: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
+    const vars: React.CSSProperties & Record<`--${string}`, string> = {
+      '--kanban-scroll-thumb': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
+      '--kanban-scroll-thumb-hover': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
     };
+    return vars;
   }, [option.color]);
 
   function handleSave(): void {

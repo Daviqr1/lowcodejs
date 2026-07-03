@@ -150,14 +150,14 @@ export function KanbanRowDialog({
     descriptionField,
     fields.attachments,
     ...extraFields,
-  ].filter(Boolean) as Array<IField>;
+  ].filter((field): field is IField => Boolean(field));
 
   const quickFields = [
     fields.members,
     fields.startDate,
     fields.dueDate,
     fields.list,
-  ].filter(Boolean) as Array<IField>;
+  ].filter((field): field is IField => Boolean(field));
 
   const updateRow = useUpdateTableRow({
     onSuccess(data) {

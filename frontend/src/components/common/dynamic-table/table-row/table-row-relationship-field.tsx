@@ -381,9 +381,8 @@ function CascadeRelationshipField({
 
   const parentValue = useStore(
     formField.form.store,
-    (state: { values: unknown }) => {
-      const values = state.values as Record<string, unknown>;
-      return readCascadeValue(values[config.parentFieldSlug]);
+    (state: { values: Record<string, unknown> }) => {
+      return readCascadeValue(state.values[config.parentFieldSlug]);
     },
   );
 

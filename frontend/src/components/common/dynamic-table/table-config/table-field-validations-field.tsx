@@ -77,21 +77,23 @@ export function TableFieldValidationsField({
   );
 
   const simpleOptions = options.filter(
-    (o) => !(CONFIG_RULES as ReadonlyArray<string>).includes(o.value),
+    (o) => !CONFIG_RULES.some((r) => r === o.value),
   );
   const configOptions = options.filter((o) =>
-    (CONFIG_RULES as ReadonlyArray<string>).includes(o.value),
+    CONFIG_RULES.some((r) => r === o.value),
   );
 
   const simpleActive = value
-    .filter((v) => !(CONFIG_RULES as ReadonlyArray<string>).includes(v.rule))
+    .filter((v) => !CONFIG_RULES.some((r) => r === v.rule))
     .map((v) => v.rule);
 
   function handleSimpleChange(rules: Array<string>): void {
     const configValidations = value.filter((v) =>
-      (CONFIG_RULES as ReadonlyArray<string>).includes(v.rule),
+      CONFIG_RULES.some((r) => r === v.rule),
     );
     const newSimple: Array<IFieldValidation> = rules.map((r) => ({
+      // `rules` vem do multi-select cujas opcoes sao valores de E_FIELD_VALIDATION;
+      // o cast reduz o string ao enum (garantido pela origem das opcoes).
       rule: r as ValueOf<typeof E_FIELD_VALIDATION>,
       config: {},
     }));

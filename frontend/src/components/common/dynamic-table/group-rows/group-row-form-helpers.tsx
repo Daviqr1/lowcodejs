@@ -18,8 +18,10 @@ function optionId(option: unknown): unknown {
   return option;
 }
 
+// Coercao generica: o chamador conhece T; o valor vem solto (unknown) e por isso
+// o cast e inerente ao helper.
 export function toArray<T>(value: unknown): Array<T> {
-  if (Array.isArray(value)) return value as Array<T>;
+  if (Array.isArray(value)) return value;
   if (value !== null && value !== undefined) return [value] as Array<T>;
   return [];
 }
