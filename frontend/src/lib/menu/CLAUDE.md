@@ -10,6 +10,7 @@ de menu e controle de acesso a rotas baseado em papeis (RBAC).
 | `menu.ts`                    | `getStaticMenusByCapabilities` retorna menus estaticos (before/after) a partir das capacidades do usuario                                       |
 | `menu-route.ts`              | Tipos TypeScript para estrutura de menus: `MenuItem`, `MenuGroupItem`, `MenuRoute`                                                              |
 | `menu-access-permissions.ts` | Mapa rota->capacidade (`AREA_CAPABILITY_BY_ROUTE`), rota padrao (`ROLE_DEFAULT_ROUTE`), `hasAreaCapability` e `canAccessRoute` (por capability) |
+| `initial-menu-route.ts`      | `resolveInitialMenuRoute()` — resolve a primeira rota navegavel do menu (redirect pos-login); tipo `InitialMenuRoute` (external/internal)       |
 
 ## Estrutura de Menus por Role
 
