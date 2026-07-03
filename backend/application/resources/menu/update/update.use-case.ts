@@ -241,7 +241,7 @@ export default class MenuUpdateUseCase {
       }
 
       // If parent changed, recalculate order
-      const updatePayload: Record<string, unknown> = {
+      const updatePayload: RepositoryMenuUpdatePayload = {
         ...payload,
         slug: finalSlug,
       };
@@ -292,12 +292,7 @@ export default class MenuUpdateUseCase {
 
         updatePayload.order = nextOrder;
 
-        // updatePayload é montado como Record<string, unknown> (builder
-        // incremental); em runtime sempre carrega `_id`.
-        const updated = await this.menuRepository.update(
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-          updatePayload as RepositoryMenuUpdatePayload,
-        );
+        const updated = await this.menuRepository.update(updatePayload);
 
         for (let index = 0; index < reorderedIds.length; index += 1) {
           const menuId = reorderedIds[index];
@@ -315,12 +310,7 @@ export default class MenuUpdateUseCase {
         return right(updated);
       }
 
-      // updatePayload é montado como Record<string, unknown> (builder
-      // incremental); em runtime sempre carrega `_id`.
-      const updated = await this.menuRepository.update(
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        updatePayload as RepositoryMenuUpdatePayload,
-      );
+      const updated = await this.menuRepository.update(updatePayload);
 
       if (payload.isInitial) {
         await this.menuRepository.setOnlyInitial(updated._id);
