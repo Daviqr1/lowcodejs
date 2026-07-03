@@ -60,7 +60,8 @@ export function ActionDialog({
         navigate({
           to: config.navigation.to,
           replace: true,
-          search: config.navigation.search as any,
+          // @ts-expect-error navigate nao tipa search com `to` dinamico (string)
+          search: config.navigation.search,
         });
       }
     },
