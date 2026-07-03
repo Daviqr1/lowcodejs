@@ -9,6 +9,8 @@ import type {
   IUser,
 } from '@application/core/entity.core';
 
+import { makeField, makeStorage, makeUser } from '../entity-fixtures';
+
 import type {
   TableContractRepository,
   TableCreatePayload,
@@ -17,19 +19,15 @@ import type {
   TableUpdatePayload,
 } from './table-contract.repository';
 
-// Refs mínimos para o double de teste: guardam apenas { _id }, não a entidade
-// populada. As asserções refletem esse shape parcial intencional.
+// Refs do double de teste: entidade completa (defaults inertes) a partir do id.
 function storageRef(id: string): IStorage {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return { _id: id } as IStorage;
+  return makeStorage(id);
 }
 function userRef(id: string): IUser {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return { _id: id } as IUser;
+  return makeUser(id);
 }
 function fieldRef(id: string): IField {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return { _id: id } as IField;
+  return makeField(id);
 }
 
 export default class TableInMemoryRepository implements TableContractRepository {

@@ -1,8 +1,9 @@
 import type {
   FindOptions,
-  IUser,
   IValidationToken,
 } from '@application/core/entity.core';
+
+import { makeUser } from '../entity-fixtures';
 
 import type {
   ValidationTokenContractRepository,
@@ -38,9 +39,8 @@ export default class ValidationTokenInMemoryRepository implements ValidationToke
       updatedAt: new Date(),
       trashedAt: null,
       trashed: false,
-      // Double de teste: ref mínimo de usuário (só _id + toString).
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      user: { _id: userId, toString: () => userId } as unknown as IUser,
+      // Double de teste: ref populada de usuário com defaults inertes.
+      user: makeUser(userId),
     };
     this.items.push(token);
     return token;

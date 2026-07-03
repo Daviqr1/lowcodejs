@@ -4,6 +4,8 @@ import {
   type IUser,
 } from '@application/core/entity.core';
 
+import { makeGroup } from '../entity-fixtures';
+
 import type {
   UserContractRepository,
   UserCreatePayload,
@@ -33,21 +35,9 @@ export default class UserInMemoryRepository implements UserContractRepository {
       ...payload,
       _id: crypto.randomUUID(),
       status: E_USER_STATUS.ACTIVE,
-      // Double de teste: guarda apenas o ref { _id }, não o grupo populado.
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      group: { _id: payload.group } as IUser['group'],
-      groups: (payload.groups ?? []).map((id) => ({
-        _id: id,
-        name: '',
-        slug: '',
-        description: null,
-        permissions: [],
-        encompasses: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        trashed: false,
-        trashedAt: null,
-      })),
+      // Double de teste: refs populadas de grupo com defaults inertes.
+      group: makeGroup(payload.group),
+      groups: (payload.groups ?? []).map((id) => makeGroup(id)),
       notificationsEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),

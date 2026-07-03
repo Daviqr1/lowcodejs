@@ -413,9 +413,7 @@ describe('Clone Table Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
 
-    expect(result.value.table.owner).toEqual({
-      _id: 'new-owner-id',
-    });
+    expect(result.value.table.owner?._id).toBe('new-owner-id');
   });
 
   it('deve retornar erro TABLE_ALREADY_EXISTS quando slug ja existe', async () => {

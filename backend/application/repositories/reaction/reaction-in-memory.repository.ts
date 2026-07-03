@@ -1,8 +1,6 @@
-import type {
-  FindOptions,
-  IReaction,
-  IUser,
-} from '@application/core/entity.core';
+import type { FindOptions, IReaction } from '@application/core/entity.core';
+
+import { makeUser } from '../entity-fixtures';
 
 import type {
   ReactionContractRepository,
@@ -31,9 +29,8 @@ export default class ReactionInMemoryRepository implements ReactionContractRepos
     const reaction: IReaction = {
       ...payload,
       _id: crypto.randomUUID(),
-      // Double de teste: guarda apenas o ref { _id }, não o IUser populado.
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      user: { _id: payload.user } as IUser,
+      // Double de teste: ref populada de usuário com defaults inertes.
+      user: makeUser(payload.user),
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,

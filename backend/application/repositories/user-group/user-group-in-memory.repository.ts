@@ -2,8 +2,9 @@ import {
   E_ROLE,
   type FindOptions,
   type IGroup,
-  type IPermission,
 } from '@application/core/entity.core';
+
+import { makePermission } from '../entity-fixtures';
 
 import type {
   UserGroupContractRepository,
@@ -34,9 +35,8 @@ export default class UserGroupInMemoryRepository implements UserGroupContractRep
       ...payload,
       _id: crypto.randomUUID(),
       description: payload.description ?? null,
-      // Double de teste: guarda apenas o ref { _id }, não a permissão populada.
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      permissions: payload.permissions.map((p) => ({ _id: p }) as IPermission),
+      // Double de teste: refs populadas de permissão com defaults inertes.
+      permissions: payload.permissions.map((p) => makePermission(p)),
       encompasses: payload.encompasses ?? [],
       createdAt: new Date(),
       updatedAt: new Date(),
