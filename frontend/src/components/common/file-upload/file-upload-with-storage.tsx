@@ -405,7 +405,7 @@ export function FileUploadWithStorage({
             >
               <div className="flex w-full items-center gap-2">
                 <FileUploadItemPreview />
-                {storage ? (
+                {storage && (
                   <div className="flex min-w-0 flex-1 flex-col">
                     <a
                       href={storage.url}
@@ -420,9 +420,8 @@ export function FileUploadWithStorage({
                       {displaySize} KB
                     </span>
                   </div>
-                ) : (
-                  <FileUploadItemMetadata />
                 )}
+                {!storage && <FileUploadItemMetadata />}
                 <FileUploadItemDelete asChild>
                   <Button
                     variant="ghost"

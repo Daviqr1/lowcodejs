@@ -52,7 +52,7 @@ export function FieldCombobox({
     >
       <ComboboxInput
         placeholder={
-          selectedField ? resolveFieldLabel(selectedField) : placeholder
+          (selectedField && resolveFieldLabel(selectedField)) || placeholder
         }
         showClear={!!selectedField}
         className={className}

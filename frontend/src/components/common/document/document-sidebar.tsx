@@ -451,10 +451,10 @@ export function DocumentSidebar({
         const childIndex = targetNode?.children?.length ?? 0;
         next = insertNodeAt(updated, overId, childIndex, removed);
       } else {
-        const targetList =
-          overParentId === null
-            ? updated
-            : (findNodeByIdLocal(updated, overParentId)?.children ?? []);
+        let targetList = updated;
+        if (overParentId !== null) {
+          targetList = findNodeByIdLocal(updated, overParentId)?.children ?? [];
+        }
         const insertIndex = targetList.findIndex((item) => item.id === overId);
         let nextIndex = targetList.length;
         if (insertIndex !== -1) {

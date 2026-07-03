@@ -33,11 +33,13 @@ export function TableRowDropdownCell({
     >
       {items.map((item, index) => {
         const style = getDropdownContrastStyle(item?.color);
+        let badgeClassName: string | undefined = 'text-muted-foreground';
+        if (style) badgeClassName = undefined;
         return (
           <Badge
             key={item?.id ?? index}
             variant="outline"
-            className={style ? undefined : 'text-muted-foreground'}
+            className={badgeClassName}
             style={style}
           >
             {item?.label}

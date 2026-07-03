@@ -102,7 +102,7 @@ function LevelSelect({
             value={field.slug}
           >
             {field.name}
-            {isNavigable(field) ? ' →' : ''}
+            {isNavigable(field) && ' →'}
           </SelectItem>
         ))}
       </SelectContent>
@@ -238,12 +238,13 @@ export function TableFieldRelationshipLabelComposer({
         <p className="text-muted-foreground text-xs font-medium">
           Template do label
         </p>
-        {parts.length === 0 ? (
+        {parts.length === 0 && (
           <p className="text-muted-foreground text-xs italic">
             Nenhum campo adicionado. O label usará o campo principal selecionado
             acima.
           </p>
-        ) : (
+        )}
+        {parts.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             {parts.map((part, index) => (
               <React.Fragment key={part.path}>
@@ -299,9 +300,9 @@ export function TableFieldRelationshipLabelComposer({
               disabled={disabled}
               className={cn(
                 'rounded border px-2 py-0.5 font-mono text-xs',
-                effectiveSeparator === option.value
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'hover:bg-muted',
+                effectiveSeparator === option.value &&
+                  'border-primary bg-primary/10 text-primary',
+                effectiveSeparator !== option.value && 'hover:bg-muted',
               )}
               onClick={() => onChange(parts, option.value)}
             >

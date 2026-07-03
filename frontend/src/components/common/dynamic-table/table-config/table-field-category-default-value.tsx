@@ -34,7 +34,8 @@ function flattenCategories(
   const result: Array<FlatCategory> = [];
 
   for (const node of nodes) {
-    const fullLabel = prefix ? `${prefix} > ${node.label}` : node.label;
+    let fullLabel = node.label;
+    if (prefix) fullLabel = `${prefix} > ${node.label}`;
     result.push({ id: node.id, label: fullLabel });
 
     if (node.children?.length) {

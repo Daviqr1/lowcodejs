@@ -18,10 +18,8 @@ export type BulkActionBarProps = {
 };
 
 export function BulkActionBar(props: BulkActionBarProps): React.JSX.Element {
-  const label =
-    props.selectedCount === 1
-      ? '1 item selecionado'
-      : props.selectedCount.toString().concat(' itens selecionados');
+  let label = props.selectedCount.toString().concat(' itens selecionados');
+  if (props.selectedCount === 1) label = '1 item selecionado';
 
   return (
     <div

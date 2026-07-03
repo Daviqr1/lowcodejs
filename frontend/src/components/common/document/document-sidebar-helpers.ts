@@ -83,7 +83,8 @@ export function insertNodeAt(
   }
   return nodes.map((n) => {
     if (n.id === parentId) {
-      const children = n.children ? [...n.children] : [];
+      let children: NonNullable<typeof n.children> = [];
+      if (n.children) children = [...n.children];
       children.splice(index, 0, node);
       return { ...n, children };
     }

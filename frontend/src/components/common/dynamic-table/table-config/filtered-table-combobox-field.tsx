@@ -52,12 +52,14 @@ export function FilteredTableComboboxField({
    * recebe opções prontas (sem "Carregar mais"), disparamos todas as
    * páginas automaticamente abaixo.
    */
+  let paginatedParams: { _ids?: Array<string>; perPage: number } = {
+    perPage: 50,
+  };
+  if (normalizedAllowedIds.length > 0) {
+    paginatedParams = { _ids: normalizedAllowedIds, perPage: 50 };
+  }
   const { data, status, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useTablesReadPaginatedInfinite(
-      normalizedAllowedIds.length > 0
-        ? { _ids: normalizedAllowedIds, perPage: 50 }
-        : { perPage: 50 },
-    );
+    useTablesReadPaginatedInfinite(paginatedParams);
 
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage) {

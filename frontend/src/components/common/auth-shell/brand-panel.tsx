@@ -44,9 +44,8 @@ export function BrandPanel({ className }: BrandPanelProps): React.JSX.Element {
   // inteiro. `object-cover` garante que qualquer proporção/tamanho preenche o
   // espaço sem distorcer nem quebrar o layout.
   if (loginBackgroundUrl) {
-    const src = /^https?:\/\//.test(loginBackgroundUrl)
-      ? loginBackgroundUrl
-      : `${baseUrl}${loginBackgroundUrl}`;
+    let src = `${baseUrl}${loginBackgroundUrl}`;
+    if (/^https?:\/\//.test(loginBackgroundUrl)) src = loginBackgroundUrl;
 
     return (
       <aside

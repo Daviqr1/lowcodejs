@@ -54,8 +54,8 @@ export function ChatMessage({ message }: ChatMessageProps): React.JSX.Element {
       >
         {message.file && (
           <div className="mb-1 text-xs opacity-70">
-            {message.file.type === 'image' ? 'Imagem' : 'PDF'}:{' '}
-            {message.file.filename}
+            {message.file.type === 'image' && 'Imagem'}
+            {message.file.type !== 'image' && 'PDF'}: {message.file.filename}
           </div>
         )}
         <div

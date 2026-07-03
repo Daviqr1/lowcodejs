@@ -40,9 +40,8 @@ export function TableRowUserField({
   disabled,
 }: TableRowUserFieldProps): React.JSX.Element {
   const formField = useFieldContext<Array<UserOption>>();
-  const fieldValue = Array.isArray(formField.state.value)
-    ? formField.state.value
-    : [];
+  let fieldValue: Array<UserOption> = [];
+  if (Array.isArray(formField.state.value)) fieldValue = formField.state.value;
   const isInvalid =
     formField.state.meta.isTouched && !formField.state.meta.isValid;
   const errorId = `${formField.name}-error`;

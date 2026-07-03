@@ -57,8 +57,8 @@ export function ValidationMultiSelect({
       <ComboboxChips ref={anchorRef}>
         <ComboboxValue>
           {(selectedValue: Array<ValidationOption>): React.ReactNode => {
-            const chipsPlaceholder =
-              selectedValue.length > 0 ? '' : placeholder;
+            let chipsPlaceholder = placeholder;
+            if (selectedValue.length > 0) chipsPlaceholder = '';
             return (
               <React.Fragment>
                 {selectedValue.map((opt) => (

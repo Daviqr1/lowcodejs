@@ -472,11 +472,16 @@ function CascadeRelationshipField({
     return [...childRows, selectedChild];
   }, [childRows, selectedChild]);
 
+  let childLabel = '';
+  if (selectedChild) childLabel = getRowLabel(selectedChild);
   const selectedSingleLabel =
-    (formField.state.value ?? [])[0]?.label ??
-    (selectedChild ? getRowLabel(selectedChild) : '');
+    (formField.state.value ?? [])[0]?.label ?? childLabel;
 
   const selectedParentLabel = parentValue || config.parentFieldSlug;
+  let emptyRelationshipPlaceholder = `Selecione ${selectedParentLabel} primeiro`;
+  if (parentValue) {
+    emptyRelationshipPlaceholder = `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`;
+  }
 
   const canCreateRelatedRecord =
     Boolean(field.allowCreateRelationshipRecords) &&
@@ -580,12 +585,7 @@ function CascadeRelationshipField({
             disabled={disabled || !parentValue}
           >
             <ComboboxInput
-              placeholder={
-                selectedSingleLabel ||
-                (parentValue
-                  ? `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`
-                  : `Selecione ${selectedParentLabel} primeiro`)
-              }
+              placeholder={selectedSingleLabel || emptyRelationshipPlaceholder}
               showClear={(formField.state.value ?? []).length > 0}
               className={cn(
                 selectedSingleLabel &&

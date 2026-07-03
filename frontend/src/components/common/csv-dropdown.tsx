@@ -77,11 +77,10 @@ export function CsvDropdown({
             onClick={onExport}
             data-test-id={`${testId}-export`}
           >
-            {exportPending ? (
+            {exportPending && (
               <LoaderCircleIcon className="size-4 animate-spin" />
-            ) : (
-              <DownloadIcon className="size-4" />
             )}
+            {!exportPending && <DownloadIcon className="size-4" />}
             <span>Exportar</span>
           </DropdownMenuItem>
         )}

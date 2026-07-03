@@ -94,7 +94,7 @@ export function DocumentMain({
               id={`sec-${selectedCategoryId}`}
               level={2}
               actions={
-                permission.can('CREATE_ROW') ? (
+                permission.can('CREATE_ROW') && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -110,7 +110,7 @@ export function DocumentMain({
                   >
                     <PlusIcon className="size-4" />
                   </Button>
-                ) : undefined
+                )
               }
             >
               {filterLabel}

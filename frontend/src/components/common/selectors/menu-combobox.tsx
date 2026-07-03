@@ -61,7 +61,8 @@ function sortMenusByHierarchy(menus: Array<IMenu>): Array<IMenu> {
 
   for (const menu of menus) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);

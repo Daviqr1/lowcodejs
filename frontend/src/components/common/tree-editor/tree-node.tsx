@@ -367,10 +367,10 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
       return;
     }
 
-    const targetList =
-      overParentId === null
-        ? updated
-        : (findNodeByIdLocal(updated, overParentId)?.children ?? []);
+    let targetList = updated;
+    if (overParentId !== null) {
+      targetList = findNodeByIdLocal(updated, overParentId)?.children ?? [];
+    }
     const insertIndex = targetList.findIndex((item) => item.id === overId);
     let nextIndex = targetList.length;
     if (insertIndex !== -1) {

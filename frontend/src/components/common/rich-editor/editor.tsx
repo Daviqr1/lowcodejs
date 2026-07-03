@@ -110,9 +110,8 @@ function EditorModeTabs({
           className={cn(
             'px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors',
             'hover:text-foreground',
-            m === mode
-              ? 'text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground',
+            m === mode && 'text-foreground border-b-2 border-primary',
+            m !== mode && 'text-muted-foreground',
           )}
         >
           {MODE_LABELS[m]}
