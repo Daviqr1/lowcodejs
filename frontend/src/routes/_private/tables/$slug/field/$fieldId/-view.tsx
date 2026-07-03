@@ -162,8 +162,9 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
       <div className="space-y-2">
         <p className="text-sm font-medium">Configurações</p>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={data.required ? 'default' : 'secondary'}>
-            {data.required ? 'Obrigatório' : 'Opcional'}
+          <Badge variant={(data.required && 'default') || 'secondary'}>
+            {data.required && 'Obrigatório'}
+            {!data.required && 'Opcional'}
           </Badge>
           {data.multiple && <Badge variant="outline">Múltiplos valores</Badge>}
           {isFieldShownInContext(data, 'list') && (
@@ -189,11 +190,14 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
             <div className="flex flex-wrap gap-1">
               {data.dropdown.map((opt) => {
                 const colorStyle = getDropdownContrastStyle(opt.color);
+                let badgeClassName: string | undefined =
+                  'text-muted-foreground';
+                if (colorStyle) badgeClassName = undefined;
                 return (
                   <Badge
                     key={opt.id}
                     variant="outline"
-                    className={colorStyle ? undefined : 'text-muted-foreground'}
+                    className={badgeClassName}
                     style={colorStyle}
                   >
                     {opt.label}
@@ -215,8 +219,8 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
             Campo: {data.relationship.field.slug}
           </p>
           <p className="text-sm text-muted-foreground">
-            Ordem:{' '}
-            {data.relationship.order === 'asc' ? 'Crescente' : 'Decrescente'}
+            Ordem: {data.relationship.order === 'asc' && 'Crescente'}
+            {data.relationship.order !== 'asc' && 'Decrescente'}
           </p>
           {data.relationship.customLabel &&
             (data.relationship.labelParts?.length ?? 0) > 0 && (

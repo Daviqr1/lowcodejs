@@ -10,13 +10,15 @@ export const Route = createFileRoute('/sitemap.xml')({
         const publicRoutes = ['/', '/sign-up'];
 
         const urls = publicRoutes
-          .map(
-            (route) => `
+          .map((route) => {
+            let path = route;
+            if (route === '/') path = '';
+            return `
   <url>
-    <loc>${appUrl}${route === '/' ? '' : route}</loc>
+    <loc>${appUrl}${path}</loc>
     <changefreq>monthly</changefreq>
-  </url>`,
-          )
+  </url>`;
+          })
           .join('');
 
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

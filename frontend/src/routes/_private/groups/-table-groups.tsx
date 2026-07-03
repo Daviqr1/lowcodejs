@@ -415,10 +415,10 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 grupo enviado para lixeira!'
-          : result.modified.toString().concat(' grupos enviados para lixeira!');
+      let message = result.modified
+        .toString()
+        .concat(' grupos enviados para lixeira!');
+      if (result.modified === 1) message = '1 grupo enviado para lixeira!';
       toast.success(message, {
         description: 'Os grupos foram movidos para a lixeira',
       });
@@ -432,10 +432,8 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 grupo restaurado!'
-          : result.modified.toString().concat(' grupos restaurados!');
+      let message = result.modified.toString().concat(' grupos restaurados!');
+      if (result.modified === 1) message = '1 grupo restaurado!';
       toast.success(message, {
         description: 'Os grupos foram restaurados da lixeira',
       });
@@ -449,12 +447,10 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
     onSuccess(result) {
       setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 grupo excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' grupos excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' grupos excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 grupo excluído permanentemente!';
       toast.success(message, {
         description: 'Os grupos foram excluídos permanentemente',
       });

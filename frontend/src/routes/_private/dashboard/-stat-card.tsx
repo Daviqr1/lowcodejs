@@ -15,6 +15,9 @@ export function StatCard({
   icon: Icon,
   description,
 }: StatCardProps): React.JSX.Element {
+  let displayValue: number | string = value;
+  if (typeof value === 'number') displayValue = value.toLocaleString('pt-BR');
+
   return (
     <Card
       data-test-id={`stat-card-${title}`}
@@ -29,9 +32,7 @@ export function StatCard({
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-2xl font-bold">
-          {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
-        </div>
+        <div className="text-2xl font-bold">{displayValue}</div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}

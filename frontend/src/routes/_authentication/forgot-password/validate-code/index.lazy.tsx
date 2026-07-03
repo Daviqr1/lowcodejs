@@ -178,7 +178,8 @@ function RouteComponent(): React.JSX.Element {
               disabled={isResending}
               onClick={handleResend}
             >
-              {isResending ? 'Reenviando...' : 'Reenviar'}
+              {isResending && 'Reenviando...'}
+              {!isResending && 'Reenviar'}
             </button>
           </FieldDescription>
 

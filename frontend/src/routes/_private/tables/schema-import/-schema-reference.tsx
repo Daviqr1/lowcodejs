@@ -127,11 +127,8 @@ export function SchemaReference(): React.JSX.Element {
               }
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-accent/40"
             >
-              {isOpen ? (
-                <ChevronDownIcon className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              )}
+              {isOpen && <ChevronDownIcon className="h-3.5 w-3.5" />}
+              {!isOpen && <ChevronRightIcon className="h-3.5 w-3.5" />}
               {section.title}
             </button>
 

@@ -32,14 +32,13 @@ export function RowEmptyTrashDialog({
         queryKey: queryKeys.rows.lists(slug),
       });
 
-      toast.success('Lixeira esvaziada!', {
-        description:
-          result.deleted === 1
-            ? '1 registro excluído permanentemente'
-            : result.deleted
-                .toString()
-                .concat(' registros excluídos permanentemente'),
-      });
+      let description = result.deleted
+        .toString()
+        .concat(' registros excluídos permanentemente');
+      if (result.deleted === 1) {
+        description = '1 registro excluído permanentemente';
+      }
+      toast.success('Lixeira esvaziada!', { description });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao esvaziar lixeira' });

@@ -40,9 +40,9 @@ function RouteComponent(): React.JSX.Element {
   const { data } = useSuspenseQuery(groupDetailOptions(groupId));
 
   const search = useSearch({ from: '/_private/groups/$groupId/' });
-  const [mode, setMode] = React.useState<'show' | 'edit'>(
-    search.mode === 'edit' ? 'edit' : 'show',
-  );
+  let initialMode: 'show' | 'edit' = 'show';
+  if (search.mode === 'edit') initialMode = 'edit';
+  const [mode, setMode] = React.useState<'show' | 'edit'>(initialMode);
 
   const goBack = (): void => {
     sidebar.setOpen(true);

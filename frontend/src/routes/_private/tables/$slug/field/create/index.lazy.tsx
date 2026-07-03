@@ -49,7 +49,8 @@ function normalizeDefaultValue(
 
   if (arrayTypes.includes(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (defaultValue) return [defaultValue];
     return null;
@@ -57,22 +58,24 @@ function normalizeDefaultValue(
 
   // TEXT_SHORT, TEXT_LONG, DATE → string
   if (Array.isArray(defaultValue)) {
-    return defaultValue.length > 0 ? defaultValue[0] : null;
+    if (defaultValue.length > 0) return defaultValue[0];
+    return null;
   }
   return defaultValue || null;
 }
 
 function normalizeTip(tip: string): string | null {
   const normalized = tip.trim();
-  return normalized.length > 0 ? normalized : null;
+  if (normalized.length > 0) return normalized;
+  return null;
 }
 
 function convertTreeNodeToCategory(nodes: Array<TreeNode>): Array<ICategory> {
-  return nodes.map((node) => ({
-    id: node.id,
-    label: node.label,
-    children: node.children ? convertTreeNodeToCategory(node.children) : [],
-  }));
+  return nodes.map((node) => {
+    let children: Array<ICategory> = [];
+    if (node.children) children = convertTreeNodeToCategory(node.children);
+    return { id: node.id, label: node.label, children };
+  });
 }
 
 function RouteComponent(): React.JSX.Element {
@@ -217,6 +220,9 @@ function RouteComponent(): React.JSX.Element {
         };
       }
 
+      let category: Array<ICategory> = [];
+      if (hasCategory) category = convertTreeNodeToCategory(value.category);
+
       const payload: Partial<IField> = {
         name: value.name,
         slug: value.slug,
@@ -236,7 +242,7 @@ function RouteComponent(): React.JSX.Element {
         allowCustomDropdownOptions,
         allowCreateRelationshipRecords,
         relationship,
-        category: hasCategory ? convertTreeNodeToCategory(value.category) : [],
+        category,
         htmlContent,
       };
 

@@ -484,9 +484,9 @@ export const UpdateFieldFormFields = withForm({
               disabled={isDisabled || isLocked || isGroupField}
               icon={<FileTextIcon />}
               description={
-                isGroupField
-                  ? 'Slug técnico do campo de grupo. Alteração bloqueada para proteger dados existentes.'
-                  : 'Identificador técnico usado em consultas e integrações'
+                (isGroupField &&
+                  'Slug técnico do campo de grupo. Alteração bloqueada para proteger dados existentes.') ||
+                'Identificador técnico usado em consultas e integrações'
               }
               onChangeTransform={normalizeFieldSlug}
               required

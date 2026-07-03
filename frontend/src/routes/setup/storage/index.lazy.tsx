@@ -96,13 +96,15 @@ function SetupStoragePage(): React.JSX.Element {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                {isS3 ? 'Ativo' : 'Inativo'}
+                {isS3 && 'Ativo'}
+                {!isS3 && 'Inativo'}
               </span>
               <Switch
                 checked={isS3}
-                onCheckedChange={(checked) =>
-                  setDriver(checked ? 's3' : 'local')
-                }
+                onCheckedChange={(checked) => {
+                  if (checked) setDriver('s3');
+                  else setDriver('local');
+                }}
               />
             </div>
           </Field>
@@ -160,7 +162,7 @@ function SetupStoragePage(): React.JSX.Element {
                 <InputGroup>
                   <InputGroupInput
                     id="STORAGE_ACCESS_KEY"
-                    type={showAccessKey ? 'text' : 'password'}
+                    type={(showAccessKey && 'text') || 'password'}
                     value={accessKey}
                     onChange={(e) => setAccessKey(e.target.value)}
                     placeholder="AKIAIOSFODNN7EXAMPLE"
@@ -170,16 +172,12 @@ function SetupStoragePage(): React.JSX.Element {
                     type="button"
                     onClick={() => setShowAccessKey(!showAccessKey)}
                     aria-label={
-                      showAccessKey
-                        ? 'Ocultar access key'
-                        : 'Mostrar access key'
+                      (showAccessKey && 'Ocultar access key') ||
+                      'Mostrar access key'
                     }
                   >
-                    {showAccessKey ? (
-                      <EyeClosedIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
+                    {showAccessKey && <EyeClosedIcon className="size-4" />}
+                    {!showAccessKey && <EyeIcon className="size-4" />}
                   </InputGroupButton>
                 </InputGroup>
               </Field>
@@ -189,7 +187,7 @@ function SetupStoragePage(): React.JSX.Element {
                 <InputGroup>
                   <InputGroupInput
                     id="STORAGE_SECRET_KEY"
-                    type={showSecretKey ? 'text' : 'password'}
+                    type={(showSecretKey && 'text') || 'password'}
                     value={secretKey}
                     onChange={(e) => setSecretKey(e.target.value)}
                     placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -199,16 +197,12 @@ function SetupStoragePage(): React.JSX.Element {
                     type="button"
                     onClick={() => setShowSecretKey(!showSecretKey)}
                     aria-label={
-                      showSecretKey
-                        ? 'Ocultar secret key'
-                        : 'Mostrar secret key'
+                      (showSecretKey && 'Ocultar secret key') ||
+                      'Mostrar secret key'
                     }
                   >
-                    {showSecretKey ? (
-                      <EyeClosedIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
+                    {showSecretKey && <EyeClosedIcon className="size-4" />}
+                    {!showSecretKey && <EyeIcon className="size-4" />}
                   </InputGroupButton>
                 </InputGroup>
               </Field>

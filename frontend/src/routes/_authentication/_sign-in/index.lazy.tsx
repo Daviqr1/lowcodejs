@@ -166,7 +166,7 @@ function RouteComponent(): React.JSX.Element {
                           data-test-id="sign-in-password-input"
                           id={field.name}
                           name={field.name}
-                          type={showPassword ? 'text' : 'password'}
+                          type={(showPassword && 'text') || 'password'}
                           placeholder="••••••••"
                           value={field.state.value}
                           onBlur={field.handleBlur}

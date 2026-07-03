@@ -206,7 +206,7 @@ function RouteComponent(): React.JSX.Element {
                           data-test-id="sign-up-password-input"
                           id={field.name}
                           name={field.name}
-                          type={showPassword ? 'text' : 'password'}
+                          type={(showPassword && 'text') || 'password'}
                           placeholder="••••••••"
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -252,7 +252,7 @@ function RouteComponent(): React.JSX.Element {
                           data-test-id="sign-up-confirm-password-input"
                           id={field.name}
                           name={field.name}
-                          type={showConfirmPassword ? 'text' : 'password'}
+                          type={(showConfirmPassword && 'text') || 'password'}
                           placeholder="••••••••"
                           value={field.state.value}
                           onBlur={field.handleBlur}

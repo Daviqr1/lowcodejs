@@ -77,12 +77,10 @@ function RouteComponent(): React.JSX.Element {
   const emptyTrash = useUserEmptyTrash({
     onSuccess(result) {
       setEmptyTrashOpen(false);
-      const message =
-        result.deleted === 1
-          ? '1 usuário excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' usuários excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' usuários excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 usuário excluído permanentemente!';
       toast.success(message, {
         description: 'A lixeira de usuários foi esvaziada',
       });

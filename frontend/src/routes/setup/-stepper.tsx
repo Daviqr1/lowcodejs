@@ -47,11 +47,10 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
                     'border-2 border-muted-foreground/20 bg-transparent text-muted-foreground/50',
                 )}
               >
-                {state === 'completed' ? (
+                {state === 'completed' && (
                   <CheckIcon className="size-4 stroke-[3]" />
-                ) : (
-                  index + 1
                 )}
+                {state !== 'completed' && index + 1}
               </div>
               <span
                 className={cn(
@@ -70,9 +69,8 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
                 <div
                   className={cn(
                     'h-px w-full transition-colors duration-500',
-                    index < currentIndex
-                      ? 'bg-brand-blue-dark/40'
-                      : 'bg-border',
+                    index < currentIndex && 'bg-brand-blue-dark/40',
+                    index >= currentIndex && 'bg-border',
                   )}
                 />
               </div>

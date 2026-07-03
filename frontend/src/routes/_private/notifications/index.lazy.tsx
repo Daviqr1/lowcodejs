@@ -111,12 +111,13 @@ function NotificationsPage(): React.JSX.Element {
                     !notification.read && 'bg-accent/30 border-primary/30',
                   )}
                 >
-                  {!notification.read ? (
+                  {!notification.read && (
                     <span
                       aria-label="Não lida"
                       className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0"
                     />
-                  ) : (
+                  )}
+                  {notification.read && (
                     <Check
                       aria-label="Lida"
                       className="mt-1 h-4 w-4 text-muted-foreground shrink-0"
@@ -130,9 +131,9 @@ function NotificationsPage(): React.JSX.Element {
                     <p
                       className={cn(
                         'text-sm',
-                        notification.read
-                          ? 'font-normal text-muted-foreground'
-                          : 'font-medium',
+                        notification.read &&
+                          'font-normal text-muted-foreground',
+                        !notification.read && 'font-medium',
                       )}
                     >
                       {notification.title}

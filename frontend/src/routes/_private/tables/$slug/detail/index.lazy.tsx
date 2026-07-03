@@ -144,9 +144,10 @@ function TableUpdateContent({
       members: data.members ?? [],
       owner: data.owner?._id ?? '',
       order:
-        data.order?.field && data.order?.direction
-          ? `${data.order.field}:${data.order.direction}`
-          : 'none',
+        (data.order?.field &&
+          data.order?.direction &&
+          `${data.order.field}:${data.order.direction}`) ||
+        'none',
       layoutFields: {
         title: data.layoutFields?.title ?? '',
         description: data.layoutFields?.description ?? '',

@@ -33,8 +33,8 @@ export const Route = createFileRoute('/_private/tables/')({
         to: '/tables',
         search: (prev) => ({
           ...prev,
-          ...(customPerPage !== undefined ? { perPage: customPerPage } : {}),
-          ...(!hasExplicitSort ? { 'order-created-at': 'desc' } : {}),
+          ...(customPerPage !== undefined && { perPage: customPerPage }),
+          ...(!hasExplicitSort && { 'order-created-at': 'desc' }),
         }),
         replace: true,
       });

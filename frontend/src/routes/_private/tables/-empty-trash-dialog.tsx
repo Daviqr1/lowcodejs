@@ -27,14 +27,12 @@ export function TableEmptyTrashDialog(): React.JSX.Element {
         queryKey: queryKeys.tables.lists(),
       });
 
-      toast.success('Lixeira esvaziada!', {
-        description:
-          result.deleted === 1
-            ? '1 tabela excluída permanentemente'
-            : result.deleted
-                .toString()
-                .concat(' tabelas excluídas permanentemente'),
-      });
+      let description = result.deleted
+        .toString()
+        .concat(' tabelas excluídas permanentemente');
+      if (result.deleted === 1)
+        description = '1 tabela excluída permanentemente';
+      toast.success('Lixeira esvaziada!', { description });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao esvaziar lixeira' });

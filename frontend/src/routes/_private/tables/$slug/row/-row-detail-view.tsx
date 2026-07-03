@@ -223,8 +223,10 @@ export function RowDetailView({
     return [...filtered].sort((a, b): number => {
       const idxA = order.indexOf(a._id);
       const idxB = order.indexOf(b._id);
-      const sortA = idxA === -1 ? Infinity : idxA;
-      const sortB = idxB === -1 ? Infinity : idxB;
+      let sortA = idxA;
+      if (idxA === -1) sortA = Infinity;
+      let sortB = idxB;
+      if (idxB === -1) sortB = Infinity;
       return sortA - sortB;
     });
   }, [

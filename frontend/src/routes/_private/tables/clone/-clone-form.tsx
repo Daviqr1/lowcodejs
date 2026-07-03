@@ -48,9 +48,10 @@ export const CloneTableFormFields = withForm({
   render: function Render({ form, isPending }) {
     const { data: settings, isLoading: isLoadingSettings } = useSettingRead();
 
-    const allowedTables = Array.isArray(settings?.MODEL_CLONE_TABLES)
-      ? settings.MODEL_CLONE_TABLES
-      : [];
+    let allowedTables: NonNullable<typeof settings>['MODEL_CLONE_TABLES'] = [];
+    if (Array.isArray(settings?.MODEL_CLONE_TABLES)) {
+      allowedTables = settings.MODEL_CLONE_TABLES;
+    }
 
     if (isLoadingSettings) {
       return (

@@ -181,20 +181,22 @@ function RouteComponent(): React.JSX.Element {
     tableStyle === E_TABLE_STYLE.CALENDAR ||
     tableStyle === E_TABLE_STYLE.GANTT;
   const rowsSearch = React.useMemo(() => {
-    const base = shouldDisablePagination
-      ? {
-          ...search,
-          page: 1,
-          // Kanban agrupa TODOS os registros em colunas, então busca tudo
-          // (perPage: -1 → backend sem limite). Um teto fixo (100) truncava
-          // colunas quando a tabela tinha muitos registros. As demais views
-          // sem paginação mantêm o teto de 100.
-          perPage: isKanban ? -1 : 100,
-        }
-      : search;
+    let page = search.page;
+    let perPage = search.perPage;
+    if (shouldDisablePagination) {
+      // Kanban agrupa TODOS os registros em colunas, então busca tudo
+      // (perPage: -1 → backend sem limite). Um teto fixo (100) truncava
+      // colunas quando a tabela tinha muitos registros. As demais views
+      // sem paginação mantêm o teto de 100.
+      page = 1;
+      perPage = 100;
+      if (isKanban) perPage = -1;
+    }
 
     return {
-      ...base,
+      ...search,
+      page,
+      perPage,
       // Force refetch when switching view styles (forum requires populated data).
       viewStyle: tableStyle ?? E_TABLE_STYLE.LIST,
     };
@@ -246,7 +248,11 @@ function RouteComponent(): React.JSX.Element {
     return [...filtered].sort((a, b) => {
       const idxA = order.indexOf(a._id);
       const idxB = order.indexOf(b._id);
-      return (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB);
+      let rankA = idxA;
+      if (idxA === -1) rankA = Infinity;
+      let rankB = idxB;
+      if (idxB === -1) rankB = Infinity;
+      return rankA - rankB;
     });
   }, [table.data?.fields, table.data?.fieldOrderFilter]);
   const activeFiltersCount = getActiveFiltersCount(filterFields, search);
@@ -405,12 +411,15 @@ function RouteComponent(): React.JSX.Element {
                   error.response?.status === 403 ||
                   error.response?.status === 401
                 ) {
-                  const message =
-                    cause === 'TABLE_PRIVATE'
-                      ? 'Esta tabela é privada'
-                      : cause === 'FORM_VIEW_RESTRICTED'
-                        ? 'Apenas o dono pode visualizar tabelas de formulário'
-                        : 'Você não tem permissão para acessar esta tabela';
+                  let message =
+                    'Você não tem permissão para acessar esta tabela';
+                  if (cause === 'TABLE_PRIVATE') {
+                    message = 'Esta tabela é privada';
+                  }
+                  if (cause === 'FORM_VIEW_RESTRICTED') {
+                    message =
+                      'Apenas o dono pode visualizar tabelas de formulário';
+                  }
 
                   return (
                     <Empty className="from-muted/50 to-background h-full bg-linear-to-b from-30%">
@@ -454,15 +463,14 @@ function RouteComponent(): React.JSX.Element {
                 };
                 return (
                   <React.Suspense fallback={<SkeletonComponent />}>
-                    {entry.extraProps ? (
+                    {entry.extraProps && (
                       <ViewComponent
                         {...baseProps}
                         tableSlug={slug}
                         table={table.data}
                       />
-                    ) : (
-                      <ViewComponent {...baseProps} />
                     )}
+                    {!entry.extraProps && <ViewComponent {...baseProps} />}
                   </React.Suspense>
                 );
               })()}

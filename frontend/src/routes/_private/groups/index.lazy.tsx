@@ -68,12 +68,10 @@ function RouteComponent(): React.JSX.Element {
   const emptyTrash = useGroupEmptyTrash({
     onSuccess(result) {
       setEmptyTrashOpen(false);
-      const message =
-        result.deleted === 1
-          ? '1 grupo excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' grupos excluídos permanentemente!');
+      let message = result.deleted
+        .toString()
+        .concat(' grupos excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 grupo excluído permanentemente!';
       toast.success(message, {
         description: 'A lixeira de grupos foi esvaziada',
       });

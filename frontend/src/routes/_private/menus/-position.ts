@@ -14,7 +14,8 @@ export function parseMenuPosition(
 
   if (/^\d+$/.test(value)) {
     const childPosition = Number(value);
-    return childPosition > 0 ? childPosition - 1 : null;
+    if (childPosition > 0) return childPosition - 1;
+    return null;
   }
 
   if (!/^\d+(?:\.\d+)+$/.test(value)) return null;

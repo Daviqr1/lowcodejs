@@ -50,9 +50,11 @@ function SetupEmailPage(): React.JSX.Element {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
     e.preventDefault();
+    let emailPort: number | null = null;
+    if (port) emailPort = Number(port);
     mutation.mutate({
       EMAIL_PROVIDER_HOST: host || null,
-      EMAIL_PROVIDER_PORT: port ? Number(port) : null,
+      EMAIL_PROVIDER_PORT: emailPort,
       EMAIL_PROVIDER_USER: user || null,
       EMAIL_PROVIDER_PASSWORD: password || null,
       EMAIL_PROVIDER_FROM: from || null,
@@ -126,7 +128,7 @@ function SetupEmailPage(): React.JSX.Element {
             <InputGroup>
               <InputGroupInput
                 id="EMAIL_PROVIDER_PASSWORD"
-                type={showPassword ? 'text' : 'password'}
+                type={(showPassword && 'text') || 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -140,7 +142,8 @@ function SetupEmailPage(): React.JSX.Element {
                   className="cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeClosedIcon /> : <EyeIcon />}
+                  {showPassword && <EyeClosedIcon />}
+                  {!showPassword && <EyeIcon />}
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>

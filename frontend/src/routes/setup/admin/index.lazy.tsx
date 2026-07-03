@@ -202,7 +202,7 @@ function SetupAdminPage(): React.JSX.Element {
                       <InputGroupInput
                         id={field.name}
                         name={field.name}
-                        type={showPassword ? 'text' : 'password'}
+                        type={(showPassword && 'text') || 'password'}
                         placeholder="••••••••"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -221,7 +221,8 @@ function SetupAdminPage(): React.JSX.Element {
                           className="cursor-pointer"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {showPassword ? <EyeClosedIcon /> : <EyeIcon />}
+                          {showPassword && <EyeClosedIcon />}
+                          {!showPassword && <EyeIcon />}
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>
@@ -247,7 +248,7 @@ function SetupAdminPage(): React.JSX.Element {
                       <InputGroupInput
                         id={field.name}
                         name={field.name}
-                        type={showConfirmPassword ? 'text' : 'password'}
+                        type={(showConfirmPassword && 'text') || 'password'}
                         placeholder="••••••••"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -268,11 +269,8 @@ function SetupAdminPage(): React.JSX.Element {
                             setShowConfirmPassword(!showConfirmPassword)
                           }
                         >
-                          {showConfirmPassword ? (
-                            <EyeClosedIcon />
-                          ) : (
-                            <EyeIcon />
-                          )}
+                          {showConfirmPassword && <EyeClosedIcon />}
+                          {!showConfirmPassword && <EyeIcon />}
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>

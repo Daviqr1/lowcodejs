@@ -108,10 +108,14 @@ function RouteComponent(): React.JSX.Element {
       setResult(data);
       setValidationErrors(null);
       if (data.created.length > 0) {
+        let createdLabel = 'tabelas criadas';
+        if (data.created.length === 1) createdLabel = 'tabela criada';
+        let errorSuffix = '';
+        if (data.errors.length > 0) {
+          errorSuffix = ` (${data.errors.length} com erro)`;
+        }
         toast.success('Schema importado', {
-          description: `${data.created.length} ${
-            data.created.length === 1 ? 'tabela criada' : 'tabelas criadas'
-          }${data.errors.length > 0 ? ` (${data.errors.length} com erro)` : ''}`,
+          description: `${data.created.length} ${createdLabel}${errorSuffix}`,
         });
       }
     },
@@ -228,7 +232,8 @@ function RouteComponent(): React.JSX.Element {
               onClick={() => setReferenceOpen((v) => !v)}
             >
               <BookOpenIcon className="h-4 w-4" />
-              {referenceOpen ? 'Ocultar referência' : 'Ver referência'}
+              {referenceOpen && 'Ocultar referência'}
+              {!referenceOpen && 'Ver referência'}
             </Button>
             <input
               ref={fileInputRef}
@@ -243,7 +248,8 @@ function RouteComponent(): React.JSX.Element {
               disabled={!yamlContent.trim() || schemaImport.isPending}
             >
               <PlayIcon className="h-4 w-4" />
-              {schemaImport.isPending ? 'Importando…' : 'Importar Schema'}
+              {schemaImport.isPending && 'Importando…'}
+              {!schemaImport.isPending && 'Importar Schema'}
             </Button>
           </div>
 
@@ -358,7 +364,7 @@ function RouteComponent(): React.JSX.Element {
 
         <aside
           className={`flex-col gap-3 min-h-0 overflow-auto rounded-md border bg-background p-3 ${
-            referenceOpen ? 'flex' : 'hidden xl:flex'
+            (referenceOpen && 'flex') || 'hidden xl:flex'
           }`}
         >
           <SchemaReference />
