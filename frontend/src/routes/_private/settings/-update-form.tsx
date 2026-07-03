@@ -1269,6 +1269,7 @@ export const UpdateSettingFormFields = withForm({
                       value={field.state.value}
                       onValueChange={(value) => {
                         field.handleChange(value);
+                        // value vem do select de provider (string); reduz ao enum.
                         const models =
                           LLM_MODEL_OPTIONS[value as AiLlmProvider];
                         if (models?.[0]) {
@@ -1304,6 +1305,7 @@ export const UpdateSettingFormFields = withForm({
 
             <form.Subscribe selector={(state) => state.values.AI_LLM_PROVIDER}>
               {(providerRaw) => {
+                // providerRaw vem do estado do form (string); reduz ao enum.
                 const provider = (providerRaw ||
                   E_AI_LLM_PROVIDER.OPENAI) as AiLlmProvider;
                 const needsKey = providerRequiresApiKey(provider);
@@ -1550,6 +1552,7 @@ export const UpdateSettingFormFields = withForm({
 
             <form.Subscribe selector={(state) => state.values.AI_LLM_PROVIDER}>
               {(providerRaw) => {
+                // providerRaw vem do estado do form (string); reduz ao enum.
                 const provider = (providerRaw ||
                   E_AI_LLM_PROVIDER.OPENAI) as AiLlmProvider;
                 const modelOptions = LLM_MODEL_OPTIONS[provider] ?? [];

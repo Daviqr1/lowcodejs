@@ -78,7 +78,7 @@ function NotificationsPage(): React.JSX.Element {
           <Tabs
             value={tab}
             onValueChange={(value) => {
-              setTab(value as Tab);
+              if (value === 'all' || value === 'unread') setTab(value);
               setPage(1);
             }}
           >

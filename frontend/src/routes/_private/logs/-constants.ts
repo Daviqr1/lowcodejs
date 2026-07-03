@@ -45,5 +45,7 @@ export function parseCsvList<T extends string>(
   return raw
     .split(',')
     .map((token) => token.trim())
-    .filter((token): token is T => whitelist.includes(token as T));
+    .filter((token): token is T =>
+      whitelist.some((allowed) => allowed === token),
+    );
 }

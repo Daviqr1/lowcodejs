@@ -370,6 +370,8 @@ export function TableHistory({
     (entry: ILogger) => {
       const target = resolveLoggerNavigateTarget(entry);
       if (!target) return;
+      // target.to e uma rota dinamica resolvida em runtime; navigate nao tipa
+      // `to` nao-literal, por isso o cast para o tipo do proprio parametro.
       router.navigate({
         to: target.to,
         params: target.params,
