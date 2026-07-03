@@ -222,10 +222,12 @@ export function useCreateDrag({
     e: React.MouseEvent,
     groupOptionId: string,
   ): void => {
-    if ((e.target as HTMLElement).closest('[data-gantt-bar]')) return;
+    if (e.target instanceof HTMLElement && e.target.closest('[data-gantt-bar]'))
+      return;
     if (!fields.startDate || !fields.dueDate) return;
+    if (!(e.currentTarget instanceof HTMLElement)) return;
 
-    const rowEl = e.currentTarget as HTMLElement;
+    const rowEl = e.currentTarget;
     const rect = rowEl.getBoundingClientRect();
     const x = e.clientX - rect.left + (timelineRef.current?.scrollLeft ?? 0);
 

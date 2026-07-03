@@ -147,7 +147,7 @@ export function GanttToolbar({
         )}
 
         <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
-          {(['day', 'week', 'month'] as Array<ZoomLevel>).map((level) => (
+          {(['day', 'week', 'month'] as const).map((level) => (
             <Button
               key={level}
               type="button"
