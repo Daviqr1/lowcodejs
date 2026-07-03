@@ -100,13 +100,13 @@ export function DataTable<TData>({
     let currentOrder = table.getVisibleFlatColumns().map((c) => c.id);
     if (columnOrder.length) currentOrder = [...columnOrder];
 
-    const oldIndex = currentOrder.indexOf(active.id as string);
-    const newIndex = currentOrder.indexOf(over.id as string);
+    const oldIndex = currentOrder.indexOf(String(active.id));
+    const newIndex = currentOrder.indexOf(String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) return;
 
     currentOrder.splice(oldIndex, 1);
-    currentOrder.splice(newIndex, 0, active.id as string);
+    currentOrder.splice(newIndex, 0, String(active.id));
     table.setColumnOrder(currentOrder);
   }
 

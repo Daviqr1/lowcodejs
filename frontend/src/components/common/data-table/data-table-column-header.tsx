@@ -25,7 +25,7 @@ interface DataTableColumnHeaderProps {
   routeId: string;
   canNavigate?: boolean;
   onTitleClick?: () => void;
-  column?: Column<any, unknown>;
+  column?: Column<unknown, unknown>;
 }
 
 export function DataTableColumnHeader({
@@ -36,7 +36,10 @@ export function DataTableColumnHeader({
   onTitleClick,
   column,
 }: DataTableColumnHeaderProps): React.JSX.Element {
-  const search = useSearch({ from: routeId as any });
+  // routeId e um id de rota dinamico (string); useSearch nao aceita `from`
+  // nao-literal, por isso o retorno e tipado manualmente como record solto.
+  // @ts-expect-error from dinamico
+  const search: Record<string, unknown> = useSearch({ from: routeId });
   const router = useRouter();
 
   const isPinned = column?.getIsPinned();
@@ -48,10 +51,8 @@ export function DataTableColumnHeader({
 
   let currentOrder: 'asc' | 'desc' | undefined = undefined;
   if (orderKey) {
-    currentOrder = (search as Record<string, unknown>)[orderKey] as
-      | 'asc'
-      | 'desc'
-      | undefined;
+    const order = search[orderKey];
+    if (order === 'asc' || order === 'desc') currentOrder = order;
   }
 
   return (

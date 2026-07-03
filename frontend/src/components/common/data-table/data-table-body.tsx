@@ -91,6 +91,8 @@ function DataTableBodyInner<TData>({
   );
 }
 
+// React.memo apaga a assinatura generica do componente; o `as` restaura o
+// call signature de DataTableBodyInner<TData> (limitacao de tipagem do React).
 export const DataTableBody = React.memo(
   DataTableBodyInner,
 ) as typeof DataTableBodyInner;
