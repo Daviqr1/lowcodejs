@@ -151,14 +151,15 @@ async function cleanupBrokenDefinitions(
           { $unset: { [`_schema.${field.slug}`]: '' } },
         );
       } else if (tableWithGroup) {
+        // $pull com filtro posicional `$[g]`: chave dinâmica que o tipo
+        // PullOperator do driver não expressa. Tipar o update como Record
+        // evita asserção no literal.
+        const pullGroupField: Record<string, unknown> = {
+          $pull: { 'groups.$[g].fields': field._id },
+        };
         await tablesCol.updateOne(
           { _id: tableWithGroup._id },
-          {
-            $pull: { 'groups.$[g].fields': field._id } as Record<
-              string,
-              unknown
-            >,
-          },
+          pullGroupField,
           { arrayFilters: [{ 'g.fields': field._id }] },
         );
         await tablesCol.updateOne(

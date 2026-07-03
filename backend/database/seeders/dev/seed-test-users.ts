@@ -29,8 +29,10 @@ const EMAIL_DOMAIN = '@demo.com';
 
 function parseCount(): number {
   const arg = process.argv.find((a) => a.startsWith('--count='));
-  const value = arg ? Number(arg.split('=')[1]) : 25;
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 25;
+  let value = 25;
+  if (arg) value = Number(arg.split('=')[1]);
+  if (Number.isFinite(value) && value > 0) return Math.floor(value);
+  return 25;
 }
 
 async function main(): Promise<void> {
@@ -46,7 +48,7 @@ async function main(): Promise<void> {
     .find({}, { projection: { slug: 1 } })
     .toArray();
   const bySlug = new Map<string, mongoose.Types.ObjectId>(
-    groups.map((g) => [String(g.slug), g._id as mongoose.Types.ObjectId]),
+    groups.map((g) => [String(g.slug), g._id]),
   );
 
   // Distribuição de grupos (peso maior em REGISTERED), só os que existem.
@@ -76,12 +78,14 @@ async function main(): Promise<void> {
   const docs = Array.from({ length: count }, (_, i) => {
     const n = String(i + 1).padStart(2, '0');
     const slug = groupPool[i % groupPool.length];
+    // ~1/3 inativos para testar ativar/desativar em lote
+    let status = 'ACTIVE';
+    if (i % 3 === 0) status = 'INACTIVE';
     return {
       name: `Usuário Demo ${n}`,
       email: `demo${n}${EMAIL_DOMAIN}`,
       password: hash,
-      // ~1/3 inativos para testar ativar/desativar em lote
-      status: i % 3 === 0 ? 'INACTIVE' : 'ACTIVE',
+      status,
       group: bySlug.get(slug),
       trashed: false,
       trashedAt: null,
