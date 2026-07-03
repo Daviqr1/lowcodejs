@@ -5,10 +5,14 @@ Middlewares Fastify aplicados via decorator `onRequest` nos controllers.
 ## `authentication.middleware.ts`
 
 Extrai e valida JWT do request:
-1. Tenta extrair token de cookie `accessToken` ou header `Authorization: Bearer`
-2. Verifica tipo do token (deve ser ACCESS, nao REFRESH)
-3. Popula `request.user` com payload decodificado (`IJWTPayload`)
-4. Parametro `optional`: se true, permite request sem token (user = undefined)
+1. Extrai o token do cookie `accessToken` via `getRequestCookie` (header `cookie`
+   cru ou `request.cookies`). **Nao ha fallback de header `Authorization`**
+2. Decodifica via `request.server.jwt.decode` e verifica o tipo (deve ser ACCESS,
+   nao REFRESH)
+3. Popula `request.user` com `{ sub, email, role, type }` do payload (`IJWTPayload`)
+4. Parametro `optional`: se true, retorna sem erro quando o token esta ausente,
+   invalido ou nao e ACCESS (user = undefined); senao lanca 401
+   AUTHENTICATION_REQUIRED
 
 **Uso:**
 ```typescript
@@ -70,5 +74,23 @@ Verifica acesso a tabela. Faz parsing do request e delega ao
 onRequest: [
   AuthenticationMiddleware({ optional: true }),
   TableAccessMiddleware({ requiredPermission: E_TABLE_PERMISSION.VIEW_ROW })
+]
+```
+
+## `extension-active.middleware.ts`
+
+`ExtensionActiveMiddleware({ pkg, type, extensionId })` — blinda rotas
+registradas por extensoes. Resolve o `ExtensionContractRepository` via
+`getInstanceByToken`, busca a extensao por chave (`findByKey`) e lanca 404
+(cause `EXTENSION_NOT_ACTIVE`) se ausente, `enabled === false` ou
+`available === false`. Assim uma flag desligada em runtime derruba a rota mesmo
+que o controller ja esteja registrado. `type` ∈ `E_EXTENSION_TYPE`
+(PLUGIN/MODULE/TOOL).
+
+**Uso:**
+```typescript
+onRequest: [
+  AuthenticationMiddleware({ optional: false }),
+  ExtensionActiveMiddleware({ pkg: 'core', type: E_EXTENSION_TYPE.TOOL, extensionId: 'hello' })
 ]
 ```
