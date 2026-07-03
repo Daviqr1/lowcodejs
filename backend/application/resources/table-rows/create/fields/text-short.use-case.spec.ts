@@ -1,6 +1,3 @@
-// Specs constroem mocks parciais de entidades e operam sobre dados dinâmicos de
-// row (asserção + any); tipá-los por completo aqui seria só ruído de teste.
-/* eslint-disable @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any */
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -380,13 +377,13 @@ describe('Table Row Create - TEXT_SHORT', () => {
       });
       expect(stored).toBeDefined();
       const isHashed =
-        (stored!.senha as string).startsWith('$2a$') ||
-        (stored!.senha as string).startsWith('$2b$');
+        String(stored!.senha).startsWith('$2a$') ||
+        String(stored!.senha).startsWith('$2b$');
       expect(isHashed).toBe(true);
 
       const matches = await bcrypt.compare(
         'minha-senha-123',
-        stored!.senha as string,
+        String(stored!.senha),
       );
       expect(matches).toBe(true);
     });
@@ -446,7 +443,9 @@ describe('Table Row Create - TEXT_SHORT', () => {
 
     it('nao deve hashear mascara', async () => {
       const field = makePasswordField({ slug: 'senha' });
-      await makeTable(tableRepository, [field], { slug: 'usuarios' });
+      const table = await makeTable(tableRepository, [field], {
+        slug: 'usuarios',
+      });
 
       const result = await sut.execute({
         slug: 'usuarios',
@@ -458,7 +457,7 @@ describe('Table Row Create - TEXT_SHORT', () => {
       if (!result.isRight()) throw new Error('Expected right');
 
       const stored = await rowRepository.findOne({
-        table: { slug: 'usuarios' } as any,
+        table,
         query: { _id: result.value._id },
       });
 

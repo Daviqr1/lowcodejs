@@ -1,12 +1,11 @@
-// Specs constroem mocks parciais de entidades e operam sobre dados dinâmicos de
-// row (asserção + any); tipá-los por completo aqui seria só ruído de teste.
-/* eslint-disable @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import { makeDateField } from '@test/helpers/field-factory.helper';
+import { groupItems, lastItemId } from '@test/helpers/row-data.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
 import GroupRowUpdateUseCase from '../update.use-case';
@@ -18,24 +17,24 @@ let sut: GroupRowUpdateUseCase;
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function createRowWithGroupItem(
-  table: Record<string, unknown>,
+  table: ITable,
   groupSlug: string,
   itemData: Record<string, unknown>,
 ) {
   const row = await rowRepository.create({
-    table: table as any,
+    table,
     data: { [groupSlug]: [] },
   });
 
   const rowWithItem = await rowRepository.addGroupItem({
-    table: table as any,
+    table,
     rowId: row._id,
     groupFieldSlug: groupSlug,
     data: itemData,
   });
 
-  const items = rowWithItem[groupSlug] as Array<Record<string, unknown>>;
-  const itemId = items[items.length - 1]._id as string;
+  const items = groupItems(rowWithItem, groupSlug);
+  const itemId = lastItemId(items);
 
   return { row, rowWithItem, itemId };
 }

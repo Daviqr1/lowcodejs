@@ -1,5 +1,4 @@
 // Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -11,6 +10,7 @@ import {
   makePasswordField,
   makeTextShortWithFormat,
 } from '@test/helpers/field-factory.helper';
+import { groupItems } from '@test/helpers/row-data.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
 import GroupRowCreateUseCase from '../create.use-case';
@@ -559,15 +559,15 @@ describe('Group Row Create - TEXT_SHORT', () => {
         table,
         query: { _id: row._id },
       });
-      const storedItem = (storedRow!.itens as Record<string, unknown>[])[0];
+      const storedItem = groupItems(storedRow!, 'itens')[0];
       const isHashed =
-        (storedItem.senha as string).startsWith('$2a$') ||
-        (storedItem.senha as string).startsWith('$2b$');
+        String(storedItem.senha).startsWith('$2a$') ||
+        String(storedItem.senha).startsWith('$2b$');
       expect(isHashed).toBe(true);
 
       const matches = await bcrypt.compare(
         'minha-senha-123',
-        storedItem.senha as string,
+        String(storedItem.senha),
       );
       expect(matches).toBe(true);
     });
