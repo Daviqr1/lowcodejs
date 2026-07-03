@@ -38,13 +38,15 @@ const DocTranscriptionConfigSchema = new mongoose.Schema(
   { timestamps: true, id: false },
 );
 
-export const DocTranscriptionConfigModel = (mongoose?.models
-  ?.DocTranscriptionConfig ||
+export const DocTranscriptionConfigModel: mongoose.Model<
+  IDocTranscriptionConfig & mongoose.Document
+> =
+  mongoose?.models?.DocTranscriptionConfig ||
   mongoose.model<IDocTranscriptionConfig & mongoose.Document>(
     'DocTranscriptionConfig',
     DocTranscriptionConfigSchema,
     'doc_transcription_config',
-  )) as mongoose.Model<IDocTranscriptionConfig & mongoose.Document>;
+  );
 
 export async function getOrCreateConfig(): Promise<IDocTranscriptionConfig> {
   let doc = await DocTranscriptionConfigModel.findById(SINGLETON_ID);
@@ -55,7 +57,7 @@ export async function getOrCreateConfig(): Promise<IDocTranscriptionConfig> {
       documentTypes: [],
     });
   }
-  return doc.toJSON() as IDocTranscriptionConfig;
+  return doc.toJSON();
 }
 
 export async function saveConfig(
@@ -66,5 +68,5 @@ export async function saveConfig(
     { $set: data },
     { upsert: true, new: true },
   );
-  return doc!.toJSON() as IDocTranscriptionConfig;
+  return doc!.toJSON();
 }

@@ -32,6 +32,24 @@ const EXTENSION_GUARD = ExtensionActiveMiddleware({
   extensionId: 'doc-transcription',
 });
 
+// Lê o `.value` (string) de um campo do multipart sem asserção sobre `unknown`.
+function readMultipartFieldValue(
+  fields: unknown,
+  key: string,
+): string | undefined {
+  if (!fields || typeof fields !== 'object') return undefined;
+  const field = Object.fromEntries(Object.entries(fields))[key];
+  if (
+    field &&
+    typeof field === 'object' &&
+    'value' in field &&
+    typeof field.value === 'string'
+  ) {
+    return field.value;
+  }
+  return undefined;
+}
+
 @Controller({ route: '/tools' })
 export default class DocTranscriptionController {
   constructor(
@@ -131,8 +149,10 @@ export default class DocTranscriptionController {
       });
     }
 
-    const fields = data.fields as Record<string, { value: string }>;
-    const documentTypeId = fields?.documentTypeId?.value;
+    const documentTypeId = readMultipartFieldValue(
+      data.fields,
+      'documentTypeId',
+    );
 
     if (!documentTypeId) {
       return response.status(400).send({

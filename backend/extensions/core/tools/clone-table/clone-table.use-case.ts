@@ -177,13 +177,12 @@ export default class CloneTableUseCase {
         table: firstContext.table,
         tables: remappedContexts.map((context) => context.table),
         fieldIdMap: firstContext.fieldIdMap,
-        fieldIdMaps: remappedContexts.reduce(
-          (acc, context) => {
-            acc[context.baseTable._id] = context.fieldIdMap;
-            return acc;
-          },
-          {} as Record<string, Record<string, string>>,
-        ),
+        fieldIdMaps: remappedContexts.reduce<
+          Record<string, Record<string, string>>
+        >((acc, context) => {
+          acc[context.baseTable._id] = context.fieldIdMap;
+          return acc;
+        }, {}),
       });
     } catch (error) {
       if (error instanceof HTTPException) {
@@ -434,10 +433,22 @@ export default class CloneTableUseCase {
   ): ILayoutFields | undefined {
     if (!layoutFields) return undefined;
 
-    return Object.entries(layoutFields).reduce((acc, [key, value]) => {
-      acc[key as keyof ILayoutFields] = value ? (map[value] ?? null) : null;
-      return acc;
-    }, {} as ILayoutFields);
+    const remap = (value: string | null): string | null => {
+      if (!value) return null;
+      return map[value] ?? null;
+    };
+
+    return {
+      title: remap(layoutFields.title),
+      description: remap(layoutFields.description),
+      cover: remap(layoutFields.cover),
+      category: remap(layoutFields.category),
+      startDate: remap(layoutFields.startDate),
+      endDate: remap(layoutFields.endDate),
+      color: remap(layoutFields.color),
+      participants: remap(layoutFields.participants),
+      reminder: remap(layoutFields.reminder),
+    };
   }
 
   private async buildCloneName({
@@ -488,9 +499,9 @@ export default class CloneTableUseCase {
       contexts.map((context) => [context.baseTable._id, context.table]),
     );
 
-    const fieldIdMap = contexts.reduce(
+    const fieldIdMap = contexts.reduce<Record<string, string>>(
       (acc, context) => ({ ...acc, ...context.fieldIdMap }),
-      {} as Record<string, string>,
+      {},
     );
 
     const refreshedContexts: CloneContext[] = [];
@@ -557,7 +568,7 @@ export default class CloneTableUseCase {
       const refreshedGroups = context.groups.map((group) => {
         const fields = group.fields
           .map((field) => refreshedFieldsById.get(field._id) ?? field)
-          .filter(Boolean) as IField[];
+          .filter((field): field is IField => Boolean(field));
 
         return {
           ...group,
