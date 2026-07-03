@@ -208,9 +208,7 @@ export function FileUploadWithStorage({
     setStorageFiles((prevStorageFiles) => {
       const nextStorageFiles = new Map(prevStorageFiles);
       const uploadedFiles = value.filter(
-        (file) =>
-          'isUploaded' in file &&
-          (file as File & { isUploaded?: boolean }).isUploaded,
+        (file) => 'isUploaded' in file && Boolean(file.isUploaded),
       );
 
       initialStorages.forEach((storage, index) => {
