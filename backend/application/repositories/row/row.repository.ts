@@ -530,12 +530,19 @@ export default class RowMongooseRepository implements RowContractRepository {
     }
     const result = await doc.collection.insertOne(doc.toObject());
     // Modelo dinâmico: toObject() não expõe createdAt/updatedAt/trashedAt no
-    // tipo estático, embora existam em runtime (timestamps do schema).
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    return {
-      ...doc.toObject(),
+    // tipo estático. Materializamos os campos de Base explicitamente para montar
+    // um IRow válido sem asserção; o índice `Record<string, unknown>` de IRow
+    // cobre os demais campos dinâmicos.
+    const plain: Record<string, unknown> = doc.toObject();
+    const now = new Date();
+    const insertedRow: IRow = {
+      ...plain,
       _id: result.insertedId.toString(),
-    } as unknown as IRow;
+      createdAt: now,
+      updatedAt: now,
+      trashedAt: null,
+    };
+    return insertedRow;
   }
 
   // ── Resolver helpers (csv-import) ─────────────────────────
