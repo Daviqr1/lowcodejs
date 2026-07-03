@@ -233,13 +233,14 @@ export function TableCardView({
           <div className="flex gap-4">
             <div className="w-[200px] shrink-0">
               <div className="w-full overflow-hidden rounded-xl bg-muted aspect-[4/3]">
-                {thumbField ? (
+                {thumbField && (
                   <RenderCardCell
                     field={thumbField}
                     row={row}
                     tableSlug={slug}
                   />
-                ) : (
+                )}
+                {!thumbField && (
                   <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
                     sem imagem
                   </div>
@@ -259,18 +260,19 @@ export function TableCardView({
                     </Badge>
                   )}
                   <div className="text-base font-semibold truncate">
-                    {titleField ? (
+                    {titleField && (
                       <RenderCardCell
                         field={titleField}
                         row={row}
                         tableSlug={slug}
                       />
-                    ) : (
+                    )}
+                    {!titleField && (
                       <span className="text-muted-foreground">Sem título</span>
                     )}
                   </div>
 
-                  {descField ? (
+                  {descField && (
                     <div className="text-sm text-muted-foreground line-clamp-2">
                       <RenderCardCell
                         field={descField}
@@ -278,7 +280,7 @@ export function TableCardView({
                         tableSlug={slug}
                       />
                     </div>
-                  ) : null}
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   {canSelect && (

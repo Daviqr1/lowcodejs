@@ -102,7 +102,7 @@ export function BulkEditFieldDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {editableFields.length === 0 ? (
+        {editableFields.length === 0 && (
           <section className="py-4">
             <p className="text-sm text-muted-foreground">
               Nenhum campo desta tabela pode ser editado em massa.
@@ -113,7 +113,8 @@ export function BulkEditFieldDialog({
               </DialogClose>
             </DialogFooter>
           </section>
-        ) : (
+        )}
+        {editableFields.length > 0 && (
           <section className="space-y-4 py-2">
             <div className="space-y-1">
               <span className="text-sm font-medium">Campo</span>
@@ -140,7 +141,7 @@ export function BulkEditFieldDialog({
               </Select>
             </div>
 
-            {selectedField ? (
+            {selectedField && (
               <BulkEditValueForm
                 key={selectedField._id}
                 slug={slug}
@@ -151,7 +152,8 @@ export function BulkEditFieldDialog({
                   onSuccess();
                 }}
               />
-            ) : (
+            )}
+            {!selectedField && (
               <DialogFooter>
                 <DialogClose asChild>
                   <Button variant="outline">Cancelar</Button>

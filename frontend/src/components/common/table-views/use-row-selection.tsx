@@ -122,7 +122,9 @@ export function RowSelectAllCheckbox({
   const allSelected =
     ids.length > 0 && ids.every((id) => selection.isSelected(id));
   const someSelected = ids.some((id) => selection.isSelected(id));
-  const checked = allSelected ? true : someSelected ? 'indeterminate' : false;
+  let checked: boolean | 'indeterminate' = false;
+  if (someSelected) checked = 'indeterminate';
+  if (allSelected) checked = true;
 
   return (
     <Checkbox

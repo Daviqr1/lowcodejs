@@ -123,7 +123,8 @@ export function TableForumView({
     () => {
       if (typeof window === 'undefined') return 'bottom';
       const stored = window.localStorage.getItem('forum-composer-layout');
-      return stored === 'side' ? 'side' : 'bottom';
+      if (stored === 'side') return 'side';
+      return 'bottom';
     },
   );
 
@@ -327,7 +328,8 @@ export function TableForumView({
     (row: IRow): boolean => {
       if (channelPrivacyField) {
         const raw = row[channelPrivacyField.slug];
-        const value = Array.isArray(raw) ? raw[0] : raw;
+        let value = raw;
+        if (Array.isArray(raw)) value = raw[0];
         return (
           String(value ?? '')
             .trim()
@@ -653,7 +655,8 @@ export function TableForumView({
           (alert) => alert.messageId,
         );
         const mentionSet = new Set(mentionIds);
-        const prevIds = Array.isArray(prev[channelId]) ? prev[channelId] : [];
+        let prevIds: Array<string> = [];
+        if (Array.isArray(prev[channelId])) prevIds = prev[channelId];
         const seenIds = prevIds.filter((id) => mentionSet.has(id));
 
         if (seenIds.length > 0) next[channelId] = seenIds;
@@ -692,9 +695,10 @@ export function TableForumView({
           );
           setRowsState(
             (prev): Array<IRow> =>
-              prev.map((row) =>
-                row._id === updatedRow.data._id ? updatedRow.data : row,
-              ),
+              prev.map((row) => {
+                if (row._id === updatedRow.data._id) return updatedRow.data;
+                return row;
+              }),
           );
         } catch {
           // Keep local "seen" fallback even if server persist fails.
@@ -707,7 +711,10 @@ export function TableForumView({
   const updateRow = useUpdateTableRow({
     onSuccess(updatedRow) {
       setRowsState((prev) =>
-        prev.map((row) => (row._id === updatedRow._id ? updatedRow : row)),
+        prev.map((row) => {
+          if (row._id === updatedRow._id) return updatedRow;
+          return row;
+        }),
       );
     },
     onError() {
@@ -775,9 +782,9 @@ export function TableForumView({
         payload[channelDescriptionField.slug] = description;
       }
       if (channelPrivacyField) {
-        payload[channelPrivacyField.slug] = [
-          value.privacy === 'privado' ? 'privado' : 'publico',
-        ];
+        let privacyValue = 'publico';
+        if (value.privacy === 'privado') privacyValue = 'privado';
+        payload[channelPrivacyField.slug] = [privacyValue];
       }
       if (channelMembersField && value.privacy === 'privado') {
         payload[channelMembersField.slug] = members;
@@ -831,9 +838,9 @@ export function TableForumView({
         payload[channelDescriptionField.slug] = description || '';
       }
       if (channelPrivacyField) {
-        payload[channelPrivacyField.slug] = [
-          value.privacy === 'privado' ? 'privado' : 'publico',
-        ];
+        let privacyValue = 'publico';
+        if (value.privacy === 'privado') privacyValue = 'privado';
+        payload[channelPrivacyField.slug] = [privacyValue];
       }
       if (channelMembersField && value.privacy === 'privado') {
         payload[channelMembersField.slug] = members;
@@ -945,7 +952,10 @@ export function TableForumView({
         const row = response.data;
         if (!row || row._id !== rowId) return;
         setRowsState((prev) =>
-          prev.map((item) => (item._id === rowId ? row : item)),
+          prev.map((item) => {
+            if (item._id === rowId) return row;
+            return item;
+          }),
         );
       } finally {
         pollingRef.current.inFlight = false;
@@ -1055,8 +1065,8 @@ export function TableForumView({
     (messagesValue: Array<Record<string, unknown>>) => {
       if (!messagesField) return [];
       return messagesValue.map((message) => {
-        const messageRecord =
-          message && typeof message === 'object' ? message : {};
+        let messageRecord: Record<string, unknown> = {};
+        if (isRecord(message)) messageRecord = message;
         const payload: Record<string, unknown> = {};
         for (const field of resolvedGroupFields) {
           if (field.slug === messageIdField?.slug) {
@@ -1066,9 +1076,9 @@ export function TableForumView({
           }
 
           if (field.slug === messageAuthorField?.slug) {
-            const authorValue =
-              messageRecord[field.slug] ??
-              (currentUserId ? [currentUserId] : []);
+            let authorFallback: Array<string> = [];
+            if (currentUserId) authorFallback = [currentUserId];
+            const authorValue = messageRecord[field.slug] ?? authorFallback;
             payload[field.slug] = normalizeGroupFieldValue(field, authorValue);
             continue;
           }
@@ -1452,11 +1462,12 @@ export function TableForumView({
             value="chat"
             className="flex-1 flex flex-col min-h-0"
           >
-            {activeRow ? (
+            {activeRow && (
               <div
                 className={cn(
                   'flex-1 min-h-0 relative',
-                  composerLayout === 'side' ? 'flex' : 'flex flex-col',
+                  composerLayout === 'side' && 'flex',
+                  composerLayout !== 'side' && 'flex flex-col',
                 )}
               >
                 <ForumMessagesList
@@ -1482,7 +1493,8 @@ export function TableForumView({
                   <div
                     className={cn(
                       'absolute z-20 right-4',
-                      composerLayout === 'bottom' ? 'bottom-24' : 'bottom-4',
+                      composerLayout === 'bottom' && 'bottom-24',
+                      composerLayout !== 'bottom' && 'bottom-4',
                     )}
                   >
                     <Button
@@ -1547,7 +1559,8 @@ export function TableForumView({
                   onEditorReady={handleEditorReady}
                 />
               </div>
-            ) : (
+            )}
+            {!activeRow && (
               <div className="flex flex-1 items-center justify-center">
                 <p className="text-sm text-muted-foreground">
                   Selecione um canal para ver as mensagens.
@@ -1560,7 +1573,7 @@ export function TableForumView({
             value="docs"
             className="flex-1 overflow-auto p-4"
           >
-            {activeRow ? (
+            {activeRow && (
               <>
                 <ForumDocuments documents={documents} />
                 {documents.length === 0 && (
@@ -1569,7 +1582,8 @@ export function TableForumView({
                   </p>
                 )}
               </>
-            ) : (
+            )}
+            {!activeRow && (
               <div className="flex h-full items-center justify-center">
                 <p className="text-sm text-muted-foreground">
                   Selecione um canal para ver os documentos.

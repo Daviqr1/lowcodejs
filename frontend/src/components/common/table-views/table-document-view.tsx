@@ -141,11 +141,17 @@ export function TableDocumentView({
     ? (labelMap.get(selectedCategoryId) ?? selectedCategoryId)
     : null;
 
-  const getIndentPx = (row: IRow): number =>
-    categoryField ? rowIndentPxFromLeaf(row, categoryField.slug, depthMap) : 0;
+  const getIndentPx = (row: IRow): number => {
+    if (categoryField) {
+      return rowIndentPxFromLeaf(row, categoryField.slug, depthMap);
+    }
+    return 0;
+  };
 
-  const getLeafLabel = (row: IRow): string | null =>
-    categoryField ? rowLeafLabel(row, categoryField.slug, labelMap) : null;
+  const getLeafLabel = (row: IRow): string | null => {
+    if (categoryField) return rowLeafLabel(row, categoryField.slug, labelMap);
+    return null;
+  };
 
   const categoryOrderMap = useMemo(
     () => buildCategoryOrderMap(categoryTree),
@@ -204,6 +210,9 @@ export function TableDocumentView({
     URL.revokeObjectURL(url);
   }
 
+  let sidebarPxWidth = 40;
+  if (isSidebarOpen) sidebarPxWidth = sidebarWidth;
+
   return (
     <div
       className="flex h-[calc(100vh-64px)] relative w-full overflow-hidden"
@@ -214,7 +223,7 @@ export function TableDocumentView({
       {/* Sidebar */}
       <div
         className="shrink-0 h-full"
-        style={{ width: isSidebarOpen ? sidebarWidth : 40 }}
+        style={{ width: sidebarPxWidth }}
       >
         <DocumentSidebar
           title={categoryField?.name ?? 'Índice'}

@@ -136,7 +136,10 @@ export function TableCalendarView({
   const updateRow = useUpdateTableRow({
     onSuccess: (updatedRow) => {
       setRowsState((prev) =>
-        prev.map((row) => (row._id === updatedRow._id ? updatedRow : row)),
+        prev.map((row) => {
+          if (row._id === updatedRow._id) return updatedRow;
+          return row;
+        }),
       );
       setEditingRowId(null);
       toast.success('Agendamento atualizado com sucesso');
@@ -228,15 +231,17 @@ export function TableCalendarView({
   }, []);
 
   const handlePrevious = React.useCallback(() => {
-    setCurrentDate((value) =>
-      viewMode === 'month' ? subMonths(value, 1) : subWeeks(value, 1),
-    );
+    setCurrentDate((value) => {
+      if (viewMode === 'month') return subMonths(value, 1);
+      return subWeeks(value, 1);
+    });
   }, [viewMode]);
 
   const handleNext = React.useCallback(() => {
-    setCurrentDate((value) =>
-      viewMode === 'month' ? addMonths(value, 1) : addWeeks(value, 1),
-    );
+    setCurrentDate((value) => {
+      if (viewMode === 'month') return addMonths(value, 1);
+      return addWeeks(value, 1);
+    });
   }, [viewMode]);
 
   const missingRequired =
@@ -279,12 +284,13 @@ export function TableCalendarView({
         )}
       </div>
 
-      {missingRequired ? (
+      {missingRequired && (
         <div className="p-4 text-sm text-muted-foreground">
           Campos obrigatórios do template Calendario não encontrados. Esperado:
           `titulo`, `data-inicio` e `data-termino`.
         </div>
-      ) : (
+      )}
+      {!missingRequired && (
         <div className="min-h-0 flex-1">
           {viewMode === 'agenda' && (
             <CalendarAgendaView

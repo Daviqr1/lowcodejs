@@ -230,9 +230,10 @@ export function TableKanbanView({
           if (!old) return old;
           return {
             ...old,
-            fields: old.fields.map((field) =>
-              field._id === updatedField._id ? updatedField : field,
-            ),
+            fields: old.fields.map((field) => {
+              if (field._id === updatedField._id) return updatedField;
+              return field;
+            }),
           };
         },
       );
@@ -305,9 +306,10 @@ export function TableKanbanView({
           if (!old) return old;
           return {
             ...old,
-            fields: old.fields.map((field) =>
-              field._id === updatedField._id ? updatedField : field,
-            ),
+            fields: old.fields.map((field) => {
+              if (field._id === updatedField._id) return updatedField;
+              return field;
+            }),
           };
         },
       );
@@ -334,7 +336,8 @@ export function TableKanbanView({
     );
 
     rowsState.forEach((row) => {
-      const raw = fields.list ? row[fields.list.slug] : null;
+      let raw = null;
+      if (fields.list) raw = row[fields.list.slug];
       const values = normalizeRowValue(raw);
       const value = values[0];
       if (value && value in byStatus) {
@@ -497,13 +500,13 @@ export function TableKanbanView({
         fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
         Array.isArray(payload[fields.attachments.slug])
       ) {
-        payload[fields.attachments.slug] = (
-          payload[fields.attachments.slug] as Array<Record<string, any>>
-        ).map((item) => ({
-          ...item,
-          autor: currentUserId ? [currentUserId] : [],
-          data: new Date().toISOString(),
-        }));
+        payload[fields.attachments.slug] = payload[fields.attachments.slug].map(
+          (item: Record<string, unknown>) => {
+            let autor: Array<string> = [];
+            if (currentUserId) autor = [currentUserId];
+            return { ...item, autor, data: new Date().toISOString() };
+          },
+        );
       }
 
       if (orderFieldSlug) {
@@ -537,7 +540,10 @@ export function TableKanbanView({
   const handleRowDeleted = React.useCallback(
     (rowId: string) => {
       setRowsState((prev) => prev.filter((row) => row._id !== rowId));
-      setActiveRow((prev) => (prev && prev._id === rowId ? null : prev));
+      setActiveRow((prev) => {
+        if (prev && prev._id === rowId) return null;
+        return prev;
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(tableSlug),
       });
@@ -610,9 +616,10 @@ export function TableKanbanView({
               if (!old) return old;
               return {
                 ...old,
-                fields: old.fields.map((field) =>
-                  field._id === updatedField._id ? updatedField : field,
-                ),
+                fields: old.fields.map((field) => {
+                  if (field._id === updatedField._id) return updatedField;
+                  return field;
+                }),
               };
             },
           );
@@ -696,9 +703,10 @@ export function TableKanbanView({
             if (!old) return old;
             return {
               ...old,
-              fields: old.fields.map((field) =>
-                field._id === updatedField._id ? updatedField : field,
-              ),
+              fields: old.fields.map((field) => {
+                if (field._id === updatedField._id) return updatedField;
+                return field;
+              }),
             };
           },
         );
@@ -1020,7 +1028,7 @@ export function TableKanbanView({
         </div>
       </SortableContext>
       <DragOverlay>
-        {activeDragCard ? (
+        {activeDragCard && (
           <div className="w-[17rem]">
             <KanbanCard
               row={activeDragCard}
@@ -1028,7 +1036,7 @@ export function TableKanbanView({
               onClick={() => {}}
             />
           </div>
-        ) : null}
+        )}
       </DragOverlay>
     </DndContext>
   );

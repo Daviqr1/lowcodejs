@@ -231,13 +231,14 @@ export function TableMosaicView({
           }}
         >
           <div className="w-full bg-muted">
-            {thumbField ? (
+            {thumbField && (
               <RenderMosaicCell
                 field={thumbField}
                 row={row}
                 tableSlug={slug}
               />
-            ) : (
+            )}
+            {!thumbField && (
               <div className="w-full aspect-4/3 flex items-center justify-center text-xs text-muted-foreground">
                 sem imagem
               </div>
@@ -256,13 +257,14 @@ export function TableMosaicView({
                   </Badge>
                 )}
                 <div className="font-semibold leading-tight line-clamp-2">
-                  {titleField ? (
+                  {titleField && (
                     <RenderMosaicCell
                       field={titleField}
                       row={row}
                       tableSlug={slug}
                     />
-                  ) : (
+                  )}
+                  {!titleField && (
                     <span className="text-muted-foreground">Sem título</span>
                   )}
                 </div>
@@ -284,7 +286,7 @@ export function TableMosaicView({
               </div>
             </div>
 
-            {descField ? (
+            {descField && (
               <div className="mt-1 text-sm text-muted-foreground line-clamp-3">
                 <RenderMosaicCell
                   field={descField}
@@ -292,7 +294,7 @@ export function TableMosaicView({
                   tableSlug={slug}
                 />
               </div>
-            ) : null}
+            )}
           </div>
         </article>
       ))}

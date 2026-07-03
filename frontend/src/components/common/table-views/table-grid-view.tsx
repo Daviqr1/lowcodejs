@@ -213,14 +213,15 @@ export function TableGridView({
             className="overflow-hidden p-0"
           >
             <div className="w-full bg-muted aspect-4/3 overflow-hidden">
-              {thumbField ? (
+              {thumbField && (
                 <RenderGridCell
                   field={thumbField}
                   row={row}
                   tableSlug={slug}
                   isThumb
                 />
-              ) : (
+              )}
+              {!thumbField && (
                 <div className="w-full aspect-4/3 flex items-center justify-center text-xs text-muted-foreground">
                   sem imagem
                 </div>
@@ -236,17 +237,18 @@ export function TableGridView({
                 </Badge>
               )}
               <div className="font-semibold leading-tight line-clamp-2">
-                {titleField ? (
+                {titleField && (
                   <RenderGridCell
                     field={titleField}
                     row={row}
                     tableSlug={slug}
                   />
-                ) : (
+                )}
+                {!titleField && (
                   <span className="text-muted-foreground">Sem título</span>
                 )}
               </div>
-              {descField ? (
+              {descField && (
                 <div className="text-sm text-muted-foreground line-clamp-2">
                   <RenderGridCell
                     field={descField}
@@ -254,7 +256,7 @@ export function TableGridView({
                     tableSlug={slug}
                   />
                 </div>
-              ) : null}
+              )}
             </CardContent>
             <CardFooter className="inline-flex justify-between items-center p-1">
               <div className="flex items-center gap-1">
