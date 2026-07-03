@@ -31,7 +31,9 @@ export function ImageUpload({
       if (!file) return;
       fileRef.current = file;
       const reader = new FileReader();
-      reader.onload = (): void => setPreview(reader.result as string);
+      reader.onload = (): void => {
+        if (typeof reader.result === 'string') setPreview(reader.result);
+      };
       reader.readAsDataURL(file);
     },
     [],
