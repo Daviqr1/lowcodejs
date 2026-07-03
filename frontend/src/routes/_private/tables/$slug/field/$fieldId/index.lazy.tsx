@@ -146,7 +146,7 @@ function RouteComponent(): React.JSX.Element {
           {_read.status === 'success' &&
             mode === 'show' &&
             permission.can('UPDATE_FIELD') &&
-            !(_read.data as IField & { trashed?: boolean }).trashed &&
+            !_read.data.trashed &&
             (!_read.data.locked ||
               _read.data.native ||
               _read.data.type === E_FIELD_TYPE.DROPDOWN) && (
@@ -255,9 +255,7 @@ function FieldUpdateContent({
   };
 
   const handleUpdateSuccess = (response: IField): void => {
-    const wasTrashed = Boolean(
-      (data as IField & { trashed?: boolean }).trashed,
-    );
+    const wasTrashed = Boolean(data.trashed);
     const isTrashed = Boolean(response.trashed);
 
     if (!wasTrashed && isTrashed) {
@@ -290,7 +288,7 @@ function FieldUpdateContent({
   const isBrokenRelationship =
     data.type === E_FIELD_TYPE.RELATIONSHIP &&
     !data.relationship?.table?._id &&
-    !(data as IField & { trashed?: boolean }).trashed;
+    !data.trashed;
 
   const _trash = useMutation({
     mutationFn: async () => {
@@ -433,7 +431,7 @@ function FieldUpdateContent({
         detail: bindingFromBool(isFieldShownInContext(data, 'detail')),
       },
       required: data.required,
-      trashed: Boolean((data as IField & { trashed?: boolean }).trashed),
+      trashed: Boolean(data.trashed),
       widthInForm: data.widthInForm ?? 50,
       widthInList: data.widthInList ?? 10,
       htmlContent: data.htmlContent ?? '',

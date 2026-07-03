@@ -75,6 +75,8 @@ const VIEW_MAP: Record<
   string,
   {
     skeleton: React.ComponentType;
+    // Registry de views heterogeneas: cada view tem props proprias, entao o
+    // componente lazy e tipado como ComponentType<any> (props resolvidas em uso).
     view: React.LazyExoticComponent<React.ComponentType<any>>;
     extraProps?: boolean;
   }
@@ -329,6 +331,8 @@ function RouteComponent(): React.JSX.Element {
                 onExport={() =>
                   exportCsv.mutate({
                     slug,
+                    // search e a query da rota (shape dinamico); espalhado como
+                    // record solto nos params do export.
                     ...(search as Record<string, unknown>),
                   })
                 }
@@ -398,6 +402,8 @@ function RouteComponent(): React.JSX.Element {
 
             {rows.status === 'error' &&
               ((): React.JSX.Element => {
+                // erro do TanStack Query e `Error`; aqui sabemos que veio do
+                // Axios, entao estreitamos para ler `response` (lib-forced).
                 const error = rows.error as AxiosError<{
                   code: number;
                   cause: string;

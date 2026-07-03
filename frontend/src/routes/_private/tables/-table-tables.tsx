@@ -294,7 +294,7 @@ const columns: Array<ColumnDef<ITable, any>> = [
       />
     ),
     cell: ({ getValue }): React.ReactElement => {
-      const slug = getValue() as string;
+      const slug = getValue<string>();
       return (
         <div className="flex items-center space-x-1">
           <code className="text-sm text-muted-foreground">/{slug}</code>
@@ -329,7 +329,7 @@ const columns: Array<ColumnDef<ITable, any>> = [
     meta: { label: 'Criado por' },
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground">
-        {getValue() as string}
+        {getValue<string>()}
       </span>
     ),
   },
@@ -345,7 +345,7 @@ const columns: Array<ColumnDef<ITable, any>> = [
       />
     ),
     cell: ({ getValue }): React.ReactElement => {
-      const date = getValue() as string | undefined;
+      const date = getValue<string | undefined>();
       return (
         <span className="text-sm text-muted-foreground">
           {formatDate(date)}

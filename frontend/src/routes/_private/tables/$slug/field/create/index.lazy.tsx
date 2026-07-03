@@ -228,6 +228,7 @@ function RouteComponent(): React.JSX.Element {
         slug: value.slug,
         tip: normalizeTip(value.tip),
         label: payloadLabel,
+        // value.type vem do select do formulario (string); reduz ao enum.
         type: value.type as keyof typeof E_FIELD_TYPE,
         required: value.required,
         multiple: value.multiple,
