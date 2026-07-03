@@ -83,20 +83,22 @@ function RowActions({
 
 function SecretCell({ secret }: { secret: string }): React.JSX.Element {
   const [reveal, setReveal] = React.useState(false);
+  let revealTitle = 'Revelar';
+  if (reveal) revealTitle = 'Ocultar';
   return (
     <div className="flex items-center gap-1">
-      <span className="truncate font-mono">{reveal ? secret : MASK}</span>
+      <span className="truncate font-mono">
+        {reveal && secret}
+        {!reveal && MASK}
+      </span>
       <Button
         variant="ghost"
         size="icon-sm"
-        title={reveal ? 'Ocultar' : 'Revelar'}
+        title={revealTitle}
         onClick={() => setReveal((r) => !r)}
       >
-        {reveal ? (
-          <EyeOffIcon className="size-3.5" />
-        ) : (
-          <EyeIcon className="size-3.5" />
-        )}
+        {reveal && <EyeOffIcon className="size-3.5" />}
+        {!reveal && <EyeIcon className="size-3.5" />}
       </Button>
       <Button
         variant="ghost"
@@ -149,7 +151,7 @@ function EntryTable({
               </p>
             </TableCell>
             <TableCell className="max-w-40">
-              {entry.username ? (
+              {entry.username && (
                 <div className="flex items-center gap-1">
                   <span className="truncate font-mono">{entry.username}</span>
                   <Button
@@ -161,7 +163,8 @@ function EntryTable({
                     <CopyIcon className="size-3.5" />
                   </Button>
                 </div>
-              ) : (
+              )}
+              {!entry.username && (
                 <span className="text-muted-foreground">—</span>
               )}
             </TableCell>
@@ -169,7 +172,7 @@ function EntryTable({
               <SecretCell secret={entry.secret} />
             </TableCell>
             <TableCell className="max-w-40">
-              {entry.url ? (
+              {entry.url && (
                 <a
                   href={entry.url}
                   target="_blank"
@@ -179,9 +182,8 @@ function EntryTable({
                   <ExternalLinkIcon className="size-3 shrink-0" />
                   <span className="truncate">{entry.url}</span>
                 </a>
-              ) : (
-                <span className="text-muted-foreground">—</span>
               )}
+              {!entry.url && <span className="text-muted-foreground">—</span>}
             </TableCell>
             <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
               {new Date(entry.updatedAt).toLocaleDateString('pt-BR')}
@@ -322,9 +324,10 @@ export function EntryList({
           </EmptyMedia>
           <EmptyTitle>Nenhuma senha neste canal</EmptyTitle>
           <EmptyDescription>
-            {canEdit
-              ? 'Adicione a primeira senha — ela será criptografada no banco.'
-              : 'Você tem acesso de leitura, mas ainda não há senhas aqui.'}
+            {canEdit &&
+              'Adicione a primeira senha — ela será criptografada no banco.'}
+            {!canEdit &&
+              'Você tem acesso de leitura, mas ainda não há senhas aqui.'}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

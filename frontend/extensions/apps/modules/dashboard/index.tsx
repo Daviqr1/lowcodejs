@@ -14,6 +14,14 @@ import { LoadError } from '@/components/common/route-status/load-error';
 export default function DashboardModule(): React.JSX.Element {
   const stats = useDashboardStats();
 
+  let activeUsersDescription: string | undefined;
+  if (stats.status === 'success' && stats.data.totals.users > 0) {
+    const percent = Math.round(
+      (stats.data.totals.activeUsers / stats.data.totals.users) * 100,
+    );
+    activeUsersDescription = `${percent}% do total`;
+  }
+
   return (
     <PageShell data-test-id="module-dashboard">
       <PageShell.Header>
@@ -52,11 +60,7 @@ export default function DashboardModule(): React.JSX.Element {
                 title="Usuários Ativos"
                 value={stats.data.totals.activeUsers}
                 icon={UserCheck}
-                description={
-                  stats.data.totals.users > 0
-                    ? `${Math.round((stats.data.totals.activeUsers / stats.data.totals.users) * 100)}% do total`
-                    : undefined
-                }
+                description={activeUsersDescription}
               />
             </div>
 

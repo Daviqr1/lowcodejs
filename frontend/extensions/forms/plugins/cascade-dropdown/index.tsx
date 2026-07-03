@@ -117,7 +117,8 @@ function flattenCategories(categories: Array<ICategory>): Array<{
   const items: Array<{ value: string; label: string }> = [];
   const walk = (nodes: Array<ICategory>, prefix = ''): void => {
     for (const node of nodes) {
-      const label = prefix ? `${prefix} / ${node.label}` : node.label;
+      let label = node.label;
+      if (prefix) label = `${prefix} / ${node.label}`;
       items.push({ value: node.id, label });
       walk(node.children ?? [], label);
     }
@@ -209,11 +210,13 @@ function getInitialConfig(params: {
 }
 
 function normalizeConfig(config: CascadeConfig): CascadeConfig {
+  let filters: CascadeConfig['filters'] = [];
+  if (Array.isArray(config.filters)) filters = config.filters;
   return {
     ...config,
     parentWidth: config.parentWidth ?? 30,
     childWidth: config.childWidth ?? 70,
-    filters: Array.isArray(config.filters) ? config.filters : [],
+    filters,
   };
 }
 
@@ -304,8 +307,10 @@ export default function CascadeDropdownPlugin({
     const selectedFilter = cascadeFilterFields.find(
       (field) => field._id === draft?.childFieldId,
     );
+    let filterSource = cascadeFilterFields;
+    if (selectedFilter) filterSource = [selectedFilter];
     const validFilterTableSlugs = new Set(
-      (selectedFilter ? [selectedFilter] : cascadeFilterFields)
+      filterSource
         .map((field) => getRelationshipTableSlug(field))
         .filter(Boolean),
     );
@@ -324,16 +329,17 @@ export default function CascadeDropdownPlugin({
 
   React.useEffect(() => {
     if (!targetField || !sourceTable.data) return;
-    const configSignature = configQuery.data
-      ? [
-          configQuery.data._id ?? '',
-          configQuery.data.parentFieldId ?? '',
-          configQuery.data.parentFieldSlug ?? '',
-          configQuery.data.childFieldId ?? '',
-          configQuery.data.childFieldSlug ?? '',
-          String(configQuery.data.enabled),
-        ].join('|')
-      : 'new';
+    let configSignature = 'new';
+    if (configQuery.data) {
+      configSignature = [
+        configQuery.data._id ?? '',
+        configQuery.data.parentFieldId ?? '',
+        configQuery.data.parentFieldSlug ?? '',
+        configQuery.data.childFieldId ?? '',
+        configQuery.data.childFieldSlug ?? '',
+        String(configQuery.data.enabled),
+      ].join('|');
+    }
     const draftKey = [
       tableSlug,
       targetField._id,
@@ -343,28 +349,33 @@ export default function CascadeDropdownPlugin({
     if (initializedDraftKeyRef.current === draftKey) return;
     initializedDraftKeyRef.current = draftKey;
 
-    const defaultFilterField =
-      cascadeFilterFields.length === 1 ? cascadeFilterFields[0] : undefined;
-    const filterForDefault =
-      configQuery.data && normalizeConfig(configQuery.data).childFieldId
-        ? cascadeFilterFields.find(
-            (field) =>
-              field._id === normalizeConfig(configQuery.data!).childFieldId,
-          )
-        : defaultFilterField;
-    const parentFieldsForDefault = filterForDefault
-      ? availableParentFields.filter(
-          (field) =>
-            getRelationshipTableSlug(field) ===
-            getRelationshipTableSlug(filterForDefault),
-        )
-      : parentFields;
-    const defaultParentField =
-      parentFieldsForDefault.length === 1
-        ? parentFieldsForDefault[0]
-        : undefined;
+    let defaultFilterField: (typeof cascadeFilterFields)[number] | undefined;
+    if (cascadeFilterFields.length === 1) {
+      defaultFilterField = cascadeFilterFields[0];
+    }
+    let filterForDefault = defaultFilterField;
+    if (configQuery.data && normalizeConfig(configQuery.data).childFieldId) {
+      filterForDefault = cascadeFilterFields.find(
+        (field) =>
+          field._id === normalizeConfig(configQuery.data!).childFieldId,
+      );
+    }
+    let parentFieldsForDefault = parentFields;
+    if (filterForDefault) {
+      const filter = filterForDefault;
+      parentFieldsForDefault = availableParentFields.filter(
+        (field) =>
+          getRelationshipTableSlug(field) === getRelationshipTableSlug(filter),
+      );
+    }
+    let defaultParentField: (typeof parentFieldsForDefault)[number] | undefined;
+    if (parentFieldsForDefault.length === 1) {
+      defaultParentField = parentFieldsForDefault[0];
+    }
+    let normalized: CascadeConfig | null = null;
+    if (configQuery.data) normalized = normalizeConfig(configQuery.data);
     const next =
-      (configQuery.data ? normalizeConfig(configQuery.data) : null) ??
+      normalized ??
       getInitialConfig({
         tableSlug,
         targetField,
@@ -453,19 +464,18 @@ export default function CascadeDropdownPlugin({
 
   const setParentField = (fieldSlug: string): void => {
     const field = parentFields.find((item) => item.slug === fieldSlug);
-    setDraft((current) =>
-      current && field
-        ? {
-            ...current,
-            parentFieldId: field._id,
-            parentFieldSlug: field.slug,
-            ...(cascadeFilterFields.length === 1 && {
-              childFieldId: cascadeFilterFields[0]._id,
-              childFieldSlug: cascadeFilterFields[0].slug,
-            }),
-          }
-        : current,
-    );
+    setDraft((current) => {
+      if (!current || !field) return current;
+      return {
+        ...current,
+        parentFieldId: field._id,
+        parentFieldSlug: field.slug,
+        ...(cascadeFilterFields.length === 1 && {
+          childFieldId: cascadeFilterFields[0]._id,
+          childFieldSlug: cascadeFilterFields[0].slug,
+        }),
+      };
+    });
   };
 
   const setFilterField = (fieldSlug: string): void => {
@@ -479,12 +489,18 @@ export default function CascadeDropdownPlugin({
       const keepParent =
         currentParent &&
         getRelationshipTableSlug(currentParent) === filterTableSlug;
+      let parentFieldId = '';
+      let parentFieldSlug = '';
+      if (keepParent) {
+        parentFieldId = current.parentFieldId;
+        parentFieldSlug = current.parentFieldSlug;
+      }
       return {
         ...current,
         childFieldId: field._id,
         childFieldSlug: field.slug,
-        parentFieldId: keepParent ? current.parentFieldId : '',
-        parentFieldSlug: keepParent ? current.parentFieldSlug : '',
+        parentFieldId,
+        parentFieldSlug,
       };
     });
   };
@@ -497,9 +513,10 @@ export default function CascadeDropdownPlugin({
       if (!current) return current;
       return {
         ...current,
-        filters: (current.filters ?? []).map((filter) =>
-          filter.id === filterId ? updater(filter) : filter,
-        ),
+        filters: (current.filters ?? []).map((filter) => {
+          if (filter.id === filterId) return updater(filter);
+          return filter;
+        }),
       };
     });
   };
@@ -507,21 +524,25 @@ export default function CascadeDropdownPlugin({
   const selectedParentField = availableParentFields.find(
     (field) => field._id === draft.parentFieldId,
   );
-  const compatibleFilterFieldsForParent = selectedParentField
-    ? cascadeFilterFields.filter(
-        (field) =>
-          getRelationshipTableSlug(field) ===
-          getRelationshipTableSlug(selectedParentField),
-      )
-    : cascadeFilterFields;
+  let compatibleFilterFieldsForParent = cascadeFilterFields;
+  if (selectedParentField) {
+    const parent = selectedParentField;
+    compatibleFilterFieldsForParent = cascadeFilterFields.filter(
+      (field) =>
+        getRelationshipTableSlug(field) === getRelationshipTableSlug(parent),
+    );
+  }
   const selectedFilterField = compatibleFilterFieldsForParent.find(
     (field) => field._id === draft.childFieldId,
   );
+  let firstCompatibleFilterField:
+    | (typeof compatibleFilterFieldsForParent)[number]
+    | undefined;
+  if (compatibleFilterFieldsForParent.length === 1) {
+    firstCompatibleFilterField = compatibleFilterFieldsForParent[0];
+  }
   const effectiveFilterField =
-    selectedFilterField ??
-    (compatibleFilterFieldsForParent.length === 1
-      ? compatibleFilterFieldsForParent[0]
-      : undefined);
+    selectedFilterField ?? firstCompatibleFilterField;
   const effectiveSourceTableId =
     draft.sourceTableId || sourceTable.data?._id || '';
   const effectiveSourceTableSlug =
@@ -569,10 +590,11 @@ export default function CascadeDropdownPlugin({
     selectedParentField?.name ??
     `Selecione o campo que atualiza ${targetField.name}`;
   const showFilterFieldSelect = compatibleFilterFieldsForParent.length !== 1;
-  const savedStatus =
-    draft._id || configQuery.data
-      ? 'Configuração salva'
-      : 'Configuração ainda não salva';
+  let filterFieldsGridClass = 'grid gap-3';
+  if (showFilterFieldSelect)
+    filterFieldsGridClass = 'grid gap-3 md:grid-cols-2';
+  let savedStatus = 'Configuração ainda não salva';
+  if (draft._id || configQuery.data) savedStatus = 'Configuração salva';
 
   const filtersContent = (draft.filters ?? []).map((filter) => {
     const selectedField = filterFields.find(
@@ -583,7 +605,8 @@ export default function CascadeDropdownPlugin({
       filter.operator !== 'is_empty' &&
       filter.operator !== 'is_not_empty' &&
       filter.operator !== 'date_between';
-    const fieldOptions = selectedField ? getFieldOptions(selectedField) : [];
+    let fieldOptions: ReturnType<typeof getFieldOptions> = [];
+    if (selectedField) fieldOptions = getFieldOptions(selectedField);
 
     return (
       <div
@@ -629,9 +652,13 @@ export default function CascadeDropdownPlugin({
           value={filter.operator}
           disabled={disabled || !filter.fieldId}
           onValueChange={(value) => {
+            const match = operators.find(
+              (operator) => operator.value === value,
+            );
+            if (!match) return;
             updateFilter(filter.id, (current) => ({
               ...current,
-              operator: value as FilterOperator,
+              operator: match.value,
               value: null,
               values: [],
               dateStart: null,
@@ -662,11 +689,13 @@ export default function CascadeDropdownPlugin({
               value={filter.values[0] || EMPTY_VALUE}
               disabled={disabled}
               onValueChange={(value) => {
-                updateFilter(filter.id, (current) => ({
-                  ...current,
-                  value: value === EMPTY_VALUE ? null : value,
-                  values: value === EMPTY_VALUE ? [] : [value],
-                }));
+                updateFilter(filter.id, (current) => {
+                  let nextValue: string | null = value;
+                  if (value === EMPTY_VALUE) nextValue = null;
+                  let nextValues: Array<string> = [value];
+                  if (value === EMPTY_VALUE) nextValues = [];
+                  return { ...current, value: nextValue, values: nextValues };
+                });
               }}
             >
               <SelectTrigger>
@@ -739,16 +768,15 @@ export default function CascadeDropdownPlugin({
           size="icon"
           disabled={disabled}
           onClick={() =>
-            setDraft((current) =>
-              current
-                ? {
-                    ...current,
-                    filters: (current.filters ?? []).filter(
-                      (item) => item.id !== filter.id,
-                    ),
-                  }
-                : current,
-            )
+            setDraft((current) => {
+              if (!current) return current;
+              return {
+                ...current,
+                filters: (current.filters ?? []).filter(
+                  (item) => item.id !== filter.id,
+                ),
+              };
+            })
           }
         >
           <TrashIcon className="size-4" />
@@ -766,9 +794,9 @@ export default function CascadeDropdownPlugin({
             <span>Dropdown em cascata</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {draft.parentFieldId
-              ? `${targetField.name} será atualizado quando ${parentSummary} mudar.`
-              : parentSummary}
+            {draft.parentFieldId &&
+              `${targetField.name} será atualizado quando ${parentSummary} mudar.`}
+            {!draft.parentFieldId && parentSummary}
           </p>
           <p className="text-xs text-muted-foreground">{savedStatus}</p>
         </div>
@@ -779,9 +807,10 @@ export default function CascadeDropdownPlugin({
               checked={Boolean(draft.enabled)}
               disabled={disabled}
               onCheckedChange={(checked) =>
-                setDraft((current) =>
-                  current ? { ...current, enabled: checked } : current,
-                )
+                setDraft((current) => {
+                  if (!current) return current;
+                  return { ...current, enabled: checked };
+                })
               }
             />
           </div>
@@ -813,13 +842,7 @@ export default function CascadeDropdownPlugin({
           </DialogHeader>
 
           <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-            <div
-              className={
-                showFilterFieldSelect
-                  ? 'grid gap-3 md:grid-cols-2'
-                  : 'grid gap-3'
-              }
-            >
+            <div className={filterFieldsGridClass}>
               <Field>
                 <FieldLabel>Campo que atualiza {targetField.name}</FieldLabel>
                 <Select
@@ -894,14 +917,13 @@ export default function CascadeDropdownPlugin({
                   size="sm"
                   disabled={disabled}
                   onClick={() =>
-                    setDraft((current) =>
-                      current
-                        ? {
-                            ...current,
-                            filters: [...(current.filters ?? []), newFilter()],
-                          }
-                        : current,
-                    )
+                    setDraft((current) => {
+                      if (!current) return current;
+                      return {
+                        ...current,
+                        filters: [...(current.filters ?? []), newFilter()],
+                      };
+                    })
                   }
                 >
                   <PlusIcon className="size-4" />

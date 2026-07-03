@@ -109,6 +109,11 @@ export function EntryDialog({
     });
   }
 
+  let secretInputType: 'text' | 'password' = 'password';
+  if (reveal) secretInputType = 'text';
+  let revealTitle = 'Revelar';
+  if (reveal) revealTitle = 'Ocultar';
+
   return (
     <Dialog
       open={open}
@@ -117,7 +122,10 @@ export function EntryDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar senha' : 'Nova senha'}</DialogTitle>
+            <DialogTitle>
+              {isEdit && 'Editar senha'}
+              {!isEdit && 'Nova senha'}
+            </DialogTitle>
             <DialogDescription>
               O segredo é criptografado antes de ser salvo no banco.
             </DialogDescription>
@@ -168,7 +176,7 @@ export function EntryDialog({
               <div className="flex gap-2">
                 <Input
                   id="entry-secret"
-                  type={reveal ? 'text' : 'password'}
+                  type={secretInputType}
                   value={values.secret}
                   onChange={(e) =>
                     setValues((v) => ({ ...v, secret: e.target.value }))
@@ -180,10 +188,11 @@ export function EntryDialog({
                   type="button"
                   variant="outline"
                   size="icon"
-                  title={reveal ? 'Ocultar' : 'Revelar'}
+                  title={revealTitle}
                   onClick={() => setReveal((r) => !r)}
                 >
-                  {reveal ? <EyeOffIcon /> : <EyeIcon />}
+                  {reveal && <EyeOffIcon />}
+                  {!reveal && <EyeIcon />}
                 </Button>
                 <Button
                   type="button"
@@ -227,7 +236,8 @@ export function EntryDialog({
               type="submit"
               disabled={pending}
             >
-              {isEdit ? 'Salvar' : 'Criar senha'}
+              {isEdit && 'Salvar'}
+              {!isEdit && 'Criar senha'}
             </Button>
           </DialogFooter>
         </form>

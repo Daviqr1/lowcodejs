@@ -111,7 +111,10 @@ export function ChannelDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar canal' : 'Novo canal'}</DialogTitle>
+            <DialogTitle>
+              {isEdit && 'Editar canal'}
+              {!isEdit && 'Novo canal'}
+            </DialogTitle>
             <DialogDescription>
               Canais agrupam senhas e controlam quem tem acesso.
             </DialogDescription>
@@ -192,7 +195,8 @@ export function ChannelDialog({
               type="submit"
               disabled={pending}
             >
-              {isEdit ? 'Salvar' : 'Criar canal'}
+              {isEdit && 'Salvar'}
+              {!isEdit && 'Criar canal'}
             </Button>
           </DialogFooter>
         </form>

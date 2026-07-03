@@ -76,9 +76,10 @@ export function ChannelSidebar({
                 )}
                 onClick={() => onSelect(channel)}
               >
-                {channel.private ? (
+                {channel.private && (
                   <LockIcon className="text-muted-foreground size-4 shrink-0" />
-                ) : (
+                )}
+                {!channel.private && (
                   <GlobeIcon className="text-muted-foreground size-4 shrink-0" />
                 )}
 

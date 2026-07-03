@@ -47,9 +47,9 @@ export function MemberMultiSelect({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
   const anchorRef = useComboboxAnchor();
-  const [selectedCache, setSelectedCache] = React.useState<Map<string, IUser>>(
-    () => new Map(),
-  );
+  const [selectedCache, setSelectedCache] = React.useState<
+    Map<string, IUser | IPasswordUserRef>
+  >(() => new Map());
 
   // Semeia o cache com os membros já existentes (e re-semeia ao trocar de canal).
   React.useEffect(() => {
@@ -58,7 +58,7 @@ export function MemberMultiSelect({
       const next = new Map(prev);
       initialUsers.forEach((user) => {
         if (!next.has(user._id)) {
-          next.set(user._id, user as unknown as IUser);
+          next.set(user._id, user);
         }
       });
       return next;

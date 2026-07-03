@@ -19,7 +19,8 @@ export default function CopyRecordLinkPlugin({
   slug,
 }: Props): React.JSX.Element {
   async function handleCopy(): Promise<void> {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    let origin = '';
+    if (typeof window !== 'undefined') origin = window.location.origin;
 
     // Com slug amigavel (campo configurado na tabela), o link usa a URL limpa
     // /tables/<slug>/<sharedRowSlug> — a rota frontend resolve via backend e

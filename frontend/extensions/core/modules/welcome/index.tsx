@@ -54,8 +54,8 @@ function ShortcutCard({
 
 export default function WelcomeModule(): React.JSX.Element {
   const setting = useSettingRead();
-  const systemName =
-    setting.status === 'success' ? setting.data.SYSTEM_NAME : 'LowCodeJS';
+  let systemName = 'LowCodeJS';
+  if (setting.status === 'success') systemName = setting.data.SYSTEM_NAME;
 
   return (
     <PageShell data-test-id="module-welcome">

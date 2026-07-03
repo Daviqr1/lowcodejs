@@ -42,8 +42,9 @@ export function FillButton({ onFillFields }: Props): React.JSX.Element {
       if (!onFillFields) return;
       const data: Record<string, string | null> = {};
       result.fields.forEach((f) => {
-        data[f.key] =
-          f.value !== null && f.value !== undefined ? String(f.value) : null;
+        let value: string | null = null;
+        if (f.value !== null && f.value !== undefined) value = String(f.value);
+        data[f.key] = value;
       });
       onFillFields(data);
       toast.success('Campos preenchidos', {
@@ -157,7 +158,7 @@ export function FillButton({ onFillFields }: Props): React.JSX.Element {
 
               <Field>
                 <FieldLabel>Arquivo</FieldLabel>
-                {file ? (
+                {file && (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                     <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
                     <span className="flex-1 truncate">{file.name}</span>
@@ -174,7 +175,8 @@ export function FillButton({ onFillFields }: Props): React.JSX.Element {
                       <XIcon className="size-3.5" />
                     </Button>
                   </div>
-                ) : (
+                )}
+                {!file && (
                   <>
                     <input
                       ref={fileRef}
@@ -216,12 +218,13 @@ export function FillButton({ onFillFields }: Props): React.JSX.Element {
               }
               className="cursor-pointer"
             >
-              {isPending ? (
+              {isPending && (
                 <>
                   <Spinner className="mr-2" />
                   Transcrevendo...
                 </>
-              ) : (
+              )}
+              {!isPending && (
                 <>
                   <ScanTextIcon className="size-4 mr-2" />
                   Transcrever

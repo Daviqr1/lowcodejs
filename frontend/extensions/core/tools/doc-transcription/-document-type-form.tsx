@@ -63,7 +63,8 @@ export function DocumentTypeForm({
   const [description, setDescription] = React.useState('');
   const [fields, setFields] = React.useState<Array<IDocResponseField>>([]);
 
-  const id = initial ? initial.id : generateSlug(name);
+  let id = generateSlug(name);
+  if (initial) id = initial.id;
 
   React.useEffect(() => {
     if (!open) return;
@@ -88,7 +89,10 @@ export function DocumentTypeForm({
 
   function updateField(index: number, patch: Partial<IDocResponseField>): void {
     setFields((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+      prev.map((f, i) => {
+        if (i === index) return { ...f, ...patch };
+        return f;
+      }),
     );
   }
 
@@ -96,19 +100,25 @@ export function DocumentTypeForm({
     setFields((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const nameError = name.trim().length === 0 ? 'Nome obrigatório' : null;
-  const idError =
-    id.trim().length === 0 ? 'Digite um nome para gerar o ID' : null;
-  const fieldsError =
-    fields.length === 0 ? 'Adicione ao menos um campo de resposta' : null;
-  const fieldErrors = fields.map((f) => ({
-    key: !f.key.trim()
-      ? 'Obrigatório'
-      : !SLUG_REGEX.test(f.key)
-        ? 'Slug inválido'
-        : null,
-    label: !f.label.trim() ? 'Obrigatório' : null,
-  }));
+  let nameError: string | null = null;
+  if (name.trim().length === 0) nameError = 'Nome obrigatório';
+  let idError: string | null = null;
+  if (id.trim().length === 0) idError = 'Digite um nome para gerar o ID';
+  let fieldsError: string | null = null;
+  if (fields.length === 0) {
+    fieldsError = 'Adicione ao menos um campo de resposta';
+  }
+  const fieldErrors = fields.map((f) => {
+    let key: string | null = null;
+    if (!f.key.trim()) {
+      key = 'Obrigatório';
+    } else if (!SLUG_REGEX.test(f.key)) {
+      key = 'Slug inválido';
+    }
+    let label: string | null = null;
+    if (!f.label.trim()) label = 'Obrigatório';
+    return { key, label };
+  });
   const hasFieldErrors = fieldErrors.some((e) => e.key || e.label);
 
   const canSave =
@@ -132,7 +142,8 @@ export function DocumentTypeForm({
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {initial ? 'Editar tipo de documento' : 'Novo tipo de documento'}
+            {initial && 'Editar tipo de documento'}
+            {!initial && 'Novo tipo de documento'}
           </DialogTitle>
         </DialogHeader>
 
@@ -217,9 +228,10 @@ export function DocumentTypeForm({
 
                   <Select
                     value={f.type}
-                    onValueChange={(v) =>
-                      updateField(i, { type: v as IDocResponseField['type'] })
-                    }
+                    onValueChange={(v) => {
+                      const match = FIELD_TYPES.find((ft) => ft.value === v);
+                      if (match) updateField(i, { type: match.value });
+                    }}
                   >
                     <SelectTrigger className="w-[110px] h-8 text-xs">
                       <SelectValue />

@@ -41,11 +41,15 @@ const POLL_INTERVAL_MS = 700;
 const intl = (value: number): string => value.toLocaleString('pt-BR');
 
 const toastSuccess = (title: string, description?: string): void => {
-  toast.success(title, description ? { description } : undefined);
+  let options: { description: string } | undefined;
+  if (description) options = { description };
+  toast.success(title, options);
 };
 
 const toastError = (title: string, description?: string): void => {
-  toast.error(title, description ? { description } : undefined);
+  let options: { description: string } | undefined;
+  if (description) options = { description };
+  toast.error(title, options);
 };
 
 export default function GenerateTestDataTool(): React.JSX.Element {
@@ -302,7 +306,10 @@ export default function GenerateTestDataTool(): React.JSX.Element {
                       data-test-id="estimate-test-data-btn"
                     >
                       {isEstimating && <Spinner />}
-                      <span>{isEstimating ? 'Estimando...' : 'Estimar'}</span>
+                      <span>
+                        {isEstimating && 'Estimando...'}
+                        {!isEstimating && 'Estimar'}
+                      </span>
                     </Button>
                   )}
                   {estimate && (
@@ -314,7 +321,8 @@ export default function GenerateTestDataTool(): React.JSX.Element {
                     >
                       {isGenerating && <Spinner />}
                       <span>
-                        {isGenerating ? 'Gerando...' : 'Confirmar e gerar'}
+                        {isGenerating && 'Gerando...'}
+                        {!isGenerating && 'Confirmar e gerar'}
                       </span>
                     </Button>
                   )}
@@ -341,7 +349,8 @@ export default function GenerateTestDataTool(): React.JSX.Element {
                       <div
                         className={cn(
                           'h-full rounded-full transition-all',
-                          status === 'failed' ? 'bg-destructive' : 'bg-primary',
+                          status === 'failed' && 'bg-destructive',
+                          status !== 'failed' && 'bg-primary',
                         )}
                         style={{ width: `${Math.min(percentage, 100)}%` }}
                       />

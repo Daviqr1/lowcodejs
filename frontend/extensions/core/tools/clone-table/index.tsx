@@ -47,12 +47,12 @@ export default function CloneTableTool(): React.JSX.Element {
   const _clone = useCloneTable({
     onSuccess(data) {
       const total = data.tables?.length ?? 1;
-      toast.success(total > 1 ? 'Tabelas clonadas' : 'Tabela clonada', {
-        description:
-          total > 1
-            ? `${total} tabelas foram clonadas com sucesso`
-            : 'A tabela foi clonada com sucesso',
-      });
+      let title = 'Tabela clonada';
+      if (total > 1) title = 'Tabelas clonadas';
+      let description = 'A tabela foi clonada com sucesso';
+      if (total > 1)
+        description = `${total} tabelas foram clonadas com sucesso`;
+      toast.success(title, { description });
 
       setModels([]);
       setSelectedTables([]);
@@ -111,11 +111,12 @@ export default function CloneTableTool(): React.JSX.Element {
   );
 
   const toggleCopyData = React.useCallback((tableId: string) => {
-    setCopyDataTableIds((current) =>
-      current.includes(tableId)
-        ? current.filter((id) => id !== tableId)
-        : [...current, tableId],
-    );
+    setCopyDataTableIds((current) => {
+      if (current.includes(tableId)) {
+        return current.filter((id) => id !== tableId);
+      }
+      return [...current, tableId];
+    });
   }, []);
 
   return (
@@ -196,7 +197,10 @@ export default function CloneTableTool(): React.JSX.Element {
                     data-test-id="tools-clone-btn"
                   >
                     {isCloning && <Spinner />}
-                    <span>{isCloning ? 'Clonando...' : 'Clonar Modelo'}</span>
+                    <span>
+                      {isCloning && 'Clonando...'}
+                      {!isCloning && 'Clonar Modelo'}
+                    </span>
                   </Button>
                 </div>
               </div>

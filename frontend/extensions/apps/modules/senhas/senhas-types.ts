@@ -47,9 +47,11 @@ export interface EntryFormValues {
 }
 
 export function refId(ref: IPasswordUserRef | string): string {
-  return typeof ref === 'string' ? ref : ref._id;
+  if (typeof ref === 'string') return ref;
+  return ref._id;
 }
 
 export function refName(ref: IPasswordUserRef | string): string {
-  return typeof ref === 'string' ? ref : ref.name;
+  if (typeof ref === 'string') return ref;
+  return ref.name;
 }

@@ -15,7 +15,8 @@ interface Props {
 }
 
 export default function PrintTablePlugin({ table }: Props): React.JSX.Element {
-  const label = table ? `Imprimir ${table.name}` : 'Imprimir';
+  let label = 'Imprimir';
+  if (table) label = `Imprimir ${table.name}`;
 
   return (
     <Tooltip>

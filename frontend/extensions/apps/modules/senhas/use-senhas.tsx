@@ -21,19 +21,21 @@ const keys = {
 function channelPayload(values: ChannelFormValues): Record<string, unknown> {
   return {
     name: values.name,
-    description: values.description.trim() ? values.description.trim() : null,
+    description: values.description.trim() || null,
     private: values.private,
     members: values.members,
   };
 }
 
 function entryPayload(values: EntryFormValues): Record<string, unknown> {
+  let notes: string | null = null;
+  if (values.notes.trim()) notes = values.notes;
   return {
     title: values.title,
-    username: values.username.trim() ? values.username.trim() : null,
-    url: values.url.trim() ? values.url.trim() : null,
+    username: values.username.trim() || null,
+    url: values.url.trim() || null,
     secret: values.secret,
-    notes: values.notes.trim() ? values.notes : null,
+    notes,
   };
 }
 

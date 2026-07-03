@@ -27,6 +27,7 @@ import type { IDocumentType } from '@/hooks/tanstack-query/use-doc-transcription
 import { useDocTranscriptionConfig } from '@/hooks/tanstack-query/use-doc-transcription-config';
 import { useDocTranscriptionConfigUpdate } from '@/hooks/tanstack-query/use-doc-transcription-config-update';
 import { handleApiError } from '@/lib/handle-api-error';
+import { cn } from '@/lib/utils';
 
 interface OpenAIModel {
   id: string;
@@ -184,12 +185,11 @@ function ModelPickerDialog({
               onSelect('');
               onOpenChange(false);
             }}
-            className={[
+            className={cn(
               'w-full text-left rounded-lg border px-4 py-3 transition-colors cursor-pointer',
-              !value
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border hover:bg-muted/50',
-            ].join(' ')}
+              !value && 'border-primary bg-primary/5 ring-1 ring-primary',
+              value && 'border-border hover:bg-muted/50',
+            )}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm">Padrão do servidor</span>
@@ -216,12 +216,12 @@ function ModelPickerDialog({
                       onSelect(m.id);
                       onOpenChange(false);
                     }}
-                    className={[
+                    className={cn(
                       'text-left rounded-lg border px-3 py-2.5 transition-colors cursor-pointer',
-                      value === m.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-border hover:bg-muted/50',
-                    ].join(' ')}
+                      value === m.id &&
+                        'border-primary bg-primary/5 ring-1 ring-primary',
+                      value !== m.id && 'border-border hover:bg-muted/50',
+                    )}
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span className="font-medium text-sm leading-tight">
@@ -274,11 +274,13 @@ export function ConfigTab(): React.JSX.Element {
   });
 
   function saveConnection(): void {
-    update.mutate({
-      apiUrl: apiUrl.trim() || null,
-      ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
-      ...(model.trim() ? { model: model.trim() } : {}),
-    });
+    const payload: { apiUrl: string | null; apiKey?: string; model?: string } =
+      {
+        apiUrl: apiUrl.trim() || null,
+      };
+    if (apiKey.trim()) payload.apiKey = apiKey.trim();
+    if (model.trim()) payload.model = model.trim();
+    update.mutate(payload);
   }
 
   function openAddForm(): void {
@@ -297,7 +299,10 @@ export function ConfigTab(): React.JSX.Element {
 
     let updated: Array<IDocumentType>;
     if (exists) {
-      updated = current.map((dt) => (dt.id === docType.id ? docType : dt));
+      updated = current.map((dt) => {
+        if (dt.id === docType.id) return docType;
+        return dt;
+      });
     } else {
       updated = [...current, docType];
     }
@@ -363,10 +368,15 @@ export function ConfigTab(): React.JSX.Element {
               onClick={() => setModelPickerOpen(true)}
               className="w-full flex items-center justify-between rounded-md border bg-background px-3 h-9 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              <span className={model ? 'font-mono' : 'text-muted-foreground'}>
-                {model
-                  ? (KNOWN_MODELS.find((m) => m.id === model)?.label ?? model)
-                  : 'Padrão do servidor'}
+              <span
+                className={cn(
+                  model && 'font-mono',
+                  !model && 'text-muted-foreground',
+                )}
+              >
+                {model &&
+                  (KNOWN_MODELS.find((m) => m.id === model)?.label ?? model)}
+                {!model && 'Padrão do servidor'}
               </span>
               <ChevronDownIcon className="size-4 text-muted-foreground shrink-0" />
             </button>
@@ -419,14 +429,15 @@ export function ConfigTab(): React.JSX.Element {
           </div>
         </CardHeader>
         <CardContent>
-          {config.documentTypes.length === 0 ? (
+          {config.documentTypes.length === 0 && (
             <Empty className="py-6">
               <EmptyTitle>Nenhum tipo configurado</EmptyTitle>
               <EmptyDescription>
                 Adicione ao menos um tipo de documento para usar a transcrição.
               </EmptyDescription>
             </Empty>
-          ) : (
+          )}
+          {config.documentTypes.length > 0 && (
             <div className="space-y-3">
               {config.documentTypes.map((dt) => (
                 <div
@@ -447,7 +458,7 @@ export function ConfigTab(): React.JSX.Element {
                         className="text-xs"
                       >
                         {dt.responseFields.length} campo
-                        {dt.responseFields.length !== 1 ? 's' : ''}
+                        {dt.responseFields.length !== 1 && 's'}
                       </Badge>
                     </div>
                     {dt.description && (

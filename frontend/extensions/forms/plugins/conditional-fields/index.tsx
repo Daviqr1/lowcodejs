@@ -88,7 +88,8 @@ function getFieldDisplayName(table: ITable, field: IField): string {
     item.fields.some((groupField) => groupField._id === field._id),
   );
 
-  return group ? `${group.name} / ${field.name}` : field.name;
+  if (group) return `${group.name} / ${field.name}`;
+  return field.name;
 }
 
 function flattenCategories(
@@ -96,7 +97,8 @@ function flattenCategories(
   prefix = '',
 ): Array<Option> {
   return items.flatMap((item) => {
-    const label = prefix ? `${prefix} / ${item.label}` : item.label;
+    let label = item.label;
+    if (prefix) label = `${prefix} / ${item.label}`;
     return [
       { id: item.id, label },
       ...flattenCategories(item.children ?? [], label),
@@ -261,26 +263,26 @@ function updateRuleTarget(
   action: 'show' | 'hide',
   checked: boolean,
 ): ConditionalFieldRule {
-  const add = (items: Array<string>): Array<string> =>
-    items.includes(fieldId) ? items : [...items, fieldId];
+  const add = (items: Array<string>): Array<string> => {
+    if (items.includes(fieldId)) return items;
+    return [...items, fieldId];
+  };
   const remove = (items: Array<string>): Array<string> =>
     items.filter((item) => item !== fieldId);
 
   if (action === 'show') {
-    return {
-      ...rule,
-      showFieldIds: checked
-        ? add(rule.showFieldIds)
-        : remove(rule.showFieldIds),
-      hideFieldIds: checked ? remove(rule.hideFieldIds) : rule.hideFieldIds,
-    };
+    let showFieldIds = remove(rule.showFieldIds);
+    if (checked) showFieldIds = add(rule.showFieldIds);
+    let hideFieldIds = rule.hideFieldIds;
+    if (checked) hideFieldIds = remove(rule.hideFieldIds);
+    return { ...rule, showFieldIds, hideFieldIds };
   }
 
-  return {
-    ...rule,
-    hideFieldIds: checked ? add(rule.hideFieldIds) : remove(rule.hideFieldIds),
-    showFieldIds: checked ? remove(rule.showFieldIds) : rule.showFieldIds,
-  };
+  let hideFieldIds = remove(rule.hideFieldIds);
+  if (checked) hideFieldIds = add(rule.hideFieldIds);
+  let showFieldIds = rule.showFieldIds;
+  if (checked) showFieldIds = remove(rule.showFieldIds);
+  return { ...rule, hideFieldIds, showFieldIds };
 }
 
 function moveRule(
@@ -355,14 +357,17 @@ function RuleEditor({
     .filter((group) => group.fields.length > 0);
   const title = getRuleTitle(rule, index);
   const sourceFieldName = sourceField?.name ?? 'Campo não encontrado';
-  const sourceFieldDisplayName = sourceField
-    ? getFieldDisplayName(table, sourceField)
-    : sourceFieldName;
+  let sourceFieldDisplayName = sourceFieldName;
+  if (sourceField) {
+    sourceFieldDisplayName = getFieldDisplayName(table, sourceField);
+  }
   const sourceValueLabel =
     sourceOptions.find((option) => option.id === rule.sourceValue)?.label ??
     'Valor não encontrado';
   const affectedCount = new Set([...rule.showFieldIds, ...rule.hideFieldIds])
     .size;
+  let chevronRotation = '';
+  if (open) chevronRotation = 'rotate-180';
 
   return (
     <Collapsible
@@ -378,9 +383,7 @@ function RuleEditor({
             data-test-id={`conditional-rule-toggle-${index}`}
           >
             <ChevronDownIcon
-              className={`size-4 text-muted-foreground transition-transform ${
-                open ? 'rotate-180' : ''
-              }`}
+              className={`size-4 text-muted-foreground transition-transform ${chevronRotation}`}
             />
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium">
@@ -388,7 +391,8 @@ function RuleEditor({
               </span>
               <span className="block truncate text-xs text-muted-foreground">
                 {sourceFieldDisplayName} = {sourceValueLabel} - {affectedCount}{' '}
-                {affectedCount === 1 ? 'campo afetado' : 'campos afetados'}
+                {affectedCount === 1 && 'campo afetado'}
+                {affectedCount !== 1 && 'campos afetados'}
               </span>
             </span>
           </button>
@@ -568,9 +572,8 @@ export default function ConditionalFieldsPlugin({
   const [open, setOpen] = React.useState(false);
   const permission = useTablePermission(table);
   const slug = table?.slug ?? '';
-  const label = table
-    ? `Configurar campos condicionais de ${table.name}`
-    : 'Configurar campos condicionais';
+  let label = 'Configurar campos condicionais';
+  if (table) label = `Configurar campos condicionais de ${table.name}`;
 
   const config = useConditionalFieldsConfig(slug, open && Boolean(table));
   const saveConfig = useSaveConditionalFieldsConfig(slug);
@@ -654,9 +657,10 @@ export default function ConditionalFieldsPlugin({
                 open={openRuleIds.has(rule.id)}
                 onChange={(nextRule) => {
                   setRules((current) =>
-                    current.map((item) =>
-                      item.id === nextRule.id ? nextRule : item,
-                    ),
+                    current.map((item) => {
+                      if (item.id === nextRule.id) return nextRule;
+                      return item;
+                    }),
                   );
                 }}
                 onOpenChange={(nextOpen) => {
@@ -671,16 +675,18 @@ export default function ConditionalFieldsPlugin({
                   });
                 }}
                 onMoveUp={() => {
-                  setRules((current) =>
-                    index > 0 ? moveRule(current, index, index - 1) : current,
-                  );
+                  setRules((current) => {
+                    if (index > 0) return moveRule(current, index, index - 1);
+                    return current;
+                  });
                 }}
                 onMoveDown={() => {
-                  setRules((current) =>
-                    index < current.length - 1
-                      ? moveRule(current, index, index + 1)
-                      : current,
-                  );
+                  setRules((current) => {
+                    if (index < current.length - 1) {
+                      return moveRule(current, index, index + 1);
+                    }
+                    return current;
+                  });
                 }}
                 onRemove={() => {
                   setRules((current) =>

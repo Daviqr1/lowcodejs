@@ -59,9 +59,10 @@ function phaseToPercent(progress: {
     case 'structure':
       return 12;
     case 'rows':
-      return progress.total > 0
-        ? 15 + (progress.processed / progress.total) * 65
-        : 50;
+      if (progress.total > 0) {
+        return 15 + (progress.processed / progress.total) * 65;
+      }
+      return 50;
     case 'relationships':
       return 85;
     case 'menus':
@@ -138,7 +139,27 @@ type ImportFileV2 = {
 type ImportFileContent = ImportFileV1 | ImportFileV2;
 
 function isV2(file: ImportFileContent): file is ImportFileV2 {
-  return Array.isArray((file as ImportFileV2).tables);
+  return 'tables' in file && Array.isArray(file.tables);
+}
+
+function countGroupFields(group: unknown): number {
+  if (typeof group !== 'object' || group === null) return 0;
+  if (!('fields' in group)) return 0;
+  const fields = group.fields;
+  if (!Array.isArray(fields)) return 0;
+  return fields.length;
+}
+
+function isImportTableError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  if (!('response' in error)) return false;
+  const response = error.response;
+  if (typeof response !== 'object' || response === null) return false;
+  if (!('data' in response)) return false;
+  const data = response.data;
+  if (typeof data !== 'object' || data === null) return false;
+  if (!('cause' in data)) return false;
+  return data.cause === 'IMPORT_TABLE_ERROR';
 }
 
 /**
@@ -170,8 +191,7 @@ function summarizeFile(file: ImportFileContent): {
     const totalFields = file.tables.reduce((acc, t) => {
       const top = t.structure?.fields?.length ?? 0;
       const grp = (t.structure?.groups ?? []).reduce(
-        (a: number, g) =>
-          a + ((g as { fields?: Array<unknown> }).fields?.length ?? 0),
+        (a: number, g) => a + countGroupFields(g),
         0,
       );
       return acc + top + grp;
@@ -225,7 +245,8 @@ export function ImportTableSection(): React.JSX.Element {
   const [elapsed, setElapsed] = React.useState(0);
   const ws = useTableImportSocket(baseUrl, activeJobId);
 
-  const summary = fileContent ? summarizeFile(fileContent) : null;
+  let summary: ReturnType<typeof summarizeFile> | null = null;
+  if (fileContent) summary = summarizeFile(fileContent);
   // Export "somente dados": não recria estrutura — apenas insere linhas em
   // tabelas que já existem (casadas por slug). Não há renomeação nesse modo.
   const isDataOnly = fileContent?.header.exportType === 'data';
@@ -256,9 +277,9 @@ export function ImportTableSection(): React.JSX.Element {
     const reader = new FileReader();
     reader.onload = (event): void => {
       try {
-        const parsed = JSON.parse(
-          event.target?.result as string,
-        ) as ImportFileContent;
+        const result = event.target?.result;
+        if (typeof result !== 'string') return;
+        const parsed: ImportFileContent = JSON.parse(result);
 
         if (!parsed.header || parsed.header.platform !== 'lowcodejs') {
           setFileError(
@@ -380,9 +401,7 @@ export function ImportTableSection(): React.JSX.Element {
       // Conflitos/validação têm UI inline (acima) — fecha o modal de progresso
       // para não cobri-la. Só erro interno (IMPORT_TABLE_ERROR) permanece
       // visível no modal, junto do evento `error` do WebSocket.
-      const cause = (error as { response?: { data?: { cause?: string } } })
-        ?.response?.data?.cause;
-      if (cause !== 'IMPORT_TABLE_ERROR') closeProgress();
+      if (!isImportTableError(error)) closeProgress();
     },
   });
 
@@ -450,12 +469,23 @@ export function ImportTableSection(): React.JSX.Element {
 
   // No modo "somente dados" não há nomes a preencher — basta o arquivo válido
   // e com identidade de tabela (tableSlug).
-  const canImport = isDataOnly
-    ? Boolean(fileContent) && !dataNeedsReexport
-    : Boolean(fileContent) && allNamesFilled && conflictingMenusFilled;
+  let canImport =
+    Boolean(fileContent) && allNamesFilled && conflictingMenusFilled;
+  if (isDataOnly) canImport = Boolean(fileContent) && !dataNeedsReexport;
 
   const conflictingTableSlugs = new Set(conflicts?.tables ?? []);
   const conflictingMenuSlugs = conflicts?.menus ?? [];
+
+  let exportTypeLabel = 'Dados';
+  if (fileContent?.header.exportType === 'full') {
+    exportTypeLabel = 'Estrutura + Dados';
+  }
+  if (fileContent?.header.exportType === 'structure') {
+    exportTypeLabel = 'Estrutura';
+  }
+
+  let importResult: typeof importTable.data | null = null;
+  if (importTable.isSuccess) importResult = importTable.data;
 
   return (
     <>
@@ -508,13 +538,7 @@ export function ImportTableSection(): React.JSX.Element {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tipo:</span>
-                  <p className="font-medium">
-                    {fileContent.header.exportType === 'full'
-                      ? 'Estrutura + Dados'
-                      : fileContent.header.exportType === 'structure'
-                        ? 'Estrutura'
-                        : 'Dados'}
-                  </p>
+                  <p className="font-medium">{exportTypeLabel}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tabelas:</span>
@@ -531,18 +555,18 @@ export function ImportTableSection(): React.JSX.Element {
                 <div>
                   <span className="text-muted-foreground">Data:</span>
                   <p className="font-medium">
-                    {fileContent.header.exportedAt
-                      ? new Date(
-                          fileContent.header.exportedAt,
-                        ).toLocaleDateString('pt-BR')
-                      : '—'}
+                    {fileContent.header.exportedAt &&
+                      new Date(
+                        fileContent.header.exportedAt,
+                      ).toLocaleDateString('pt-BR')}
+                    {!fileContent.header.exportedAt && '—'}
                   </p>
                 </div>
               </div>
 
-              {isDataOnly ? (
+              {isDataOnly && (
                 <div className="space-y-2 pt-2 border-t text-sm">
-                  {dataNeedsReexport ? (
+                  {dataNeedsReexport && (
                     <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive">
                       <AlertCircleIcon className="size-4 mt-0.5 shrink-0" />
                       <span>
@@ -551,7 +575,8 @@ export function ImportTableSection(): React.JSX.Element {
                         versão atual da plataforma e tente novamente.
                       </span>
                     </div>
-                  ) : (
+                  )}
+                  {!dataNeedsReexport && (
                     <div className="text-muted-foreground">
                       Os dados serão inseridos nestas tabelas já existentes
                       (casadas pelo slug):
@@ -576,7 +601,8 @@ export function ImportTableSection(): React.JSX.Element {
                     ))}
                   </ul>
                 </div>
-              ) : (
+              )}
+              {!isDataOnly && (
                 <div className="space-y-2 pt-2 border-t text-sm">
                   <div className="text-muted-foreground">
                     Tabelas a importar — ajuste o nome se quiser (os
@@ -617,9 +643,8 @@ export function ImportTableSection(): React.JSX.Element {
                           <p
                             className={cn(
                               'font-mono text-xs',
-                              isConflicting
-                                ? 'text-destructive'
-                                : 'text-muted-foreground',
+                              isConflicting && 'text-destructive',
+                              !isConflicting && 'text-muted-foreground',
                             )}
                           >
                             /{previewSlug}
@@ -702,11 +727,10 @@ export function ImportTableSection(): React.JSX.Element {
               disabled={!canImport || isPending}
               onClick={startImport}
             >
-              {isPending ? (
+              {isPending && (
                 <LoaderCircleIcon className="size-4 animate-spin" />
-              ) : (
-                <UploadIcon className="size-4" />
               )}
+              {!isPending && <UploadIcon className="size-4" />}
               <span>Importar</span>
             </Button>
           </div>
@@ -721,15 +745,8 @@ export function ImportTableSection(): React.JSX.Element {
         elapsed={elapsed}
         progress={ws.progress}
         wsError={ws.error?.message ?? null}
-        result={importTable.isSuccess ? importTable.data : null}
-        hardError={
-          importTable.isError &&
-          (
-            importTable.error as {
-              response?: { data?: { cause?: string } };
-            }
-          )?.response?.data?.cause === 'IMPORT_TABLE_ERROR'
-        }
+        result={importResult}
+        hardError={importTable.isError && isImportTableError(importTable.error)}
       />
     </>
   );
@@ -771,16 +788,17 @@ function ImportProgressModal({
 
   // A barra é o maior valor entre o progresso REAL (eventos do backend) e o
   // piso por tempo — capado em 96% até a importação concluir de fato (→ 100%).
-  const realPct = progress ? phaseToPercent(progress) : 0;
-  const percent = done
-    ? 100
-    : Math.round(Math.min(96, Math.max(timeCreep(elapsed), realPct)));
+  let realPct = 0;
+  if (progress) realPct = phaseToPercent(progress);
+  let percent = Math.round(Math.min(96, Math.max(timeCreep(elapsed), realPct)));
+  if (done) percent = 100;
 
-  const label = done
-    ? 'Concluído'
-    : progress
-      ? PHASE_LABELS[progress.phase]
-      : labelFromPercent(percent);
+  let label = labelFromPercent(percent);
+  if (progress) label = PHASE_LABELS[progress.phase];
+  if (done) label = 'Concluído';
+
+  let dismissVariant: 'default' | 'ghost' = 'ghost';
+  if (done || failed) dismissVariant = 'default';
 
   // Contagem real de registros (quando há volume e o WebSocket está entregando).
   const showLiveRows =
@@ -794,18 +812,16 @@ function ImportProgressModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {done
-              ? 'Importação concluída'
-              : failed
-                ? 'Falha na importação'
-                : 'Importando tabela(s)'}
+            {done && 'Importação concluída'}
+            {!done && failed && 'Falha na importação'}
+            {!done && !failed && 'Importando tabela(s)'}
           </DialogTitle>
           <DialogDescription>
-            {done
-              ? 'Os dados foram importados com sucesso.'
-              : failed
-                ? 'A importação não foi concluída.'
-                : 'Isso pode levar alguns segundos. Você pode ocultar esta janela — a importação continua no servidor.'}
+            {done && 'Os dados foram importados com sucesso.'}
+            {!done && failed && 'A importação não foi concluída.'}
+            {!done &&
+              !failed &&
+              'Isso pode levar alguns segundos. Você pode ocultar esta janela — a importação continua no servidor.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -870,10 +886,11 @@ function ImportProgressModal({
 
         <DialogFooter>
           <Button
-            variant={done || failed ? 'default' : 'ghost'}
+            variant={dismissVariant}
             onClick={() => onOpenChange(false)}
           >
-            {done || failed ? 'Fechar' : 'Ocultar'}
+            {(done || failed) && 'Fechar'}
+            {!(done || failed) && 'Ocultar'}
           </Button>
         </DialogFooter>
       </DialogContent>

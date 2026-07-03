@@ -31,7 +31,10 @@ function formatFieldValue(
   type: string,
 ): string {
   if (value === null || value === undefined) return '—';
-  if (type === 'boolean') return value ? 'Sim' : 'Não';
+  if (type === 'boolean') {
+    if (value) return 'Sim';
+    return 'Não';
+  }
   return String(value);
 }
 
@@ -94,9 +97,9 @@ export function TranscriptionTab(): React.JSX.Element {
       <Empty className="py-12">
         <EmptyTitle>Configuração incompleta</EmptyTitle>
         <EmptyDescription>
-          {noApiUrl
-            ? 'Configure a URL da API na aba Configurações.'
-            : 'Adicione ao menos um tipo de documento na aba Configurações.'}
+          {noApiUrl && 'Configure a URL da API na aba Configurações.'}
+          {!noApiUrl &&
+            'Adicione ao menos um tipo de documento na aba Configurações.'}
         </EmptyDescription>
       </Empty>
     );
@@ -136,7 +139,7 @@ export function TranscriptionTab(): React.JSX.Element {
 
           <Field>
             <FieldLabel>Arquivo</FieldLabel>
-            {file ? (
+            {file && (
               <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                 <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
                 <span className="flex-1 truncate">{file.name}</span>
@@ -150,7 +153,8 @@ export function TranscriptionTab(): React.JSX.Element {
                   <XIcon className="size-3.5" />
                 </Button>
               </div>
-            ) : (
+            )}
+            {!file && (
               <div>
                 <input
                   ref={fileInputRef}
@@ -178,12 +182,13 @@ export function TranscriptionTab(): React.JSX.Element {
             }
             className="w-full cursor-pointer"
           >
-            {transcribe.status === 'pending' ? (
+            {transcribe.status === 'pending' && (
               <>
                 <Spinner className="mr-2" />
                 Transcrevendo...
               </>
-            ) : (
+            )}
+            {transcribe.status !== 'pending' && (
               <>
                 <ScanTextIcon className="size-4 mr-2" />
                 Transcrever
@@ -235,7 +240,8 @@ export function TranscriptionTab(): React.JSX.Element {
                   size="sm"
                   className="cursor-pointer text-muted-foreground"
                 >
-                  {rawOpen ? 'Ocultar' : 'Ver'} resposta bruta
+                  {rawOpen && 'Ocultar'}
+                  {!rawOpen && 'Ver'} resposta bruta
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>

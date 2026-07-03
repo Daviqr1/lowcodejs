@@ -180,7 +180,7 @@ export default function SenhasModule(): React.JSX.Element {
                     <div className="flex shrink-0 items-center gap-2">
                       <div className="flex rounded-md border p-0.5">
                         <Button
-                          variant={view === 'table' ? 'secondary' : 'ghost'}
+                          variant={(view === 'table' && 'secondary') || 'ghost'}
                           size="icon-sm"
                           title="Lista (tabela)"
                           onClick={() => changeView('table')}
@@ -188,7 +188,7 @@ export default function SenhasModule(): React.JSX.Element {
                           <ListIcon className="size-4" />
                         </Button>
                         <Button
-                          variant={view === 'cards' ? 'secondary' : 'ghost'}
+                          variant={(view === 'cards' && 'secondary') || 'ghost'}
                           size="icon-sm"
                           title="Cards"
                           onClick={() => changeView('cards')}
