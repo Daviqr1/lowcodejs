@@ -115,14 +115,13 @@ export function DateWindowModeSelector({
               id="fixed-from"
               type="date"
               value={value.fixedFrom?.slice(0, 10) ?? ''}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  fixedFrom: e.target.value
-                    ? new Date(e.target.value).toISOString()
-                    : null,
-                })
-              }
+              onChange={(e) => {
+                let fixedFrom = null;
+                if (e.target.value) {
+                  fixedFrom = new Date(e.target.value).toISOString();
+                }
+                onChange({ ...value, fixedFrom });
+              }}
               disabled={disabled}
             />
           </Field>
@@ -132,14 +131,13 @@ export function DateWindowModeSelector({
               id="fixed-to"
               type="date"
               value={value.fixedTo?.slice(0, 10) ?? ''}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  fixedTo: e.target.value
-                    ? new Date(e.target.value).toISOString()
-                    : null,
-                })
-              }
+              onChange={(e) => {
+                let fixedTo = null;
+                if (e.target.value) {
+                  fixedTo = new Date(e.target.value).toISOString();
+                }
+                onChange({ ...value, fixedTo });
+              }}
               disabled={disabled}
             />
           </Field>

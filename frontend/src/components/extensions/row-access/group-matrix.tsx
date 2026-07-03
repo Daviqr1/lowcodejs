@@ -28,9 +28,10 @@ export function GroupMatrix({
 }: GroupMatrixProps): React.JSX.Element {
   function toggle(value: string, groupId: string): void {
     const current = matrix[value] ?? [];
-    const next = current.includes(groupId)
-      ? current.filter((id) => id !== groupId)
-      : [...current, groupId];
+    let next = [...current, groupId];
+    if (current.includes(groupId)) {
+      next = current.filter((id) => id !== groupId);
+    }
     onChange({ ...matrix, [value]: next });
   }
 

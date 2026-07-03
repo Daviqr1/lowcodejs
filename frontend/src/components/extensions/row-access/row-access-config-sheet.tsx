@@ -71,10 +71,10 @@ function deriveInitialSettings(
   initialTableId: string | undefined,
 ): RowAccessSettings {
   if (!extension?.tableSettings) return DEFAULT_ROW_ACCESS_SETTINGS;
-  const target =
-    initialTableId && extension.tableSettings[initialTableId]
-      ? extension.tableSettings[initialTableId]
-      : Object.values(extension.tableSettings)[0];
+  let target = Object.values(extension.tableSettings)[0];
+  if (initialTableId && extension.tableSettings[initialTableId]) {
+    target = extension.tableSettings[initialTableId];
+  }
   if (isRowAccessSettings(target)) {
     return target;
   }
