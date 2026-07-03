@@ -492,6 +492,8 @@ export type IRow = Merge<
     status?: ValueOf<typeof E_ROW_STATUS>;
     draftAt?: string | null;
     sharedRowSlug?: string | null;
+    // Linha dinamica: os campos do low-code sao definidos em runtime, entao o
+    // valor por slug e `any` por design (unica excecao sancionada de `any`).
     [x: string]: any;
   }
 >;
