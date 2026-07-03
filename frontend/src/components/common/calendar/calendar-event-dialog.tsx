@@ -201,16 +201,17 @@ export function CalendarEventDialog({
     },
   });
 
-  const values = useStore(
+  const values: CalendarEventFormValues = useStore(
     form.store,
     (state: any) => state.values,
-  ) as CalendarEventFormValues;
+  );
   const colorOptions = getColorOptions(fields);
 
   const reminderSlug = fields.reminderField?.slug;
   let reminderItems: Array<Record<string, unknown>> = [];
-  if (reminderSlug && Array.isArray(values[reminderSlug])) {
-    reminderItems = values[reminderSlug] as Array<Record<string, unknown>>;
+  if (reminderSlug) {
+    const reminderValue = values[reminderSlug];
+    if (Array.isArray(reminderValue)) reminderItems = reminderValue;
   }
   const hasIncompleteReminder = reminderItems.some((item) => {
     const val = String(item.valor ?? '').trim();
@@ -392,11 +393,8 @@ export function CalendarEventDialog({
               <form.AppField name={fields.reminderField.slug}>
                 {(reminderFormField: any) => {
                   let items: Array<Record<string, unknown>> = [];
-                  if (Array.isArray(reminderFormField.state.value)) {
-                    items = reminderFormField.state.value as Array<
-                      Record<string, unknown>
-                    >;
-                  }
+                  const rawReminder = reminderFormField.state.value;
+                  if (Array.isArray(rawReminder)) items = rawReminder;
 
                   const groupSlug = fields.reminderField!.group?.slug;
                   const group = table?.groups?.find(
