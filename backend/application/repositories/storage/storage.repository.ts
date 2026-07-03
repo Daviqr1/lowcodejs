@@ -53,13 +53,11 @@ export default class StorageMongooseRepository implements StorageContractReposit
   }
 
   async createMany(payload: StorageCreatePayload[]): Promise<IStorage[]> {
-    const storages = await Model.insertMany(payload);
-    // insertMany retorna MergeType (torna `location` opcional) que não bate com
-    // InstanceType<typeof Model>; em runtime é o documento completo.
-    return storages.map((s) =>
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.transform(s as InstanceType<typeof Model>),
-    );
+    // `Model.create(array)` devolve documentos hidratados (InstanceType), ao
+    // contrário de `insertMany` (MergeType, com `location` opcional) — assim
+    // `transform` recebe o tipo certo sem asserção.
+    const storages = await Model.create(payload);
+    return storages.map((s) => this.transform(s));
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IStorage | null> {
