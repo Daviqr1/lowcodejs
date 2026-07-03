@@ -6,9 +6,6 @@ import {
   E_TABLE_STYLE,
 } from '@application/core/entity.core';
 
-const FIELD_FORMAT_VALUES: Array<
-  (typeof E_FIELD_FORMAT)[keyof typeof E_FIELD_FORMAT]
-> = Object.values(E_FIELD_FORMAT);
 const FIELD_FORMAT_KEY_TO_VALUE: Record<string, string> = E_FIELD_FORMAT;
 
 const FieldFormatSchema = z
@@ -24,10 +21,7 @@ const FieldFormatSchema = z
     }
     return value;
   })
-  // z.enum exige uma tupla não-vazia em nível de tipo; um array em runtime não
-  // consegue expressar isso sem asserção.
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  .pipe(z.enum(FIELD_FORMAT_VALUES as [string, ...string[]]).nullable());
+  .pipe(z.enum(E_FIELD_FORMAT).nullable());
 
 const IMPORTABLE_FIELD_TYPES = [
   E_FIELD_TYPE.TEXT_SHORT,

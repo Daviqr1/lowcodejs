@@ -344,10 +344,7 @@ export default class SchemaImportUseCase {
       locked: false,
       required: fieldDef.required,
       multiple: fieldDef.multiple,
-      // fieldDef.format vem do zod como string validada pelo enum; o pipe não
-      // estreita para o union tipado do E_FIELD_FORMAT.
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      format: fieldDef.format as ValueOf<typeof E_FIELD_FORMAT> | null,
+      format: fieldDef.format,
       showInFilter: fieldDef.showInFilter,
       permissions: buildFieldPermissions(
         fieldDef.showInList,
