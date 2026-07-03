@@ -142,6 +142,11 @@ export default class SettingShowUseCase {
         });
       }
 
+      let existingCloneTables: Array<string | ITable> = [];
+      if (Array.isArray(setting.MODEL_CLONE_TABLES)) {
+        existingCloneTables = setting.MODEL_CLONE_TABLES;
+      }
+
       return right({
         ...setting,
         ...projectAiSettingsFields(setting),
@@ -153,10 +158,7 @@ export default class SettingShowUseCase {
           getDocumentTemplateEntry(),
           getForumTemplateEntry(),
           getCalendarTemplateEntry(),
-          // eslint-disable-next-line no-ternary -- spread condicional das tabelas de clone
-          ...(Array.isArray(setting.MODEL_CLONE_TABLES)
-            ? setting.MODEL_CLONE_TABLES
-            : []),
+          ...existingCloneTables,
         ],
       });
     } catch (error) {
