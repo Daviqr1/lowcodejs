@@ -11,6 +11,7 @@ storage e contexto global de estado de upload.
 | `file-upload.tsx`              | Componente base FileUpload com drag-and-drop zone, lista de arquivos, preview, progresso e validacao         |
 | `file-upload-with-storage.tsx` | Wrapper que integra FileUpload com API de storage (upload via POST /storage, delete via DELETE /storage/:id) |
 | `uploading-context.tsx`        | Context provider para rastrear uploads ativos globalmente (registerUpload/unregisterUpload)                  |
+| `attachment-context-menu.tsx`  | Menu de contexto (botao direito) sobre anexos: abrir em nova aba, salvar arquivo e copiar link               |
 
 ## Dependencias principais
 
