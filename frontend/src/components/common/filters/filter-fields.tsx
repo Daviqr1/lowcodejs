@@ -792,6 +792,7 @@ export function FilterRelationship({
         if (cached) return cached;
         const fromList = allItems.find((row) => row._id === id);
         if (fromList) return fromList;
+        // placeholder mínimo para id ainda não resolvido no cache/lista
         return { _id: id } as IRow;
       })
       .filter((row): row is IRow => row !== null);

@@ -64,14 +64,14 @@ export function TableRowCategoryField({
   const treeData = convertCategoriesToTreeNodes(categories);
 
   const selectedIds = React.useMemo(() => {
-    const value = formField.state.value as unknown;
+    const value: unknown = formField.state.value;
     if (Array.isArray(value)) return value;
     if (value) return [String(value)];
     return [];
   }, [formField.state.value]);
 
   const selectedLabel = React.useMemo(() => {
-    const value = formField.state.value as unknown;
+    const value: unknown = formField.state.value;
     let values: Array<string> = [];
     if (Array.isArray(value)) {
       values = value;
