@@ -20,7 +20,9 @@ function toDefaultSearchableOptions(
   return toDefaultArray(value).map((id) => ({ value: id, label: '' }));
 }
 
-// Helper: Build default values based on table fields
+// Helper: Build default values based on table fields.
+// Os valores são dinâmicos (campos definidos em runtime no TanStack Form), por
+// isso `any` — o mapa não tem forma estática conhecida.
 export function buildDefaultValues(fields: Array<IField>): Record<string, any> {
   const defaults: Record<string, any> = {};
 
@@ -35,7 +37,8 @@ export function buildDefaultValues(fields: Array<IField>): Record<string, any> {
       case E_FIELD_TYPE.DROPDOWN:
       case E_FIELD_TYPE.CATEGORY: {
         const arr = toDefaultArray(field.defaultValue);
-        defaults[field.slug] = arr.length > 0 ? arr : [];
+        if (arr.length > 0) defaults[field.slug] = arr;
+        if (arr.length === 0) defaults[field.slug] = [];
         break;
       }
       case E_FIELD_TYPE.DATE:
@@ -47,14 +50,15 @@ export function buildDefaultValues(fields: Array<IField>): Record<string, any> {
         break;
       case E_FIELD_TYPE.FILE:
         defaults[field.slug] = {
-          files: [] as Array<File>,
-          storages: [] as Array<IStorage>,
+          files: [],
+          storages: [],
         };
         break;
       case E_FIELD_TYPE.RELATIONSHIP:
       case E_FIELD_TYPE.USER: {
         const opts = toDefaultSearchableOptions(field.defaultValue);
-        defaults[field.slug] = opts.length > 0 ? opts : [];
+        if (opts.length > 0) defaults[field.slug] = opts;
+        if (opts.length === 0) defaults[field.slug] = [];
         break;
       }
       default:
@@ -85,18 +89,16 @@ export function buildPayload(
       case E_FIELD_TYPE.DROPDOWN: {
         const existing = values[field.slug];
         if (field.multiple) {
-          const ids = Array.isArray(existing)
-            ? existing
-            : existing
-              ? [existing]
-              : [];
-          payload[field.slug] = ids as Array<string>;
+          let ids: Array<unknown> = [];
+          if (Array.isArray(existing)) ids = existing;
+          else if (existing) ids = [existing];
+          payload[field.slug] = ids;
         } else {
-          const id = Array.isArray(existing)
-            ? (existing[0] ?? null)
-            : (existing ?? null);
+          let id: unknown = existing ?? null;
+          if (Array.isArray(existing)) id = existing[0] ?? null;
           // Always array, but limit to 1 item
-          payload[field.slug] = id ? [id] : [];
+          if (id) payload[field.slug] = [id];
+          if (!id) payload[field.slug] = [];
         }
         break;
       }
@@ -104,10 +106,10 @@ export function buildPayload(
         payload[field.slug] = value || null;
         break;
       case E_FIELD_TYPE.FILE: {
-        const fileValue = value as {
+        const fileValue: {
           files: Array<File>;
           storages: Array<IStorage>;
-        };
+        } = value;
         if (field.multiple) {
           payload[field.slug] = fileValue.storages.map((s) => s._id);
         } else {
@@ -129,11 +131,9 @@ export function buildPayload(
         break;
       }
       case E_FIELD_TYPE.CATEGORY: {
-        const categoryValue = Array.isArray(value)
-          ? value
-          : value
-            ? [value]
-            : [];
+        let categoryValue: Array<unknown> = [];
+        if (Array.isArray(value)) categoryValue = value;
+        else if (value) categoryValue = [value];
         if (field.multiple) {
           payload[field.slug] = categoryValue;
         } else {
@@ -157,21 +157,18 @@ export function buildPayload(
           payload[field.slug] = value || null;
           break;
         }
-        payload[field.slug] = value.map((item: Record<string, any>) => {
-          const normalized: Record<string, any> = {};
+        payload[field.slug] = value.map((item: Record<string, unknown>) => {
+          const normalized: Record<string, unknown> = {};
           for (const [key, val] of Object.entries(item)) {
             // Normalize FILE sub-fields: { files, storages } -> array of IDs
             if (
               val &&
               typeof val === 'object' &&
               !Array.isArray(val) &&
-              'storages' in val
+              'storages' in val &&
+              Array.isArray(val.storages)
             ) {
-              const fileVal = val as {
-                files: Array<File>;
-                storages: Array<IStorage>;
-              };
-              normalized[key] = fileVal.storages.map((s) => s._id);
+              normalized[key] = val.storages.map((s) => s._id);
             } else {
               normalized[key] = val;
             }
@@ -190,11 +187,11 @@ export function buildPayload(
 
 // Validator for required fields
 type RequiredValidator = {
-  onChange: ({ value }: { value: any }) => string | undefined;
+  onChange: ({ value }: { value: unknown }) => string | undefined;
 };
 
 export function createRequiredValidator(fieldName: string): RequiredValidator {
-  const validate = ({ value }: { value: any }): string | undefined => {
+  const validate = ({ value }: { value: unknown }): string | undefined => {
     if (value === null || value === undefined || value === '') {
       return `${fieldName} é obrigatório`;
     }
@@ -216,6 +213,7 @@ export function createRequiredValidator(fieldName: string): RequiredValidator {
 }
 
 interface RowFormFieldsProps {
+  // Instância do TanStack Form (AppForm) com campos dinâmicos — sem tipo estático.
   form: any;
   fields: Array<IField>;
   disabled: boolean;
@@ -274,6 +272,7 @@ export function RowFormFields({
             <form.AppField
               name={field.slug}
               validators={{
+                // value é o valor dinâmico do campo (FieldValue) vindo do form.
                 onChange: ({ value }: { value: any }) => {
                   return buildFieldValidator(field, value);
                 },
@@ -282,6 +281,7 @@ export function RowFormFields({
                 },
               }}
             >
+              {/* render prop do AppField do TanStack Form — API dinâmica */}
               {(formField: any) => {
                 switch (field.type) {
                   case E_FIELD_TYPE.TEXT_SHORT:
