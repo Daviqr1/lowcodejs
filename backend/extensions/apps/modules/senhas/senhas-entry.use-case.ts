@@ -18,7 +18,7 @@ import type {
 
 function toId(value: unknown): string {
   if (value && typeof value === 'object' && '_id' in value) {
-    return String((value as { _id: unknown })._id);
+    return String(value._id);
   }
   return String(value);
 }
@@ -54,10 +54,10 @@ export default class SenhasEntryUseCase {
       _id: unknown;
       channel: unknown;
       title: string;
-      username: string | null;
-      url: string | null;
+      username?: string | null;
+      url?: string | null;
       secret: string;
-      notes: string | null;
+      notes?: string | null;
       author: unknown;
       createdAt: Date;
       updatedAt: Date;
@@ -80,9 +80,7 @@ export default class SenhasEntryUseCase {
   }
 
   private async loadChannel(channelId: string): Promise<ChannelLean> {
-    return PasswordChannelModel.findById(
-      channelId,
-    ).lean() as Promise<ChannelLean>;
+    return PasswordChannelModel.findById(channelId).lean();
   }
 
   /** Lista as entradas (DECIFRADAS) de um canal que o usuário pode ver. */
@@ -100,7 +98,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!canView(channel as never, userId)) {
+      if (!canView(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Você não tem acesso a este canal',
@@ -114,7 +112,7 @@ export default class SenhasEntryUseCase {
         .lean();
 
       const users = await this.resolveUsers(entries.map((e) => toId(e.author)));
-      return right(entries.map((e) => this.serialize(e as never, users)));
+      return right(entries.map((e) => this.serialize(e, users)));
     } catch (error) {
       console.error('[apps/senhas > entry.list][error]:', error);
       return left(
@@ -142,7 +140,7 @@ export default class SenhasEntryUseCase {
         );
       }
       // Escrita exige ser membro/owner — mesmo em canal público.
-      if (!isMember(channel as never, userId)) {
+      if (!isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem adicionar senhas',
@@ -162,7 +160,7 @@ export default class SenhasEntryUseCase {
       });
 
       const users = await this.resolveUsers([userId]);
-      return right(this.serialize(created.toObject() as never, users));
+      return right(this.serialize(created.toObject(), users));
     } catch (error) {
       console.error('[apps/senhas > entry.create][error]:', error);
       return left(
@@ -190,7 +188,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!isMember(channel as never, userId)) {
+      if (!isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem editar senhas',
@@ -229,7 +227,7 @@ export default class SenhasEntryUseCase {
       ).lean();
 
       const users = await this.resolveUsers([toId(updated!.author)]);
-      return right(this.serialize(updated as never, users));
+      return right(this.serialize(updated!, users));
     } catch (error) {
       console.error('[apps/senhas > entry.update][error]:', error);
       return left(
@@ -256,7 +254,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!isMember(channel as never, userId)) {
+      if (!isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem excluir senhas',

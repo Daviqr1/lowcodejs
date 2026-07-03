@@ -16,7 +16,7 @@ import type {
 
 function toId(value: unknown): string {
   if (value && typeof value === 'object' && '_id' in value) {
-    return String((value as { _id: unknown })._id);
+    return String(value._id);
   }
   return String(value);
 }
@@ -65,7 +65,7 @@ export default class SenhasChannelUseCase {
     channel: {
       _id: unknown;
       name: string;
-      description: string | null;
+      description?: string | null;
       private: boolean;
       owner: unknown;
       members: Array<unknown>;
@@ -116,9 +116,7 @@ export default class SenhasChannelUseCase {
       );
 
       return right(
-        channels.map((c, i) =>
-          this.serialize(c as never, users, counts[i] ?? 0),
-        ),
+        channels.map((c, i) => this.serialize(c, users, counts[i] ?? 0)),
       );
     } catch (error) {
       console.error('[apps/senhas > channel.list][error]:', error);
@@ -149,7 +147,7 @@ export default class SenhasChannelUseCase {
       });
 
       const users = await this.resolveUsers(members);
-      return right(this.serialize(created.toObject() as never, users, 0));
+      return right(this.serialize(created.toObject(), users, 0));
     } catch (error) {
       console.error('[apps/senhas > channel.create][error]:', error);
       return left(
@@ -210,7 +208,7 @@ export default class SenhasChannelUseCase {
         toId(updated!.owner),
         ...updated!.members.map(toId),
       ]);
-      return right(this.serialize(updated as never, users, count));
+      return right(this.serialize(updated!, users, count));
     } catch (error) {
       console.error('[apps/senhas > channel.update][error]:', error);
       return left(
