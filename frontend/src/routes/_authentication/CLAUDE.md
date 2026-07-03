@@ -24,10 +24,21 @@ _authentication/
 
 ## Guard de Layout
 
-O `beforeLoad` em `layout.tsx` verifica se o usuario ja esta logado via
-`profileDetailOptions()`. Se existir sessao, redireciona para
-`ROLE_DEFAULT_ROUTE[role]` (fallback: `/tables`). A role e extraida de
-`user.group.slug`.
+O `beforeLoad` em `layout.tsx` roda antes de qualquer rota publica, em ordem:
+
+1. **reset-password**: `/forgot-password/reset-password` pula o guard (o fluxo
+   de reset roda mesmo "deslogado").
+2. **Setup incompleto**: busca `setupStatusOptions()`; se `!completed`,
+   redireciona para `/setup/{currentStep}` (fallback `admin`).
+3. **addAccount**: se houver o search param `addAccount`, pula o guard (permite
+   logar em outra conta mesmo ja autenticado).
+4. **Sessao ativa**: carrega o perfil via `profileDetailOptions()`. Se houver
+   usuario:
+   - `role = user.group?.slug?.toUpperCase() ?? 'REGISTERED'`;
+     `fallbackRoute = ROLE_DEFAULT_ROUTE[role] ?? '/tables'`
+   - busca os menus (`menuAllOptions()`) e usa `resolveInitialMenuRoute(menus)`:
+     rota externa → `redirect({ href })`; interna → `redirect({ to })`; ausente
+     → `fallbackRoute`
 
 ## Tabela de Rotas
 
@@ -53,5 +64,7 @@ Cada rota segue a convencao TanStack Router:
 
 - `ROLE_DEFAULT_ROUTE` de `@/lib/menu/menu-access-permissions` - mapa role ->
   rota padrao
-- `profileDetailOptions` de `@/hooks/tanstack-query/_query-options` - query do
-  perfil do usuario
+- `resolveInitialMenuRoute` de `@/lib/menu/initial-menu-route` - primeira rota
+  navegavel a partir dos menus do usuario
+- `profileDetailOptions`, `setupStatusOptions`, `menuAllOptions` de
+  `@/hooks/tanstack-query/_query-options` - perfil, status do setup e menus
