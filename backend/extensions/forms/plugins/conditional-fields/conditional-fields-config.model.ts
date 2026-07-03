@@ -24,20 +24,22 @@ const ConditionalFieldsConfigSchema = new mongoose.Schema(
   { timestamps: true, id: false },
 );
 
-export const ConditionalFieldsConfigModel = (mongoose?.models
-  ?.ConditionalFieldsConfig ||
+export const ConditionalFieldsConfigModel: mongoose.Model<
+  ConditionalFieldsConfig & mongoose.Document
+> =
+  mongoose?.models?.ConditionalFieldsConfig ||
   mongoose.model<ConditionalFieldsConfig & mongoose.Document>(
     'ConditionalFieldsConfig',
     ConditionalFieldsConfigSchema,
     'conditional_fields_configs',
-  )) as mongoose.Model<ConditionalFieldsConfig & mongoose.Document>;
+  );
 
 export async function getConfigByTableId(
   tableId: string,
   tableSlug: string,
 ): Promise<ConditionalFieldsConfig> {
   const doc = await ConditionalFieldsConfigModel.findOne({ tableId }).lean();
-  if (doc) return doc as ConditionalFieldsConfig;
+  if (doc) return doc;
   return { tableId, tableSlug, rules: [] };
 }
 
@@ -55,5 +57,5 @@ export async function saveConfig(
     { upsert: true, new: true },
   ).lean();
 
-  return doc as ConditionalFieldsConfig;
+  return doc;
 }

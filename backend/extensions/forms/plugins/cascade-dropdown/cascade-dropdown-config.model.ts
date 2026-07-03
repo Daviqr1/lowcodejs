@@ -52,13 +52,15 @@ CascadeDropdownConfigSchema.index(
   { unique: true },
 );
 
-export const CascadeDropdownConfigModel = (mongoose.models
-  .CascadeDropdownConfig ||
+export const CascadeDropdownConfigModel: mongoose.Model<
+  CascadeDropdownConfig & mongoose.Document
+> =
+  mongoose.models.CascadeDropdownConfig ||
   mongoose.model<CascadeDropdownConfig & mongoose.Document>(
     'CascadeDropdownConfig',
     CascadeDropdownConfigSchema,
     'cascade_dropdown_field_configs',
-  )) as mongoose.Model<CascadeDropdownConfig & mongoose.Document>;
+  );
 
 export async function findCascadeDropdownConfig(
   targetTableSlug: string,
@@ -69,7 +71,8 @@ export async function findCascadeDropdownConfig(
     targetFieldId,
   });
 
-  return doc ? (doc.toJSON() as CascadeDropdownConfig) : null;
+  if (!doc) return null;
+  return doc.toJSON();
 }
 
 export async function saveCascadeDropdownConfig(
@@ -84,7 +87,7 @@ export async function saveCascadeDropdownConfig(
     { upsert: true, new: true },
   );
 
-  return doc!.toJSON() as CascadeDropdownConfig;
+  return doc!.toJSON();
 }
 
 export async function deleteCascadeDropdownConfigsForField(params: {

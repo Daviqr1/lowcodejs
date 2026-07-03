@@ -60,7 +60,7 @@ function getConditionOptions(field: IField): string[] {
     const walk = (items: IField['category']): void => {
       for (const item of items ?? []) {
         result.push(item.id);
-        walk(item.children as IField['category']);
+        walk(item.children);
       }
     };
     walk(field.category ?? []);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { IRow, ITable } from '@application/core/entity.core';
 import type { GuardEvalContext } from '@application/core/extensions/row-access-guard.contract';
+import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
@@ -76,51 +76,37 @@ function makeGroupSettings(
   };
 }
 
-const baseTable: ITable = {
-  _id: 'tab1',
-  name: 'Docs',
-  slug: 'docs',
-  _schema: {},
-  fields: [],
-  groups: [],
-  owner: 'u-owner',
-  members: [],
-  permissions: null,
-  fieldOrderList: [],
-  fieldOrderForm: [],
-  fieldOrderFilter: [],
-  fieldOrderDetail: [],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  trashed: false,
-  trashedAt: null,
-  methods: {
-    onLoad: { code: null },
-    beforeSave: { code: null },
-    afterSave: { code: null },
-  },
-  order: null,
-  layoutFields: {
-    title: null,
-    description: null,
-    cover: null,
-    category: null,
-    startDate: null,
-    endDate: null,
-    color: null,
-    participants: null,
-    reminder: null,
-  },
-  rowSlugFieldId: null,
-  description: null,
-  logo: null,
-  style: 'LIST' as ITable['style'],
-  type: 'TABLE' as ITable['type'],
-} as unknown as ITable;
-
-function makeRow(extra: Partial<Record<string, unknown>> = {}): IRow {
-  return { _id: 'r1', ...extra } as unknown as IRow;
+// Narrows para ler o formato dinâmico da query Mongo sem asserção.
+function orClauses(q: Record<string, unknown>): Array<Record<string, unknown>> {
+  const or = q['$or'];
+  if (!Array.isArray(or)) return [];
+  return or.filter(
+    (c): c is Record<string, unknown> => typeof c === 'object' && c !== null,
+  );
 }
+function andClauses(
+  clause: Record<string, unknown>,
+): Array<Record<string, unknown>> {
+  const and = clause['$and'];
+  if (!Array.isArray(and)) return [];
+  return and.filter(
+    (c): c is Record<string, unknown> => typeof c === 'object' && c !== null,
+  );
+}
+function visibilityIn(clause: Record<string, unknown>): string[] {
+  const vis = clause['visibility'];
+  if (
+    vis &&
+    typeof vis === 'object' &&
+    '$in' in vis &&
+    Array.isArray(vis.$in)
+  ) {
+    return vis.$in.filter((v): v is string => typeof v === 'string');
+  }
+  return [];
+}
+
+const baseTable = makeTable({ _id: 'tab1', name: 'Docs', slug: 'docs' });
 
 // ── shape ─────────────────────────────────────────────────────────────────────
 
@@ -139,12 +125,7 @@ describe('RowAccessControlGuard shape', () => {
 describe('guard.adjustListQuery', () => {
   it('visitante (sem userId) retorna query bloqueante para evitar list-leak', () => {
     const settings = makeGroupSettings();
-    const q = guard.adjustListQuery(
-      {},
-      makeVisitorCtx(),
-      baseTable,
-      settings as unknown as Record<string, unknown>,
-    );
+    const q = guard.adjustListQuery({}, makeVisitorCtx(), baseTable, settings);
     // FIX 1: quando visibility está habilitada e não há userId,
     // deve bloquear (não vazar a lista inteira para visitantes)
     expect(q).toEqual({
@@ -158,28 +139,23 @@ describe('guard.adjustListQuery', () => {
       {},
       makeCtx(['g-manager']),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(q).toHaveProperty('$or');
-    const or = (q as { $or: Array<Record<string, unknown>> }).$or;
+    const or = orClauses(q);
     expect(or).toHaveLength(2);
     expect(or[1]).toEqual({ creator: 'u1' });
-    const vis = or[0] as { visibility: { $in: string[] } };
-    expect(vis.visibility.$in).toContain('PUBLIC');
-    expect(vis.visibility.$in).toContain('INTERNO');
-    expect(vis.visibility.$in).not.toContain('RESTRITO');
-    expect(vis.visibility.$in).not.toContain('SIGILOSO');
+    const vis = visibilityIn(or[0]);
+    expect(vis).toContain('PUBLIC');
+    expect(vis).toContain('INTERNO');
+    expect(vis).not.toContain('RESTRITO');
+    expect(vis).not.toContain('SIGILOSO');
   });
 
   it('usuario sem grupo nenhum: visibility bloqueada para __BLOCKED__ + creator escape', () => {
     const settings = makeGroupSettings();
-    const q = guard.adjustListQuery(
-      {},
-      makeCtx([]),
-      baseTable,
-      settings as unknown as Record<string, unknown>,
-    );
-    const or = (q as { $or: Array<Record<string, unknown>> }).$or;
+    const q = guard.adjustListQuery({}, makeCtx([]), baseTable, settings);
+    const or = orClauses(q);
     expect(or[0]).toEqual({ visibility: { $in: ['__BLOCKED__'] } });
     expect(or[1]).toEqual({ creator: 'u1' });
   });
@@ -192,7 +168,7 @@ describe('guard.adjustListQuery', () => {
       {},
       makeCtx(['g-manager']),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(q).toHaveProperty('visibility');
     expect(q).not.toHaveProperty('$or');
@@ -206,12 +182,12 @@ describe('guard.adjustListQuery', () => {
       {},
       makeCtx(['g-manager']),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
-    const or = (q as { $or: Array<Record<string, unknown>> }).$or;
-    const restritivo = or[0] as { $and?: Array<Record<string, unknown>> };
-    expect(restritivo.$and).toBeDefined();
-    const hasCreated = restritivo.$and?.some((f) => 'createdAt' in f);
+    const or = orClauses(q);
+    const and = andClauses(or[0]);
+    expect(and.length).toBeGreaterThan(0);
+    const hasCreated = and.some((f) => 'createdAt' in f);
     expect(hasCreated).toBe(true);
   });
 
@@ -225,7 +201,7 @@ describe('guard.adjustListQuery', () => {
       {},
       makeCtx(['g-manager']),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(q).toEqual({});
   });
@@ -240,7 +216,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-manager'], 'u1'),
       baseTable,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toBe('allow');
   });
@@ -251,7 +227,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-manager'], 'u1'),
       baseTable,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toBe('deny');
   });
@@ -262,7 +238,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-manager'], 'u1'),
       baseTable,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toBe('abstain');
   });
@@ -273,7 +249,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-admin'], 'u1'),
       baseTable,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toBe('abstain');
   });
@@ -284,7 +260,7 @@ describe('guard.canRead', () => {
       row,
       makeVisitorCtx(),
       baseTable,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toBe('deny');
   });
@@ -303,7 +279,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-manager'], 'u1'),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(decision).toBe('deny');
   });
@@ -326,7 +302,7 @@ describe('guard.canRead', () => {
       row,
       makeCtx(['g-manager'], 'u1'),
       baseTable,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(decision).toBe('abstain');
   });
@@ -343,7 +319,7 @@ describe('guard.canWrite', () => {
       baseTable,
       null,
       'update',
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toEqual({ decision: 'allow' });
   });
@@ -355,7 +331,7 @@ describe('guard.canWrite', () => {
       baseTable,
       { visibility: ['SIGILOSO'] },
       'create',
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toEqual({
       decision: 'deny',
@@ -370,7 +346,7 @@ describe('guard.canWrite', () => {
       baseTable,
       { visibility: ['PUBLIC'] },
       'create',
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toEqual({ decision: 'abstain' });
   });
@@ -382,7 +358,7 @@ describe('guard.canWrite', () => {
       baseTable,
       { visibility: ['SIGILOSO'] },
       'create',
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(decision).toEqual({ decision: 'abstain' });
   });
@@ -398,7 +374,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'create',
       null,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(out['visibility']).toEqual(['PUBLIC']);
   });
@@ -410,7 +386,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'create',
       null,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(out['visibility']).toEqual(['PUBLIC']);
   });
@@ -423,7 +399,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'update',
       current,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(out['visibility']).toEqual(['INTERNO']);
   });
@@ -436,7 +412,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'update',
       current,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(out['visibility']).toEqual(['SIGILOSO']);
   });
@@ -452,7 +428,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'create',
       null,
-      settings as unknown as Record<string, unknown>,
+      settings,
     );
     expect(out).toEqual({ nome: 'x', visibility: 'PUBLIC' });
   });
@@ -464,7 +440,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'create',
       null,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     expect(out).toEqual({ nome: 'x' });
   });
@@ -479,7 +455,7 @@ describe('guard.sanitizeWritePayload', () => {
       baseTable,
       'create',
       null,
-      makeGroupSettings() as unknown as Record<string, unknown>,
+      makeGroupSettings(),
     );
     // g-admin pode ver SIGILOSO, então normaliza
     expect(out['visibility']).toEqual(['SIGILOSO']);
