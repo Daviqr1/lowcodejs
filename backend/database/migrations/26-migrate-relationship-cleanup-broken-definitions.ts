@@ -125,12 +125,13 @@ async function cleanupBrokenDefinitions(
         { fields: field._id },
         { projection: { _id: 1 } },
       );
-      const tableWithGroup = parentTable
-        ? null
-        : await tablesCol.findOne(
-            { 'groups.fields': field._id },
-            { projection: { _id: 1 } },
-          );
+      let tableWithGroup: TableDoc | null = null;
+      if (!parentTable) {
+        tableWithGroup = await tablesCol.findOne(
+          { 'groups.fields': field._id },
+          { projection: { _id: 1 } },
+        );
+      }
 
       await tablesCol.updateMany(
         { fields: field._id },
@@ -157,11 +158,9 @@ async function cleanupBrokenDefinitions(
         const pullGroupField: Record<string, unknown> = {
           $pull: { 'groups.$[g].fields': field._id },
         };
-        await tablesCol.updateOne(
-          { _id: tableWithGroup._id },
-          pullGroupField,
-          { arrayFilters: [{ 'g.fields': field._id }] },
-        );
+        await tablesCol.updateOne({ _id: tableWithGroup._id }, pullGroupField, {
+          arrayFilters: [{ 'g.fields': field._id }],
+        });
         await tablesCol.updateOne(
           { _id: tableWithGroup._id },
           { $unset: { [`_schema.${field.slug}`]: '' } },
