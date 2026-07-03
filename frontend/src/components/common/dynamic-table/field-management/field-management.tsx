@@ -270,11 +270,10 @@ function TrashedItem({
               disabled={isRestoring || isDeleting}
               title="Restaurar campo"
             >
-              {isRestoring ? (
+              {isRestoring && (
                 <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArchiveRestoreIcon className="h-4 w-4" />
               )}
+              {!isRestoring && <ArchiveRestoreIcon className="h-4 w-4" />}
             </Button>
           </DialogTrigger>
           <DialogContent className="py-4 px-6">
@@ -299,11 +298,10 @@ function TrashedItem({
                       setRestoreOpen(false);
                     }}
                   >
-                    {isRestoring ? (
+                    {isRestoring && (
                       <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <span>Confirmar</span>
                     )}
+                    {!isRestoring && <span>Confirmar</span>}
                   </Button>
                 </DialogFooter>
               </form>
@@ -359,11 +357,10 @@ function TrashedItem({
                       setDeleteOpen(false);
                     }}
                   >
-                    {isDeleting ? (
+                    {isDeleting && (
                       <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <span>Confirmar</span>
                     )}
+                    {!isDeleting && <span>Confirmar</span>}
                   </Button>
                 </DialogFooter>
               </form>
@@ -541,9 +538,11 @@ function FieldManagementList({
       .sort((a, b) => {
         const idxA = orderArray.indexOf(a._id);
         const idxB = orderArray.indexOf(b._id);
-        return (
-          (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB)
-        );
+        let rankA = idxA;
+        if (idxA === -1) rankA = Infinity;
+        let rankB = idxB;
+        if (idxB === -1) rankB = Infinity;
+        return rankA - rankB;
       })
       .map((f) => f._id);
   });
@@ -554,7 +553,11 @@ function FieldManagementList({
     return [...managedFields].sort((a, b) => {
       const idxA = orderedIds.indexOf(a._id);
       const idxB = orderedIds.indexOf(b._id);
-      return (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB);
+      let rankA = idxA;
+      if (idxA === -1) rankA = Infinity;
+      let rankB = idxB;
+      if (idxB === -1) rankB = Infinity;
+      return rankA - rankB;
     });
   }, [managedFields, orderedIds]);
 

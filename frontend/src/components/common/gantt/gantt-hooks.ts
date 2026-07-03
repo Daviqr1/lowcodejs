@@ -141,9 +141,10 @@ export function useBarDrag({
           updateData[fields.startDate.slug] = newStart!.toISOString();
         if (fields.dueDate)
           updateData[fields.dueDate.slug] = newEnd!.toISOString();
-        if (hasGroupChange && fields.list)
-          updateData[fields.list.slug] =
-            newGroupId === '__none__' ? [] : [newGroupId];
+        if (hasGroupChange && fields.list) {
+          if (newGroupId === '__none__') updateData[fields.list.slug] = [];
+          else updateData[fields.list.slug] = [newGroupId];
+        }
 
         const optimistic = (prev: Array<IRow>): Array<IRow> =>
           prev.map((r) => {
@@ -153,9 +154,10 @@ export function useBarDrag({
               updated[fields.startDate.slug] = newStart!.toISOString();
             if (fields.dueDate)
               updated[fields.dueDate.slug] = newEnd!.toISOString();
-            if (hasGroupChange && fields.list)
-              updated[fields.list.slug] =
-                newGroupId === '__none__' ? [] : [newGroupId];
+            if (hasGroupChange && fields.list) {
+              if (newGroupId === '__none__') updated[fields.list.slug] = [];
+              else updated[fields.list.slug] = [newGroupId];
+            }
             return updated;
           });
 
@@ -228,10 +230,12 @@ export function useCreateDrag({
     const x = e.clientX - rect.left + (timelineRef.current?.scrollLeft ?? 0);
 
     const rowsContainer = rowEl.closest('[data-gantt-rows]');
-    const rowTop = rowsContainer
-      ? rowEl.getBoundingClientRect().top -
-        rowsContainer.getBoundingClientRect().top
-      : rowEl.offsetTop;
+    let rowTop = rowEl.offsetTop;
+    if (rowsContainer) {
+      rowTop =
+        rowEl.getBoundingClientRect().top -
+        rowsContainer.getBoundingClientRect().top;
+    }
 
     setCreateDrag({
       groupOptionId,
@@ -251,7 +255,10 @@ export function useCreateDrag({
       const rect = timelineRef.current?.getBoundingClientRect();
       if (!rect) return;
       const x = e.clientX - rect.left + scrollLeft;
-      setCreateDrag((prev) => (prev ? { ...prev, currentX: x } : null));
+      setCreateDrag((prev) => {
+        if (prev) return { ...prev, currentX: x };
+        return null;
+      });
     };
 
     const handleMouseUp = (): void => {
