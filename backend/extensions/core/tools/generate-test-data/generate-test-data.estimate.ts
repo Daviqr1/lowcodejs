@@ -31,12 +31,12 @@ const FIELD_KEY_OVERHEAD_BYTES = 8;
 type LooseField = {
   native?: boolean;
   type?: string;
-  format?: string;
+  format?: string | null;
   slug?: string;
 };
 
 type LooseTable = {
-  fields?: Array<Record<string, unknown>>;
+  fields?: LooseField[];
 };
 
 /** Bytes estimados do VALOR de um campo, espelhando `generateMockRow`. */
@@ -62,7 +62,8 @@ function estimateFieldValueBytes(field: LooseField): number {
           return 50;
       }
     case 'TEXT_LONG':
-      return field.format === 'RICH_TEXT' ? 110 : 130;
+      if (field.format === 'RICH_TEXT') return 110;
+      return 130;
     case 'DATE':
       return 28;
     case 'DROPDOWN':
@@ -82,7 +83,7 @@ export function estimateRowSizeBytes(table: LooseTable): number {
   let bytes = BASE_DOC_OVERHEAD_BYTES;
 
   for (const raw of table.fields ?? []) {
-    const field = raw as unknown as LooseField;
+    const field = raw;
     if (field.native) continue;
     const valueBytes = estimateFieldValueBytes(field);
     if (valueBytes === 0) continue;
@@ -117,7 +118,9 @@ export function formatBytes(bytes: number): string {
     value /= 1024;
     unit += 1;
   }
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
+  let human = value.toFixed(1);
+  if (value >= 100) human = String(Math.round(value));
+  return `${human} ${units[unit]}`;
 }
 
 export type TestDataEstimate = {
@@ -149,7 +152,8 @@ export function buildEstimate(
   );
   let cappedBy: TestDataEstimate['cappedBy'] = 'requested';
   if (realTargetQuantity < quantity) {
-    cappedBy = budgetCap < HARD_REAL_CAP ? 'budget' : 'hard_cap';
+    cappedBy = 'hard_cap';
+    if (budgetCap < HARD_REAL_CAP) cappedBy = 'budget';
   }
 
   const warnings: string[] = [];

@@ -17,7 +17,9 @@ import { ExtensionActiveMiddleware } from '@application/middlewares/extension-ac
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table.repository';
-import MongooseModelBuilder from '@application/services/table/model-builder.service';
+import MongooseModelBuilder, {
+  type Entity,
+} from '@application/services/table/model-builder.service';
 import MongooseQueryBuilder from '@application/services/table/query-builder.service';
 
 import {
@@ -143,7 +145,8 @@ function toValueArray(value: unknown): string[] {
     return value.map((item) => compactString(item)).filter(Boolean);
   }
   const compacted = compactString(value);
-  return compacted ? [compacted] : [];
+  if (compacted) return [compacted];
+  return [];
 }
 
 function buildEmptyQuery(operator: 'is_empty' | 'is_not_empty'): object {
@@ -161,7 +164,8 @@ function buildFieldCondition(
     'operator' | 'value' | 'values' | 'dateStart' | 'dateEnd'
   >,
 ): unknown {
-  const values = filter.values.length > 0 ? filter.values : [];
+  let values: string[] = [];
+  if (filter.values.length > 0) values = filter.values;
   if (filter.value) values.push(filter.value);
 
   if (filter.operator === 'is_empty' || filter.operator === 'is_not_empty') {
@@ -263,22 +267,14 @@ function buildQueryFromConfig(
   return query;
 }
 
-async function getModel(table: ITable): Promise<mongoose.Model<unknown>> {
-  const model = await getInstanceByToken(MongooseModelBuilder).build(table);
-  return model as unknown as mongoose.Model<unknown>;
+async function getModel(table: ITable): Promise<mongoose.Model<Entity>> {
+  return getInstanceByToken(MongooseModelBuilder).build(table);
 }
 
-async function transformRows(rows: unknown[]): Promise<IRow[]> {
-  return rows.map((row) => {
-    if (row && typeof row === 'object' && 'toJSON' in row) {
-      return (
-        row as { toJSON(opts: { flattenObjectIds: boolean }): IRow }
-      ).toJSON({
-        flattenObjectIds: true,
-      });
-    }
-    return row as IRow;
-  });
+async function transformRows(
+  rows: Array<{ toJSON(opts: { flattenObjectIds: boolean }): IRow }>,
+): Promise<IRow[]> {
+  return rows.map((row) => row.toJSON({ flattenObjectIds: true }));
 }
 
 @Controller({ route: '/plugins/cascade-dropdown' })
@@ -758,7 +754,10 @@ export default class CascadeDropdownController {
     ]);
 
     const data = await transformRows(rows);
-    const lastPage = total > 0 ? Math.ceil(total / query.perPage) : 0;
+    let lastPage = 0;
+    if (total > 0) lastPage = Math.ceil(total / query.perPage);
+    let firstPage = 0;
+    if (total > 0) firstPage = 1;
 
     return response.status(200).send({
       data,
@@ -767,7 +766,7 @@ export default class CascadeDropdownController {
         perPage: query.perPage,
         page: query.page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage,
       },
     });
   }

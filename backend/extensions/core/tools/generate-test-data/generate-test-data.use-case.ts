@@ -18,6 +18,15 @@ import {
 import type { GenerateTestDataPayload } from './generate-test-data.types';
 import { GenerationJobRegistry } from './generation-job-registry';
 
+type MockField = {
+  native?: boolean;
+  type?: string;
+  format?: string | null;
+  slug: string;
+  name?: string;
+  dropdown?: Array<{ id: string }>;
+};
+
 @Service()
 export default class GenerateTestDataUseCase {
   constructor(
@@ -218,21 +227,13 @@ export default class GenerateTestDataUseCase {
   }
 
   private generateMockRow(
-    table: { fields?: Array<Record<string, unknown>> },
+    table: { fields?: MockField[] },
     firstRelFieldSlug: string | null,
     relatedIds: string[],
   ): Record<string, unknown> {
     const data: Record<string, unknown> = {};
 
-    for (const field of (table.fields || []) as Array<Record<string, never>>) {
-      const f = field as unknown as {
-        native?: boolean;
-        type?: string;
-        format?: string;
-        slug: string;
-        name?: string;
-        dropdown?: Array<{ id: string }>;
-      };
+    for (const f of table.fields ?? []) {
       if (f.native) continue;
 
       const randomVal = Math.floor(Math.random() * 100000);
