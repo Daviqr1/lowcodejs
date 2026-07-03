@@ -51,16 +51,16 @@ export function useGroupFieldUpdate(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === variables.groupSlug
-                ? {
-                    ...g,
-                    fields: g.fields.map((f) =>
-                      f._id === response._id ? response : f,
-                    ),
-                  }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== variables.groupSlug) return g;
+              return {
+                ...g,
+                fields: g.fields.map((f) => {
+                  if (f._id === response._id) return response;
+                  return f;
+                }),
+              };
+            }),
           };
         },
       );
@@ -76,16 +76,16 @@ export function useGroupFieldUpdate(
               if (t.slug === variables.tableSlug) {
                 return {
                   ...t,
-                  groups: t.groups.map((g) =>
-                    g.slug === variables.groupSlug
-                      ? {
-                          ...g,
-                          fields: g.fields.map((f) =>
-                            f._id === response._id ? response : f,
-                          ),
-                        }
-                      : g,
-                  ),
+                  groups: t.groups.map((g) => {
+                    if (g.slug !== variables.groupSlug) return g;
+                    return {
+                      ...g,
+                      fields: g.fields.map((f) => {
+                        if (f._id === response._id) return response;
+                        return f;
+                      }),
+                    };
+                  }),
                 };
               }
               return t;

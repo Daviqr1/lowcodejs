@@ -45,7 +45,7 @@ export function useRowUpdateEvaluation(
       const previous = queryClient.getQueryData<IRow>(key);
 
       if (previous) {
-        const current = (previous[variables.field] ?? {}) as IEvaluationSummary;
+        const current: IEvaluationSummary = previous[variables.field] ?? {};
         const oldCount = current._count ?? 0;
         const oldAverage = current._average ?? 0;
         const oldUserValue = current._userValue;

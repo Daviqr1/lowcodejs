@@ -182,14 +182,13 @@ export function useGroupFieldManagement(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === groupSlug
-                ? {
-                    ...g,
-                    fields: g.fields.filter((f) => f._id !== field._id),
-                  }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== groupSlug) return g;
+              return {
+                ...g,
+                fields: g.fields.filter((f) => f._id !== field._id),
+              };
+            }),
           };
         },
       );
@@ -204,14 +203,13 @@ export function useGroupFieldManagement(
               if (t.slug !== tableSlug) return t;
               return {
                 ...t,
-                groups: t.groups.map((g) =>
-                  g.slug === groupSlug
-                    ? {
-                        ...g,
-                        fields: g.fields.filter((f) => f._id !== field._id),
-                      }
-                    : g,
-                ),
+                groups: t.groups.map((g) => {
+                  if (g.slug !== groupSlug) return g;
+                  return {
+                    ...g,
+                    fields: g.fields.filter((f) => f._id !== field._id),
+                  };
+                }),
               };
             }),
           };
@@ -327,16 +325,16 @@ export function useGroupFieldManagement(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === groupSlug
-                ? {
-                    ...g,
-                    fields: g.fields.map((f) =>
-                      f._id === response._id ? response : f,
-                    ),
-                  }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== groupSlug) return g;
+              return {
+                ...g,
+                fields: g.fields.map((f) => {
+                  if (f._id === response._id) return response;
+                  return f;
+                }),
+              };
+            }),
           };
         },
       );
@@ -351,16 +349,16 @@ export function useGroupFieldManagement(
               if (t.slug !== tableSlug) return t;
               return {
                 ...t,
-                groups: t.groups.map((g) =>
-                  g.slug === groupSlug
-                    ? {
-                        ...g,
-                        fields: g.fields.map((f) =>
-                          f._id === response._id ? response : f,
-                        ),
-                      }
-                    : g,
-                ),
+                groups: t.groups.map((g) => {
+                  if (g.slug !== groupSlug) return g;
+                  return {
+                    ...g,
+                    fields: g.fields.map((f) => {
+                      if (f._id === response._id) return response;
+                      return f;
+                    }),
+                  };
+                }),
               };
             }),
           };

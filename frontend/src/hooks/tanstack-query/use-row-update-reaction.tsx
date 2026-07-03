@@ -43,7 +43,7 @@ export function useRowUpdateReaction(
       const previous = queryClient.getQueryData<IRow>(key);
 
       if (previous) {
-        const current = (previous[variables.field] ?? {}) as IReactionSummary;
+        const current: IReactionSummary = previous[variables.field] ?? {};
         let likeCount = current._likeCount ?? 0;
         let unlikeCount = current._unlikeCount ?? 0;
         const oldReaction = current._userReaction;

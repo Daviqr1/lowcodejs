@@ -71,6 +71,34 @@ function buildFieldPayload(
     }
   }
 
+  let dropdown: unknown = [];
+  if (hasDropdown) dropdown = field.dropdown;
+
+  let category: unknown = [];
+  if (hasCategory) category = field.category;
+
+  let relationship: unknown = null;
+  if (hasRelationship) {
+    relationship = {
+      table: {
+        _id: field.relationship!.table._id,
+        slug: field.relationship!.table.slug,
+      },
+      field: {
+        _id: field.relationship!.field._id,
+        slug: field.relationship!.field.slug,
+      },
+      order: field.relationship!.order,
+      relationshipId: field.relationship!.relationshipId ?? null,
+      side: field.relationship!.side ?? null,
+      formMode: field.relationship!.formMode,
+      visible: field.relationship!.visible,
+      onDelete: field.relationship!.onDelete,
+      mirror: field.relationship!.mirror ?? null,
+      max: field.relationship!.max ?? null,
+    };
+  }
+
   return {
     name: field.name,
     type: field.type,
@@ -83,29 +111,10 @@ function buildFieldPayload(
     widthInDetail: field.widthInDetail,
     format: field.format ?? null,
     defaultValue: field.defaultValue ?? null,
-    dropdown: hasDropdown ? field.dropdown : [],
-    relationship: hasRelationship
-      ? {
-          table: {
-            _id: field.relationship!.table._id,
-            slug: field.relationship!.table.slug,
-          },
-          field: {
-            _id: field.relationship!.field._id,
-            slug: field.relationship!.field.slug,
-          },
-          order: field.relationship!.order,
-          relationshipId: field.relationship!.relationshipId ?? null,
-          side: field.relationship!.side ?? null,
-          formMode: field.relationship!.formMode,
-          visible: field.relationship!.visible,
-          onDelete: field.relationship!.onDelete,
-          mirror: field.relationship!.mirror ?? null,
-          max: field.relationship!.max ?? null,
-        }
-      : null,
+    dropdown,
+    relationship,
     group,
-    category: hasCategory ? field.category : [],
+    category,
     trashed: field.trashed,
     trashedAt: field.trashedAt ?? null,
     ...overrides,
@@ -135,7 +144,10 @@ function updateFieldInTableCache(
       if (!old) return old;
       return {
         ...old,
-        fields: old.fields.map((f) => (f._id === response._id ? response : f)),
+        fields: old.fields.map((f) => {
+          if (f._id === response._id) return response;
+          return f;
+        }),
       };
     },
   );
@@ -150,9 +162,10 @@ function updateFieldInTableCache(
           if (t.slug !== tableSlug) return t;
           return {
             ...t,
-            fields: t.fields.map((f) =>
-              f._id === response._id ? response : f,
-            ),
+            fields: t.fields.map((f) => {
+              if (f._id === response._id) return response;
+              return f;
+            }),
           };
         }),
       };

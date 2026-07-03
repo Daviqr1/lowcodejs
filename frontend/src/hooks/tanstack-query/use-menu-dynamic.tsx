@@ -206,13 +206,16 @@ function convertToMenuRoute(menuTree: Array<MenuWithChildren>): MenuRoute {
   return [];
 }
 
+const LUCIDE_ICON_BY_NAME = new Map<string, LucideIcon>(
+  Object.entries(LucideIcons).filter(
+    (entry): entry is [string, LucideIcon] =>
+      typeof entry[1] === 'function' || typeof entry[1] === 'object',
+  ),
+);
+
 function resolveLucideIcon(name: string | null | undefined): LucideIcon {
   if (!name) return WrenchIcon;
-  const candidate = (LucideIcons as Record<string, unknown>)[name];
-  if (typeof candidate === 'function' || typeof candidate === 'object') {
-    return candidate as LucideIcon;
-  }
-  return WrenchIcon;
+  return LUCIDE_ICON_BY_NAME.get(name) ?? WrenchIcon;
 }
 
 function buildToolItems(extensions: Array<IActiveExtension>): Array<MenuItem> {
@@ -318,9 +321,10 @@ export function useMenuDynamic(): {
   // 6. Combinar: Tabelas → Dinâmicos → Conta/Sistema (com tools injetadas)
   const combinedMenu = useMemo(() => {
     // Se está carregando, adiciona um grupo especial com flag isLoading
-    const dynamicPart = isLoading
-      ? [{ title: '', items: [], isLoading: true }]
-      : dynamicMenuRoute;
+    let dynamicPart: MenuRoute = dynamicMenuRoute;
+    if (isLoading) {
+      dynamicPart = [{ title: '', items: [], isLoading: true }];
+    }
 
     return [...staticMenusBefore, ...dynamicPart, ...staticMenusAfterWithTools];
   }, [

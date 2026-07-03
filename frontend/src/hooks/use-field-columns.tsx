@@ -165,7 +165,7 @@ export function useFieldColumns({
   fieldOrder,
   tableSlug,
   canEditField,
-}: UseFieldColumnsOptions): Array<ColumnDef<IRow, any>> {
+}: UseFieldColumnsOptions): Array<ColumnDef<IRow, unknown>> {
   const router = useRouter();
   const { slug } = useParams({ from: ROUTE_ID });
   const { isFieldVisible } = useFieldVisibility();
@@ -176,39 +176,43 @@ export function useFieldColumns({
       .sort((a, b) => {
         const idxA = fieldOrder.indexOf(a._id);
         const idxB = fieldOrder.indexOf(b._id);
-        return (
-          (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB)
-        );
+        let rankA = idxA;
+        if (idxA === -1) rankA = Infinity;
+        let rankB = idxB;
+        if (idxB === -1) rankB = Infinity;
+        return rankA - rankB;
       });
 
     return sorted.map(
-      (field, index): ColumnDef<IRow, any> => ({
+      (field, index): ColumnDef<IRow, unknown> => ({
         id: field._id,
         accessorFn: (row) => row[field.slug],
         meta: { label: resolveFieldLabel(field), field },
         size: field.widthInList ?? undefined,
-        header: () => (
-          <DataTableColumnHeader
-            title={resolveFieldLabel(field)}
-            orderKey={
-              field.type !== E_FIELD_TYPE.FIELD_GROUP
-                ? 'order-'.concat(field.slug)
-                : undefined
-            }
-            routeId={ROUTE_ID}
-            canNavigate={canEditField}
-            onTitleClick={
-              canEditField
-                ? (): void => {
-                    router.navigate({
-                      to: '/tables/$slug/field/$fieldId',
-                      params: { fieldId: field._id, slug },
-                    });
-                  }
-                : undefined
-            }
-          />
-        ),
+        header: (): React.JSX.Element => {
+          let orderKey: string | undefined;
+          if (field.type !== E_FIELD_TYPE.FIELD_GROUP) {
+            orderKey = 'order-'.concat(field.slug);
+          }
+          let onTitleClick: (() => void) | undefined;
+          if (canEditField) {
+            onTitleClick = (): void => {
+              router.navigate({
+                to: '/tables/$slug/field/$fieldId',
+                params: { fieldId: field._id, slug },
+              });
+            };
+          }
+          return (
+            <DataTableColumnHeader
+              title={resolveFieldLabel(field)}
+              orderKey={orderKey}
+              routeId={ROUTE_ID}
+              canNavigate={canEditField}
+              onTitleClick={onTitleClick}
+            />
+          );
+        },
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             {index === 0 && row.original.status === 'draft' && (

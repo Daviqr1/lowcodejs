@@ -83,7 +83,8 @@ export function useChatSocket(
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
-      return JSON.parse(raw) as Array<ChatMessage>;
+      const parsed: Array<ChatMessage> = JSON.parse(raw);
+      return parsed;
     } catch {
       return [];
     }

@@ -17,7 +17,8 @@ function loadState(key: string): PersistedTableState {
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
     if (!raw) return {};
-    return JSON.parse(raw) as PersistedTableState;
+    const parsed: PersistedTableState = JSON.parse(raw);
+    return parsed;
   } catch {
     return {};
   }
@@ -53,25 +54,34 @@ export function usePersistedTableState({
 } {
   const enabled = !!persistKey;
 
-  const persisted = React.useRef(enabled ? loadState(persistKey) : {});
+  let initialPersisted: PersistedTableState = {};
+  if (enabled) initialPersisted = loadState(persistKey);
+  const persisted = React.useRef(initialPersisted);
 
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(() => ({
-      ...initialColumnVisibility,
-      ...(enabled ? persisted.current.columnVisibility : {}),
-    }));
+    React.useState<VisibilityState>(() => {
+      const base: VisibilityState = { ...initialColumnVisibility };
+      if (enabled && persisted.current.columnVisibility) {
+        return { ...base, ...persisted.current.columnVisibility };
+      }
+      return base;
+    });
 
-  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() =>
-    enabled && persisted.current.columnOrder?.length
-      ? persisted.current.columnOrder
-      : initialColumnOrder,
-  );
+  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
+    if (enabled && persisted.current.columnOrder?.length) {
+      return persisted.current.columnOrder;
+    }
+    return initialColumnOrder;
+  });
 
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
-    () => ({
-      ...initialColumnSizing,
-      ...(enabled ? persisted.current.columnSizing : {}),
-    }),
+    () => {
+      const base: ColumnSizingState = { ...initialColumnSizing };
+      if (enabled && persisted.current.columnSizing) {
+        return { ...base, ...persisted.current.columnSizing };
+      }
+      return base;
+    },
   );
 
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);

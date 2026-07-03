@@ -99,13 +99,16 @@ export function useTableKeyboardNavigation<TData>({
     [enabled, table, focusedCell, onRowClick],
   );
 
-  const containerProps = enabled
-    ? {
-        onKeyDown: handleKeyDown,
-        tabIndex: 0,
-        role: 'grid' as const,
-      }
-    : ({} as Record<string, never>);
+  let containerProps:
+    | { onKeyDown: typeof handleKeyDown; tabIndex: number; role: 'grid' }
+    | Record<string, never> = {};
+  if (enabled) {
+    containerProps = {
+      onKeyDown: handleKeyDown,
+      tabIndex: 0,
+      role: 'grid',
+    };
+  }
 
   const isCellFocused = React.useCallback(
     (rowIndex: number, colIndex: number) => {

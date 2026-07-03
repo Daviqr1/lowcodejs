@@ -36,11 +36,10 @@ export function useGroupFieldCreate(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === variables.groupSlug
-                ? { ...g, fields: [...g.fields, response] }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== variables.groupSlug) return g;
+              return { ...g, fields: [...g.fields, response] };
+            }),
           };
         },
       );
