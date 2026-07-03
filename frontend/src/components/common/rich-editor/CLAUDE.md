@@ -19,7 +19,8 @@ HTML, preview), toolbar completa, bubble menus contextuais e upload de imagens.
 | `upload.ts`           | Funcao utilitaria uploadFile que envia arquivo para POST /storage e retorna URL                                     |
 | `editor.css`          | Estilos CSS para o editor Tiptap (prose, tabelas, placeholders)                                                     |
 | `base.md`             | Documentacao base do editor                                                                                         |
-| `bubble/`             | Subdiretorio com bubble menus contextuais                                                                           |
+| `bubble/`             | Subdiretorio com bubble menus contextuais (possui CLAUDE.md proprio)                                                |
+| `extensions/`         | Subdiretorio de extensoes customizadas do Tiptap (mention `@`) (possui CLAUDE.md proprio)                           |
 
 ## Dependencias principais
 
