@@ -6,10 +6,11 @@ drag-drop.
 
 ## Arquivos
 
-| Arquivo                        | Componente                                      | Descricao                                                                                                                                                                                 |
-| ------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `field-management-context.tsx` | `FieldManagementProvider`, `useFieldManagement` | Context com `FieldManagementActions`: fields, onToggleVisibility, onChangeWidth, onSaveOrder, onDeleteField, onEditField + estados de loading. Define tipos `VisibilityKey` e `WidthKey`. |
-| `field-management.tsx`         | `FieldManagement` (compound)                    | Componente composto com `Root`, `Header`, `Tabs`, `List`, `TrashedList`.                                                                                                                  |
+| Arquivo                            | Componente                                      | Descricao                                                                                                                                                                                 |
+| ---------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `field-management-context.tsx`     | `FieldManagementProvider`, `useFieldManagement` | Context com `FieldManagementActions`: fields, onToggleVisibility, onChangeWidth, onSaveOrder, onDeleteField, onEditField + estados de loading. Define tipos `VisibilityKey` e `WidthKey`. |
+| `field-management.tsx`             | `FieldManagement` (compound)                    | Componente composto com `Root`, `Header`, `Tabs`, `List`, `TrashedList`.                                                                                                                  |
+| `table-field-management-sheet.tsx` | `TableFieldManagementSheet`                     | Sheet lateral que embrulha `FieldManagement` para gerenciar campos em um drawer.                                                                                                          |
 
 ## Compound components
 
