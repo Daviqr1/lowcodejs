@@ -30,6 +30,7 @@ rotas filhas herdam a protecao de autenticacao definida no `beforeLoad`.
 | ---------------- | -------------------------------------------------------------------------- | --------------------------------------------- | ------------------- |
 | `dashboard/`     | `/dashboard`                                                               | Painel com estatisticas e graficos            | MASTER              |
 | `e/`             | `/e/:package/:id`                                                          | Loader dinamico de modulos de extensao        | Varia por extensao  |
+| `error-logs/`    | `/error-logs`                                                              | Historico de erros HTTP registrados           | MASTER              |
 | `extensions/`    | `/extensions`                                                              | Workshop de gestao de extensoes               | MASTER              |
 | `groups/`        | `/groups`, `/groups/create`, `/groups/:id`                                 | CRUD de grupos de permissao                   | MASTER              |
 | `logs/`          | `/logs`                                                                    | Historico de atividade do sistema             | MASTER              |

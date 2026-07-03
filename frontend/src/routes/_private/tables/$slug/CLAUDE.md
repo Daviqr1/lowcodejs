@@ -57,9 +57,10 @@ visualizacao via `E_TABLE_STYLE`, carregados com lazy loading.
 
 ## Subdiretorios
 
-| Diretorio | Rota                    | Descricao                                 |
-| --------- | ----------------------- | ----------------------------------------- |
-| `detail/` | `/tables/:slug/detail`  | Edicao de detalhes/configuracao da tabela |
-| `field/`  | `/tables/:slug/field/*` | Gerenciamento de campos                   |
-| `row/`    | `/tables/:slug/row/*`   | Gerenciamento de registros (rows)         |
-| `group/`  | `/tables/:slug/group/*` | Gerenciamento de grupos de campos         |
+| Diretorio   | Rota                     | Descricao                                                                        |
+| ----------- | ------------------------ | -------------------------------------------------------------------------------- |
+| `detail/`   | `/tables/:slug/detail`   | Edicao de detalhes/configuracao da tabela                                        |
+| `field/`    | `/tables/:slug/field/*`  | Gerenciamento de campos                                                          |
+| `row/`      | `/tables/:slug/row/*`    | Gerenciamento de registros (rows)                                                |
+| `group/`    | `/tables/:slug/group/*`  | Gerenciamento de grupos de campos                                                |
+| `$rowSlug/` | `/tables/:slug/:rowSlug` | Resolve slug amigavel do registro no client e redireciona para `row?_id=` (view) |
