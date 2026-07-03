@@ -5,14 +5,17 @@ Comboboxes e multi-selects especializados para selecao de entidades do dominio
 
 ## Arquivos
 
-| Arquivo                       | Descricao                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `index.ts`                    | Barrel export de todos os seletores                                                                                            |
-| `field-combobox.tsx`          | Combobox para selecao de campo (IField) de uma tabela. Usa `useReadTable` para carregar campos por `tableSlug`                 |
-| `group-combobox.tsx`          | Combobox para selecao de grupo de usuarios                                                                                     |
-| `menu-combobox.tsx`           | Combobox para selecao de menu de navegacao                                                                                     |
-| `permission-multi-select.tsx` | Multi-select para selecao de permissoes                                                                                        |
-| `user-multi-select.tsx`       | Multi-select de usuarios com busca paginada (`useUserReadPaginated`), chips de selecao, e cache local de usuarios selecionados |
+| Arquivo                         | Descricao                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `index.ts`                      | Barrel export de todos os seletores                                                                                            |
+| `field-combobox.tsx`            | Combobox para selecao de campo (IField) de uma tabela. Usa `useReadTable` para carregar campos por `tableSlug`                 |
+| `group-combobox.tsx`            | Combobox para selecao de grupo de usuarios (nome amigavel para grupos de sistema via `resolveGroupName` + `USER_GROUP_MAPPER`) |
+| `group-multi-select.tsx`        | Multi-select de grupos (chips) com nome amigavel; `excludeId` oculta um grupo (ex.: o proprio grupo em edicao)                 |
+| `menu-combobox.tsx`             | Combobox para selecao de menu de navegacao                                                                                     |
+| `extension-module-select.tsx`   | Select nativo de modulo de extensao ativo (`E_EXTENSION_TYPE.MODULE`); serializa `IMenuExtensionRef` como `pkg::extensionId`   |
+| `permission-binding-select.tsx` | Combobox de binding de permissao (Publico/Ninguem/Grupo) -> `IPermissionBinding`, com descricao explicativa por opcao          |
+| `permission-multi-select.tsx`   | Multi-select para selecao de permissoes                                                                                        |
+| `user-multi-select.tsx`         | Multi-select de usuarios com busca paginada (`useUserReadPaginated`), chips de selecao, e cache local de usuarios selecionados |
 
 ## Dependencias principais
 
