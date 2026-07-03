@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -92,7 +90,7 @@ function buildUpdatePayload(
     multiple: field.multiple,
     defaultValue: field.defaultValue,
     relationship: field.relationship,
-    dropdown: field.dropdown as { id: string; label: string; color?: string }[],
+    dropdown: field.dropdown,
     allowCustomDropdownOptions: field.allowCustomDropdownOptions ?? false,
     category: field.category,
     group: field.group,

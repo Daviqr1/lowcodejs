@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -12,8 +10,10 @@ import {
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import type { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailQueueService from '@application/services/email-queue/in-memory-email-queue.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
+import { groupItems } from '@test/helpers/row-data.helper';
 
 import ForumMessageUseCase from './forum-message.use-case';
 
@@ -112,23 +112,11 @@ let emailQueue: InMemoryEmailQueueService;
 let notificationService: InMemoryNotificationService;
 let sut: ForumMessageUseCase;
 
-function createMockUserRepo(): UserContractRepository {
-  return {
-    create: vi.fn(),
-    findById: vi.fn(),
-    findByEmail: vi.fn(),
-    findMany: vi.fn().mockResolvedValue([]),
-    update: vi.fn(),
-    delete: vi.fn(),
-    count: vi.fn(),
-  } as unknown as UserContractRepository;
-}
-
 describe('Forum Message Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
-    mockUserRepo = createMockUserRepo();
+    mockUserRepo = new UserInMemoryRepository();
     emailQueue = new InMemoryEmailQueueService();
     notificationService = new InMemoryNotificationService();
     sut = new ForumMessageUseCase(
@@ -165,9 +153,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(Array.isArray(messages)).toBe(true);
     expect(messages.length).toBe(1);
     expect(messages[0]['texto']).toBe('Ola mundo!');
@@ -310,9 +296,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(messages[0]['texto']).toBe('Texto atualizado');
   });
 
@@ -396,9 +380,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(messages.length).toBe(0);
   });
 });

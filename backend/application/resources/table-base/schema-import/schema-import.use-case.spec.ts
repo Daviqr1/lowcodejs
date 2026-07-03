@@ -1,15 +1,15 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   buildFieldPermissions,
   E_FIELD_TYPE,
+  E_TABLE_STYLE,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
 import SchemaImportUseCase from './schema-import.use-case';
 
@@ -110,7 +110,7 @@ describe('Schema Import Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'other-owner',
-      style: 'LIST' as never,
+      style: E_TABLE_STYLE.LIST,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -157,40 +157,20 @@ describe('Schema Import Use Case', () => {
       trashedAt: null,
     });
 
-    tableInMemoryRepository.items.push({
-      _id: existingTableId,
+    const cidades = await tableInMemoryRepository.create({
       name: 'Cidades',
       slug: 'cidades',
       _schema: {},
-      // simula fields populados (mongoose)
-      fields: [
-        {
-          _id: existingFieldId,
-          slug: 'codigo',
-        } as never,
-      ],
-      type: 'TABLE' as never,
-      style: 'LIST' as never,
-      owner: { _id: 'other-owner' } as never,
+      owner: 'other-owner',
+      style: E_TABLE_STYLE.LIST,
       fieldOrderList: [],
       fieldOrderForm: [],
-      fieldOrderFilter: [],
-      fieldOrderDetail: [],
-      methods: {
-        onLoad: { code: null },
-        beforeSave: { code: null },
-        afterSave: { code: null },
-      } as never,
-      groups: [],
-      order: null,
-      layoutFields: {} as never,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashed: false,
-      trashedAt: null,
-      description: null,
-      logo: null,
-    } as never);
+    });
+    cidades._id = existingTableId;
+    // simula fields populados (mongoose)
+    cidades.fields = [
+      { ...makeTextShortField(), _id: existingFieldId, slug: 'codigo' },
+    ];
 
     const yaml = `tables:
   - name: Enderecos

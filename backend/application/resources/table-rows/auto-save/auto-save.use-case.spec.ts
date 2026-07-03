@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -17,40 +15,39 @@ let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;
 let sut: TableRowAutoSaveUseCase;
 
-const buildField = (overrides: Partial<IField>): IField =>
-  ({
-    _id: overrides.slug ?? 'f',
-    name: 'Field',
-    slug: 'field',
-    type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
-    format: null,
-    showInFilter: false,
-    permissions: buildFieldPermissions(true, true, true),
-    widthInForm: null,
-    widthInList: 10,
-    widthInDetail: null,
-    defaultValue: null,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    native: false,
-    locked: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    trashed: false,
-    trashedAt: null,
-    ...overrides,
-  }) as IField;
+const buildField = (overrides: Partial<IField>): IField => ({
+  _id: overrides.slug ?? 'f',
+  name: 'Field',
+  slug: 'field',
+  type: E_FIELD_TYPE.TEXT_SHORT,
+  required: false,
+  multiple: false,
+  format: null,
+  showInFilter: false,
+  permissions: buildFieldPermissions(true, true, true),
+  widthInForm: null,
+  widthInList: 10,
+  widthInDetail: null,
+  defaultValue: null,
+  relationship: null,
+  dropdown: [],
+  category: [],
+  group: null,
+  native: false,
+  locked: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  trashed: false,
+  trashedAt: null,
+  ...overrides,
+});
 
 async function seedTable(fields: IField[]): Promise<void> {
   await tableRepo.create({
     name: 'Filmes',
     slug: 'filmes',
     _schema: {},
-    fields: fields as unknown as string[],
+    fields: fields.map((field) => field._id),
     owner: 'owner-id',
     style: E_TABLE_STYLE.LIST,
     fieldOrderList: [],

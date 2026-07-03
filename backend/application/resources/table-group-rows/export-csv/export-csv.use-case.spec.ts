@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -24,33 +22,32 @@ async function streamToString(stream: Readable): Promise<string> {
   return Buffer.concat(chunks).toString('utf-8');
 }
 
-const buildField = (overrides: Partial<IField>): IField =>
-  ({
-    _id: overrides.slug ?? 'f',
-    name: 'Field',
-    slug: 'field',
-    type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
-    format: null,
-    showInFilter: false,
-    permissions: buildFieldPermissions(true, true, true),
-    widthInForm: null,
-    widthInList: 10,
-    widthInDetail: null,
-    defaultValue: null,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    native: false,
-    locked: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    trashed: false,
-    trashedAt: null,
-    ...overrides,
-  }) as IField;
+const buildField = (overrides: Partial<IField>): IField => ({
+  _id: overrides.slug ?? 'f',
+  name: 'Field',
+  slug: 'field',
+  type: E_FIELD_TYPE.TEXT_SHORT,
+  required: false,
+  multiple: false,
+  format: null,
+  showInFilter: false,
+  permissions: buildFieldPermissions(true, true, true),
+  widthInForm: null,
+  widthInList: 10,
+  widthInDetail: null,
+  defaultValue: null,
+  relationship: null,
+  dropdown: [],
+  category: [],
+  group: null,
+  native: false,
+  locked: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  trashed: false,
+  trashedAt: null,
+  ...overrides,
+});
 
 let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;
@@ -80,7 +77,7 @@ describe('Group Row Export CSV Use Case', () => {
       name: 'Pedidos',
       slug: 'pedidos',
       _schema: {},
-      fields: [groupFieldDef] as unknown as string[],
+      fields: [groupFieldDef._id],
       groups: [
         {
           slug: 'itens',
@@ -94,6 +91,8 @@ describe('Group Row Export CSV Use Case', () => {
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    // popula o field de grupo (o export lê metadados de table.fields)
+    table.fields = [groupFieldDef];
 
     const row = await rowRepo.create({
       table,

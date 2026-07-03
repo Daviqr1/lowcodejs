@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -11,6 +9,7 @@ import {
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { groupItems } from '@test/helpers/row-data.helper';
 
 import GroupRowDeleteUseCase from './delete.use-case';
 
@@ -139,9 +138,7 @@ describe('Group Row Delete Use Case', () => {
       table,
       query: { _id: rowId },
     });
-    const items = ((updatedRow as Record<string, unknown>)?.items ?? []) as {
-      _id: string;
-    }[];
+    const items = groupItems(updatedRow ?? {}, 'items');
     expect(items.find((item) => item._id === itemId)).toBeUndefined();
   });
 

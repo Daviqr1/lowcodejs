@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { E_TABLE_STYLE } from '@application/core/entity.core';
@@ -87,7 +85,7 @@ describe('Bulk Update Use Case', () => {
       table,
       query: { _id: row1._id },
     });
-    expect((updated1 as Record<string, unknown>).situacao).toBe('em-andamento');
+    expect(updated1?.situacao).toBe('em-andamento');
   });
 
   it('deve retornar erro TABLE_NOT_FOUND quando tabela nao existir', async () => {

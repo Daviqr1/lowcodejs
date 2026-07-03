@@ -1,5 +1,3 @@
-// Spec constrói mocks parciais de entidades do domínio via asserção.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { ICategory, IField, ITable } from '@application/core/entity.core';
@@ -90,7 +88,7 @@ describe('Table Field Delete Category Use Case', () => {
 
     expect(result.value.removedIds.sort()).toEqual(['a', 'a1']);
 
-    const remaining = result.value.field.category as Array<ICategory>;
+    const remaining = result.value.field.category;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe('b');
   });
@@ -99,7 +97,7 @@ describe('Table Field Delete Category Use Case', () => {
     const field = await makeCategoryField(TREE);
     const table = await makeTable([field._id]);
 
-    const context = { ...table, fields: [field] } as unknown as RowTableContext;
+    const context: RowTableContext = { ...table, fields: [field] };
 
     await rowInMemoryRepository.create({
       table: context,
@@ -149,7 +147,7 @@ describe('Table Field Delete Category Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
 
     expect(result.value.removedIds).toEqual(['a1']);
-    const tree = result.value.field.category as Array<ICategory>;
+    const tree = result.value.field.category;
     const parent = tree.find((node) => node.id === 'a');
     expect(parent?.children).toHaveLength(0);
   });
