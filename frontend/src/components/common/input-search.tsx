@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { HelpCircle, SearchIcon, XIcon } from 'lucide-react';
 import React from 'react';
 
@@ -16,20 +16,26 @@ import {
 } from '@/components/ui/tooltip';
 
 export function InputSearch(): React.JSX.Element {
-  const search = useLocation().search as Record<string, string>;
+  const searchTerm = useSearch({
+    strict: false,
+    select: (state) => {
+      if (typeof state.search === 'string') return state.search;
+      return '';
+    },
+  });
   const navigate = useNavigate();
 
-  const [inputValue, setInputValue] = React.useState(search.search || '');
+  const [inputValue, setInputValue] = React.useState(searchTerm);
 
   // Sincroniza com a URL quando o param `search` muda externamente
   // (ex.: "Limpar filtros" remove o param e a caixa deve zerar).
   React.useEffect(() => {
-    setInputValue(search.search ?? '');
-  }, [search.search]);
+    setInputValue(searchTerm);
+  }, [searchTerm]);
 
   const handleChange = (value: string): void => {
     setInputValue(value);
-    if (value.trim().length === 0 && search.search) {
+    if (value.trim().length === 0 && searchTerm) {
       navigate({
         // @ts-ignore
         search: (state) => ({
