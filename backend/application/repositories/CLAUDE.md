@@ -4,10 +4,15 @@ Camada de acesso a dados com pattern Contract + Implementation.
 
 ## Pattern
 
-Cada entidade possui 3 arquivos:
+Cada entidade possui ate 3 arquivos:
 1. **`{entidade}-contract.repository.ts`** - Classe abstrata (export nomeado `{Entity}ContractRepository`) com metodos e payload types
 2. **`{entidade}.repository.ts`** - Implementacao Mongoose (`@Service() export default class`)
-3. **`{entidade}-in-memory.repository.ts`** - Implementacao em memoria para testes unitarios (ignorada pelo scanner do DI)
+3. **`{entidade}-in-memory.repository.ts`** - Implementacao em memoria para testes unitarios (ignorada pelo scanner do DI). **Opcional** — entidades cobertas so por e2e (ex: `logger`, `notification`) nao tem in-memory.
+
+> **`entity-fixtures.ts`** (raiz de `repositories/`) — builders de entidade
+> completa (`makeUser`, `makeGroup`, `makePermission`, `makeField`, `makeStorage`,
+> `makeSetting`) usados pelos in-memory doubles para materializar refs populadas
+> sem asercao de tipo. Nao e um repositorio (ignorado pelo scanner do DI).
 
 ## Metodos Padrao
 
@@ -45,7 +50,13 @@ Cada contract define seus proprios tipos:
 | `menu/` | IMenu | - |
 | `reaction/` | IReaction | - |
 | `evaluation/` | IEvaluation | - |
-| `setting/` | ISetting | Pattern diferente (key-value no Redis) |
+| `setting/` | ISetting | Singleton (so `get()` + `update()` upsert); sem in-memory proprio |
+| `row/` | IRow | Schema dinamico por tabela; ver `row/CLAUDE.md` |
+| `logger/` | ILogger | Append-only; sem in-memory (e2e) |
+| `notification/` | INotification | Escopado por `userId`; sem in-memory (e2e) |
+| `extension/` | IExtension | Chave `(pkg,type,extensionId)`; ver `extension/CLAUDE.md` |
+| `relationship-definition/` | IRelationshipDefinition | Fonte de verdade do vinculo; ver CLAUDE.md |
+| `relationship-link/` | IRelationshipLink | Arestas entre registros; ver CLAUDE.md |
 
 ## Registro DI
 
