@@ -46,13 +46,7 @@ function addCategoryNode(
     }
 
     if (node.children?.length) {
-      const result = addCategoryNode(
-        // ICategory.children é unknown[]; a árvore é recursivamente ICategory.
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        node.children as Array<ICategory>,
-        parentId,
-        newNode,
-      );
+      const result = addCategoryNode(node.children, parentId, newNode);
       if (result.inserted) {
         inserted = true;
         return {

@@ -406,7 +406,8 @@ export type ITable = Merge<
 export type ICategory = {
   id: string;
   label: string;
-  children: unknown[];
+  // Arvore recursiva: cada filho e outra ICategory.
+  children: ICategory[];
 };
 
 export type IDropdown = {

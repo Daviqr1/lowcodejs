@@ -5,6 +5,7 @@ import {
   E_FIELD_VALIDATION,
   E_PERMISSION_TARGET,
   E_RELATIONSHIP_ON_DELETE,
+  type ICategory,
 } from '@application/core/entity.core';
 
 // Binding de visibilidade do campo num contexto (Grupo|Public|Nobody).
@@ -27,11 +28,15 @@ export const FieldPermissionsSchema = z
   .nullable()
   .optional();
 
-const Category = z.object({
-  id: z.string().trim(),
-  label: z.string().trim(),
-  children: z.array(z.unknown()).default([]), // aceita qualquer coisa
-});
+// Arvore recursiva de categorias (ICategory). `z.lazy` + anotacao explicita
+// permitem que `children` seja tipado como ICategory[] em vez de unknown[].
+const Category: z.ZodType<ICategory> = z.lazy(() =>
+  z.object({
+    id: z.string().trim(),
+    label: z.string().trim(),
+    children: z.array(Category).default([]),
+  }),
+);
 
 const RelationshipLabelPart = z.object({
   path: z.string().trim().min(1),
