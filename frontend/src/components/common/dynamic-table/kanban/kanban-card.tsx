@@ -69,6 +69,9 @@ export function KanbanCard({
     onFieldClick?.(fieldType);
   };
 
+  let membersTabIndex = -1;
+  if (fields.members) membersTabIndex = 0;
+
   return (
     <div
       data-slot="kanban-card"
@@ -136,7 +139,7 @@ export function KanbanCard({
               }
             }}
             role="button"
-            tabIndex={fields.members ? 0 : -1}
+            tabIndex={membersTabIndex}
           >
             {members.slice(0, 3).map((member, index) => (
               <Avatar

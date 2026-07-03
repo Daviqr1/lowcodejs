@@ -325,15 +325,19 @@ export function KanbanRowDialog({
   }, [rowId]);
 
   const normalizeCommentPayload = React.useCallback(
-    (comment: Record<string, any>) => ({
-      ...comment,
-      autor: normalizeIdList(comment.autor),
-      mencoes: normalizeIdList(comment.mencoes),
-      'mencoes-notificadas':
-        typeof comment['mencoes-notificadas'] === 'string'
-          ? comment['mencoes-notificadas']
-          : '[]',
-    }),
+    (comment: Record<string, unknown>) => {
+      let mencoesNotificadas = '[]';
+      const rawNotificadas = comment['mencoes-notificadas'];
+      if (typeof rawNotificadas === 'string') {
+        mencoesNotificadas = rawNotificadas;
+      }
+      return {
+        ...comment,
+        autor: normalizeIdList(comment.autor),
+        mencoes: normalizeIdList(comment.mencoes),
+        'mencoes-notificadas': mencoesNotificadas,
+      };
+    },
     [],
   );
 
@@ -351,20 +355,64 @@ export function KanbanRowDialog({
   const title = getTitleValue(row, fields.title);
   const members = getMembersFromRow(row, fields.members);
   const progress = getProgressValue(row, fields.progress);
-  const creatorName =
-    (typeof row.creator === 'object' && row.creator !== null
-      ? (row.creator as any).name || (row.creator as any).email
-      : null) || 'Sem criador';
-  const tasks = Array.isArray(row[fields.tasks?.slug ?? ''])
-    ? (row[fields.tasks?.slug ?? ''] as Array<Record<string, any>>)
-    : [];
-  const comments = Array.isArray(row[fields.comments?.slug ?? ''])
-    ? (row[fields.comments?.slug ?? ''] as Array<Record<string, any>>)
-    : [];
-  const attachmentStorages =
+  let creatorName = 'Sem criador';
+  if (typeof row.creator === 'object' && row.creator !== null) {
+    creatorName = row.creator.name || row.creator.email || 'Sem criador';
+  }
+
+  let tasks: Array<Record<string, unknown>> = [];
+  const rawTasks = row[fields.tasks?.slug ?? ''];
+  if (Array.isArray(rawTasks)) tasks = rawTasks;
+
+  let comments: Array<Record<string, unknown>> = [];
+  const rawComments = row[fields.comments?.slug ?? ''];
+  if (Array.isArray(rawComments)) comments = rawComments;
+
+  let attachmentStorages: Array<IStorage> = [];
+  if (
     fields.attachments?.type === E_FIELD_TYPE.FILE &&
     Array.isArray(row[fields.attachments.slug])
-      ? (row[fields.attachments.slug] as Array<unknown>).filter(
+  ) {
+    attachmentStorages = row[fields.attachments.slug].filter(
+      (value: unknown): value is IStorage =>
+        typeof value === 'object' &&
+        value !== null &&
+        '_id' in value &&
+        'url' in value &&
+        'originalName' in value,
+    );
+  }
+
+  let attachmentGroupRows: Array<Record<string, unknown>> = [];
+  if (
+    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
+    Array.isArray(row[fields.attachments.slug])
+  ) {
+    attachmentGroupRows = row[fields.attachments.slug];
+  }
+
+  let attachmentGroupFileFieldSlug: string | undefined;
+  if (fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP) {
+    attachmentGroupFileFieldSlug = (
+      fields.attachments.group?.fields ?? []
+    ).find((groupField: IField) => groupField.type === E_FIELD_TYPE.FILE)?.slug;
+  }
+
+  let attachmentItems: Array<{ storage: IStorage }> = [];
+  if (fields.attachments?.type === E_FIELD_TYPE.FILE) {
+    attachmentItems = attachmentStorages.map((storage) => ({ storage }));
+  } else if (
+    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
+    attachmentGroupFileFieldSlug
+  ) {
+    const fileSlug = attachmentGroupFileFieldSlug;
+    attachmentItems = attachmentGroupRows.flatMap((groupRow) => {
+      const rawFiles = groupRow[fileSlug];
+      let files: Array<unknown> = [];
+      if (Array.isArray(rawFiles)) files = rawFiles;
+      else if (rawFiles) files = [rawFiles];
+      return files
+        .filter(
           (value): value is IStorage =>
             typeof value === 'object' &&
             value !== null &&
@@ -372,42 +420,9 @@ export function KanbanRowDialog({
             'url' in value &&
             'originalName' in value,
         )
-      : [];
-  const attachmentGroupRows =
-    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
-    Array.isArray(row[fields.attachments.slug])
-      ? (row[fields.attachments.slug] as Array<Record<string, any>>)
-      : [];
-  const attachmentGroupFileFieldSlug =
-    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP
-      ? (fields.attachments.group?.fields ?? []).find(
-          (groupField: IField) => groupField.type === E_FIELD_TYPE.FILE,
-        )?.slug
-      : null;
-  const attachmentItems =
-    fields.attachments?.type === E_FIELD_TYPE.FILE
-      ? attachmentStorages.map((storage) => ({ storage }))
-      : fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
-          attachmentGroupFileFieldSlug
-        ? attachmentGroupRows.flatMap((groupRow) => {
-            const rawFiles = groupRow[attachmentGroupFileFieldSlug];
-            const files = Array.isArray(rawFiles)
-              ? rawFiles
-              : rawFiles
-                ? [rawFiles]
-                : [];
-            return files
-              .filter(
-                (value): value is IStorage =>
-                  typeof value === 'object' &&
-                  value !== null &&
-                  '_id' in value &&
-                  'url' in value &&
-                  'originalName' in value,
-              )
-              .map((storage) => ({ storage }));
-          })
-        : [];
+        .map((storage) => ({ storage }));
+    });
+  }
   const supportsInlineAttachmentManager =
     fields.attachments?.type === E_FIELD_TYPE.FILE ||
     (fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
@@ -559,15 +574,16 @@ export function KanbanRowDialog({
   const handleCommentSave = async (): Promise<void> => {
     if (editingCommentIndex === null || !fields.comments) return;
     const editMentionIds = extractMentionIds(editCommentEditorRef.current);
-    const updated = comments.map((comment, index) =>
-      index === editingCommentIndex
-        ? {
-            ...normalizeCommentPayload(comment),
-            comentario: editingCommentText.trim(),
-            mencoes: editMentionIds,
-          }
-        : normalizeCommentPayload(comment),
-    );
+    const updated = comments.map((comment, index) => {
+      if (index !== editingCommentIndex) {
+        return normalizeCommentPayload(comment);
+      }
+      return {
+        ...normalizeCommentPayload(comment),
+        comentario: editingCommentText.trim(),
+        mencoes: editMentionIds,
+      };
+    });
     await updateRow.mutateAsync({
       slug: tableSlug,
       rowId: row._id,

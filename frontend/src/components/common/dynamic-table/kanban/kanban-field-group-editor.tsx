@@ -183,9 +183,9 @@ export function KanbanFieldGroupEditor({
       (f) => f.type !== E_FIELD_TYPE.FIELD_GROUP && !f.trashed && !f.native,
     ) ?? [];
 
-  const groupData: Array<Record<string, any>> = Array.isArray(row[field.slug])
-    ? (row[field.slug] as Array<Record<string, any>>)
-    : [];
+  // Dados dinâmicos do grupo (row[slug] é any via index signature do IRow).
+  let groupData: Array<Record<string, any>> = [];
+  if (Array.isArray(row[field.slug])) groupData = row[field.slug];
 
   const isSaving = updateRow.status === 'pending';
   const attachmentMode = isAttachmentMode(groupFields);
@@ -220,9 +220,11 @@ export function KanbanFieldGroupEditor({
         if (gf.type === E_FIELD_TYPE.FILE) {
           itemPayload[gf.slug] = uploadStorages.map((s) => s._id);
         } else if (gf.type === E_FIELD_TYPE.USER && gf.slug === 'autor') {
-          itemPayload[gf.slug] = currentUserId
-            ? normalizeIdList(currentUserId)
-            : [];
+          if (currentUserId) {
+            itemPayload[gf.slug] = normalizeIdList(currentUserId);
+          } else {
+            itemPayload[gf.slug] = [];
+          }
         } else if (gf.type === E_FIELD_TYPE.DATE && gf.slug === 'data') {
           itemPayload[gf.slug] = new Date().toISOString();
         } else {
@@ -289,9 +291,11 @@ export function KanbanFieldGroupEditor({
               return (
                 <ul className="space-y-2">
                   {groupData.map((groupRow, index) => {
-                    const storages = fileField
-                      ? getStoragesFromGroupRow(groupRow, fileField)
-                      : [];
+                    let storages: ReturnType<typeof getStoragesFromGroupRow> =
+                      [];
+                    if (fileField) {
+                      storages = getStoragesFromGroupRow(groupRow, fileField);
+                    }
                     const author = getAuthorFromGroupRow(groupRow);
                     const dateStr = formatAttachmentDate(groupRow['data']);
 

@@ -56,15 +56,16 @@ export function KanbanRowCommentsSection({
       <h3 className="text-sm font-semibold">Comentarios</h3>
       <div className="space-y-3">
         {comments.map((comment, index) => {
-          const rawAuthor = Array.isArray(comment.autor)
-            ? comment.autor[0]
-            : comment.autor;
-          const author =
+          let rawAuthor = comment.autor;
+          if (Array.isArray(comment.autor)) rawAuthor = comment.autor[0];
+          let author: IUser | string | undefined = rawAuthor;
+          if (
             typeof rawAuthor === 'string' &&
             profile &&
             rawAuthor === profile._id
-              ? profile
-              : (rawAuthor as IUser | string | undefined);
+          ) {
+            author = profile;
+          }
           let authorId: string | undefined;
           if (typeof author === 'string') {
             authorId = author;
@@ -73,11 +74,12 @@ export function KanbanRowCommentsSection({
           }
           const canManage =
             authorId === currentUserId || rowCreatorId === currentUserId;
-          const dateLabel = comment.data
-            ? format(new Date(comment.data), 'dd/MM/yyyy HH:mm', {
-                locale: ptBR,
-              })
-            : '';
+          let dateLabel = '';
+          if (comment.data) {
+            dateLabel = format(new Date(comment.data), 'dd/MM/yyyy HH:mm', {
+              locale: ptBR,
+            });
+          }
 
           return (
             <div

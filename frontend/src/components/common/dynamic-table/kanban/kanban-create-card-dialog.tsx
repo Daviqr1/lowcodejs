@@ -150,9 +150,10 @@ export function KanbanCreateCardDialog({
                 {(tasksField: any) => (
                   <createForm.AppField name="__kanbanTaskDraft">
                     {(taskDraftField: any) => {
-                      const tasks = Array.isArray(tasksField.state.value)
-                        ? tasksField.state.value
-                        : [];
+                      let tasks: Array<Record<string, unknown>> = [];
+                      if (Array.isArray(tasksField.state.value)) {
+                        tasks = tasksField.state.value;
+                      }
 
                       const addTask = (): void => {
                         const title = String(

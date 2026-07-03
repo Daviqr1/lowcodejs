@@ -115,11 +115,15 @@ export function KanbanColumn({
     const nextLabel = label.trim();
     if (!nextLabel) return;
     const useField = sortField !== MANUAL_SORT_VALUE;
+    let nextSortField: typeof sortField | null = null;
+    if (useField) nextSortField = sortField;
+    let nextSortDirection: typeof sortDirection | null = null;
+    if (useField) nextSortDirection = sortDirection;
     onUpdate(option.id, {
       label: nextLabel,
       color,
-      sortField: useField ? sortField : null,
-      sortDirection: useField ? sortDirection : null,
+      sortField: nextSortField,
+      sortDirection: nextSortDirection,
     });
     setIsEditing(false);
   }
