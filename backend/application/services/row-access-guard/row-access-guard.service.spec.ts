@@ -1,13 +1,11 @@
 /* eslint-disable no-unused-vars */
 // Specs constroem mocks parciais de entidades do domínio via asserção; tipá-los
 // por completo aqui seria só ruído de teste.
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { right } from '@application/core/either.core';
 import type { Either } from '@application/core/either.core';
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
-import type { IRow, ITable } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import type {
   GuardAccessDecision,
@@ -16,6 +14,7 @@ import type {
   GuardWriteDecision,
   RowAccessGuard,
 } from '@application/core/extensions/row-access-guard.contract';
+import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
 import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
@@ -82,8 +81,8 @@ const baseUpsert = (
   permissions: { view: [] },
 });
 
-const FAKE_TABLE = { _id: 'T1' } as ITable;
-const FAKE_ROW = { _id: 'R1', creator: 'u1' } as unknown as IRow;
+const FAKE_TABLE = makeTable({ _id: 'T1' });
+const FAKE_ROW = makeRow({ _id: 'R1', creator: 'u1' });
 
 function makeCtx(
   groupIds: string[] = [],
@@ -108,7 +107,7 @@ async function activatePlugin(
   pluginKey: string,
   tableId: string,
 ): Promise<void> {
-  const [pkg, extensionId] = pluginKey.split(':') as [string, string];
+  const [pkg, extensionId] = pluginKey.split(':');
   await repo.upsert(baseUpsert(extensionId, pkg));
   const all = await repo.findMany();
   const ext = all.find((e) => e.extensionId === extensionId && e.pkg === pkg)!;
@@ -275,7 +274,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
       FAKE_TABLE,
     );
 
-    const and = (result as { $and: unknown[] }).$and;
+    const and = result['$and'];
     expect(and).toHaveLength(2);
     expect(and).toContainEqual({ visibility: 'PUBLIC' });
     expect(and).toContainEqual({ active: true });
@@ -358,7 +357,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
       FAKE_TABLE,
     );
 
-    const and = (result as { $and: unknown[] }).$and;
+    const and = result['$and'];
     expect(and).toContainEqual({ trashed: false });
     expect(and).toContainEqual({ visibility: 'PUBLIC' });
     expect(and).toHaveLength(2);

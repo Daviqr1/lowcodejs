@@ -3,12 +3,16 @@ import {
   E_FIELD_TYPE,
   E_STORAGE_LOCATION,
   E_STORAGE_MIGRATION_STATUS,
+  E_TABLE_STYLE,
+  E_TABLE_TYPE,
   E_USER_STATUS,
   type IField,
   type IGroup,
   type IPermission,
+  type IRow,
   type ISetting,
   type IStorage,
+  type ITable,
   type IUser,
 } from '@application/core/entity.core';
 
@@ -100,6 +104,59 @@ export function makeField(id: string): IField {
     category: [],
     group: null,
     validations: [],
+  };
+}
+
+export function makeTable(overrides: Partial<ITable> = {}): ITable {
+  return {
+    ...baseFields('table'),
+    _schema: {},
+    name: 'table',
+    description: null,
+    logo: null,
+    slug: 'table',
+    fields: [],
+    type: E_TABLE_TYPE.TABLE,
+    style: E_TABLE_STYLE.LIST,
+    owner: makeUser('owner'),
+    permissions: null,
+    members: [],
+    fieldOrderList: [],
+    fieldOrderForm: [],
+    fieldOrderFilter: [],
+    fieldOrderDetail: [],
+    methods: {
+      onLoad: { code: null },
+      beforeSave: { code: null },
+      afterSave: { code: null },
+    },
+    groups: [],
+    order: null,
+    layoutFields: {
+      title: null,
+      description: null,
+      cover: null,
+      category: null,
+      startDate: null,
+      endDate: null,
+      color: null,
+      participants: null,
+      reminder: null,
+    },
+    rowSlugFieldId: null,
+    ...overrides,
+  };
+}
+
+// IRow: campos de Base (sem `trashed`) + indice dinamico. `overrides` injeta os
+// campos dinamicos da tabela (ex.: comentarios).
+export function makeRow(overrides: Partial<IRow> = {}): IRow {
+  return {
+    _id: 'row',
+    createdAt: new Date(),
+    updatedAt: null,
+    trashedAt: null,
+    ...overrides,
   };
 }
 
