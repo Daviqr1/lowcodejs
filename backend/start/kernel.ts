@@ -11,16 +11,15 @@ import ajv from 'ajv-errors';
 import fastify from 'fastify';
 import { bootstrap } from 'fastify-decorators';
 import type { Server } from 'node:http';
-import z, { ZodError } from 'zod';
 
 import { loadControllers } from '@application/core/controllers';
 import { registerDependencies } from '@application/core/di-registry';
-import HTTPException from '@application/core/exception.core';
 import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
 import { StorageContentDispositionHook } from '@hooks/content-disposition.hook';
 import { LoadExtensionHook } from '@hooks/load-extensions.hook';
 import { LoggerUserActionHook } from '@hooks/logger.hook';
 import { Env } from '@start/env';
+import { GlobalErrorHandler } from '@start/error-handler';
 
 function matchOrigin(origin: string, pattern: string): boolean {
   if (pattern.startsWith('*.')) {
@@ -35,46 +34,10 @@ function matchOrigin(origin: string, pattern: string): boolean {
   return origin === pattern;
 }
 
-interface ValidationErrorDetail {
-  instancePath: string;
-  schemaPath: string;
-  keyword: string;
-  params: {
-    limit?: number;
-    missingProperty?: string;
-    [key: string]: unknown;
-  };
-  message: string;
-  emUsed?: boolean;
-}
-
-interface ValidationError {
-  instancePath: string;
-  schemaPath: string;
-  keyword: string;
-  params: {
-    errors: ValidationErrorDetail[];
-  };
-  message: string;
-}
-
 function registerAjvErrors(
   instance: Parameters<typeof ajv>[0],
 ): ReturnType<typeof ajv> {
   return ajv(instance);
-}
-
-// `error` no handler é Record<string, unknown>; narra `error.validation` (AJV)
-// para ValidationError[] sem asserção.
-function toValidationErrors(value: unknown): ValidationError[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (item): item is ValidationError =>
-      !!item &&
-      typeof item === 'object' &&
-      'message' in item &&
-      'instancePath' in item,
-  );
 }
 
 const kernel = fastify<Server>({
@@ -157,70 +120,7 @@ kernel.register(multipart, {
 kernel.addHook('onResponse', LoggerUserActionHook);
 kernel.addHook('onRequest', StorageContentDispositionHook);
 
-kernel.setErrorHandler((error: Record<string, unknown>, request, response) => {
-  if (error instanceof HTTPException) {
-    return response.status(error.code).send({
-      message: error.message,
-      code: error.code,
-      cause: error.cause,
-      ...(error.errors && { errors: error.errors }),
-    });
-  }
-
-  if (error instanceof ZodError) {
-    const { fieldErrors } = z.flattenError(error);
-
-    const errors = Object.entries(fieldErrors).reduce<Record<string, string>>(
-      (acc, [key, messages]) => {
-        if (Array.isArray(messages) && typeof messages[0] === 'string') {
-          acc[key] = messages[0];
-        }
-        return acc;
-      },
-      {},
-    );
-
-    return response.status(400).send({
-      message: 'Requisição inválida',
-      code: 400,
-      cause: 'INVALID_PAYLOAD_FORMAT',
-      errors,
-    });
-  }
-
-  if (error.code === 'FST_ERR_VALIDATION') {
-    const validation = toValidationErrors(error.validation);
-
-    const errors = validation.reduce(
-      (acc: Record<string, string>, err: ValidationError) => {
-        const field = err.instancePath
-          ? err.instancePath.slice(1)
-          : err.params?.errors?.[0]?.params?.missingProperty || 'unknown';
-
-        if (err.message && field) {
-          acc[field] = err.message;
-        }
-        return acc;
-      },
-      {},
-    );
-
-    return response.status(Number(error.statusCode)).send({
-      message: 'Requisição inválida',
-      code: error.statusCode,
-      cause: 'INVALID_PAYLOAD_FORMAT',
-      ...(Object.keys(errors).length > 0 && { errors }),
-    });
-  }
-
-  console.error(error);
-
-  return response.status(500).send({
-    message: 'Erro interno do servidor',
-    cause: 'SERVER_ERROR',
-    code: 500,
-  });
-});
+kernel.setErrorHandler(GlobalErrorHandler);
 
 kernel.register(swagger, {
   openapi: {
