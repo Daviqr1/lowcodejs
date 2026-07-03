@@ -320,10 +320,8 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
     setActiveDragId(null);
     if (!over || active.id === over.id) return;
 
-    const activeParentId =
-      (active.data.current?.parentId as string | null | undefined) ?? null;
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const activeParentId: string | null = active.data.current?.parentId ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
 
     const activeId = String(active.id);
     const overId = String(over.id);

@@ -10,7 +10,7 @@ export interface TreeNode {
   icon?: React.ReactNode;
   children?: Array<TreeNode>;
   selectable?: boolean;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 interface TreeItemProps {
