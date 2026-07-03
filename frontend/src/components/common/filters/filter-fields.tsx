@@ -275,10 +275,10 @@ export function useFilterState(
     value: Array<string>,
   ): void => {
     const applied = search[field.slug];
-    const appliedTokens =
-      typeof applied === 'string' && applied.length > 0
-        ? applied.split(',')
-        : [];
+    let appliedTokens: Array<string> = [];
+    if (typeof applied === 'string' && applied.length > 0) {
+      appliedTokens = applied.split(',');
+    }
     const isRemoval = value.length < appliedTokens.length;
 
     setFilterValues((prev) => ({ ...prev, [field.slug]: value }));
@@ -287,11 +287,11 @@ export function useFilterState(
 
     navigate({
       // @ts-ignore
-      search: (state) => ({
-        ...state,
-        [field.slug]: value.length > 0 ? value.join(',') : undefined,
-        page: 1,
-      }),
+      search: (state) => {
+        let slugValue: string | undefined;
+        if (value.length > 0) slugValue = value.join(',');
+        return { ...state, [field.slug]: slugValue, page: 1 };
+      },
     });
   };
 

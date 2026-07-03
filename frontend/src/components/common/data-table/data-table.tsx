@@ -69,9 +69,8 @@ export function DataTable<TData>({
 }: DataTableProps<TData>): React.JSX.Element {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const columnOrder = table.getState().columnOrder;
-  const columnIds = columnOrder.length
-    ? columnOrder
-    : table.getVisibleFlatColumns().map((c) => c.id);
+  let columnIds = table.getVisibleFlatColumns().map((c) => c.id);
+  if (columnOrder.length) columnIds = columnOrder;
 
   const { containerProps, isCellFocused } = useTableKeyboardNavigation({
     table,
@@ -98,9 +97,8 @@ export function DataTable<TData>({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const currentOrder = columnOrder.length
-      ? [...columnOrder]
-      : table.getVisibleFlatColumns().map((c) => c.id);
+    let currentOrder = table.getVisibleFlatColumns().map((c) => c.id);
+    if (columnOrder.length) currentOrder = [...columnOrder];
 
     const oldIndex = currentOrder.indexOf(active.id as string);
     const newIndex = currentOrder.indexOf(over.id as string);

@@ -76,6 +76,20 @@ function buildFieldUpdatePayload(
   field: IField,
   dropdown: Array<IDropdown>,
 ): Record<string, unknown> {
+  let relationship = null;
+  if (field.relationship) {
+    relationship = {
+      table: {
+        _id: field.relationship.table._id,
+        slug: field.relationship.table.slug,
+      },
+      field: {
+        _id: field.relationship.field._id,
+        slug: field.relationship.field.slug,
+      },
+      order: field.relationship.order,
+    };
+  }
   return {
     name: field.name,
     type: field.type,
@@ -93,19 +107,7 @@ function buildFieldUpdatePayload(
     allowCustomDropdownOptions: field.allowCustomDropdownOptions ?? false,
     allowCreateRelationshipRecords:
       field.allowCreateRelationshipRecords ?? false,
-    relationship: field.relationship
-      ? {
-          table: {
-            _id: field.relationship.table._id,
-            slug: field.relationship.table.slug,
-          },
-          field: {
-            _id: field.relationship.field._id,
-            slug: field.relationship.field.slug,
-          },
-          order: field.relationship.order,
-        }
-      : null,
+    relationship,
     group: field.group,
     category: field.category ?? [],
     trashed: field.trashed,
@@ -118,9 +120,9 @@ function getCustomOptionErrorMessage(error: unknown): string {
     return 'Erro ao criar nova opção do dropdown';
   }
 
-  const data = error.response?.data as
+  const data:
     | { message?: string; errors?: Record<string, string> }
-    | undefined;
+    | undefined = error.response?.data;
 
   return (
     data?.errors?.dropdown ??
@@ -137,24 +139,25 @@ function replaceFieldInTable(
   if (groupSlug) {
     return {
       ...table,
-      groups: (table.groups ?? []).map((group) =>
-        group.slug === groupSlug
-          ? {
-              ...group,
-              fields: (group.fields ?? []).map((groupField) =>
-                groupField._id === field._id ? field : groupField,
-              ),
-            }
-          : group,
-      ),
+      groups: (table.groups ?? []).map((group) => {
+        if (group.slug !== groupSlug) return group;
+        return {
+          ...group,
+          fields: (group.fields ?? []).map((groupField) => {
+            if (groupField._id === field._id) return field;
+            return groupField;
+          }),
+        };
+      }),
     };
   }
 
   return {
     ...table,
-    fields: (table.fields ?? []).map((tableField) =>
-      tableField._id === field._id ? field : tableField,
-    ),
+    fields: (table.fields ?? []).map((tableField) => {
+      if (tableField._id === field._id) return field;
+      return tableField;
+    }),
   };
 }
 
@@ -239,21 +242,28 @@ export function TableRowDropdownField({
 
       const nextDropdown = appendUniqueDropdownOption(localDropdown, newOption);
       const data = buildFieldUpdatePayload(field, nextDropdown);
-      const route = groupSlug
-        ? `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`
-        : `/tables/${tableSlug}/fields/${field._id}`;
+      let route = `/tables/${tableSlug}/fields/${field._id}`;
+      if (groupSlug) {
+        route = `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`;
+      }
       const response = await API.put<IField>(route, data);
       return response.data;
     },
     onSuccess(response) {
       setLocalDropdown(response.dropdown ?? []);
 
-      queryClient.setQueryData<IField>(
-        groupSlug
-          ? queryKeys.groupFields.detail(tableSlug!, groupSlug, response._id)
-          : queryKeys.fields.detail(tableSlug!, response._id),
-        response,
-      );
+      let detailKey:
+        | ReturnType<typeof queryKeys.fields.detail>
+        | ReturnType<typeof queryKeys.groupFields.detail> =
+        queryKeys.fields.detail(tableSlug!, response._id);
+      if (groupSlug) {
+        detailKey = queryKeys.groupFields.detail(
+          tableSlug!,
+          groupSlug,
+          response._id,
+        );
+      }
+      queryClient.setQueryData<IField>(detailKey, response);
 
       queryClient.setQueryData<ITable>(
         queryKeys.tables.detail(tableSlug!),
@@ -344,27 +354,31 @@ export function TableRowDropdownField({
     void createCustomOption();
   };
 
-  const createOptionContent = canCreateCustomOption ? (
-    <div className="p-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start gap-2"
-        disabled={createCustomOptionMutation.isPending}
-        onClick={() => void createCustomOption()}
-      >
-        {createCustomOptionMutation.isPending ? (
-          <Loader2Icon className="size-4 animate-spin" />
-        ) : (
-          <PlusIcon className="size-4" />
-        )}
-        <span>Criar "{customLabel}"</span>
-      </Button>
-    </div>
-  ) : (
+  let createOptionContent = (
     <ComboboxEmpty>Nenhuma opção encontrada</ComboboxEmpty>
   );
+  if (canCreateCustomOption) {
+    createOptionContent = (
+      <div className="p-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2"
+          disabled={createCustomOptionMutation.isPending}
+          onClick={() => void createCustomOption()}
+        >
+          {createCustomOptionMutation.isPending && (
+            <Loader2Icon className="size-4 animate-spin" />
+          )}
+          {!createCustomOptionMutation.isPending && (
+            <PlusIcon className="size-4" />
+          )}
+          <span>Criar "{customLabel}"</span>
+        </Button>
+      </div>
+    );
+  }
 
   if (isMultiple) {
     return (

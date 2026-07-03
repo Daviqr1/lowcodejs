@@ -41,22 +41,27 @@ export function TableRowFileField({
     formField.state.meta.isTouched && !formField.state.meta.isValid;
   const errorId = `${formField.name}-error`;
   const rawValue = formField.state.value;
-  const value: FileValue =
+  let value: FileValue = { files: [], storages: [] };
+  if (
     rawValue &&
     typeof rawValue === 'object' &&
     'files' in rawValue &&
     'storages' in rawValue
-      ? rawValue
-      : { files: [], storages: [] };
+  ) {
+    value = rawValue;
+  }
 
   const { data: settings } = useSettingRead();
 
   const resolvedMaxSize = settings?.FILE_UPLOAD_MAX_SIZE ?? 5 * 1024 * 1024;
 
-  const resolvedAccept: string | undefined =
-    settings?.FILE_UPLOAD_ACCEPTED && settings.FILE_UPLOAD_ACCEPTED.length > 0
-      ? fileExtensionsToAccept(settings.FILE_UPLOAD_ACCEPTED)
-      : undefined;
+  let resolvedAccept: string | undefined;
+  if (
+    settings?.FILE_UPLOAD_ACCEPTED &&
+    settings.FILE_UPLOAD_ACCEPTED.length > 0
+  ) {
+    resolvedAccept = fileExtensionsToAccept(settings.FILE_UPLOAD_ACCEPTED);
+  }
 
   const [isLoadingFiles, setIsLoadingFiles] = React.useState(false);
   const [initialStorages] = React.useState<Array<IStorage>>(

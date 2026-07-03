@@ -86,11 +86,13 @@ export function FieldMenuPositionSelect({
   }, [excludeId, menus, parentId]);
 
   const options = React.useMemo(() => {
-    const firstValue = parentId ? '1' : '0';
+    let firstValue = '0';
+    if (parentId) firstValue = '1';
     const items = [{ value: firstValue, label: 'Primeiro item' }];
 
     siblings.forEach((menu, index) => {
-      const value = parentId ? String(index + 2) : String(index + 1);
+      let value = String(index + 1);
+      if (parentId) value = String(index + 2);
       items.push({
         value,
         label: 'Depois de '.concat(menu.name),
