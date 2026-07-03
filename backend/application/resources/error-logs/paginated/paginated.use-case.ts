@@ -28,12 +28,12 @@ interface Result {
 type Response = Either<HTTPException, Result>;
 
 // Mapeia os search params `order-*` da tela para os campos do documento.
-const ORDER_FIELD: Record<string, string> = {
-  'order-created-at': 'createdAt',
-  'order-status': 'statusCode',
-  'order-method': 'method',
-  'order-url': 'url',
-};
+const ORDER_FIELD: Array<[keyof ErrorLogPaginatedPayload, string]> = [
+  ['order-created-at', 'createdAt'],
+  ['order-status', 'statusCode'],
+  ['order-method', 'method'],
+  ['order-url', 'url'],
+];
 
 function parseStatuses(raw: string | undefined): number[] | undefined {
   if (!raw) return undefined;
@@ -41,7 +41,8 @@ function parseStatuses(raw: string | undefined): number[] | undefined {
     .split(',')
     .map((token) => Number(token.trim()))
     .filter((value) => Number.isInteger(value));
-  return list.length > 0 ? list : undefined;
+  if (list.length > 0) return list;
+  return undefined;
 }
 
 function parseDate(raw: string | undefined): Date | undefined {
@@ -53,8 +54,8 @@ function parseDate(raw: string | undefined): Date | undefined {
 
 function buildSort(payload: ErrorLogPaginatedPayload): Record<string, 1 | -1> {
   const sort: Record<string, 1 | -1> = {};
-  for (const [key, field] of Object.entries(ORDER_FIELD)) {
-    const direction = payload[key as keyof ErrorLogPaginatedPayload];
+  for (const [key, field] of ORDER_FIELD) {
+    const direction = payload[key];
     if (direction === 'asc') sort[field] = 1;
     if (direction === 'desc') sort[field] = -1;
   }

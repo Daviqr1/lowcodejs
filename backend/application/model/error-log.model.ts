@@ -37,9 +37,6 @@ Schema.index({ createdAt: -1 });
 Schema.index({ statusCode: 1, createdAt: -1 });
 Schema.index({ resolved: 1, createdAt: -1 });
 
-export const ErrorLog = (mongoose?.models?.ErrorLog ||
-  mongoose.model<Entity>(
-    'ErrorLog',
-    Schema,
-    'error_logs',
-  )) as mongoose.Model<Entity>;
+export const ErrorLog: mongoose.Model<Entity> =
+  mongoose?.models?.ErrorLog ||
+  mongoose.model<Entity>('ErrorLog', Schema, 'error_logs');

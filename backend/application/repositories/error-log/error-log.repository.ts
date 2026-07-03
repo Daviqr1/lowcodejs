@@ -126,9 +126,12 @@ export default class ErrorLogMongooseRepository extends ErrorLogContractReposito
   }
 
   async setResolved(id: string, resolved: boolean): Promise<boolean> {
+    let resolvedAt: Date | null = null;
+    if (resolved) resolvedAt = new Date();
+
     const result = await ErrorLog.updateOne(
       { _id: id },
-      { resolved, resolvedAt: resolved ? new Date() : null },
+      { resolved, resolvedAt },
     );
     // matchedCount (não modifiedCount): remarcar um estado igual ainda é "achou".
     return result.matchedCount > 0;
