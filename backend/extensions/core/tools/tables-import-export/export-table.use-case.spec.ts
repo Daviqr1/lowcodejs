@@ -135,15 +135,16 @@ describe('Export Table Use Case', () => {
       ...tableBase,
       name: 'Livros',
       slug: 'livros',
-      fields: [userField as never],
+      fields: [userField._id],
     });
+    table.fields = [userField];
 
     await rowInMemoryRepository.create({
       table,
       data: {
         'adaptado-por': ['user-1', 'user-2'],
         creator: 'user-9',
-      } as never,
+      },
     });
 
     const result = await sut.execute({
@@ -223,12 +224,13 @@ describe('Export Table Use Case', () => {
       widthInDetail: null,
     });
 
-    await tableInMemoryRepository.create({
+    const pedidos = await tableInMemoryRepository.create({
       ...tableBase,
       name: 'Pedidos',
       slug: 'pedidos',
-      fields: [relField as never],
+      fields: [relField._id],
     });
+    pedidos.fields = [relField];
 
     const result = await sut.execute({
       slugs: ['pedidos'],
@@ -324,8 +326,9 @@ describe('Export Table Use Case', () => {
       ...tableBase,
       name: 'Pedidos',
       slug: 'pedidos',
-      fields: [relField as never],
+      fields: [relField._id],
     });
+    table.fields = [relField];
 
     await rowInMemoryRepository.create({
       table,
@@ -334,7 +337,7 @@ describe('Export Table Use Case', () => {
           makeObjectId('aaaaaaaaaaaaaaaaaaaaaaaa'),
           makeObjectId('bbbbbbbbbbbbbbbbbbbbbbbb'),
         ],
-      } as never,
+      },
     });
 
     const result = await sut.execute({

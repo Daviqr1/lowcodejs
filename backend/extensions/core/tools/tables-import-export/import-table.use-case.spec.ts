@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { E_MENU_ITEM_TYPE } from '@application/core/entity.core';
 import {
   buildFieldPermissions,
   E_TABLE_STYLE,
@@ -9,6 +10,7 @@ import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memor
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
 import ImportTableUseCase from './import-table.use-case';
 
@@ -276,7 +278,7 @@ describe('Import Table Use Case', () => {
     await menuInMemoryRepository.create({
       name: 'Existente',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
 
     const fileWithMenu = {
@@ -316,13 +318,13 @@ describe('Import Table Use Case', () => {
     await menuInMemoryRepository.create({
       name: 'Cadastros',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
     // O item folha "menu-clientes" também já existe — esse SIM conflita.
     await menuInMemoryRepository.create({
       name: 'Clientes',
       slug: 'menu-clientes',
-      type: 'TABLE' as never,
+      type: E_MENU_ITEM_TYPE.TABLE,
     });
 
     const fileWithMenuTree = {
@@ -373,12 +375,12 @@ describe('Import Table Use Case', () => {
     const existingParent = await menuInMemoryRepository.create({
       name: 'Cadastros',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
     await menuInMemoryRepository.create({
       name: 'Clientes',
       slug: 'menu-clientes',
-      type: 'TABLE' as never,
+      type: E_MENU_ITEM_TYPE.TABLE,
     });
 
     const fileWithMenuTree = {
@@ -726,18 +728,18 @@ describe('Import Table Use Case', () => {
   });
 
   it('deve importar somente dados em tabela existente (casa por slug)', async () => {
+    const nomeField = makeTextShortField({ name: 'Nome', slug: 'nome' });
     const produtos = await tableInMemoryRepository.create({
       name: 'Produtos',
       slug: 'produtos',
       _schema: {},
-      fields: [
-        { ...baseStructure.fields[0], name: 'Nome', slug: 'nome' },
-      ] as unknown as string[],
+      fields: [nomeField._id],
       owner: 'owner-id',
       style: E_TABLE_STYLE.LIST,
       fieldOrderList: ['nome'],
       fieldOrderForm: ['nome'],
     });
+    produtos.fields = [nomeField];
 
     const result = await sut.execute({
       ownerId: 'owner-id',
