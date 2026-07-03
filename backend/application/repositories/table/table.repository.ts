@@ -129,6 +129,9 @@ export default class TableMongooseRepository implements TableContractRepository 
         if (key !== 'owner.name') aggregationSort[key] = direction;
       }
 
+      const limitStages: Array<{ $limit: number }> = [];
+      if (take) limitStages.push({ $limit: take });
+
       const docs = await Model.aggregate([
         { $match: where },
         {
@@ -146,8 +149,7 @@ export default class TableMongooseRepository implements TableContractRepository 
         },
         { $sort: aggregationSort },
         { $skip: skip ?? 0 },
-        // eslint-disable-next-line no-ternary -- spread condicional de stage do pipeline
-        ...(take ? [{ $limit: take }] : []),
+        ...limitStages,
         { $project: { _ownerDoc: 0, _ownerName: 0 } },
       ]);
 

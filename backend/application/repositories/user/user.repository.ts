@@ -146,6 +146,9 @@ export default class UserMongooseRepository implements UserContractRepository {
         if (key !== 'group.name') aggregationSort[key] = direction;
       }
 
+      const limitStages: Array<{ $limit: number }> = [];
+      if (take) limitStages.push({ $limit: take });
+
       const docs = await Model.aggregate([
         { $match: where },
         {
@@ -163,8 +166,7 @@ export default class UserMongooseRepository implements UserContractRepository {
         },
         { $sort: aggregationSort },
         { $skip: skip ?? 0 },
-        // eslint-disable-next-line no-ternary -- spread condicional de stage do pipeline
-        ...(take ? [{ $limit: take }] : []),
+        ...limitStages,
         { $project: { _groupDoc: 0, _groupName: 0 } },
       ]);
 
