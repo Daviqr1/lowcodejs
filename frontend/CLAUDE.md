@@ -414,11 +414,17 @@ Em JSX, renderizar cada caso com seu proprio short-circuit:
 
 ```tsx
 // Evitar
-{isOpen ? <Panel /> : <Placeholder />}
+{
+  isOpen ? <Panel /> : <Placeholder />;
+}
 
 // Preferir
-{isOpen && <Panel />}
-{!isOpen && <Placeholder />}
+{
+  isOpen && <Panel />;
+}
+{
+  !isOpen && <Placeholder />;
+}
 ```
 
 Para props que exigem um de dois valores nao-booleanos, usar short-circuit
