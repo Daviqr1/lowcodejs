@@ -80,8 +80,8 @@ function buildMenuTree(menus: Array<IMenu>): Array<MenuWithChildren> {
   // Depois, construir a hierarquia
   for (const menu of menus) {
     const menuWithChildren = menuMap.get(menu._id)!;
-    const parentId =
-      typeof menu.parent === 'string' ? menu.parent : menu.parent?._id;
+    let parentId = menu.parent?._id;
+    if (typeof menu.parent === 'string') parentId = menu.parent;
 
     if (parentId) {
       const parent = menuMap.get(parentId);

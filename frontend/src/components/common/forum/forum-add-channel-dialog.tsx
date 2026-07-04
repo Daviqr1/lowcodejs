@@ -1,3 +1,4 @@
+import type { AnyFieldApi } from '@tanstack/react-form';
 import { useStore } from '@tanstack/react-store';
 import React from 'react';
 
@@ -27,6 +28,8 @@ import { cn } from '@/lib/utils';
 interface ForumAddChannelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   isPending: boolean;
   labelValue: string;
@@ -45,10 +48,12 @@ export function ForumAddChannelDialog({
   requiresPrivacy,
   onCancel,
 }: ForumAddChannelDialogProps): React.JSX.Element {
-  const privacyValue = useStore(
-    form.store,
-    (state: any) => state.values.privacy,
-  );
+  const privacyValue = useStore(form.store, (state: unknown) => {
+    // form é any (shape do useAppForm desconhecido); assumimos o contrato do form.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const s = state as { values: { privacy?: unknown } };
+    return s.values.privacy;
+  });
   let normalizedPrivacy = 'publico';
   if (typeof privacyValue === 'string') {
     normalizedPrivacy = privacyValue;
@@ -79,7 +84,7 @@ export function ForumAddChannelDialog({
           </DialogHeader>
           <div className="space-y-2">
             <form.AppField name="label">
-              {(field: any) => (
+              {(field: AnyFieldApi) => (
                 <Input
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -90,7 +95,7 @@ export function ForumAddChannelDialog({
               )}
             </form.AppField>
             <form.AppField name="description">
-              {(field: any) => (
+              {(field: AnyFieldApi) => (
                 <Textarea
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -110,7 +115,7 @@ export function ForumAddChannelDialog({
                     )}
                   >
                     <form.AppField name="privacy">
-                      {(field: any) => (
+                      {(field: AnyFieldApi) => (
                         <Select
                           value={((): string => {
                             if (typeof field.state.value === 'string') {
@@ -141,7 +146,7 @@ export function ForumAddChannelDialog({
                 {shouldShowMembers && (
                   <div className="sm:basis-3/4 sm:grow-0 sm:shrink-0">
                     <form.AppField name="members">
-                      {(field: any) => (
+                      {(field: AnyFieldApi) => (
                         <ForumUserMultiSelect
                           value={((): Array<string> => {
                             if (Array.isArray(field.state.value)) {

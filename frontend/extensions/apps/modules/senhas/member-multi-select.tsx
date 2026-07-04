@@ -145,7 +145,9 @@ export function MemberMultiSelect({
               )}
               <ComboboxChipsInput
                 placeholder={
-                  values.length > 0 ? '' : (placeholder ?? 'Adicionar membros')
+                  (values.length === 0 &&
+                    (placeholder ?? 'Adicionar membros')) ||
+                  ''
                 }
               />
             </React.Fragment>

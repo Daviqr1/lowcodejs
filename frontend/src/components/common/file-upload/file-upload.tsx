@@ -34,6 +34,7 @@ function useLazyRef<T>(fn: () => T): React.RefObject<T> {
 
   // ref.current ja foi inicializado acima; o `as` estreita RefObject<T | null>
   // para RefObject<T> (idiom useLazyRef; React nao propaga essa garantia).
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return ref as React.RefObject<T>;
 }
 

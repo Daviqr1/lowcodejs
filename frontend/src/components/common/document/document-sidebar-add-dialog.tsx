@@ -1,3 +1,4 @@
+import type { AnyFieldApi } from '@tanstack/react-form';
 import { useStore } from '@tanstack/react-store';
 import React from 'react';
 
@@ -24,11 +25,15 @@ export function DocumentSidebarAddDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parentLabel: string | null;
+  // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   onCancel: () => void;
   isPending: boolean;
 }): React.JSX.Element {
   const label = useStore(form.store, (state: unknown) => {
+    // form é any (shape do useAppForm desconhecido); assumimos o contrato do form.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const s = state as { values: { label: string } };
     return s.values.label;
   });
@@ -56,7 +61,7 @@ export function DocumentSidebarAddDialog({
           </DialogHeader>
           <div className="space-y-2">
             <form.AppField name="label">
-              {(field: any) => (
+              {(field: AnyFieldApi) => (
                 <Input
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}

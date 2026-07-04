@@ -211,6 +211,7 @@ function HtmlFooter(): React.JSX.Element {
 function getMarkdownFromEditor(editor: TiptapEditor): string {
   // tiptap-markdown injeta `markdown` no storage em runtime sem augmentar o tipo
   // `Storage` do Tiptap; o acesso e lib-forced (por isso o `as any` pontual).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/consistent-type-assertions
   const md = (editor.storage as any).markdown?.getMarkdown?.();
   if (md !== undefined) {
     return md;
@@ -286,6 +287,7 @@ export interface EditorProps {
 
 // Array<any> nos args e o idiom para restringir T a qualquer funcao (unknown[]
 // rejeitaria funcoes com parametros concretos por contravariancia).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function debounce<T extends (...args: Array<any>) => void>(
   func: T,
   wait: number,

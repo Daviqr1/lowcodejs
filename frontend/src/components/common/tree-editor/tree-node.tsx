@@ -521,9 +521,8 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
           <AddNodeForm
             type={addFormType}
             parentNodeLabel={
-              selectedNodeId
-                ? findNodeById(treeData, selectedNodeId)?.label
-                : undefined
+              (selectedNodeId && findNodeById(treeData, selectedNodeId)?.label) ||
+              undefined
             }
             onSave={handleSaveNewNode}
             onCancel={handleCancelAdd}

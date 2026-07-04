@@ -1,3 +1,4 @@
+import type { AnyFieldApi } from '@tanstack/react-form';
 import { useStore } from '@tanstack/react-store';
 import { BellIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
@@ -203,7 +204,7 @@ export function CalendarEventDialog({
 
   const values: CalendarEventFormValues = useStore(
     form.store,
-    (state: any) => state.values,
+    (state) => state.values,
   );
   const colorOptions = getColorOptions(fields);
 
@@ -271,7 +272,7 @@ export function CalendarEventDialog({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <form.AppField name="title">
-                  {(field: any) => (
+                  {(field: AnyFieldApi) => (
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Título</label>
                       <Input
@@ -290,7 +291,7 @@ export function CalendarEventDialog({
               {fields.colorField && colorOptions.length > 0 && (
                 <div>
                   <form.AppField name="color">
-                    {(field: any) => (
+                    {(field: AnyFieldApi) => (
                       <div>
                         <label className="text-sm font-medium">Cor</label>
                         <Select
@@ -335,7 +336,7 @@ export function CalendarEventDialog({
             </div>
 
             <form.AppField name="description">
-              {(field: any) => (
+              {(field: AnyFieldApi) => (
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Descrição</label>
                   <Textarea
@@ -351,7 +352,7 @@ export function CalendarEventDialog({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <form.AppField name="start">
-                {(field: any) => (
+                {(field: AnyFieldApi) => (
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Início</label>
                     <Input
@@ -365,7 +366,7 @@ export function CalendarEventDialog({
               </form.AppField>
 
               <form.AppField name="end">
-                {(field: any) => (
+                {(field: AnyFieldApi) => (
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Término</label>
                     <Input
@@ -381,6 +382,8 @@ export function CalendarEventDialog({
 
             {fields.participantsField && (
               <form.AppField name={fields.participantsField.slug}>
+                {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(formField: any) => (
                   <formField.TableRowUserField
                     field={fields.participantsField!}
@@ -391,7 +394,7 @@ export function CalendarEventDialog({
 
             {fields.reminderField && (
               <form.AppField name={fields.reminderField.slug}>
-                {(reminderFormField: any) => {
+                {(reminderFormField: AnyFieldApi) => {
                   let items: Array<Record<string, unknown>> = [];
                   const rawReminder = reminderFormField.state.value;
                   if (Array.isArray(rawReminder)) items = rawReminder;
@@ -533,6 +536,8 @@ export function CalendarEventDialog({
                     key={field._id}
                     name={field.slug}
                   >
+                    {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(formField: any) => {
                       switch (field.type) {
                         case E_FIELD_TYPE.TEXT_SHORT:

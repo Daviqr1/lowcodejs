@@ -80,9 +80,14 @@ export function findCategoryLabel(
   return null;
 }
 
+// Valores de filtro são dinâmicos por slug de campo (shape só conhecido em
+// runtime) — `any` isolado neste alias, único ponto sancionado no arquivo.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FilterValues = Record<string, any>;
+
 interface UseFilterStateReturn {
-  filterValues: Record<string, any>;
-  setFilterValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  filterValues: FilterValues;
+  setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   handleSubmit: () => void;
   handleClear: () => void;
   removeFilter: (key: string) => void;
@@ -97,7 +102,7 @@ export function useFilterState(
   const navigate = useNavigate();
   const search = useSearch({ strict: false });
 
-  const [filterValues, setFilterValues] = React.useState<Record<string, any>>(
+  const [filterValues, setFilterValues] = React.useState<FilterValues>(
     {},
   );
 
@@ -329,8 +334,8 @@ export function getActiveFiltersCount(
 
 interface FilterFieldsFormProps {
   fields: Array<IFilterField>;
-  filterValues: Record<string, any>;
-  setFilterValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  filterValues: FilterValues;
+  setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   removeFilter: (key: string) => void;
   handleMultiValueChange: (field: IFilterField, value: Array<string>) => void;
   search: Record<string, unknown>;
@@ -794,6 +799,7 @@ export function FilterRelationship({
         if (fromList) return fromList;
         // placeholder mínimo para id ainda não resolvido no cache/lista;
         // IRow exige `creator` e demais campos, por isso o cast e inevitavel aqui.
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         return { _id: id } as IRow;
       })
       .filter((row): row is IRow => row !== null);

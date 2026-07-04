@@ -86,6 +86,8 @@ export function ExtensionSlot({
   const { data: extensions } = useExtensionsActiveList();
 
   const tableId = ((): string | null => {
+    // context é um saco de props de slot (shape varia por slot) — narrow pontual.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const candidate = (context as { table?: { _id?: string } }).table;
     return candidate?._id ?? null;
   })();
