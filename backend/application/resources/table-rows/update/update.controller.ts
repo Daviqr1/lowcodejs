@@ -2,6 +2,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 
+import type { RowPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 
@@ -34,7 +35,7 @@ export default class {
     },
   })
   async handle(
-    request: FastifyRequest<{ Body: Record<string, unknown> }>,
+    request: FastifyRequest<{ Body: RowPayload }>,
     response: FastifyReply,
   ): Promise<void> {
     const params = TableRowUpdateParamsValidator.parse(request.params);
