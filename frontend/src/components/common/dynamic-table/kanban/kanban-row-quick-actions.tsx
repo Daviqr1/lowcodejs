@@ -25,6 +25,8 @@ export function KanbanRowQuickActions({
   };
   editTarget: EditTarget;
   setEditTarget: (value: EditTarget) => void;
+  // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   quickForm: any;
   tableSlug: string;
 }): React.JSX.Element {
@@ -109,6 +111,8 @@ export function KanbanRowQuickActions({
             <div className="flex-1 min-w-0">
               {editTarget === 'members' && fields.members && (
                 <quickForm.AppField name={fields.members.slug}>
+                  {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(formField: any) => (
                     <formField.TableRowUserField field={fields.members!} />
                   )}
@@ -116,6 +120,8 @@ export function KanbanRowQuickActions({
               )}
               {editTarget === 'start' && fields.startDate && (
                 <quickForm.AppField name={fields.startDate.slug}>
+                  {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(formField: any) => (
                     <formField.TableRowDateField field={fields.startDate!} />
                   )}
@@ -123,6 +129,8 @@ export function KanbanRowQuickActions({
               )}
               {editTarget === 'due' && fields.dueDate && (
                 <quickForm.AppField name={fields.dueDate.slug}>
+                  {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(formField: any) => (
                     <formField.TableRowDateField field={fields.dueDate!} />
                   )}
@@ -130,6 +138,8 @@ export function KanbanRowQuickActions({
               )}
               {editTarget === 'list' && fields.list && (
                 <quickForm.AppField name={fields.list.slug}>
+                  {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(formField: any) => (
                     <formField.TableRowDropdownField
                       field={fields.list!}

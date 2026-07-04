@@ -43,6 +43,8 @@ export function KanbanCreateCardDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createForm: any;
   fields: FieldMap;
   extraFields: Array<IField>;
@@ -86,6 +88,8 @@ export function KanbanCreateCardDialog({
 
             {fields.title && (
               <createForm.AppField name={fields.title.slug}>
+                {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(formField: any) => (
                   <formField.TableRowTextField field={fields.title!} />
                 )}
@@ -97,6 +101,8 @@ export function KanbanCreateCardDialog({
                 {fields.members && (
                   <div className="md:col-span-2">
                     <createForm.AppField name={fields.members.slug}>
+                      {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(formField: any) => (
                         <formField.TableRowUserField field={fields.members!} />
                       )}
@@ -106,6 +112,8 @@ export function KanbanCreateCardDialog({
                 {fields.startDate && (
                   <div className="md:col-span-1">
                     <createForm.AppField name={fields.startDate.slug}>
+                      {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(formField: any) => (
                         <formField.TableRowDateField
                           field={fields.startDate!}
@@ -117,6 +125,8 @@ export function KanbanCreateCardDialog({
                 {fields.dueDate && (
                   <div className="md:col-span-1">
                     <createForm.AppField name={fields.dueDate.slug}>
+                      {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(formField: any) => (
                         <formField.TableRowDateField field={fields.dueDate!} />
                       )}
@@ -128,6 +138,8 @@ export function KanbanCreateCardDialog({
 
             {fields.description && (
               <createForm.AppField name={fields.description.slug}>
+                {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(formField: any) => {
                   if (fields.description?.format === E_FIELD_FORMAT.RICH_TEXT) {
                     return (
@@ -147,8 +159,11 @@ export function KanbanCreateCardDialog({
 
             {fields.tasks && (
               <createForm.AppField name={fields.tasks.slug}>
+                {/* render props do useAppForm sem tipo exportado (campos do app). */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(tasksField: any) => (
                   <createForm.AppField name="__kanbanTaskDraft">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(taskDraftField: any) => {
                       let tasks: Array<Record<string, unknown>> = [];
                       if (Array.isArray(tasksField.state.value)) {
@@ -267,6 +282,8 @@ export function KanbanCreateCardDialog({
 
             {fields.attachments && (
               <createForm.AppField name={fields.attachments.slug}>
+                {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(formField: any) => {
                   const attachmentsField = {
                     ...fields.attachments!,
@@ -292,6 +309,8 @@ export function KanbanCreateCardDialog({
                     key={field._id}
                     name={field.slug}
                   >
+                    {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(formField: any) => {
                       switch (field.type) {
                         case E_FIELD_TYPE.TEXT_SHORT:

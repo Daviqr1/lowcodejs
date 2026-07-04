@@ -223,10 +223,10 @@ export function KanbanRowDialog({
               .map((opt: unknown) => {
                 if (typeof opt === 'string') return opt;
                 if (opt && typeof opt === 'object') {
-                  const candidate = opt as { value?: unknown; _id?: unknown };
-                  if (typeof candidate.value === 'string')
-                    return candidate.value;
-                  if (typeof candidate._id === 'string') return candidate._id;
+                  if ('value' in opt && typeof opt.value === 'string')
+                    return opt.value;
+                  if ('_id' in opt && typeof opt._id === 'string')
+                    return opt._id;
                 }
                 return '';
               })
@@ -243,10 +243,10 @@ export function KanbanRowDialog({
               .map((item: unknown) => {
                 if (typeof item === 'string') return item;
                 if (item && typeof item === 'object') {
-                  const candidate = item as { value?: unknown; id?: unknown };
-                  if (typeof candidate.value === 'string')
-                    return candidate.value;
-                  if (typeof candidate.id === 'string') return candidate.id;
+                  if ('value' in item && typeof item.value === 'string')
+                    return item.value;
+                  if ('id' in item && typeof item.id === 'string')
+                    return item.id;
                 }
                 return '';
               })
@@ -279,6 +279,8 @@ export function KanbanRowDialog({
   }, [rowId, quickFields.length]);
 
   const extraForm = useAppForm({
+    // valores default do form são dinâmicos (payload low-code por slug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     defaultValues: ((): Record<string, any> => {
       if (row) {
         return buildUpdateRowDefaultValues(row, editableFields);
@@ -450,6 +452,8 @@ export function KanbanRowDialog({
       };
     });
     const nextProgress = getTaskCompletionPercent(updated);
+    // dados de update são dinâmicos (payload low-code por slug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const progressData: Record<string, any> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
@@ -474,6 +478,8 @@ export function KanbanRowDialog({
       },
     ];
     const nextProgress = getTaskCompletionPercent(updated);
+    // dados de update são dinâmicos (payload low-code por slug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const progressData: Record<string, any> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
@@ -514,6 +520,8 @@ export function KanbanRowDialog({
       };
     });
     const nextProgress = getTaskCompletionPercent(updated);
+    // dados de update são dinâmicos (payload low-code por slug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const progressData: Record<string, any> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
@@ -533,6 +541,8 @@ export function KanbanRowDialog({
     if (!fields.tasks) return;
     const updated = tasks.filter((_, i) => i !== index);
     const nextProgress = getTaskCompletionPercent(updated);
+    // dados de update são dinâmicos (payload low-code por slug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const progressData: Record<string, any> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
@@ -846,6 +856,8 @@ export function KanbanRowDialog({
   const renderExtraFieldEditor = (field: IField): React.JSX.Element => {
     return (
       <extraForm.AppField name={field.slug}>
+        {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {(formField: any) => {
           switch (field.type) {
             case E_FIELD_TYPE.TEXT_SHORT:

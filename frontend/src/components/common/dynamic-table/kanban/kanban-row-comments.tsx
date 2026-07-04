@@ -29,12 +29,15 @@ export function KanbanRowCommentsSection({
   onAddComment,
   mentions,
 }: {
+  // comentários são dados dinâmicos de row (valor por slug é any no low-code).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comments: Array<Record<string, any>>;
   profile?: IUser;
   currentUserId: string;
   rowCreatorId?: string;
   editingCommentIndex: number | null;
   editingCommentText: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEditStart: (index: number, comment: Record<string, any>) => void;
   onEditCancel: () => void;
   onEditChange: (value: string) => void;

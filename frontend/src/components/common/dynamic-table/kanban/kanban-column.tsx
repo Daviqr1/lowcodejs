@@ -243,9 +243,11 @@ export function KanbanColumn({
                 <Label>Direção</Label>
                 <Select
                   value={sortDirection}
-                  onValueChange={(value) =>
-                    setSortDirection(value as 'asc' | 'desc')
-                  }
+                  onValueChange={(value) => {
+                    if (value === 'asc' || value === 'desc') {
+                      setSortDirection(value);
+                    }
+                  }}
                   disabled={sortField === MANUAL_SORT_VALUE}
                 >
                   <SelectTrigger className="w-full">

@@ -1,3 +1,4 @@
+import type { AnyFieldApi } from '@tanstack/react-form';
 import { useStore } from '@tanstack/react-store';
 import React from 'react';
 
@@ -19,14 +20,19 @@ export function KanbanAddListDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   isSubmitting: boolean;
 }): React.JSX.Element {
   const label = useStore(form.store, (state: unknown) => {
+    // form é any (shape do useAppForm desconhecido); assumimos o contrato do form.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const s = state as { values: { label: string } };
     return s.values.label;
   });
   useStore(form.store, (state: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const s = state as { values: { color: string } };
     return s.values.color;
   });
@@ -58,7 +64,7 @@ export function KanbanAddListDialog({
             <div className="space-y-1">
               <label className="text-sm font-medium">Nome</label>
               <form.AppField name="label">
-                {(field: any) => (
+                {(field: AnyFieldApi) => (
                   <Input
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
@@ -70,7 +76,7 @@ export function KanbanAddListDialog({
             </div>
 
             <form.AppField name="color">
-              {(field: any) => (
+              {(field: AnyFieldApi) => (
                 <div className="flex items-center gap-3">
                   <label className="text-sm font-medium">Cor</label>
                   <input

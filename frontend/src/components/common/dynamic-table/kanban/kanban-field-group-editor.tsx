@@ -26,6 +26,10 @@ import { normalizeIdList } from '@/lib/kanban-helpers';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { resolveFieldLabel } from '@/lib/table';
 
+// Item de grupo é dado dinâmico do low-code (valor por slug é any via IRow).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type GroupRow = Record<string, any>;
+
 interface KanbanFieldGroupEditorProps {
   row: IRow;
   field: IField;
@@ -36,17 +40,17 @@ interface KanbanFieldGroupEditorProps {
     mutateAsync: (params: {
       slug: string;
       rowId: string;
-      data: Record<string, any>;
-    }) => Promise<any>;
+      data: GroupRow;
+    }) => Promise<unknown>;
     status: string;
   };
 }
 
 function normalizeGroupRow(
-  groupRow: Record<string, any>,
+  groupRow: GroupRow,
   groupFields: Array<IField>,
-): Record<string, any> {
-  const normalized: Record<string, any> = {};
+): GroupRow {
+  const normalized: GroupRow = {};
   for (const gf of groupFields) {
     const value = groupRow[gf.slug];
     switch (gf.type) {
@@ -58,7 +62,7 @@ function normalizeGroupRow(
       case E_FIELD_TYPE.DROPDOWN:
       case E_FIELD_TYPE.CATEGORY:
         {
-          let dropdownValue: Array<any> = [];
+          let dropdownValue: Array<unknown> = [];
           if (Array.isArray(value)) {
             dropdownValue = value;
           } else if (value) {
@@ -86,18 +90,17 @@ function isAttachmentMode(groupFields: Array<IField>): boolean {
 }
 
 function getStoragesFromGroupRow(
-  groupRow: Record<string, any>,
+  groupRow: GroupRow,
   fileField: IField,
 ): Array<IStorage> {
   const raw = groupRow[fileField.slug];
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (item: any): item is IStorage =>
-      item && typeof item === 'object' && item.url,
+    (item): item is IStorage => item && typeof item === 'object' && item.url,
   );
 }
 
-function getAuthorFromGroupRow(groupRow: Record<string, any>): IUser | null {
+function getAuthorFromGroupRow(groupRow: GroupRow): IUser | null {
   const raw = groupRow['autor'];
   if (Array.isArray(raw)) {
     const first = raw[0];
@@ -112,8 +115,14 @@ function getAuthorFromGroupRow(groupRow: Record<string, any>): IUser | null {
   return null;
 }
 
-function formatAttachmentDate(dateValue: any): string | null {
-  if (!dateValue) return null;
+function formatAttachmentDate(dateValue: unknown): string | null {
+  if (
+    typeof dateValue !== 'string' &&
+    typeof dateValue !== 'number' &&
+    !(dateValue instanceof Date)
+  ) {
+    return null;
+  }
   try {
     return format(new Date(dateValue), "HH:mm 'de' dd/MM/yyyy", {
       locale: ptBR,
@@ -167,7 +176,7 @@ export function KanbanFieldGroupEditor({
   updateRow,
 }: KanbanFieldGroupEditorProps): React.JSX.Element {
   const [isAdding, setIsAdding] = React.useState(false);
-  const [newItem, setNewItem] = React.useState<Record<string, any>>({});
+  const [newItem, setNewItem] = React.useState<GroupRow>({});
   const [uploadFiles, setUploadFiles] = React.useState<Array<File>>([]);
   const [uploadStorages, setUploadStorages] = React.useState<Array<IStorage>>(
     [],
@@ -185,7 +194,7 @@ export function KanbanFieldGroupEditor({
     ) ?? [];
 
   // Dados dinâmicos do grupo (row[slug] é any via index signature do IRow).
-  let groupData: Array<Record<string, any>> = [];
+  let groupData: Array<GroupRow> = [];
   if (Array.isArray(row[field.slug])) groupData = row[field.slug];
 
   const isSaving = updateRow.status === 'pending';
@@ -214,7 +223,7 @@ export function KanbanFieldGroupEditor({
   const handleAddSave = async (): Promise<void> => {
     if (isSaving) return;
 
-    const itemPayload: Record<string, any> = {};
+    const itemPayload: GroupRow = {};
 
     if (attachmentMode) {
       for (const gf of groupFields) {
