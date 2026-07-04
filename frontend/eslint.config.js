@@ -48,4 +48,20 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // code-style: 3 regras aplicadas a TODO .ts/.tsx (src + extensions) — nada
+    // escapa. Exceções: routeTree.gen.ts (gerado) e components/ui (shadcn).
+    // `as const` continua permitido; casts de fronteira runtime/lib-forced usam
+    // eslint-disable pontual justificado.
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['src/routeTree.gen.ts', 'src/components/ui/**'],
+    rules: {
+      'no-ternary': 'error',
+      '@typescript-eslint/consistent-type-assertions': [
+        'error',
+        { assertionStyle: 'never' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
 ]);
