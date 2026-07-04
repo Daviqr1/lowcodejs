@@ -643,14 +643,85 @@ export type FieldCreatePayload = Pick<
   | 'group'
 >;
 
-export type IRow = Merge<
-  Omit<Base, 'trashed'>,
-  Record<string, unknown> & {
-    status?: ValueOf<typeof E_ROW_STATUS>;
-    draftAt?: Date | null;
-    sharedRowSlug?: string | null;
-  }
->;
+// Ref lean de usuario populado na resposta (creator/updater e campo USER).
+export type IUserRef = Pick<IUser, '_id' | 'name' | 'email'>;
+
+// Valor de UM campo no PAYLOAD de envio (create/update). Chaves da row sao
+// dinamicas, mas o formato por tipo de campo e fechado e conhecido:
+// TEXT/DATE -> string|null; DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP -> ids;
+// FIELD_GROUP -> array de sub-payloads aninhados.
+export type RowPayloadValue =
+  | string
+  | null
+  | Array<string>
+  | Array<RowPayload>;
+
+// Valor de UM campo na RESPOSTA. FILE volta populado (IStorage), USER volta
+// lean (IUserRef), RELATIONSHIP volta a row populada, FIELD_GROUP aninhado.
+export type RowResultValue =
+  | string
+  | null
+  | Array<string>
+  | Array<IStorage>
+  | Array<IUserRef>
+  | Array<IRow>;
+
+// Payload de envio: chaves dinamicas, valores tipados (substitui
+// Record<string, unknown> em controller/validator/repo).
+export type RowPayload = Record<string, RowPayloadValue>;
+
+// Campos nativos da resposta de row. creator/updater sao ref User: chegam
+// populados (IUserRef) na resposta, mas o BE tambem lida com o id cru antes do
+// populate — por isso a uniao com string.
+export type RowNative = {
+  _id: string;
+  status?: ValueOf<typeof E_ROW_STATUS>;
+  creator?: IUserRef | string | null;
+  updater?: IUserRef | string | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  trashedAt: Date | null;
+  draftAt?: Date | null;
+  sharedRowSlug?: string | null;
+};
+
+// Resposta de row: nativos tipados + indice dinamico. O valor por slug segue o
+// contrato de `RowResultValue`, mas o indice fica `unknown` no BACKEND porque a
+// row aqui e composta com `mongoose.Document` (model-builder) e manipulada de
+// forma dinamica — um indice estreito colidiria com os metodos do Document. O
+// contrato forte de valor por campo vive em `RowResultValue` e no generico
+// `Row<TFields>` (opt-in); no FRONTEND o indice de `IRow` e estreitado, pois la
+// nao ha interop com Mongoose.
+export type IRow = Merge<RowNative, { [slug: string]: unknown }>;
+
+// Mapa tipo-de-campo -> valor na resposta. Base do generico Row<TFields>, para
+// os casos em que os fields sao conhecidos em compile-time (templates const).
+export type FieldValueByType<T extends ValueOf<typeof E_FIELD_TYPE>> =
+  T extends typeof E_FIELD_TYPE.FILE
+    ? Array<IStorage>
+    : T extends typeof E_FIELD_TYPE.USER
+      ? Array<IUserRef>
+      : T extends typeof E_FIELD_TYPE.RELATIONSHIP
+        ? Array<IRow>
+        : T extends
+              | typeof E_FIELD_TYPE.DROPDOWN
+              | typeof E_FIELD_TYPE.CATEGORY
+          ? Array<string>
+          : T extends
+                | typeof E_FIELD_TYPE.DATE
+                | typeof E_FIELD_TYPE.TEXT_SHORT
+                | typeof E_FIELD_TYPE.TEXT_LONG
+            ? string | null
+            : RowResultValue;
+
+// Row tipada por um conjunto de fields conhecido em compile-time. Opt-in: usar
+// so onde ha `fields as const` (ex.: helpers de template). Nao forcar onde os
+// fields vem da API em runtime.
+export type Row<TFields extends ReadonlyArray<Pick<IField, 'slug' | 'type'>>> =
+  Merge<
+    RowNative,
+    { [F in TFields[number] as F['slug']]: FieldValueByType<F['type']> }
+  >;
 
 export type IAttachment = {
   filename: string;
