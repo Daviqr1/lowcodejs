@@ -1,6 +1,6 @@
 ---
 name: code-style
-description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
+description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, always `type` never `interface`, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
 ---
 
 # Code style
@@ -83,7 +83,32 @@ When `satisfies` won't do it and you feel like you need `as`, stop. That's usual
 sign the type at the source is too weak. Fix it there instead of papering over it at
 the use site.
 
-## 4. Commits: conventional, atomic, semantic
+## 4. Sempre `type`, nunca `interface`
+
+Modele tipos com `type` — objeto, união, interseção, tudo. Não use `interface` no
+código da aplicação. `type` compõe melhor (uniões, `Merge`, mapeados,
+condicionais) e evita declaration merging acidental:
+
+```ts
+// Evitar
+interface Props {
+  field: IField
+  disabled?: boolean
+}
+
+// Preferir
+type Props = {
+  field: IField
+  disabled?: boolean
+}
+```
+
+Única exceção: *module augmentation* (`declare module '...'`), onde o TypeScript
+**exige** `interface` para o declaration merging — `type` não funciona ali. São
+os `.d.ts` que aumentam libs externas (ex.: `fastify.d.ts`, `tanstack-table.d.ts`).
+Não é escolha de estilo, é limite da linguagem.
+
+## 5. Commits: conventional, atomic, semantic
 
 **Commit proactively, as you go.** Don't wait to be asked. The moment a logical
 change is complete and passing, commit it — atomically. One task usually becomes
@@ -107,5 +132,5 @@ refactor(sidebar): extrai navegação para hook dedicado
 
 ## Before you finish
 
-Reread your own diff for assignment ternaries, loose `any`, and `as`. Find one, fix
-it. Cheaper to catch now than later.
+Reread your own diff for assignment ternaries, loose `any`, `as`, and `interface`
+in app code. Find one, fix it. Cheaper to catch now than later.
