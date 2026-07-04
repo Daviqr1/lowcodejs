@@ -40,7 +40,9 @@ export const Route = createFileRoute('/setup')({
     const currentPath = location.pathname.replace('/setup/', '');
     const currentStep = status.currentStep ?? 'admin';
     const currentStepIndex = SETUP_STEPS.indexOf(currentStep);
-    const requestedStepIndex = SETUP_STEPS.indexOf(currentPath as SetupStep);
+    const requestedStepIndex = SETUP_STEPS.findIndex(
+      (step) => step === currentPath,
+    );
 
     if (requestedStepIndex > currentStepIndex && requestedStepIndex >= 0) {
       throw redirect({
