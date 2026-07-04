@@ -263,6 +263,43 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 | Model | `{entidade}.model.ts` | `user.model.ts` |
 | Validator Base | `{entidade}-base.validator.ts` | `user-base.validator.ts` |
 
+## Convenções de Código
+
+Três regras de estilo aplicadas a **todo** `.ts` do backend (incluindo
+`extensions/`, `database/`, `hooks/`, `config/`, `test/`, `*.spec.ts`),
+enforçadas pelo ESLint (`eslint.config.js`, bloco `files: ['**/*.ts']`): rodar
+`npm run lint` falha em qualquer nova violação.
+
+### 1. Sem ternário de atribuição/controle
+
+Não usar ternário para atribuir valor ou escolher fluxo. Preferir `if` clássico.
+Manter `??`, `?.` e `&&`/`||` short-circuit (não são ternário).
+
+```ts
+// Evitar
+const rowCreator = row._originalCreator ? String(row._originalCreator) : ownerId;
+
+// Preferir
+let rowCreator = ownerId;
+if (row._originalCreator) rowCreator = String(row._originalCreator);
+```
+
+### 2. Sem `any` desnecessário
+
+Preferir `type` próprio, inferência ou `unknown` + narrow. `any` só onde a lib
+força, sempre com comentário curto justificando.
+
+### 3. Sem `as` (preferir corrigir o tipo na origem)
+
+`as const` é permitido. Para o resto, fortalecer o tipo na origem (ex.: tipar um
+campo de payload com o enum correto elimina o cast no consumidor). Onde o cast é
+uma fronteira genuína de runtime (JSON externo em `import-table`, mock parcial em
+spec, limitação de tipagem de lib), manter o mínimo com
+`// eslint-disable-next-line @typescript-eslint/consistent-type-assertions` e uma
+justificativa curta em PT-BR — nunca introduzir `as`/`any` novo silencioso.
+
+Commits: Conventional Commits atômicos em pt-BR (`refactor(escopo): ...`).
+
 ## Comandos CLI
 
 ```bash

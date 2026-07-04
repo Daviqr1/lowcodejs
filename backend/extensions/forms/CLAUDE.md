@@ -17,7 +17,8 @@ forms/
 
 Cada plugin é um leaf simples: `manifest.json` + `controller.ts` +
 `*-config.model.ts` (persistência da config por tabela) + `*.validator.ts` +
-`*.schema.ts` (docs OpenAPI) + `*.types.ts`. Sem CLAUDE.md próprio.
+`*.schema.ts` (docs OpenAPI) + `*.types.ts`. Cada um tem seu CLAUDE.md próprio
+(`plugins/<id>/CLAUDE.md`).
 
 ## Plugins
 
