@@ -57,10 +57,10 @@ export default [
     },
   },
   {
-    // code-style aplicado à camada de aplicação (application/**). Mantém o gate
-    // restrito ao código de negócio; demais diretórios (bin, database, test,
-    // extensions) não são forçados por estas regras.
-    files: ['application/**/*.ts'],
+    // code-style aplicado a TODO o backend (application, extensions, database,
+    // hooks, config, test, bin, start...) — nada escapa. `as const` segue
+    // permitido; casts de fronteira de runtime usam disable pontual justificado.
+    files: ['**/*.ts'],
     rules: {
       // code-style: sem ternário como control-flow (?? / ?. / && seguem livres,
       // não são ternários). Cada hit legítimo inline usa disable pontual.
