@@ -30,6 +30,8 @@ export const UpdateUserFormFields = withForm({
   defaultValues: userUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
     onAllowPasswordChangeChange: () => {},

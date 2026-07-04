@@ -214,8 +214,8 @@ export function RowDetailView({
 
   const visibleFields = React.useMemo((): Array<IField> => {
     const detailOrder = table.fieldOrderDetail ?? [];
-    const order =
-      detailOrder.length > 0 ? detailOrder : (table.fieldOrderForm ?? []);
+    let order = table.fieldOrderForm ?? [];
+    if (detailOrder.length > 0) order = detailOrder;
     const filtered = table.fields.filter(
       (f) => !f.trashed && isFieldVisible(f, 'detail'),
     );

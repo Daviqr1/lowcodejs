@@ -82,9 +82,10 @@ function RouteComponent(): React.JSX.Element {
   useApiErrorAutoClear(form);
 
   const isPending = _create.status === 'pending';
-  const menuType = useStore(form.store, (state) => state.values.type) as
-    | ValueOf<typeof E_MENU_ITEM_TYPE>
-    | '';
+  const menuType: ValueOf<typeof E_MENU_ITEM_TYPE> | '' = useStore(
+    form.store,
+    (state) => state.values.type,
+  );
 
   const goBack = (): void => {
     sidebar.setOpen(true);

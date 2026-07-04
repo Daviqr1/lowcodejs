@@ -187,7 +187,9 @@ export const CreateFieldFormFields = withForm({
   props: {
     isPending: false,
     tableSlug: '',
-    blockedTypes: [] as Array<string>,
+    blockedTypes: new Array<string>(),
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     defaultFieldType: undefined as string | undefined,
   },
   render: function Render({

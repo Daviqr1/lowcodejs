@@ -187,31 +187,24 @@ function SettingUpdateContent({
     onSubmit: async ({ value }) => {
       if (_update.status === 'pending') return;
 
+      const isS3 = value.STORAGE_DRIVER === 's3';
       const payload = {
         SYSTEM_NAME: value.SYSTEM_NAME.trim(),
         SYSTEM_DESCRIPTION: value.SYSTEM_DESCRIPTION.trim(),
         LOCALE: value.LOCALE.trim(),
         STORAGE_DRIVER: value.STORAGE_DRIVER,
         STORAGE_ENDPOINT:
-          value.STORAGE_DRIVER === 's3'
-            ? value.STORAGE_ENDPOINT?.trim() || undefined
-            : undefined,
+          (isS3 && (value.STORAGE_ENDPOINT?.trim() || undefined)) || undefined,
         STORAGE_REGION:
-          value.STORAGE_DRIVER === 's3'
-            ? value.STORAGE_REGION?.trim() || 'us-east-1'
-            : undefined,
+          (isS3 && (value.STORAGE_REGION?.trim() || 'us-east-1')) || undefined,
         STORAGE_BUCKET:
-          value.STORAGE_DRIVER === 's3'
-            ? value.STORAGE_BUCKET?.trim() || undefined
-            : undefined,
+          (isS3 && (value.STORAGE_BUCKET?.trim() || undefined)) || undefined,
         STORAGE_ACCESS_KEY:
-          value.STORAGE_DRIVER === 's3'
-            ? value.STORAGE_ACCESS_KEY?.trim() || undefined
-            : undefined,
+          (isS3 && (value.STORAGE_ACCESS_KEY?.trim() || undefined)) ||
+          undefined,
         STORAGE_SECRET_KEY:
-          value.STORAGE_DRIVER === 's3'
-            ? value.STORAGE_SECRET_KEY?.trim() || undefined
-            : undefined,
+          (isS3 && (value.STORAGE_SECRET_KEY?.trim() || undefined)) ||
+          undefined,
         LOGO_SMALL_URL: value.LOGO_SMALL_URL ?? undefined,
         LOGO_LARGE_URL: value.LOGO_LARGE_URL ?? undefined,
         LOGO_SMALL_DARK_URL: value.LOGO_SMALL_DARK_URL ?? undefined,
@@ -243,9 +236,9 @@ function SettingUpdateContent({
         LLM_API_KEY: secretOrUndefined(value.LLM_API_KEY),
         LLM_MODEL: value.LLM_MODEL?.trim() || 'gpt-4.1-nano',
         LLM_BASE_URL:
-          value.AI_LLM_PROVIDER === 'ollama'
-            ? value.LLM_BASE_URL?.trim() || null
-            : null,
+          (value.AI_LLM_PROVIDER === 'ollama' &&
+            (value.LLM_BASE_URL?.trim() || null)) ||
+          null,
       };
 
       await _update.mutateAsync(payload);

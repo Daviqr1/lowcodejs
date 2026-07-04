@@ -10,6 +10,8 @@ export const Route = createFileRoute('/_private/tables/$slug/field/create/')({
   pendingComponent: CreateFieldSkeleton,
   validateSearch: z.object({
     'field-type': z
+      // z.enum exige tupla não-vazia; Object.keys devolve string[] (zod-idiom).
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       .enum(Object.keys(E_FIELD_TYPE) as [string, ...Array<string>])
       .optional(),
     group: z.string().optional(),

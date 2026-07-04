@@ -171,6 +171,7 @@ function RouteComponent(): React.JSX.Element {
 
       // value.format vem do formulário como string; o campo aceita o enum.
       let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
 
       let dropdown: typeof value.dropdown = [];
@@ -201,11 +202,14 @@ function RouteComponent(): React.JSX.Element {
             _id: value.relationship.fieldId,
             slug: value.relationship.fieldSlug,
           },
+          // order/onDelete vêm do form como string; reduzem à união literal.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           order: (value.relationship.order || 'asc') as 'asc' | 'desc',
           customLabel: value.relationship.customLabel,
           labelParts,
           labelSeparator: value.relationship.labelSeparator || ' - ',
           visible: value.relationship.sourceVisible,
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           onDelete: value.relationship.onDelete as
             | 'CASCADE'
             | 'SET_NULL'
@@ -229,6 +233,7 @@ function RouteComponent(): React.JSX.Element {
         tip: normalizeTip(value.tip),
         label: payloadLabel,
         // value.type vem do select do formulario (string); reduz ao enum.
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         type: value.type as keyof typeof E_FIELD_TYPE,
         required: value.required,
         multiple: value.multiple,

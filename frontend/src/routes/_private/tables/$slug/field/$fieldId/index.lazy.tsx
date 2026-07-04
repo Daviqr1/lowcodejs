@@ -394,9 +394,10 @@ function FieldUpdateContent({
       type: data.type,
       format: data.format ?? '',
       validations: data.validations ?? [],
-      defaultValue: Array.isArray(data.defaultValue)
-        ? (data.defaultValue[0] ?? '')
-        : (data.defaultValue ?? ''),
+      defaultValue: ((): string => {
+        if (Array.isArray(data.defaultValue)) return data.defaultValue[0] ?? '';
+        return data.defaultValue ?? '';
+      })(),
       dropdown: (data.dropdown ?? []).map((d) => ({
         id: d.id,
         label: d.label,
@@ -476,6 +477,7 @@ function FieldUpdateContent({
 
       // value.format vem do formulário como string; o campo aceita o enum.
       let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
 
       let dropdown: typeof value.dropdown = [];
@@ -506,6 +508,8 @@ function FieldUpdateContent({
             _id: value.relationship.fieldId,
             slug: value.relationship.fieldSlug,
           },
+          // order vem do form como string; reduz à união literal.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           order: (value.relationship.order || 'asc') as 'asc' | 'desc',
           customLabel: value.relationship.customLabel,
           labelParts,

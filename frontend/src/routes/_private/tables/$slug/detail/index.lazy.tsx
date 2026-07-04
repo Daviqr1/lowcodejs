@@ -135,7 +135,7 @@ function TableUpdateContent({
       description: data.description ?? '',
       style: data.style,
       logo: data.logo?._id ?? null,
-      logoFile: [] as Array<File>,
+      logoFile: new Array<File>(),
       // Garante as 10 chaves (default Ninguém) e sobrepõe com o que a tabela tem.
       permissions: {
         ...buildDefaultPermissions(),
@@ -172,6 +172,8 @@ function TableUpdateContent({
         const [field, direction] = value.order.split(':');
         orderPayload = {
           field,
+          // direction vem do split de value.order (formato `campo:asc|desc`).
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           direction: direction as 'asc' | 'desc',
         };
       }

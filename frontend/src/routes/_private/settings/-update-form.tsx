@@ -199,7 +199,10 @@ export const UpdateSettingFormFields = withForm({
   defaultValues: settingUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     settingData: null as ISetting | null,
   },
   render: function Render({ form, isPending, mode, settingData }) {
@@ -1271,6 +1274,7 @@ export const UpdateSettingFormFields = withForm({
                         field.handleChange(value);
                         // value vem do select de provider (string); reduz ao enum.
                         const models =
+                          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
                           LLM_MODEL_OPTIONS[value as AiLlmProvider];
                         if (models?.[0]) {
                           form.setFieldValue('LLM_MODEL', models[0].value);
@@ -1306,6 +1310,7 @@ export const UpdateSettingFormFields = withForm({
             <form.Subscribe selector={(state) => state.values.AI_LLM_PROVIDER}>
               {(providerRaw) => {
                 // providerRaw vem do estado do form (string); reduz ao enum.
+                // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
                 const provider = (providerRaw ||
                   E_AI_LLM_PROVIDER.OPENAI) as AiLlmProvider;
                 const needsKey = providerRequiresApiKey(provider);
@@ -1553,6 +1558,7 @@ export const UpdateSettingFormFields = withForm({
             <form.Subscribe selector={(state) => state.values.AI_LLM_PROVIDER}>
               {(providerRaw) => {
                 // providerRaw vem do estado do form (string); reduz ao enum.
+                // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
                 const provider = (providerRaw ||
                   E_AI_LLM_PROVIDER.OPENAI) as AiLlmProvider;
                 const modelOptions = LLM_MODEL_OPTIONS[provider] ?? [];

@@ -254,6 +254,8 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
   );
 }
 
+// ColumnDef usa TValue=any por padrão (colunas heterogêneas) — lib-idiom.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const columns: Array<ColumnDef<ITable, any>> = [
   {
     id: 'name',
@@ -386,6 +388,7 @@ export function TableTables({
   >('trash');
 
   const allColumns = React.useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cols: Array<ColumnDef<ITable, any>> = [];
 
     if (canSelect) {

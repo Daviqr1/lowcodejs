@@ -38,9 +38,12 @@ export const UpdateProfileFormFields = withForm({
   defaultValues: profileUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
     onAllowPasswordChangeChange: () => {},
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     groupData: null as IGroup | null,
   },
   render: function Render({

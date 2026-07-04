@@ -147,7 +147,10 @@ export const UpdateTableFormFields = withForm({
   defaultValues: tableUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     tableData: null as ITable | null,
   },
   render: function Render({ form, isPending, mode, tableData }) {

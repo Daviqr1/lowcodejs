@@ -24,8 +24,10 @@ function resolveLucideIcon(name: string | null | undefined): LucideIcon {
   if (!name) return WrenchIcon;
   // Lookup dinamico de icone pelo nome no namespace do lucide-react; o valor
   // vem sem tipo especifico, por isso os casts pontuais (lib-forced).
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const candidate = (LucideIcons as Record<string, unknown>)[name];
   if (typeof candidate === 'function' || typeof candidate === 'object') {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return candidate as LucideIcon;
   }
   return WrenchIcon;

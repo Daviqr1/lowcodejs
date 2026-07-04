@@ -121,9 +121,11 @@ function RouteComponent(): React.JSX.Element {
     },
     onError(error) {
       setResult(null);
-      const apiErrors = (
-        error as { response?: { data?: { errors?: Record<string, string> } } }
-      ).response?.data?.errors;
+      // error é o erro do Axios (any); assumimos o contrato de erro do backend.
+      const apiErrors =
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        (error as { response?: { data?: { errors?: Record<string, string> } } })
+          .response?.data?.errors;
       if (apiErrors && Object.keys(apiErrors).length > 0) {
         setValidationErrors(apiErrors);
       } else {

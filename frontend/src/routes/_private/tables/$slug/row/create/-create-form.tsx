@@ -20,11 +20,14 @@ function toDefaultSearchableOptions(
   return toDefaultArray(value).map((id) => ({ value: id, label: '' }));
 }
 
+// Valores de row são dinâmicos (campos definidos em runtime no TanStack Form),
+// por isso `any` — o mapa não tem forma estática conhecida. Isolado neste alias.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RowValues = Record<string, any>;
+
 // Helper: Build default values based on table fields.
-// Os valores são dinâmicos (campos definidos em runtime no TanStack Form), por
-// isso `any` — o mapa não tem forma estática conhecida.
-export function buildDefaultValues(fields: Array<IField>): Record<string, any> {
-  const defaults: Record<string, any> = {};
+export function buildDefaultValues(fields: Array<IField>): RowValues {
+  const defaults: RowValues = {};
 
   for (const field of fields) {
     if (field.trashed) continue;
@@ -71,10 +74,10 @@ export function buildDefaultValues(fields: Array<IField>): Record<string, any> {
 
 // Helper: Build payload for API
 export function buildPayload(
-  values: Record<string, any>,
+  values: RowValues,
   fields: Array<IField>,
-): Record<string, any> {
-  const payload: Record<string, any> = {};
+): RowValues {
+  const payload: RowValues = {};
 
   for (const field of fields) {
     if (field.trashed) continue;
@@ -199,6 +202,8 @@ export function createRequiredValidator(fieldName: string): RequiredValidator {
       return `${fieldName} é obrigatório`;
     }
     if (typeof value === 'object' && 'storages' in value) {
+      // value já checado como objeto com `storages` em runtime.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const storageValue = value as { storages: Array<IStorage> };
       if (storageValue.storages.length === 0) {
         return `${fieldName} é obrigatório`;
@@ -214,6 +219,7 @@ export function createRequiredValidator(fieldName: string): RequiredValidator {
 
 interface RowFormFieldsProps {
   // Instância do TanStack Form (AppForm) com campos dinâmicos — sem tipo estático.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   fields: Array<IField>;
   disabled: boolean;
@@ -273,15 +279,18 @@ export function RowFormFields({
               name={field.slug}
               validators={{
                 // value é o valor dinâmico do campo (FieldValue) vindo do form.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }) => {
                   return buildFieldValidator(field, value);
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onBlur: ({ value }: { value: any }) => {
                   return buildFieldValidator(field, value);
                 },
               }}
             >
               {/* render prop do AppField do TanStack Form — API dinâmica */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any) => {
                 switch (field.type) {
                   case E_FIELD_TYPE.TEXT_SHORT:

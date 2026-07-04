@@ -36,6 +36,8 @@ export const UpdateGroupFormFields = withForm({
   defaultValues: groupUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     slug: '',
     groupId: '',

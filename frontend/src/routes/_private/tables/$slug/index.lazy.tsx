@@ -77,6 +77,7 @@ const VIEW_MAP: Record<
     skeleton: React.ComponentType;
     // Registry de views heterogeneas: cada view tem props proprias, entao o
     // componente lazy e tipado como ComponentType<any> (props resolvidas em uso).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     view: React.LazyExoticComponent<React.ComponentType<any>>;
     extraProps?: boolean;
   }
@@ -333,6 +334,7 @@ function RouteComponent(): React.JSX.Element {
                     slug,
                     // search e a query da rota (shape dinamico); espalhado como
                     // record solto nos params do export.
+                    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
                     ...(search as Record<string, unknown>),
                   })
                 }
@@ -404,6 +406,7 @@ function RouteComponent(): React.JSX.Element {
               ((): React.JSX.Element => {
                 // erro do TanStack Query e `Error`; aqui sabemos que veio do
                 // Axios, entao estreitamos para ler `response` (lib-forced).
+                // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
                 const error = rows.error as AxiosError<{
                   code: number;
                   cause: string;

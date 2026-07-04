@@ -129,12 +129,12 @@ function MenuUpdateContent({
       url: data.url ?? '',
       icon: data.icon ?? null,
       parent: data.parent?._id ?? '',
-      position: data.parent
-        ? String((data.order ?? 0) + 1)
-        : String(data.order ?? 0),
+      position:
+        (data.parent && String((data.order ?? 0) + 1)) ||
+        String(data.order ?? 0),
       isInitial: data.isInitial ?? false,
       extension: data.extension ?? null,
-      iconFile: [] as Array<File>,
+      iconFile: new Array<File>(),
       visibility: data.visibility ?? {
         kind: E_PERMISSION_TARGET.PUBLIC,
         group: null,
@@ -168,9 +168,10 @@ function MenuUpdateContent({
   useApiErrorAutoClear(form);
 
   const isPending = _update.status === 'pending';
-  const menuType = useStore(form.store, (state) => state.values.type) as
-    | ValueOf<typeof E_MENU_ITEM_TYPE>
-    | '';
+  const menuType: ValueOf<typeof E_MENU_ITEM_TYPE> | '' = useStore(
+    form.store,
+    (state) => state.values.type,
+  );
 
   return (
     <>

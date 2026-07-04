@@ -35,6 +35,8 @@ export const MethodsFormFields = withForm({
   defaultValues: tableMethodsFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     table: null as ITable | null,
   },
   render: function Render({ form, table }) {

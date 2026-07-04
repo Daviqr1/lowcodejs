@@ -207,9 +207,13 @@ export const UpdateFieldFormFields = withForm({
   defaultValues: fieldUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     tableSlug: '',
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     table: undefined as ITable | undefined,
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     targetField: undefined as IField | undefined,
     isLocked: false,
     isNative: false,

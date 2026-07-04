@@ -38,6 +38,8 @@ export const CreateMenuFormFields = withForm({
   defaultValues: menuFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     menuType: E_MENU_ITEM_TYPE.SEPARATOR as
       | ValueOf<typeof E_MENU_ITEM_TYPE>
       | '',
@@ -313,9 +315,10 @@ export const CreateMenuFormFields = withForm({
                 disabled={isPending}
                 required
                 error={
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                    ? (field.state.meta.errors[0] ?? null)
-                    : null
+                  (field.state.meta.isTouched &&
+                    !field.state.meta.isValid &&
+                    (field.state.meta.errors[0] ?? null)) ||
+                  null
                 }
               />
             )}

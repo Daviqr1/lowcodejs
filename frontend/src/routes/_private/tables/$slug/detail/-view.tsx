@@ -68,13 +68,14 @@ export function TableView({ data }: TableViewProps): React.JSX.Element {
         {/* Logo */}
         <div className="space-y-1">
           <p className="text-sm font-medium">Logo</p>
-          {data.logo?.url ? (
+          {data.logo?.url && (
             <img
               src={data.logo.url}
               alt={data.logo.filename || 'Logo da tabela'}
               className="h-16 w-auto border rounded"
             />
-          ) : (
+          )}
+          {!data.logo?.url && (
             <p className="text-sm text-muted-foreground">-</p>
           )}
         </div>
@@ -154,9 +155,9 @@ export function TableView({ data }: TableViewProps): React.JSX.Element {
         <div className="space-y-1">
           <p className="text-sm font-medium">Ordenação padrão</p>
           <p className="text-sm text-muted-foreground">
-            {data.order
-              ? `${data.fields?.find((f) => f.slug === data.order?.field)?.name ?? data.order.field} (${data.order.direction === 'asc' ? 'Ascendente' : 'Descendente'})`
-              : '-'}
+            {(data.order &&
+              `${data.fields?.find((f) => f.slug === data.order?.field)?.name ?? data.order.field} (${(data.order.direction === 'asc' && 'Ascendente') || 'Descendente'})`) ||
+              '-'}
           </p>
         </div>
       </section>
