@@ -650,11 +650,7 @@ export type IUserRef = Pick<IUser, '_id' | 'name' | 'email'>;
 // dinamicas, mas o formato por tipo de campo e fechado e conhecido:
 // TEXT/DATE -> string|null; DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP -> ids;
 // FIELD_GROUP -> array de sub-payloads aninhados.
-export type RowPayloadValue =
-  | string
-  | null
-  | Array<string>
-  | Array<RowPayload>;
+export type RowPayloadValue = string | null | Array<string> | Array<RowPayload>;
 
 // Valor de UM campo na RESPOSTA. FILE volta populado (IStorage), USER volta
 // lean (IUserRef), RELATIONSHIP volta a row populada, FIELD_GROUP aninhado.
@@ -694,25 +690,32 @@ export type RowNative = {
 // nao ha interop com Mongoose.
 export type IRow = Merge<RowNative, { [slug: string]: unknown }>;
 
-// Mapa tipo-de-campo -> valor na resposta. Base do generico Row<TFields>, para
-// os casos em que os fields sao conhecidos em compile-time (templates const).
-export type FieldValueByType<T extends ValueOf<typeof E_FIELD_TYPE>> =
-  T extends typeof E_FIELD_TYPE.FILE
-    ? Array<IStorage>
-    : T extends typeof E_FIELD_TYPE.USER
-      ? Array<IUserRef>
-      : T extends typeof E_FIELD_TYPE.RELATIONSHIP
-        ? Array<IRow>
-        : T extends
-              | typeof E_FIELD_TYPE.DROPDOWN
-              | typeof E_FIELD_TYPE.CATEGORY
-          ? Array<string>
-          : T extends
-                | typeof E_FIELD_TYPE.DATE
-                | typeof E_FIELD_TYPE.TEXT_SHORT
-                | typeof E_FIELD_TYPE.TEXT_LONG
-            ? string | null
-            : RowResultValue;
+// Mapa tipo-de-campo -> valor na resposta (fonte unica, sem conditional type).
+export type RowFieldValueMap = {
+  [E_FIELD_TYPE.TEXT_SHORT]: string | null;
+  [E_FIELD_TYPE.TEXT_LONG]: string | null;
+  [E_FIELD_TYPE.HTML_CONTENT]: string | null;
+  [E_FIELD_TYPE.DATE]: Date | string | null;
+  [E_FIELD_TYPE.DROPDOWN]: Array<string>;
+  [E_FIELD_TYPE.CATEGORY]: Array<string>;
+  [E_FIELD_TYPE.FILE]: Array<IStorage>;
+  [E_FIELD_TYPE.USER]: Array<IUserRef>;
+  [E_FIELD_TYPE.RELATIONSHIP]: Array<IRow>;
+  [E_FIELD_TYPE.FIELD_GROUP]: Array<IRow>;
+  [E_FIELD_TYPE.REACTION]: Array<string>;
+  [E_FIELD_TYPE.EVALUATION]: Array<string>;
+  [E_FIELD_TYPE.CREATOR]: IUserRef | string;
+  [E_FIELD_TYPE.UPDATER]: IUserRef | string | null;
+  [E_FIELD_TYPE.IDENTIFIER]: string;
+  [E_FIELD_TYPE.CREATED_AT]: Date | string | null;
+  [E_FIELD_TYPE.UPDATED_AT]: Date | string | null;
+  [E_FIELD_TYPE.TRASHED_AT]: Date | string | null;
+  [E_FIELD_TYPE.STATUS]: ValueOf<typeof E_ROW_STATUS>;
+};
+
+// Valor de um campo por tipo (indexed access, base do generico Row<TFields>).
+export type FieldValueByType<T extends keyof RowFieldValueMap> =
+  RowFieldValueMap[T];
 
 // Row tipada por um conjunto de fields conhecido em compile-time. Opt-in: usar
 // so onde ha `fields as const` (ex.: helpers de template). Nao forcar onde os
