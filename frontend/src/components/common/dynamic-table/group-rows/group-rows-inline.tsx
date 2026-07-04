@@ -391,10 +391,14 @@ function GroupItemCardContent({
             <form.AppField
               name={field.slug}
               validators={{
+                // value dinâmico do campo (render prop do TanStack Form).
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }) =>
                   buildFieldValidator(field, value),
               }}
             >
+              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any) =>
                 renderGroupFormField(formField, field, tableSlug, groupSlug)
               }

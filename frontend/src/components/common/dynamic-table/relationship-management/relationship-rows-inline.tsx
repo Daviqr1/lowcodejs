@@ -706,10 +706,14 @@ function RelationshipItemCardForm({
             <form.AppField
               name={cardField.slug}
               validators={{
+                // value dinâmico do campo (render prop do TanStack Form).
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }): string | undefined =>
                   buildFieldValidator(cardField, value),
               }}
             >
+              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,
@@ -878,10 +882,14 @@ function RelationshipDraftCardContent({
             <form.AppField
               name={cardField.slug}
               validators={{
+                // value dinâmico do campo (render prop do TanStack Form).
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }): string | undefined =>
                   buildFieldValidator(cardField, value),
               }}
             >
+              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,
@@ -952,6 +960,8 @@ function RelationshipCardShell({
 }
 
 export function renderRelationshipCardField(
+  // formField expõe componentes de campo do app (TableRow*) — sem tipo exportado.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formField: any,
   field: IField,
   tableSlug: string,

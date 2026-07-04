@@ -110,9 +110,9 @@ export function FieldMenuPositionSelect({
       return;
     }
 
-    field.handleChange(
-      options[options.length - 1]?.value ?? (parentId ? '1' : '0'),
-    );
+    let positionFallback = '0';
+    if (parentId) positionFallback = '1';
+    field.handleChange(options[options.length - 1]?.value ?? positionFallback);
   }, [field, options, parentId]);
 
   return (

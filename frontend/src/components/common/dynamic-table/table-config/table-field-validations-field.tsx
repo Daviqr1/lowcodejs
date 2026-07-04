@@ -94,6 +94,7 @@ export function TableFieldValidationsField({
     const newSimple: Array<IFieldValidation> = rules.map((r) => ({
       // `rules` vem do multi-select cujas opcoes sao valores de E_FIELD_VALIDATION;
       // o cast reduz o string ao enum (garantido pela origem das opcoes).
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       rule: r as ValueOf<typeof E_FIELD_VALIDATION>,
       config: {},
     }));

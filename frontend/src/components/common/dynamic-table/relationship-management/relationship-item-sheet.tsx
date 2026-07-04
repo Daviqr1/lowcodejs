@@ -180,10 +180,14 @@ function RelationshipItemSheetContent({
             <form.AppField
               name={relatedField.slug}
               validators={{
+                // value dinâmico do campo (render prop do TanStack Form).
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }): string | undefined =>
                   buildFieldValidator(relatedField, value),
               }}
             >
+              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,

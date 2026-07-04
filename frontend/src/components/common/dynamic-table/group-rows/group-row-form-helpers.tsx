@@ -22,6 +22,7 @@ function optionId(option: unknown): unknown {
 // o cast e inerente ao helper.
 export function toArray<T>(value: unknown): Array<T> {
   if (Array.isArray(value)) return value;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   if (value !== null && value !== undefined) return [value] as Array<T>;
   return [];
 }
@@ -182,6 +183,8 @@ export function buildGroupRowPayload(
 }
 
 export function renderGroupFormField(
+  // formField expõe componentes de campo do app (TableRow*) — sem tipo exportado.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formField: any,
   field: IField,
   tableSlug: string,

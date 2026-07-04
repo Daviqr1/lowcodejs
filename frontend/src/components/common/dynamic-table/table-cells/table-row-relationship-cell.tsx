@@ -51,6 +51,7 @@ export function TableRowRelationshipCell({
   const values = rawValues.map<RelationshipItem>((item) => {
     if (typeof item === 'object' && item !== null) {
       // valor dinamico de linha; resolveRelationshipLabel exige IRow (cast forcado).
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const obj = item as IRow;
       return {
         _id: String(obj._id ?? ''),

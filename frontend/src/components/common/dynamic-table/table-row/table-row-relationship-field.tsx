@@ -322,11 +322,12 @@ function readCascadeValue(value: unknown): string {
     if (typeof first === 'string') return first;
     if (typeof first === 'number') return String(first);
     if (first && typeof first === 'object') {
-      const itemValue = (first as { _id?: unknown; value?: unknown }).value;
+      const obj: { _id?: unknown; value?: unknown } = first;
+      const itemValue = obj.value;
       if (typeof itemValue === 'string') return itemValue;
       if (typeof itemValue === 'number') return String(itemValue);
 
-      const itemId = (first as { _id?: unknown; value?: unknown })._id;
+      const itemId = obj._id;
       if (typeof itemId === 'string') return itemId;
       if (typeof itemId === 'number') return String(itemId);
     }
@@ -336,11 +337,12 @@ function readCascadeValue(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
   if (value && typeof value === 'object') {
-    const itemValue = (value as { _id?: unknown; value?: unknown }).value;
+    const obj: { _id?: unknown; value?: unknown } = value;
+    const itemValue = obj.value;
     if (typeof itemValue === 'string') return itemValue;
     if (typeof itemValue === 'number') return String(itemValue);
 
-    const itemId = (value as { _id?: unknown; value?: unknown })._id;
+    const itemId = obj._id;
     if (typeof itemId === 'string') return itemId;
     if (typeof itemId === 'number') return String(itemId);
   }

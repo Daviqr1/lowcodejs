@@ -78,6 +78,8 @@ function GroupRowFormDialogContent({
   );
 
   const defaultValues = React.useMemo(() => {
+    // valores por slug de campo dinâmico (shape só conhecido em runtime).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const defaults: Record<string, any> = {};
     for (const field of visibleFields) {
       if (isEdit && editItem) {
@@ -169,10 +171,14 @@ function GroupRowFormDialogContent({
             <form.AppField
               name={field.slug}
               validators={{
+                // value dinâmico do campo (render prop do TanStack Form).
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }) =>
                   buildFieldValidator(field, value),
               }}
             >
+              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(formField: any) =>
                 renderGroupFormField(formField, field, tableSlug, groupSlug)
               }
