@@ -164,11 +164,12 @@ export function TableGanttView({
       if (dependencyField) {
         const raw = row[dependencyField.slug];
         if (Array.isArray(raw)) {
-          dependencyIds = raw.map((item) =>
-            typeof item === 'object' && item !== null
-              ? (item._id ?? String(item))
-              : String(item),
-          );
+          dependencyIds = raw.map((item) => {
+            if (typeof item === 'object' && item !== null) {
+              return item._id ?? String(item);
+            }
+            return String(item);
+          });
         } else if (raw && typeof raw === 'object' && '_id' in raw) {
           dependencyIds = [raw._id];
         }

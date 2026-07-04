@@ -215,6 +215,7 @@ export function TableCalendarView({
           // extraValues e Record<string, unknown> (dados dinamicos do form);
           // mountRowValue espera FieldValue — cast forcado pelo valor runtime.
           dataPayload[field.slug] = mountRowValue(
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
             payload.extraValues[field.slug] as Parameters<
               typeof mountRowValue
             >[0],

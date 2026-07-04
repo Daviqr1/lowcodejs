@@ -421,6 +421,7 @@ export function TableForumView({
     }
 
     // fallback só define os campos usados pelo fórum (slug/type/multiple).
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return fallbackGroupFields as Array<IField>;
   }, [fallbackGroupFields, groupFields]);
 
@@ -743,8 +744,8 @@ export function TableForumView({
   const composerForm = useAppForm({
     defaultValues: {
       text: '',
-      mentions: [] as Array<string>,
-      files: [] as Array<File>,
+      mentions: Array<string>(),
+      files: Array<File>(),
     },
   });
 
@@ -766,7 +767,7 @@ export function TableForumView({
       label: '',
       description: '',
       privacy: 'publico',
-      members: [] as Array<string>,
+      members: Array<string>(),
     },
     onSubmit: async ({ value }) => {
       if (!channelField) return;
@@ -818,7 +819,7 @@ export function TableForumView({
       label: '',
       description: '',
       privacy: 'publico',
-      members: [] as Array<string>,
+      members: Array<string>(),
     },
     onSubmit: async ({ value }) => {
       if (!channelField || !editingChannelId) return;

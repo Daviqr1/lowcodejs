@@ -102,9 +102,7 @@ export function useFilterState(
   const navigate = useNavigate();
   const search = useSearch({ strict: false });
 
-  const [filterValues, setFilterValues] = React.useState<FilterValues>(
-    {},
-  );
+  const [filterValues, setFilterValues] = React.useState<FilterValues>({});
 
   const fieldsKey = fields.map((f) => f.slug).join(',');
 

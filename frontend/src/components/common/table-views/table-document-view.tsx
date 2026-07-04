@@ -137,9 +137,10 @@ export function TableDocumentView({
     );
   }, [data, categoryField, selectedCategoryId, descendantsMap]);
 
-  const filterLabel = selectedCategoryId
-    ? (labelMap.get(selectedCategoryId) ?? selectedCategoryId)
-    : null;
+  let filterLabel: string | null = null;
+  if (selectedCategoryId) {
+    filterLabel = labelMap.get(selectedCategoryId) ?? selectedCategoryId;
+  }
 
   const getIndentPx = (row: IRow): number => {
     if (categoryField) {
@@ -167,12 +168,10 @@ export function TableDocumentView({
       const leafA = getRowLeafId(a, slug);
       const leafB = getRowLeafId(b, slug);
 
-      const ordA = leafA
-        ? (categoryOrderMap.get(leafA) ?? Number.POSITIVE_INFINITY)
-        : Number.POSITIVE_INFINITY;
-      const ordB = leafB
-        ? (categoryOrderMap.get(leafB) ?? Number.POSITIVE_INFINITY)
-        : Number.POSITIVE_INFINITY;
+      let ordA = Number.POSITIVE_INFINITY;
+      if (leafA) ordA = categoryOrderMap.get(leafA) ?? Number.POSITIVE_INFINITY;
+      let ordB = Number.POSITIVE_INFINITY;
+      if (leafB) ordB = categoryOrderMap.get(leafB) ?? Number.POSITIVE_INFINITY;
 
       if (ordA !== ordB) return ordA - ordB;
 
@@ -234,6 +233,7 @@ export function TableDocumentView({
           onToggle={() => setIsSidebarOpen((v) => !v)}
           // placeholder defensivo: a view so roda com categoryField presente,
           // mas o tipo permite undefined e DocumentSidebar exige IField.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           categoryField={categoryField ?? ({} as IField)}
         />
       </div>
