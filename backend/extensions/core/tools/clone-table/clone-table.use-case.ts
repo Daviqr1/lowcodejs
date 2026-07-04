@@ -126,11 +126,13 @@ export default class CloneTableUseCase {
         return await createCalendarTemplate(payload, templateDeps);
       }
 
-      const requestedBaseTableIds = payload.baseTableIds?.length
-        ? [...new Set(payload.baseTableIds)]
-        : payload.baseTableId
-          ? [payload.baseTableId]
-          : [];
+      let requestedBaseTableIds: string[] = [];
+      if (payload.baseTableIds?.length) {
+        requestedBaseTableIds = [...new Set(payload.baseTableIds)];
+      }
+      if (!payload.baseTableIds?.length && payload.baseTableId) {
+        requestedBaseTableIds = [payload.baseTableId];
+      }
       const baseTables = await this.expandTablesWithRelationships(
         requestedBaseTableIds,
       );
@@ -461,11 +463,9 @@ export default class CloneTableUseCase {
     usePrefix: boolean;
   }): Promise<string> {
     const trimmedName = name.trim();
-    const candidate = usePrefix
-      ? trimmedName
-        ? `${trimmedName}${baseName}`
-        : `Clone de ${baseName}`
-      : trimmedName || `Clone de ${baseName}`;
+    let candidate = trimmedName || `Clone de ${baseName}`;
+    if (usePrefix && trimmedName) candidate = `${trimmedName}${baseName}`;
+    if (usePrefix && !trimmedName) candidate = `Clone de ${baseName}`;
 
     return this.ensureUniqueTableName(candidate);
   }

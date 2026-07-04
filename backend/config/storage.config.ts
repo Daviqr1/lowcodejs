@@ -34,7 +34,8 @@ export function getS3Client(): S3Client {
 }
 
 export function getStorageDriver(): 'local' | 's3' {
-  return (process.env.STORAGE_DRIVER as 'local' | 's3') || 'local';
+  if (process.env.STORAGE_DRIVER === 's3') return 's3';
+  return 'local';
 }
 
 export function getLocalStoragePath(): string {

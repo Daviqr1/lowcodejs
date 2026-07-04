@@ -141,11 +141,9 @@ export async function createAuthenticatedUser(
     .send({ email: user.email, password });
 
   const setCookie = response.headers['set-cookie'];
-  const cookies = Array.isArray(setCookie)
-    ? setCookie
-    : setCookie
-      ? [setCookie]
-      : [];
+  let cookies: string[] = [];
+  if (Array.isArray(setCookie)) cookies = setCookie;
+  if (!Array.isArray(setCookie) && setCookie) cookies = [setCookie];
 
   return {
     user: { _id: user._id.toString(), email: user.email, name: user.name },

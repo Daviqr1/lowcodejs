@@ -49,16 +49,18 @@ const PasswordEntrySchema = new mongoose.Schema(
 type ChannelDoc = mongoose.InferSchemaType<typeof PasswordChannelSchema>;
 type EntryDoc = mongoose.InferSchemaType<typeof PasswordEntrySchema>;
 
-export const PasswordChannelModel = (mongoose?.models?.PasswordChannel ||
+export const PasswordChannelModel: mongoose.Model<ChannelDoc> =
+  mongoose?.models?.PasswordChannel ||
   mongoose.model<ChannelDoc>(
     'PasswordChannel',
     PasswordChannelSchema,
     'password_channels',
-  )) as mongoose.Model<ChannelDoc>;
+  );
 
-export const PasswordEntryModel = (mongoose?.models?.PasswordEntry ||
+export const PasswordEntryModel: mongoose.Model<EntryDoc> =
+  mongoose?.models?.PasswordEntry ||
   mongoose.model<EntryDoc>(
     'PasswordEntry',
     PasswordEntrySchema,
     'password_entries',
-  )) as mongoose.Model<EntryDoc>;
+  );

@@ -130,9 +130,8 @@ export default class ExportTableUseCase {
         exportedTables.push(exp);
       }
 
-      const exportedMenus = includeStructure
-        ? await this.exportMenus(tables)
-        : [];
+      let exportedMenus: Awaited<ReturnType<typeof this.exportMenus>> = [];
+      if (includeStructure) exportedMenus = await this.exportMenus(tables);
 
       const first = tables[0];
 
@@ -233,9 +232,10 @@ export default class ExportTableUseCase {
       fieldOrderForm: mapOrder(table.fieldOrderForm),
       fieldOrderFilter: mapOrder(table.fieldOrderFilter),
       fieldOrderDetail: mapOrder(table.fieldOrderDetail),
-      layoutFields: table.layoutFields
-        ? this.exportLayoutFields(table.layoutFields, fieldSlugMap)
-        : {},
+      layoutFields:
+        (table.layoutFields &&
+          this.exportLayoutFields(table.layoutFields, fieldSlugMap)) ||
+        {},
       methods: table.methods || {
         onLoad: { code: null },
         beforeSave: { code: null },
@@ -262,6 +262,14 @@ export default class ExportTableUseCase {
   private exportField(field: IField): ExportedField {
     let group: { slug: string } | null = null;
     if (field.group) group = { slug: field.group.slug };
+    let relationship: ExportedField['relationship'] = null;
+    if (field.relationship) {
+      relationship = {
+        tableSlug: field.relationship.table.slug,
+        fieldSlug: field.relationship.field.slug,
+        order: field.relationship.order,
+      };
+    }
     return {
       name: field.name,
       slug: field.slug,
@@ -277,13 +285,7 @@ export default class ExportTableUseCase {
       widthInDetail: field.widthInDetail ?? null,
       defaultValue: field.defaultValue,
       locked: field.locked,
-      relationship: field.relationship
-        ? {
-            tableSlug: field.relationship.table.slug,
-            fieldSlug: field.relationship.field.slug,
-            order: field.relationship.order,
-          }
-        : null,
+      relationship,
       dropdown: field.dropdown || [],
       category: field.category || [],
       group,
@@ -410,7 +412,8 @@ export default class ExportTableUseCase {
 
     return Array.from(collected.values()).map((menu) => {
       const tid = toIdString(menu.table);
-      const knownTableSlug = tid ? (tableIdToSlug.get(tid) ?? null) : null;
+      let knownTableSlug: string | null = null;
+      if (tid) knownTableSlug = tableIdToSlug.get(tid) ?? null;
 
       let type = menu.type;
       let tableSlug: string | null = knownTableSlug;

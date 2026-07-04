@@ -39,14 +39,14 @@ async function resolveStorageMeta(
       StorageMongooseRepository,
     );
     const doc = await repo.findByFilename(filename);
-    const meta: StorageMeta | null =
-      doc === null
-        ? null
-        : {
-            originalName: doc.originalName,
-            mimetype: doc.mimetype,
-            location: doc.location,
-          };
+    let meta: StorageMeta | null = null;
+    if (doc !== null) {
+      meta = {
+        originalName: doc.originalName,
+        mimetype: doc.mimetype,
+        location: doc.location,
+      };
+    }
     setCachedStorageMeta(filename, meta);
     return meta;
   } catch (error) {
@@ -172,8 +172,10 @@ export async function StorageContentDispositionHook(
   try {
     await DRIVER_HANDLERS[primary](filename, request, response);
   } catch (primaryErr) {
+    let primaryMsg = 'erro desconhecido';
+    if (primaryErr instanceof Error) primaryMsg = primaryErr.message;
     console.info(
-      `[Storage] ${filename} ausente no driver primário (${primary}), tentando ${secondary}: ${(primaryErr as Error).message}`,
+      `[Storage] ${filename} ausente no driver primário (${primary}), tentando ${secondary}: ${primaryMsg}`,
     );
     try {
       await DRIVER_HANDLERS[secondary](filename, request, response);

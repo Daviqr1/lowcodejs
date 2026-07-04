@@ -124,8 +124,10 @@ export default class {
       });
     }
 
-    const percentage =
-      job.total > 0 ? Math.round((job.processed / job.total) * 100) : 0;
+    let percentage = 0;
+    if (job.total > 0) {
+      percentage = Math.round((job.processed / job.total) * 100);
+    }
 
     return response.status(200).send({
       jobId,

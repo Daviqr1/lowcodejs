@@ -15,6 +15,7 @@ import {
   type IGroupConfiguration,
   type ILayoutFields,
   type ITable,
+  type ValueOf,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {
@@ -42,13 +43,26 @@ import type {
   ImportTableUseCasePayload,
 } from './import-table.types';
 
+/**
+ * Converte um valor de JSON externo (shapeless) num Record tipado. A asserção
+ * interna é segura porque guardada por checagem de objeto — evita espalhar
+ * `as` pelos acessos ao pacote importado.
+ */
+function toRecord(value: unknown): Record<string, unknown> {
+  if (value !== null && typeof value === 'object') {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
 type ExportedField = {
   name: string;
   slug: string;
-  type: string;
+  type: IField['type'];
   required: boolean;
   multiple: boolean;
-  format: string | null;
+  format: IField['format'];
   validations?: IFieldValidation[];
   showInFilter: boolean;
   permissions?: IFieldPermissions | null;
@@ -63,7 +77,7 @@ type ExportedField = {
     order: 'asc' | 'desc';
   } | null;
   dropdown: Array<{ id: string; label: string; color?: string | null }>;
-  category: Array<{ id: string; label: string; children: unknown[] }>;
+  category: IField['category'];
   group: { slug: string } | null;
 };
 
@@ -77,7 +91,7 @@ type ExportedStructure = {
   name: string;
   slug: string;
   description: string | null;
-  style: string;
+  style: TableCreatePayload['style'];
   fields: ExportedField[];
   groups: ExportedGroup[];
   fieldOrderList: string[];
@@ -107,7 +121,7 @@ type ExportedMenu = {
   _originalId: string;
   name: string;
   slug: string;
-  type: string;
+  type: ValueOf<typeof E_MENU_ITEM_TYPE>;
   parent: string | null;
   url: string | null;
   html: string | null;
@@ -145,10 +159,10 @@ export default class ImportTableUseCase {
         );
       }
 
-      const content = payload.fileContent as Record<string, unknown>;
-      const header = content.header as Record<string, unknown> | undefined;
+      const content = toRecord(payload.fileContent);
+      const header = toRecord(content.header);
 
-      if (!header || header.platform !== 'lowcodejs') {
+      if (header.platform !== 'lowcodejs') {
         return left(
           HTTPException.BadRequest(
             'Arquivo de importação inválido. Plataforma não reconhecida.',
@@ -296,9 +310,8 @@ export default class ImportTableUseCase {
           const stripped = this.stripRelationshipFields(row, full);
           // Preserva o criador original da row (campo nativo CREATOR);
           // cai para o usuário que está importando quando ausente.
-          const rowCreator = row._originalCreator
-            ? String(row._originalCreator)
-            : payload.ownerId;
+          let rowCreator = payload.ownerId;
+          if (row._originalCreator) rowCreator = String(row._originalCreator);
           try {
             const inserted = await this.rowRepository.insertRaw(
               full,
@@ -306,9 +319,8 @@ export default class ImportTableUseCase {
               rowCreator,
             );
             importedRowCount++;
-            const originalRowId = row._originalId
-              ? String(row._originalId)
-              : null;
+            let originalRowId: string | null = null;
+            if (row._originalId) originalRowId = String(row._originalId);
             if (originalRowId) map.set(originalRowId, inserted._id);
           } catch (rowError) {
             failedRows++;
@@ -521,9 +533,8 @@ export default class ImportTableUseCase {
         const map = new Map<string, string>();
         for (const row of r.rows) {
           const stripped = this.stripRelationshipFields(row, r.table);
-          const rowCreator = row._originalCreator
-            ? String(row._originalCreator)
-            : payload.ownerId;
+          let rowCreator = payload.ownerId;
+          if (row._originalCreator) rowCreator = String(row._originalCreator);
           try {
             const inserted = await this.rowRepository.insertRaw(
               r.table,
@@ -531,9 +542,8 @@ export default class ImportTableUseCase {
               rowCreator,
             );
             importedRowCount++;
-            const originalRowId = row._originalId
-              ? String(row._originalId)
-              : null;
+            let originalRowId: string | null = null;
+            if (row._originalId) originalRowId = String(row._originalId);
             if (originalRowId) map.set(originalRowId, inserted._id);
           } catch (rowError) {
             failedRows++;
@@ -773,7 +783,7 @@ export default class ImportTableUseCase {
       if (!Array.isArray(sub)) continue;
       for (const subRow of sub) {
         if (subRow && typeof subRow === 'object') {
-          renameKeys(subRow as Record<string, unknown>, subRewrite);
+          renameKeys(toRecord(subRow), subRewrite);
         }
       }
     }
@@ -899,16 +909,17 @@ export default class ImportTableUseCase {
   private normalizePackage(
     content: Record<string, unknown>,
   ): NormalizedPackage {
+    /* eslint-disable @typescript-eslint/consistent-type-assertions --
+       fronteira de JSON externo: o pacote já foi validado como lowcodejs;
+       coagir para as formas tipadas aqui é inevitável */
     if (Array.isArray(content.tables)) {
-      return {
-        tables: content.tables as ExportedTable[],
-        menus: Array.isArray(content.menus)
-          ? (content.menus as ExportedMenu[])
-          : [],
-      };
+      let menus: ExportedMenu[] = [];
+      if (Array.isArray(content.menus)) menus = content.menus as ExportedMenu[];
+      return { tables: content.tables as ExportedTable[], menus };
     }
     const legacyStructure = content.structure as ExportedStructure | undefined;
     const legacyData = content.data as ExportedTable['data'];
+    /* eslint-enable @typescript-eslint/consistent-type-assertions */
     if (legacyStructure) {
       return {
         tables: [{ structure: legacyStructure, data: legacyData }],
@@ -1182,15 +1193,14 @@ export default class ImportTableUseCase {
       });
     }
 
-    const layoutFields: Partial<ILayoutFields> = {};
+    const layoutFields: Record<string, string | null> = {};
     for (const [key, slugValue] of Object.entries(
       structure.layoutFields || {},
     )) {
       if (slugValue && fieldSlugToId.has(slugValue)) {
-        layoutFields[key as keyof ILayoutFields] =
-          fieldSlugToId.get(slugValue) || null;
+        layoutFields[key] = fieldSlugToId.get(slugValue) || null;
       } else {
-        layoutFields[key as keyof ILayoutFields] = null;
+        layoutFields[key] = null;
       }
     }
 
@@ -1209,7 +1219,7 @@ export default class ImportTableUseCase {
       type: 'TABLE',
       logo: null,
       fields: fieldsIds,
-      style: structure.style as TableCreatePayload['style'],
+      style: structure.style,
       permissions: null,
       members: [],
       owner: ownerId,
@@ -1223,6 +1233,9 @@ export default class ImportTableUseCase {
         afterSave: { code: null },
       },
       groups,
+      // chaves vêm do pacote importado (Record) e correspondem à forma fixa de
+      // ILayoutFields — conversão de fronteira inevitável.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       layoutFields: layoutFields as ILayoutFields,
     };
 
@@ -1273,10 +1286,10 @@ export default class ImportTableUseCase {
     return this.fieldRepository.create({
       name: exported.name,
       slug: exported.slug,
-      type: exported.type as IField['type'],
+      type: exported.type,
       required: exported.required,
       multiple: exported.multiple,
-      format: exported.format as IField['format'],
+      format: exported.format,
       validations: exported.validations ?? [],
       permissions:
         exported.permissions ?? buildFieldPermissions(true, true, true),
@@ -1288,7 +1301,7 @@ export default class ImportTableUseCase {
       locked: exported.locked,
       relationship,
       dropdown: exported.dropdown,
-      category: exported.category as IField['category'],
+      category: exported.category,
       group: exported.group,
     });
   }
@@ -1524,7 +1537,8 @@ export default class ImportTableUseCase {
   ): string | string[] | undefined {
     const target = rowIdMap.get(targetTableSlug);
     const remapOne = (v: unknown): string | null => {
-      const id = typeof v === 'string' ? v : String(v ?? '');
+      let id = String(v ?? '');
+      if (typeof v === 'string') id = v;
       if (!id) return null;
       if (target?.has(id)) return target.get(id)!;
       // Target table is outside the package — return original (may match an
@@ -1621,15 +1635,14 @@ export default class ImportTableUseCase {
         }
       }
 
-      const parentId = menu.parent
-        ? (newIdByOriginalId.get(menu.parent) ?? null)
-        : null;
+      let parentId: string | null = null;
+      if (menu.parent) parentId = newIdByOriginalId.get(menu.parent) ?? null;
 
       try {
         const newMenu = await this.menuRepository.create({
           name,
           slug,
-          type: type as never,
+          type,
           table: tableId,
           parent: parentId,
           url,

@@ -20,7 +20,9 @@ describe('Generate Test Data Use Case', () => {
 
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
-    // model builder mockado: build() retorna um model com insertMany no-op
+    // model builder mockado: build() retorna um model fake só com insertMany
+    // (o use-case só chama isso). Mock parcial exige asserção — inevitável aqui.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     modelBuilder = {
       build: vi.fn().mockResolvedValue({
         insertMany: vi.fn().mockResolvedValue([]),

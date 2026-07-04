@@ -100,7 +100,7 @@ function getConfiguredOptionLabel(field: IField, value: string): string {
       const item = stack.shift();
       if (!item) continue;
       if (item.id === value) return item.label;
-      stack.push(...((item.children ?? []) as typeof stack));
+      stack.push(...(item.children ?? []));
     }
   }
 
@@ -644,14 +644,14 @@ export default class CascadeDropdownController {
       }
     }
 
-    const relationshipLabels =
-      parentField.type === E_FIELD_TYPE.RELATIONSHIP
-        ? await getRelationshipOptionLabels(
-            this.tableRepository,
-            parentField,
-            values,
-          )
-        : new Map<string, string>();
+    let relationshipLabels = new Map<string, string>();
+    if (parentField.type === E_FIELD_TYPE.RELATIONSHIP) {
+      relationshipLabels = await getRelationshipOptionLabels(
+        this.tableRepository,
+        parentField,
+        values,
+      );
+    }
 
     for (const value of values) {
       const label =
