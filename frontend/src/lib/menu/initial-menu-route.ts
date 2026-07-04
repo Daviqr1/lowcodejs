@@ -53,6 +53,7 @@ function toInitialRoute(menu: IMenu): InitialMenuRoute | null {
   return {
     type: 'internal',
     // URL vem do backend como string; o router exige a união literal de rotas.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     to: menu.url.replace(/\/$/, '') as LinkProps['to'],
   };
 }

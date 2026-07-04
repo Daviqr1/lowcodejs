@@ -39,6 +39,7 @@ export function normalizeUserList(value: unknown): Array<IUser | string> {
   if (Array.isArray(value)) return value;
   if (!value) return [];
   // Valor único dinâmico: em runtime é um IUser populado ou um id string.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return [value as IUser | string];
 }
 

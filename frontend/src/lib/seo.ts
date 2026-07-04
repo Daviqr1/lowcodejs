@@ -6,6 +6,8 @@ export function createRouteHead(options: {
   description?: string;
 }): (ctx: { matches: Array<{ loaderData?: unknown }> }) => HeadResult {
   return ({ matches }): HeadResult => {
+    // loaderData do root é unknown em runtime (SSR); assumimos o contrato conhecido.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const root = matches[0]?.loaderData as
       | {
           systemName?: string;

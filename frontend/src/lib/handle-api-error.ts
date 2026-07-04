@@ -22,6 +22,7 @@ export function handleApiError(
   }
 
   // error.response.data é `any` do Axios; assumimos o contrato de erro do backend.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const errorData = error.response.data as IHTTPExeptionError<
     Record<string, string>
   >;

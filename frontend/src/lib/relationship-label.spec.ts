@@ -14,10 +14,18 @@ import {
 const UUID = '924925cd-5f4f-468a-a297-90486a8d13e8';
 const OBJECT_ID = '507f1f77bcf86cd799439011';
 
+// Fixtures de teste: só as propriedades usadas pelo resolver são preenchidas,
+// então a coerção para o tipo completo é inevitável e fica isolada aqui.
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+const asRow = (data: Record<string, unknown>): IRow => data as unknown as IRow;
+const asFields = (data: Array<Record<string, unknown>>): Array<IField> =>
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  data as unknown as Array<IField>;
+
 // Campos da tabela relacionada "cidades": um texto (nome) e um dropdown (uf)
 // cujas opções têm id (UUID) + label. Apenas as propriedades usadas pelo
 // resolver são preenchidas.
-const CIDADE_FIELDS = [
+const CIDADE_FIELDS = asFields([
   { slug: 'nome', type: E_FIELD_TYPE.TEXT_SHORT },
   {
     slug: 'uf',
@@ -27,7 +35,7 @@ const CIDADE_FIELDS = [
       { id: 'b2', label: 'SP', color: null },
     ],
   },
-] as unknown as Array<IField>;
+]);
 
 function makeRelConfig(
   overrides: Partial<IFieldConfigurationRelationship>,
@@ -107,11 +115,11 @@ describe('resolveRelationshipValue', () => {
 
 describe('resolveRelationshipLabel', () => {
   it('compõe label customizado com partes válidas', () => {
-    const row = {
+    const row = asRow({
       _id: UUID,
       nome: 'Uruana',
       uf: [{ sigla: 'GO' }],
-    } as unknown as IRow;
+    });
     const relConfig = makeRelConfig({
       customLabel: true,
       labelParts: [{ path: 'nome' }, { path: 'uf.sigla' }],
@@ -121,11 +129,11 @@ describe('resolveRelationshipLabel', () => {
   });
 
   it('não exibe "nome - <uuid>" quando uma parte é relacionamento não populado', () => {
-    const row = {
+    const row = asRow({
       _id: UUID,
       nome: 'Uruana',
       uf: [UUID],
-    } as unknown as IRow;
+    });
     const relConfig = makeRelConfig({
       customLabel: true,
       labelParts: [{ path: 'nome' }, { path: 'uf' }],
@@ -136,11 +144,11 @@ describe('resolveRelationshipLabel', () => {
   });
 
   it('resolve o título de uma parte que aponta para relacionamento populado', () => {
-    const row = {
+    const row = asRow({
       _id: UUID,
       nome: 'Uruana',
       uf: [{ _id: OBJECT_ID, nome: 'Goiás' }],
-    } as unknown as IRow;
+    });
     const relConfig = makeRelConfig({
       customLabel: true,
       labelParts: [{ path: 'nome' }, { path: 'uf' }],
@@ -150,11 +158,11 @@ describe('resolveRelationshipLabel', () => {
   });
 
   it('compõe label com DROPDOWN traduzido (cenário do bug reportado)', () => {
-    const row = {
+    const row = asRow({
       _id: UUID,
       nome: 'Uruana',
       uf: [UUID],
-    } as unknown as IRow;
+    });
     const relConfig = makeRelConfig({
       customLabel: true,
       labelParts: [{ path: 'nome' }, { path: 'uf' }],
@@ -167,13 +175,13 @@ describe('resolveRelationshipLabel', () => {
   });
 
   it('usa fallback de campo legado quando customLabel está desativado', () => {
-    const row = { _id: UUID, nome: 'Uruana' } as unknown as IRow;
+    const row = asRow({ _id: UUID, nome: 'Uruana' });
     const relConfig = makeRelConfig({ field: { _id: 'f1', slug: 'nome' } });
     expect(resolveRelationshipLabel(row, relConfig)).toBe('Uruana');
   });
 
   it('cai para _id apenas quando nada mais resolve', () => {
-    const row = { _id: UUID } as unknown as IRow;
+    const row = asRow({ _id: UUID });
     const relConfig = makeRelConfig({ field: { _id: 'f1', slug: 'nome' } });
     expect(resolveRelationshipLabel(row, relConfig)).toBe(UUID);
   });

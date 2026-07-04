@@ -494,6 +494,7 @@ export type IRow = Merge<
     sharedRowSlug?: string | null;
     // Linha dinamica: os campos do low-code sao definidos em runtime, entao o
     // valor por slug e `any` por design (unica excecao sancionada de `any`).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [x: string]: any;
   }
 >;

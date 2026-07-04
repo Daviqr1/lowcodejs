@@ -179,7 +179,15 @@ function toArray<T>(value: unknown): Array<T> {
   if (Array.isArray(value)) return value;
   if (value === null || value === undefined) return [];
   // Coerção genérica: valor dinâmico de campo sem forma conhecida em runtime.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return [value as T];
+}
+
+// Coerção genérica de valor dinâmico (FieldValue) para iterável tipado — a
+// forma real (Array<string> / Array<SearchableOption>) só é conhecida em runtime.
+function fromIterable<T>(value: unknown): Array<T> {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return Array.from(value as Iterable<T>);
 }
 
 export function buildUpdateRowDefaultValues(
@@ -337,7 +345,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       }
 
       // FieldValue é união ampla; em runtime este caso é sempre Array<string>.
-      const options = Array.from<string>(value as Array<string>);
+      const options = fromIterable<string>(value);
 
       const hasItem = options.length > 0;
 
@@ -387,9 +395,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       if (value === null) return [];
 
       // FieldValue é união ampla; em runtime este caso é Array<SearchableOption>.
-      const options = Array.from<SearchableOption>(
-        value as Array<SearchableOption>,
-      );
+      const options = fromIterable<SearchableOption>(value);
       const hasItem = options.length > 0;
 
       if (!isMultiple && hasItem) {
@@ -407,7 +413,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       if (value === null) return [];
 
       // FieldValue é união ampla; em runtime este caso é sempre Array<string>.
-      const options = Array.from<string>(value as Array<string>);
+      const options = fromIterable<string>(value);
 
       const hasItem = options.length > 0;
 
@@ -426,9 +432,7 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
       if (value === null) return [];
 
       // FieldValue é união ampla; em runtime este caso é Array<SearchableOption>.
-      const options = Array.from<SearchableOption>(
-        value as Array<SearchableOption>,
-      );
+      const options = fromIterable<SearchableOption>(value);
       const hasItem = options.length > 0;
 
       if (!isMultiple && hasItem) {

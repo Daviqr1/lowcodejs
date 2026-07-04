@@ -162,6 +162,7 @@ export function omitHiddenConditionalValues<T extends ConditionalFormValues>(
   );
 
   // Coerção genérica: Object.fromEntries perde o tipo T do parâmetro.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return Object.fromEntries(
     Object.entries(values).filter(([key]) => !hiddenSlugs.has(key)),
   ) as T;

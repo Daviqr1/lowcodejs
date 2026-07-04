@@ -9,6 +9,8 @@ import type { ConditionalFieldRule } from './conditional-form-rules';
 import type { IField } from './interfaces';
 
 function field(id: string, slug: string): IField {
+  // fixture de teste: só as propriedades usadas são preenchidas.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     _id: id,
     name: slug,

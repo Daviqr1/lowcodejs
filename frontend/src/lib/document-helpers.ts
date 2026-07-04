@@ -129,7 +129,8 @@ export function rowIndentPxFromLeaf(
   if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
   else if (typeof v === 'string') leaf = v;
 
-  const depth = leaf ? (depthMap.get(leaf) ?? 0) : 0;
+  let depth = 0;
+  if (leaf) depth = depthMap.get(leaf) ?? 0;
   return depth * 16;
 }
 
@@ -144,7 +145,8 @@ export function rowHeadingLevelFromLeaf(
   if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
   else if (typeof v === 'string') leaf = v;
 
-  const depth = leaf ? (depthMap.get(leaf) ?? 0) : 0;
+  let depth = 0;
+  if (leaf) depth = depthMap.get(leaf) ?? 0;
 
   return Math.max(2, Math.min(6, 2 + depth));
 }
