@@ -27,12 +27,12 @@ A ordem canônica vive em `SETUP_STEPS` (`@/lib/constant`); labels em
 | #   | Rota             | Etapa         | Coleta                                                              | Doc                 |
 | --- | ---------------- | ------------- | ------------------------------------------------------------------- | ------------------- |
 | 1   | `/setup/admin`   | Administrador | Nome, email, senha (+ confirmação) do usuário MASTER                | `admin/CLAUDE.md`   |
-| 2   | `/setup/name`    | Identidade    | `SYSTEM_NAME` + `LOCALE` (pt-br / en-us)                            | _index (thin)_      |
+| 2   | `/setup/name`    | Identidade    | `SYSTEM_NAME` + `LOCALE` (pt-br / en-us)                            | `name/CLAUDE.md`    |
 | 3   | `/setup/storage` | Armazenamento | `STORAGE_DRIVER` (local/s3) + credenciais S3 condicionais           | `storage/CLAUDE.md` |
 | 4   | `/setup/logos`   | Logos         | `LOGO_SMALL_URL` + `LOGO_LARGE_URL` (upload, opcional)              | `logos/CLAUDE.md`   |
 | 5   | `/setup/upload`  | Uploads       | `FILE_UPLOAD_MAX_SIZE`, `FILE_UPLOAD_ACCEPTED`, `MAX_FILES`         | `upload/CLAUDE.md`  |
-| 6   | `/setup/paging`  | Paginação     | `PAGINATION_PER_PAGE` (10/20/30/40/50)                              | _index (thin)_      |
-| 7   | `/setup/email`   | Email         | SMTP `HOST`/`PORT`/`USER`/`PASSWORD`/`FROM` (opcional, com "Pular") | _index (thin)_      |
+| 6   | `/setup/paging`  | Paginação     | `PAGINATION_PER_PAGE` (10/20/30/40/50)                              | `paging/CLAUDE.md`  |
+| 7   | `/setup/email`   | Email         | SMTP `HOST`/`PORT`/`USER`/`PASSWORD`/`FROM` (opcional, com "Pular") | `email/CLAUDE.md`   |
 
 ## Fluxo de Navegação
 
@@ -64,5 +64,6 @@ visual a partir de `SETUP_STEPS`, marcando completed / active / pending.
 - Cada etapa: `index.tsx` (head/title via `createRouteHead`) + `index.lazy.tsx`
   (componente). Componentes privados prefixados com `-`.
 - Cards de formulário são flat (`border-0 shadow-none`).
-- Etapas "finas" (name, paging, email) são apenas formulários simples e ficam
-  documentadas só neste índice. Etapas com lógica própria têm leaf CLAUDE.md.
+- Toda etapa tem seu próprio leaf CLAUDE.md. As etapas "finas" (name, paging,
+  email) são formulários simples com estado local via `useState`; as demais
+  (admin, storage, logos, upload) têm lógica própria documentada em detalhe.
