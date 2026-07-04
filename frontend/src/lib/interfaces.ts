@@ -474,30 +474,92 @@ export type ISetupStatus = {
   steps: ReadonlyArray<SetupStep>;
 };
 
-// type RowResponseValue =
-//   | string
-//   | null
-//   | Array<string>
-//   | Array<IStorage>
-//   | Array<IRow>
-//   | Array<IUser>
-//   | IUser;
-// | Array<Record<string, RowResponseValue>>;
+// Ref lean de usuario populado na resposta (creator/updater e campo USER
+// chegam como { _id, name, email }). Paridade com o backend.
+export type IUserRef = Pick<IUser, '_id' | 'name' | 'email'>;
 
+// Valor de UM campo no PAYLOAD de envio (create/update). Chaves da row sao
+// dinamicas, mas o formato por tipo de campo e fechado: TEXT/DATE -> string|null;
+// DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP -> ids; FIELD_GROUP -> sub-payloads.
+export type RowPayloadValue = string | null | Array<string> | Array<RowPayload>;
+
+// Valor de UM campo na RESPOSTA. FILE volta populado (IStorage), USER como ref
+// User (IUser), RELATIONSHIP como row populada, FIELD_GROUP aninhado, e
+// REACTION/EVALUATION como objetos-resumo computados pelo backend.
+export type RowResultValue =
+  | string
+  | null
+  | Array<string>
+  | Array<IStorage>
+  | Array<IUser>
+  | Array<IRow>
+  | IReactionSummary
+  | IEvaluationSummary;
+
+// Payload de envio: chaves dinamicas, valores tipados (substitui
+// Record<string, unknown> nos payloads da API).
+export type RowPayload = Record<string, RowPayloadValue>;
+
+// Campos nativos da resposta de row. creator/updater sao ref User, sempre
+// populados na resposta da API.
+export type RowNative = {
+  _id: string;
+  status?: ValueOf<typeof E_ROW_STATUS>;
+  creator: IUser;
+  updater?: IUser | null;
+  createdAt: string;
+  updatedAt: string | null;
+  trashedAt: string | null;
+  // Flag otimista de UI (trash/restore); a fonte de verdade e `trashedAt`.
+  trashed?: boolean;
+  draftAt?: string | null;
+  sharedRowSlug?: string | null;
+};
+
+// Resposta de row: nativos tipados + indice dinamico tipado (substitui o antigo
+// `[x: string]: any`). Sem interop com Mongoose no front, o indice segue o
+// contrato de `RowResultValue`. O indice inclui os tipos dos nativos por
+// constraint do TS (props nomeadas precisam ser atribuiveis ao indice).
 export type IRow = Merge<
-  Omit<Base, 'trashed'>,
-  {
-    creator: IUser;
-    updater?: IUser | null;
-    status?: ValueOf<typeof E_ROW_STATUS>;
-    draftAt?: string | null;
-    sharedRowSlug?: string | null;
-    // Linha dinamica: os campos do low-code sao definidos em runtime, entao o
-    // valor por slug e `any` por design (unica excecao sancionada de `any`).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [x: string]: any;
-  }
+  RowNative,
+  { [slug: string]: RowResultValue | RowNative[keyof RowNative] }
 >;
+
+// Mapa tipo-de-campo -> valor na resposta (fonte unica, sem conditional type).
+export type RowFieldValueMap = {
+  [E_FIELD_TYPE.TEXT_SHORT]: string | null;
+  [E_FIELD_TYPE.TEXT_LONG]: string | null;
+  [E_FIELD_TYPE.HTML_CONTENT]: string | null;
+  [E_FIELD_TYPE.DATE]: string | null;
+  [E_FIELD_TYPE.DROPDOWN]: Array<string>;
+  [E_FIELD_TYPE.CATEGORY]: Array<string>;
+  [E_FIELD_TYPE.FILE]: Array<IStorage>;
+  [E_FIELD_TYPE.USER]: Array<IUser>;
+  [E_FIELD_TYPE.RELATIONSHIP]: Array<IRow>;
+  [E_FIELD_TYPE.FIELD_GROUP]: Array<IRow>;
+  [E_FIELD_TYPE.REACTION]: IReactionSummary;
+  [E_FIELD_TYPE.EVALUATION]: IEvaluationSummary;
+  [E_FIELD_TYPE.CREATOR]: IUser;
+  [E_FIELD_TYPE.UPDATER]: IUser | null;
+  [E_FIELD_TYPE.IDENTIFIER]: string;
+  [E_FIELD_TYPE.CREATED_AT]: string | null;
+  [E_FIELD_TYPE.UPDATED_AT]: string | null;
+  [E_FIELD_TYPE.TRASHED_AT]: string | null;
+  [E_FIELD_TYPE.STATUS]: ValueOf<typeof E_ROW_STATUS>;
+};
+
+// Valor de um campo por tipo (indexed access, base do generico Row<TFields>).
+export type FieldValueByType<T extends keyof RowFieldValueMap> =
+  RowFieldValueMap[T];
+
+// Row tipada por um conjunto de fields conhecido em compile-time. Opt-in: usar
+// so onde ha `fields as const` (ex.: helpers de template). Nao forcar onde os
+// fields vem da API em runtime.
+export type Row<TFields extends ReadonlyArray<Pick<IField, 'slug' | 'type'>>> =
+  Merge<
+    RowNative,
+    { [F in TFields[number] as F['slug']]: FieldValueByType<F['type']> }
+  >;
 
 export type IAttachment = {
   filename: string;

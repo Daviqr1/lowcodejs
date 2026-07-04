@@ -297,6 +297,9 @@ export type FieldUpdatePayload = {
 };
 
 // ============== ROW ==============
+// `data` e um record dinamico montado no submit (buildRowPayload). O contrato
+// forte de envio por campo e `RowPayload` (usado no Body do backend); aqui fica
+// Record<string, unknown> porque os builders montam a row de forma dinamica.
 export type RowCreatePayload = {
   slug: string;
   data: Record<string, unknown>;
