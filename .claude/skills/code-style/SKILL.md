@@ -123,8 +123,9 @@ type Props = React.ComponentProps<'div'> & { value: string }
 type Props = Merge<React.ComponentProps<'div'>, { value: string }>
 ```
 
-Três ou mais partes aninham: `Merge<Merge<A, B>, C>`. `Merge` vive em
-`lib/interfaces.ts` (frontend) e `core/entity.core.ts` (backend) — importe de lá.
+Três ou mais partes aninham: `Merge<Merge<A, B>, C>`. `Merge` é um utility do
+projeto (ex.: `lib/interfaces.ts` no frontend, `core/entity.core.ts` no backend)
+— importe do módulo onde ele estiver definido; se não existir, defina-o.
 
 Exceção: interseção com `Array<T>` (ex.: `Array<T> & { extra }`) mantém `&` —
 `Merge` mapeia as chaves e destrói a semântica de array. Uniões (`|`) não são
