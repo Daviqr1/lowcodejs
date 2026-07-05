@@ -8,6 +8,7 @@ import {
   E_EXTENSION_TYPE,
   E_MENU_ITEM_TYPE,
   type IMenu as Entity,
+  type Merge,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
@@ -20,7 +21,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import type { MenuCreatePayload } from './create.validator';
 
 type Response = Either<HTTPException, Entity>;
-type Payload = MenuCreatePayload & { owner: string };
+type Payload = Merge<MenuCreatePayload, { owner: string }>;
 
 @Service()
 export default class MenuCreateUseCase {

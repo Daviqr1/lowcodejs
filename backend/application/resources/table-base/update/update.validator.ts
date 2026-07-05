@@ -1,6 +1,8 @@
 import slugify from 'slugify';
 import z from 'zod';
 
+import type { Merge } from '@application/core/entity.core';
+
 import {
   GroupConfigurationSchema,
   TableFieldOrderDetailSchema,
@@ -56,6 +58,9 @@ export const TableUpdateParamsValidator = z.object({
   slug: z.string().trim(),
 });
 
-export type TableUpdatePayload = z.infer<typeof TableUpdateBodyValidator> & {
-  routeSlug: string;
-};
+export type TableUpdatePayload = Merge<
+  z.infer<typeof TableUpdateBodyValidator>,
+  {
+    routeSlug: string;
+  }
+>;

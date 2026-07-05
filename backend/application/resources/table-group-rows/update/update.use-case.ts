@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField } from '@application/core/entity.core';
+import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
@@ -13,15 +13,18 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
-type Payload = Record<string, unknown> & {
-  slug: string;
-  rowId: string;
-  groupSlug: string;
-  itemId: string;
-  __actorUserId?: string;
-  // Convidado contributor: só altera itens da própria row pai.
-  __ownOnly?: boolean;
-};
+type Payload = Merge<
+  Record<string, unknown>,
+  {
+    slug: string;
+    rowId: string;
+    groupSlug: string;
+    itemId: string;
+    __actorUserId?: string;
+    // Convidado contributor: só altera itens da própria row pai.
+    __ownOnly?: boolean;
+  }
+>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import { E_FIELD_TYPE } from '@application/core/entity.core';
+import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
@@ -12,11 +12,14 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import type { GroupRowDeletePayload } from './delete.validator';
 
 type Response = Either<HTTPException, null>;
-type Payload = GroupRowDeletePayload & {
-  __actorUserId?: string;
-  // Convidado contributor: só remove itens da própria row pai.
-  __ownOnly?: boolean;
-};
+type Payload = Merge<
+  GroupRowDeletePayload,
+  {
+    __actorUserId?: string;
+    // Convidado contributor: só remove itens da própria row pai.
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class GroupRowDeleteUseCase {

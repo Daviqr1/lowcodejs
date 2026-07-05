@@ -6,6 +6,7 @@ import type {
   IField,
   IRelationshipDefinition,
   IRelationshipLink,
+  Merge,
   ValueOf,
 } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
@@ -19,9 +20,12 @@ export type RelationshipCanLinkParams = {
   targetId: string;
 };
 
-export type RelationshipLinkParams = RelationshipCanLinkParams & {
-  metadata?: Record<string, unknown> | null;
-};
+export type RelationshipLinkParams = Merge<
+  RelationshipCanLinkParams,
+  {
+    metadata?: Record<string, unknown> | null;
+  }
+>;
 
 // Endpoint dono da FK (lado OWNS_FK) resolvido de uma definicao. O lado REVERSE
 // usa `tableSlug` (colecao a consultar) + `fieldSlug` (path da FK) na query

@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow, ITable } from '@application/core/entity.core';
+import type { IRow, ITable, Merge } from '@application/core/entity.core';
 import { E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldSlug } from '@application/core/field-slug.core';
@@ -22,16 +22,19 @@ import { ScriptExecutionContractService } from '@application/services/script-exe
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = Record<string, unknown> & {
-  slug: string;
-  _id: string;
-  __actorUserId?: string;
-  // Convidado contributor: só pode editar os próprios registros.
-  __ownOnly?: boolean;
-  // Sinais do solicitante para a visibilidade de campo no formulario.
-  __isOwner?: boolean;
-  __isAdministrator?: boolean;
-};
+type Payload = Merge<
+  Record<string, unknown>,
+  {
+    slug: string;
+    _id: string;
+    __actorUserId?: string;
+    // Convidado contributor: só pode editar os próprios registros.
+    __ownOnly?: boolean;
+    // Sinais do solicitante para a visibilidade de campo no formulario.
+    __isOwner?: boolean;
+    __isAdministrator?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowUpdateUseCase {

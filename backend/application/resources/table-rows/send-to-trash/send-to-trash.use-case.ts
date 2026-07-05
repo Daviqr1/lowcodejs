@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
@@ -13,11 +13,14 @@ import type { TableRowSendToTrashPayload } from './send-to-trash.validator';
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = TableRowSendToTrashPayload & {
-  __actorUserId?: string;
-  // Convidado contributor: só pode enviar para lixeira os próprios registros.
-  __ownOnly?: boolean;
-};
+type Payload = Merge<
+  TableRowSendToTrashPayload,
+  {
+    __actorUserId?: string;
+    // Convidado contributor: só pode enviar para lixeira os próprios registros.
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowSendToTrashUseCase {

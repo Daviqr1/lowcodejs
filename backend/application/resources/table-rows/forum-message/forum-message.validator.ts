@@ -24,27 +24,35 @@ export const ForumMessageCreateBodyValidator = ForumMessageBodyBaseValidator;
 export const ForumMessageUpdateBodyValidator = ForumMessageBodyBaseValidator;
 
 export type ForumMessageCreatePayload = Merge<
-  z.infer<typeof ForumMessageRowParamsValidator>,
-  z.infer<typeof ForumMessageCreateBodyValidator>
-> & {
-  user: string;
-};
+  Merge<
+    z.infer<typeof ForumMessageRowParamsValidator>,
+    z.infer<typeof ForumMessageCreateBodyValidator>
+  >,
+  {
+    user: string;
+  }
+>;
 
 export type ForumMessageUpdatePayload = Merge<
+  Merge<
+    z.infer<typeof ForumMessageParamsValidator>,
+    z.infer<typeof ForumMessageUpdateBodyValidator>
+  >,
+  {
+    user: string;
+  }
+>;
+
+export type ForumMessageDeletePayload = Merge<
   z.infer<typeof ForumMessageParamsValidator>,
-  z.infer<typeof ForumMessageUpdateBodyValidator>
-> & {
-  user: string;
-};
+  {
+    user: string;
+  }
+>;
 
-export type ForumMessageDeletePayload = z.infer<
-  typeof ForumMessageParamsValidator
-> & {
-  user: string;
-};
-
-export type ForumMessageMentionReadPayload = z.infer<
-  typeof ForumMessageParamsValidator
-> & {
-  user: string;
-};
+export type ForumMessageMentionReadPayload = Merge<
+  z.infer<typeof ForumMessageParamsValidator>,
+  {
+    user: string;
+  }
+>;

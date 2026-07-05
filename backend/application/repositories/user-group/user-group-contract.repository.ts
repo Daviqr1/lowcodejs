@@ -20,10 +20,13 @@ export type UserGroupCreatePayload = Merge<
 
 export type UserGroupUpdatePayload = Merge<
   Pick<IGroup, '_id'>,
-  Partial<UserGroupCreatePayload> & {
-    trashed?: boolean;
-    trashedAt?: Date | null;
-  }
+  Merge<
+    Partial<UserGroupCreatePayload>,
+    {
+      trashed?: boolean;
+      trashedAt?: Date | null;
+    }
+  >
 >;
 
 export type UserGroupQueryPayload = {

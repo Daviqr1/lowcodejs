@@ -22,10 +22,13 @@ export type MenuCreatePayload = Merge<
 
 export type MenuUpdatePayload = Merge<
   Pick<IMenu, '_id'>,
-  Partial<MenuCreatePayload> & {
-    trashed?: boolean;
-    trashedAt?: Date | null;
-  }
+  Merge<
+    Partial<MenuCreatePayload>,
+    {
+      trashed?: boolean;
+      trashedAt?: Date | null;
+    }
+  >
 >;
 
 export type MenuQueryPayload = {

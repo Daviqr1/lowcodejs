@@ -15,6 +15,7 @@ import {
   type IGroupConfiguration,
   type ILayoutFields,
   type ITable,
+  type Merge,
   type ValueOf,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
@@ -113,7 +114,7 @@ type ExportedTable = {
   structure?: ExportedStructure;
   data?: {
     totalRows: number;
-    rows: Array<Record<string, unknown> & { _originalId?: string }>;
+    rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
   };
 };
 
@@ -489,7 +490,7 @@ export default class ImportTableUseCase {
       table: ITable;
       slug: string;
       name: string;
-      rows: Array<Record<string, unknown> & { _originalId?: string }>;
+      rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
     }> = [];
     const missing: string[] = [];
     for (const e of entries) {
@@ -1455,7 +1456,7 @@ export default class ImportTableUseCase {
 
   private async backfillRelationships(args: {
     table: ITable;
-    rows: Array<Record<string, unknown> & { _originalId?: string }>;
+    rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
     rowIdMap: Map<string, Map<string, string>>;
     ownerSlug: string;
   }): Promise<void> {

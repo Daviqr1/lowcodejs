@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IMenu, IUser } from '@application/core/entity.core';
+import type { IMenu, IUser, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { MenuVisibility } from '@application/core/menu-visibility.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
@@ -13,10 +13,13 @@ import { GroupResolverContractService } from '@application/services/group-resolv
 import type { PageShowPayload } from './show.validator';
 
 type Response = Either<HTTPException, IMenu>;
-type Payload = PageShowPayload & {
-  actorUserId?: string;
-  role?: string;
-};
+type Payload = Merge<
+  PageShowPayload,
+  {
+    actorUserId?: string;
+    role?: string;
+  }
+>;
 
 @Service()
 export default class PageShowUseCase {

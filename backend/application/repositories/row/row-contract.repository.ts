@@ -1,5 +1,10 @@
 /* eslint-disable no-unused-vars */
-import type { IRow, ITable, Optional } from '@application/core/entity.core';
+import type {
+  IRow,
+  ITable,
+  Merge,
+  Optional,
+} from '@application/core/entity.core';
 
 /**
  * Contexto de uma tabela dinamica para que o repositorio
@@ -143,10 +148,13 @@ export abstract class RowContractRepository {
   ): Promise<IRow>;
 
   abstract updateGroupItem(
-    payload: RowGroupItemPayload & {
-      itemId: string;
-      data: Record<string, unknown>;
-    },
+    payload: Merge<
+      RowGroupItemPayload,
+      {
+        itemId: string;
+        data: Record<string, unknown>;
+      }
+    >,
   ): Promise<IRow>;
 
   abstract deleteGroupItem(

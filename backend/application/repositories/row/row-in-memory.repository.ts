@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
 
 import type {
@@ -390,10 +390,13 @@ export default class RowInMemoryRepository implements RowContractRepository {
   }
 
   async updateGroupItem(
-    payload: RowGroupItemPayload & {
-      itemId: string;
-      data: Record<string, unknown>;
-    },
+    payload: Merge<
+      RowGroupItemPayload,
+      {
+        itemId: string;
+        data: Record<string, unknown>;
+      }
+    >,
   ): Promise<IRow> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);

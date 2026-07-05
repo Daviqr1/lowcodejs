@@ -2,15 +2,19 @@ import type { Either } from '@application/core/either.core';
 import type {
   IFieldPermissions,
   IFieldValidation,
+  Merge,
 } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
 import type { ExportTablePayload } from './export-table.validator';
 
-export type ExportTableUseCasePayload = ExportTablePayload & {
-  userId: string;
-  userName: string;
-};
+export type ExportTableUseCasePayload = Merge<
+  ExportTablePayload,
+  {
+    userId: string;
+    userName: string;
+  }
+>;
 
 export type ExportedField = {
   name: string;
@@ -62,11 +66,14 @@ export type ExportedStructure = {
   };
 };
 
-export type ExportedRow = Record<string, unknown> & {
-  _originalId: string;
-  /** ID original do usuário criador da row (campo nativo CREATOR). */
-  _originalCreator?: string;
-};
+export type ExportedRow = Merge<
+  Record<string, unknown>,
+  {
+    _originalId: string;
+    /** ID original do usuário criador da row (campo nativo CREATOR). */
+    _originalCreator?: string;
+  }
+>;
 
 export type ExportedTable = {
   /**

@@ -1,5 +1,5 @@
 import type { Either } from '@application/core/either.core';
-import type { ITable } from '@application/core/entity.core';
+import type { ITable, Merge } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
@@ -8,13 +8,13 @@ import type { SchemaBuilderContractService } from '@application/services/table/s
 
 import type { CloneTablePayload } from './clone-table.validator';
 
-export type CloneTableUseCasePayload = Omit<
-  CloneTablePayload,
-  'copyDataTableIds'
-> & {
-  ownerId: string;
-  copyDataTableIds?: string[];
-};
+export type CloneTableUseCasePayload = Merge<
+  Omit<CloneTablePayload, 'copyDataTableIds'>,
+  {
+    ownerId: string;
+    copyDataTableIds?: string[];
+  }
+>;
 
 export type CloneTableResponse = Either<
   HTTPException,

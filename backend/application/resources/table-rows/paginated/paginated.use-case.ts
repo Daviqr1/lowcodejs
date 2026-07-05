@@ -3,7 +3,12 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IMeta, IRow, Paginated } from '@application/core/entity.core';
+import type {
+  IMeta,
+  IRow,
+  Merge,
+  Paginated,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import type { RelationshipLinkSide } from '@application/repositories/relationship-link/relationship-link-contract.repository';
@@ -19,11 +24,14 @@ import type { TableRowPaginatedPayload } from './paginated.validator';
 
 type Response = Either<HTTPException, Paginated<IRow>>;
 
-type Payload = TableRowPaginatedPayload & {
-  user?: string;
-  isOwner?: boolean;
-  isAdministrator?: boolean;
-};
+type Payload = Merge<
+  TableRowPaginatedPayload,
+  {
+    user?: string;
+    isOwner?: boolean;
+    isAdministrator?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowPaginatedUseCase {

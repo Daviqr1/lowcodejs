@@ -1,11 +1,15 @@
 import type { Either } from '@application/core/either.core';
+import type { Merge } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
 import type { ImportTablePayload } from './import-table.validator';
 
-export type ImportTableUseCasePayload = ImportTablePayload & {
-  ownerId: string;
-};
+export type ImportTableUseCasePayload = Merge<
+  ImportTablePayload,
+  {
+    ownerId: string;
+  }
+>;
 
 export type ImportedTableSummary = {
   tableId: string;

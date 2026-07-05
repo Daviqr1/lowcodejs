@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { E_USER_STATUS } from '@application/core/entity.core';
+import { E_USER_STATUS, type Merge } from '@application/core/entity.core';
 
 export const UserBulkUpdateBodyValidator = z.object({
   ids: z.array(z.string().trim()).min(1).max(500),
@@ -9,8 +9,9 @@ export const UserBulkUpdateBodyValidator = z.object({
   }),
 });
 
-export type UserBulkUpdatePayload = z.infer<
-  typeof UserBulkUpdateBodyValidator
-> & {
-  actorId: string;
-};
+export type UserBulkUpdatePayload = Merge<
+  z.infer<typeof UserBulkUpdateBodyValidator>,
+  {
+    actorId: string;
+  }
+>;

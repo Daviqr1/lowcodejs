@@ -2,7 +2,7 @@
 import { Service } from 'fastify-decorators';
 import mongoose from 'mongoose';
 
-import type { IField, IRow } from '@application/core/entity.core';
+import type { IField, IRow, Merge } from '@application/core/entity.core';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 import { PopulateBuilderContractService } from '@application/services/table/populate-builder-contract.service';
 import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
@@ -435,10 +435,13 @@ export default class RowMongooseRepository implements RowContractRepository {
   }
 
   async updateGroupItem(
-    payload: RowGroupItemPayload & {
-      itemId: string;
-      data: Record<string, unknown>;
-    },
+    payload: Merge<
+      RowGroupItemPayload,
+      {
+        itemId: string;
+        data: Record<string, unknown>;
+      }
+    >,
   ): Promise<IRow> {
     const model = await this.getModel(payload.table);
     const populate = await this.getPopulate(payload.table);

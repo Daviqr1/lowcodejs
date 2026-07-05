@@ -1,6 +1,8 @@
 import type { MultipartFile } from '@fastify/multipart';
 import { Readable } from 'node:stream';
 
+import type { Merge } from '@application/core/entity.core';
+
 import type {
   StorageReadResponse,
   StorageUploadResponse,
@@ -8,7 +10,7 @@ import type {
 } from './storage-contract.service';
 import { StorageContractService } from './storage-contract.service';
 
-type StoredFile = StorageUploadResponse & { body: Buffer };
+type StoredFile = Merge<StorageUploadResponse, { body: Buffer }>;
 
 export default class InMemoryStorageService implements StorageContractService {
   private files: Map<string, StoredFile> = new Map();

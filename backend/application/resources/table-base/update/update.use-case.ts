@@ -3,7 +3,10 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import { type ITable as Entity } from '@application/core/entity.core';
+import {
+  type ITable as Entity,
+  type Merge,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -17,10 +20,13 @@ type Response = Either<HTTPException, Entity>;
 
 // Identidade do ator (resolvida no controller a partir de request.user +
 // request.ownership) usada para autorizar a troca de dono.
-type Payload = TableUpdatePayload & {
-  actorId?: string;
-  actorIsOwner?: boolean;
-};
+type Payload = Merge<
+  TableUpdatePayload,
+  {
+    actorId?: string;
+    actorIsOwner?: boolean;
+  }
+>;
 
 @Service()
 export default class TableUpdateUseCase {

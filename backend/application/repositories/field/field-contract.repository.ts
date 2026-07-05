@@ -12,10 +12,13 @@ export type { FieldCreatePayload };
 
 export type FieldUpdatePayload = Merge<
   Pick<IField, '_id'>,
-  Partial<FieldCreatePayload> & {
-    trashed?: boolean;
-    trashedAt?: Date | null;
-  }
+  Merge<
+    Partial<FieldCreatePayload>,
+    {
+      trashed?: boolean;
+      trashedAt?: Date | null;
+    }
+  >
 >;
 
 export type FieldQueryPayload = {

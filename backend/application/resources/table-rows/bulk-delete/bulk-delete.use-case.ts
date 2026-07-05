@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -11,11 +12,14 @@ import type { BulkDeletePayload } from './bulk-delete.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
 
-type Payload = BulkDeletePayload & {
-  __actorUserId?: string;
-  // Convidado contributor: só exclui os próprios registros.
-  __ownOnly?: boolean;
-};
+type Payload = Merge<
+  BulkDeletePayload,
+  {
+    __actorUserId?: string;
+    // Convidado contributor: só exclui os próprios registros.
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class BulkDeleteUseCase {

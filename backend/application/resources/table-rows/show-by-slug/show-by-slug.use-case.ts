@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -14,7 +14,7 @@ import type { TableRowShowBySlugPayload } from './show-by-slug.validator';
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = TableRowShowBySlugPayload & { user?: string };
+type Payload = Merge<TableRowShowBySlugPayload, { user?: string }>;
 
 @Service()
 export default class TableRowShowBySlugUseCase {
