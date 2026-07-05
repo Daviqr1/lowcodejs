@@ -4,6 +4,7 @@ import type mongoose from 'mongoose';
 import type {
   IField,
   IGroupConfiguration,
+  ValueOf,
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import { Evaluation } from '@application/model/evaluation.model';
@@ -31,6 +32,22 @@ type ModelDocument<M> =
     ? THydrated
     : never;
 type RelationshipTableDoc = ModelDocument<typeof Table>;
+
+// Campos de ref simples: type do campo → model/select do populate. RELATIONSHIP
+// e FIELD_GROUP nao entram aqui (tem logica propria de ciclo/subarvore).
+const POPULATE_BY_FIELD_TYPE: Partial<
+  Record<
+    ValueOf<typeof E_FIELD_TYPE>,
+    Pick<mongoose.PopulateOptions, 'model' | 'select'>
+  >
+> = {
+  [E_FIELD_TYPE.FILE]: { model: Storage },
+  [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.REACTION]: { model: Reaction, select: 'user type' },
+  [E_FIELD_TYPE.EVALUATION]: { model: Evaluation, select: 'user value' },
+};
 
 /**
  * Caches por request que tornam o populate linear. Sem eles cada nó da árvore
@@ -172,51 +189,9 @@ export default class MongoosePopulateBuilder implements PopulateBuilderContractS
     const populate: mongoose.PopulateOptions[] = [];
 
     for await (const field of relacionamentos) {
-      if (field.type === E_FIELD_TYPE.FILE) {
-        populate.push({
-          path: field.slug,
-          model: Storage,
-        });
-      }
-
-      if (field.type === E_FIELD_TYPE.USER) {
-        populate.push({
-          path: field.slug,
-          model: User,
-          select: 'name email _id',
-        });
-      }
-
-      if (field.type === E_FIELD_TYPE.CREATOR) {
-        populate.push({
-          path: field.slug,
-          model: User,
-          select: 'name email _id',
-        });
-      }
-
-      if (field.type === E_FIELD_TYPE.UPDATER) {
-        populate.push({
-          path: field.slug,
-          model: User,
-          select: 'name email _id',
-        });
-      }
-
-      if (field.type === E_FIELD_TYPE.REACTION) {
-        populate.push({
-          path: field.slug,
-          model: Reaction,
-          select: 'user type',
-        });
-      }
-
-      if (field.type === E_FIELD_TYPE.EVALUATION) {
-        populate.push({
-          path: field.slug,
-          model: Evaluation,
-          select: 'user value',
-        });
+      const simplePopulate = POPULATE_BY_FIELD_TYPE[field.type];
+      if (simplePopulate) {
+        populate.push({ path: field.slug, ...simplePopulate });
       }
 
       if (field.type === E_FIELD_TYPE.RELATIONSHIP) {
