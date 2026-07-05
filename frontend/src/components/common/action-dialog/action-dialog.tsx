@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { handleApiError } from '@/lib/handle-api-error';
+import type { Merge } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
 
 export type ActionDialogConfig = {
@@ -32,9 +33,12 @@ export type ActionDialogConfig = {
   cancelTestId?: string;
 };
 
-export type ActionDialogProps = React.ComponentProps<typeof DialogTrigger> & {
-  config: ActionDialogConfig;
-};
+export type ActionDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    config: ActionDialogConfig;
+  }
+>;
 
 export function ActionDialog({
   config,

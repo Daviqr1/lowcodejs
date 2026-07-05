@@ -55,7 +55,13 @@ import {
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, IRow, ITable, SearchableOption } from '@/lib/interfaces';
+import type {
+  IField,
+  IRow,
+  ITable,
+  Merge,
+  SearchableOption,
+} from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import { resolveRelationshipLabel } from '@/lib/relationship-label';
 import {
@@ -354,10 +360,13 @@ function CascadeRelationshipField({
   disabled,
   tableSlug,
   config,
-}: TableRowRelationshipFieldProps & {
-  tableSlug: string;
-  config: CascadeDropdownConfig;
-}): React.JSX.Element {
+}: Merge<
+  TableRowRelationshipFieldProps,
+  {
+    tableSlug: string;
+    config: CascadeDropdownConfig;
+  }
+>): React.JSX.Element {
   const queryClient = useQueryClient();
   const formField = useFieldContext<Array<SearchableOption>>();
   const isInvalid =

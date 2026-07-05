@@ -22,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import type { Merge } from '@/lib/interfaces';
 
 function applyDateMask(value: string, format: string): string {
   let separator = '-';
@@ -100,12 +101,12 @@ export type SingleDatepickerProps = Omit<
   'asSingle' | 'useRange' | 'separator'
 >;
 
-export type RangeDatepickerProps = Omit<
-  DatepickerProps,
-  'asSingle' | 'useRange'
-> & {
-  dualCalendar?: boolean;
-};
+export type RangeDatepickerProps = Merge<
+  Omit<DatepickerProps, 'asSingle' | 'useRange'>,
+  {
+    dualCalendar?: boolean;
+  }
+>;
 
 export function SingleDatepicker(
   props: SingleDatepickerProps,

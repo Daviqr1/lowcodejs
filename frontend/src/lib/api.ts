@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 import { getApiBaseUrl } from '@/lib/get-api-config';
+import type { Merge } from '@/lib/interfaces';
 import { getServerCookies } from '@/lib/server/get-cookies';
 import { useAuthStore } from '@/stores/authentication';
 
@@ -82,7 +83,10 @@ const isAuthEndpoint = (url: string | undefined): boolean => {
   return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 };
 
-type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+type RetriableConfig = Merge<
+  InternalAxiosRequestConfig,
+  { _retried?: boolean }
+>;
 
 let refreshPromise: Promise<void> | null = null;
 

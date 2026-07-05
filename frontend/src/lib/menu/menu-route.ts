@@ -1,5 +1,7 @@
 import type { LinkProps } from '@tanstack/react-router';
 
+import type { Merge } from '@/lib/interfaces';
+
 export type MenuRouteBaseItem = {
   title: string;
   badge?: string;
@@ -8,15 +10,21 @@ export type MenuRouteBaseItem = {
   type?: string;
 };
 
-export type LinkItem = MenuRouteBaseItem & {
-  url: LinkProps['to'];
-  items?: never;
-};
+export type LinkItem = Merge<
+  MenuRouteBaseItem,
+  {
+    url: LinkProps['to'];
+    items?: never;
+  }
+>;
 
-export type CollapsibleItem = MenuRouteBaseItem & {
-  items: Array<MenuItem>;
-  url?: LinkProps['to'];
-};
+export type CollapsibleItem = Merge<
+  MenuRouteBaseItem,
+  {
+    items: Array<MenuItem>;
+    url?: LinkProps['to'];
+  }
+>;
 
 export type MenuItem = CollapsibleItem | LinkItem;
 

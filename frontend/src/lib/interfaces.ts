@@ -36,7 +36,10 @@ import type {
   E_USER_STATUS,
 } from './constant';
 
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+export type Optional<T, K extends keyof T> = Merge<
+  Pick<Partial<T>, K>,
+  Omit<T, K>
+>;
 export type Merge<T, U> = {
   [K in keyof (T & U)]: (T & U)[K];
 };
@@ -327,14 +330,14 @@ export type IField = Merge<
   }
 >;
 
-export type IFilterField = Pick<
-  IField,
-  'slug' | 'name' | 'label' | 'type' | 'multiple'
-> & {
-  dropdown?: Array<IDropdown>;
-  category?: Array<ICategory>;
-  relationship?: IFieldConfigurationRelationship | null;
-};
+export type IFilterField = Merge<
+  Pick<IField, 'slug' | 'name' | 'label' | 'type' | 'multiple'>,
+  {
+    dropdown?: Array<IDropdown>;
+    category?: Array<ICategory>;
+    relationship?: IFieldConfigurationRelationship | null;
+  }
+>;
 
 export type ISchema = {
   type: 'Number' | 'String' | 'Date' | 'Boolean' | 'ObjectId';

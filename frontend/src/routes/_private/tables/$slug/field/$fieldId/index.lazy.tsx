@@ -36,7 +36,13 @@ import type { E_FIELD_FORMAT } from '@/lib/constant';
 import { E_FIELD_TYPE, E_PERMISSION_TARGET } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, ITable, Paginated, ValueOf } from '@/lib/interfaces';
+import type {
+  IField,
+  ITable,
+  Merge,
+  Paginated,
+  ValueOf,
+} from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import { QueryClient as queryClient } from '@/lib/query-client';
 
@@ -310,10 +316,13 @@ function FieldUpdateContent({
 
   const _update = useMutation({
     mutationFn: async (
-      payload: Partial<IField> & {
-        trashed?: boolean;
-        trashedAt?: string | null;
-      },
+      payload: Merge<
+        Partial<IField>,
+        {
+          trashed?: boolean;
+          trashedAt?: string | null;
+        }
+      >,
     ) => {
       const response = await API.put<IField>(
         `/tables/${slug}/fields/${data._id}`,
@@ -532,10 +541,13 @@ function FieldUpdateContent({
       let trashedAt: string | null = null;
       if (value.trashed) trashedAt = new Date().toISOString();
 
-      const payload: Partial<IField> & {
-        trashed?: boolean;
-        trashedAt?: string | null;
-      } = {
+      const payload: Merge<
+        Partial<IField>,
+        {
+          trashed?: boolean;
+          trashedAt?: string | null;
+        }
+      > = {
         name: value.name,
         tip: normalizeTip(value.tip),
         label: nextLabel,

@@ -7,7 +7,7 @@ import { Field, FieldError } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { useSettingRead } from '@/hooks/tanstack-query/use-setting-read';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
-import type { IField, IStorage } from '@/lib/interfaces';
+import type { IField, IStorage, Merge } from '@/lib/interfaces';
 import { cn, fileExtensionsToAccept } from '@/lib/utils';
 
 type TableRowFileFieldProps = {
@@ -20,7 +20,7 @@ type FileValue = {
   storages: Array<IStorage>;
 };
 
-type FileWithUploaded = File & { isUploaded?: boolean };
+type FileWithUploaded = Merge<File, { isUploaded?: boolean }>;
 
 async function storageToFile(storage: IStorage): Promise<FileWithUploaded> {
   const response = await fetch(storage.url);

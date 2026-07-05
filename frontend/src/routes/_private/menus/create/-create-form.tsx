@@ -8,16 +8,24 @@ import { ExtensionModuleSelect } from '@/components/common/selectors/extension-m
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_MENU_ITEM_TYPE, E_PERMISSION_TARGET } from '@/lib/constant';
-import type { IPermissionBinding, IStorage, ValueOf } from '@/lib/interfaces';
+import type {
+  IPermissionBinding,
+  IStorage,
+  Merge,
+  ValueOf,
+} from '@/lib/interfaces';
 import type { MenuCreatePayload } from '@/lib/payloads';
 import { MenuCreateBodySchema } from '@/lib/schemas';
 
 export const MenuCreateSchema = MenuCreateBodySchema;
-export type MenuFormType = Omit<MenuCreatePayload, 'order' | 'visibility'> & {
-  position: string;
-  iconFile: Array<File>;
-  visibility: IPermissionBinding;
-};
+export type MenuFormType = Merge<
+  Omit<MenuCreatePayload, 'order' | 'visibility'>,
+  {
+    position: string;
+    iconFile: Array<File>;
+    visibility: IPermissionBinding;
+  }
+>;
 
 export const menuFormDefaultValues: MenuFormType = {
   name: '',
