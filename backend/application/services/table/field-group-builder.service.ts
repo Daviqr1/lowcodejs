@@ -5,12 +5,27 @@ import type {
   IEmbeddedSchema,
   IField,
   IGroupConfiguration,
+  ValueOf,
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import { Storage } from '@application/model/storage.model';
 import { User } from '@application/model/user.model';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
+
+// Campos de ref simples dentro de grupo: type do campo → model/select do
+// populate (path e nested: `${field.slug}.${groupField.slug}`).
+const GROUP_POPULATE_BY_FIELD_TYPE: Partial<
+  Record<
+    ValueOf<typeof E_FIELD_TYPE>,
+    Pick<mongoose.PopulateOptions, 'model' | 'select'>
+  >
+> = {
+  [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.FILE]: { model: Storage },
+};
 
 @Service()
 export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContractService {
@@ -60,34 +75,11 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
       if (!group) continue;
 
       for (const groupField of group.fields || []) {
-        if (groupField.type === E_FIELD_TYPE.USER) {
+        const groupPopulate = GROUP_POPULATE_BY_FIELD_TYPE[groupField.type];
+        if (groupPopulate) {
           populate.push({
             path: `${field.slug}.${groupField.slug}`,
-            model: User,
-            select: 'name email _id',
-          });
-        }
-
-        if (groupField.type === E_FIELD_TYPE.CREATOR) {
-          populate.push({
-            path: `${field.slug}.${groupField.slug}`,
-            model: User,
-            select: 'name email _id',
-          });
-        }
-
-        if (groupField.type === E_FIELD_TYPE.UPDATER) {
-          populate.push({
-            path: `${field.slug}.${groupField.slug}`,
-            model: User,
-            select: 'name email _id',
-          });
-        }
-
-        if (groupField.type === E_FIELD_TYPE.FILE) {
-          populate.push({
-            path: `${field.slug}.${groupField.slug}`,
-            model: Storage,
+            ...groupPopulate,
           });
         }
 
