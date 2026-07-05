@@ -128,6 +128,16 @@ const VISIBILITY_LABELS: Record<VisibilityKey, string> = {
   showInDetail: 'detalhes',
 };
 
+const ORDER_FIELD_KEY_BY_VISIBILITY: Record<
+  VisibilityKey,
+  'fieldOrderList' | 'fieldOrderForm' | 'fieldOrderFilter' | 'fieldOrderDetail'
+> = {
+  showInList: 'fieldOrderList',
+  showInForm: 'fieldOrderForm',
+  showInFilter: 'fieldOrderFilter',
+  showInDetail: 'fieldOrderDetail',
+};
+
 function updateFieldInTableCache(
   queryClient: ReturnType<typeof useQueryClient>,
   tableSlug: string,
@@ -365,15 +375,8 @@ export function useTableFieldManagement(
       fieldOrderDetail: table.fieldOrderDetail,
     };
 
-    if (visibilityKey === 'showInList') {
-      orderPayload.fieldOrderList = orderedFieldIds;
-    } else if (visibilityKey === 'showInForm') {
-      orderPayload.fieldOrderForm = orderedFieldIds;
-    } else if (visibilityKey === 'showInFilter') {
-      orderPayload.fieldOrderFilter = orderedFieldIds;
-    } else if (visibilityKey === 'showInDetail') {
-      orderPayload.fieldOrderDetail = orderedFieldIds;
-    }
+    orderPayload[ORDER_FIELD_KEY_BY_VISIBILITY[visibilityKey]] =
+      orderedFieldIds;
 
     updateTable.mutate({
       routeSlug: table.slug,

@@ -30,6 +30,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type {
   FieldManagementActions,
   VisibilityKey,
+  WidthKey,
 } from './field-management-context';
 import {
   FieldManagementProvider,
@@ -568,14 +569,12 @@ function FieldManagementList({
     (f) => !fieldVisibilityValue(f, visibilityKey),
   );
 
-  let widthKey: 'widthInForm' | 'widthInList' | 'widthInDetail' | undefined;
-  if (visibilityKey === 'showInForm') {
-    widthKey = 'widthInForm';
-  } else if (visibilityKey === 'showInList') {
-    widthKey = 'widthInList';
-  } else if (visibilityKey === 'showInDetail') {
-    widthKey = 'widthInDetail';
-  }
+  const WIDTH_KEY_BY_VISIBILITY: Partial<Record<VisibilityKey, WidthKey>> = {
+    showInForm: 'widthInForm',
+    showInList: 'widthInList',
+    showInDetail: 'widthInDetail',
+  };
+  const widthKey = WIDTH_KEY_BY_VISIBILITY[visibilityKey];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
