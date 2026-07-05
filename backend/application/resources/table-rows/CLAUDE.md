@@ -36,6 +36,7 @@ CRUD e operacoes especiais em registros (rows) de tabelas dinamicas.
 ## Particularidades
 
 - Rows usam colecao dinamica construida via buildTable() a partir do _schema da tabela
-- Body de create/update e Record<string, any> (schema dinamico, validado por validateRowPayload)
+- Body de create/update e `RowPayload` (`Record<string, RowPayloadValue>` em `entity.core.ts` — envio tipado por tipo de campo: TEXT/DATE→string|null, DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP→ids), validado em runtime por validateRowPayload
+- Resposta e `IRow` (= `RowResult`): nativos tipados (`RowNative`) + indice `RowResultValue` (FILE→IStorage, USER→IUserRef, RELATIONSHIP→IRow populado). Contrato forte opt-in via `Row<TFields>`/`RowFieldValueMap`
 - Campos PASSWORD sao hasheados antes de salvar e mascarados no retorno
 - Populate de campos RELATIONSHIP e USER e construido dinamicamente via buildPopulate

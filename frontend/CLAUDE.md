@@ -434,13 +434,35 @@ precomputar com `let` + `if` antes do JSX.
 ### 2. Sem `any` desnecessario
 
 Preferir `type` proprio, inferencia ou `unknown` + narrow. `any` so onde a lib
-forca (ex.: render props dinamicos do TanStack Form, index signature de `IRow`),
-sempre com comentario curto justificando.
+forca (ex.: render props dinamicos do TanStack Form), sempre com comentario curto
+justificando. O `IRow` **nao** e mais `any`: o indice `[slug]` e tipado por
+`RowResultValue`; ao ler `row[slug]` faca narrow explicito (type guard / `if`),
+nunca `as`.
 
 ### 3. Sem `as` (preferir `satisfies`)
 
 `as const` e permitido. Para o resto, preferir `satisfies` ou corrigir o tipo na
 origem. Onde a lib genuinamente forca (dados dinamicos de runtime), manter o
 minimo com comentario; nunca introduzir `as`/`any` novo.
+
+### 4. Sempre `type`, nunca `interface`
+
+Modelar tipos com `type` (objeto, uniao, mapeado). `interface` so em *module
+augmentation* (`declare module`), onde o TS exige merging (ex.:
+`lib/tanstack-table.d.ts`). Ver o skill `code-style`.
+
+### Tipagem de registros (rows)
+
+Apesar de dinamicas, as rows tem contrato fechado por tipo de campo, em
+`lib/interfaces.ts`:
+
+- **Envio** (`RowPayload` = `Record<string, RowPayloadValue>`): TEXT/DATE →
+  `string|null`; DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP → ids (`Array<string>`).
+- **Resposta** (`IRow` = `RowResult`): nativos tipados (`RowNative`: creator/
+  updater = ref `IUser`, status, datas) + indice `RowResultValue` (FILE →
+  `IStorage[]`, USER → `IUser[]`, RELATIONSHIP → `IRow[]`, REACTION/EVALUATION →
+  summary).
+- `RowFieldValueMap` mapeia tipo-de-campo → valor (lookup, sem conditional type);
+  `Row<TFields>` deriva a row exata quando os fields sao `const` (templates).
 
 Commits: Conventional Commits atomicos em pt-BR (`refactor(escopo): ...`).
