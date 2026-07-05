@@ -10,7 +10,9 @@ export function TableRowTextShortCell({
   field,
   row,
 }: TableRowTextShortCellProps): React.JSX.Element {
-  const value = row[field.slug];
+  const raw = row[field.slug];
+  let value = '';
+  if (typeof raw === 'string') value = raw;
 
   if (!value) {
     return (

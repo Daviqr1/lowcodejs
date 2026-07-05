@@ -15,7 +15,11 @@ export function TableRowDropdownCell({
   field,
   row,
 }: TableRowDropdownCellProps): React.JSX.Element {
-  const values = Array.from<string>(row[field.slug] ?? []);
+  const raw = row[field.slug];
+  let values: Array<string> = [];
+  if (Array.isArray(raw)) {
+    values = raw.filter((value): value is string => typeof value === 'string');
+  }
 
   const items = values.map((value) =>
     getDropdownItem(field.dropdown ?? [], value),

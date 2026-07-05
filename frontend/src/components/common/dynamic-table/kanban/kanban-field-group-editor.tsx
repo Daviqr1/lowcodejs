@@ -193,9 +193,14 @@ export function KanbanFieldGroupEditor({
       (f) => f.type !== E_FIELD_TYPE.FIELD_GROUP && !f.trashed && !f.native,
     ) ?? [];
 
-  // Dados dinâmicos do grupo (row[slug] é any via index signature do IRow).
-  let groupData: Array<GroupRow> = [];
-  if (Array.isArray(row[field.slug])) groupData = row[field.slug];
+  // Dados dinâmicos do grupo: itens são sub-rows (objetos) do FIELD_GROUP.
+  const rawGroup = row[field.slug];
+  const groupData: Array<GroupRow> = [];
+  if (Array.isArray(rawGroup)) {
+    for (const item of rawGroup) {
+      if (typeof item === 'object' && item !== null) groupData.push(item);
+    }
+  }
 
   const isSaving = updateRow.status === 'pending';
   const attachmentMode = isAttachmentMode(groupFields);

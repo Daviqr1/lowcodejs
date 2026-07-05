@@ -18,7 +18,14 @@ export function TableRowFileCell({
   isGallery = false,
   isCardOrMosaic = false,
 }: TableRowFileCellProps): React.JSX.Element {
-  const values = Array.from<IStorage>(row[field.slug] ?? []);
+  const raw = row[field.slug];
+  let values: Array<IStorage> = [];
+  if (Array.isArray(raw)) {
+    values = raw.filter(
+      (value): value is IStorage =>
+        typeof value === 'object' && value !== null && 'filename' in value,
+    );
+  }
 
   if (values.length === 0) {
     return <span className="text-muted-foreground text-sm">-</span>;

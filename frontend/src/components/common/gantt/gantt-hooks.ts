@@ -155,8 +155,11 @@ export function useBarDrag({
             if (fields.dueDate)
               updated[fields.dueDate.slug] = newEnd!.toISOString();
             if (hasGroupChange && fields.list) {
-              if (newGroupId === '__none__') updated[fields.list.slug] = [];
-              else updated[fields.list.slug] = [newGroupId];
+              let listValue: Array<string> = [];
+              if (newGroupId !== '__none__' && typeof newGroupId === 'string') {
+                listValue = [newGroupId];
+              }
+              updated[fields.list.slug] = listValue;
             }
             return updated;
           });

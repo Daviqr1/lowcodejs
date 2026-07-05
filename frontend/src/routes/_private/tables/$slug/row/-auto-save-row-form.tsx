@@ -70,7 +70,12 @@ interface AutoSaveRowFormProps {
 function groupItemsOf(row: IRow | undefined, slug: string): Array<IRow> {
   if (!row) return [];
   const value = row[slug];
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item): item is IRow =>
+        typeof item === 'object' && item !== null && '_id' in item,
+    );
+  }
   return [];
 }
 

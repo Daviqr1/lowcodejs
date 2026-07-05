@@ -362,21 +362,28 @@ export function KanbanRowDialog({
     creatorName = row.creator.name || row.creator.email || 'Sem criador';
   }
 
-  let tasks: Array<Record<string, unknown>> = [];
-  const rawTasks = row[fields.tasks?.slug ?? ''];
-  if (Array.isArray(rawTasks)) tasks = rawTasks;
+  const toRecords = (value: unknown): Array<Record<string, unknown>> => {
+    const out: Array<Record<string, unknown>> = [];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) out.push(item);
+      }
+    }
+    return out;
+  };
 
-  let comments: Array<Record<string, unknown>> = [];
-  const rawComments = row[fields.comments?.slug ?? ''];
-  if (Array.isArray(rawComments)) comments = rawComments;
+  const tasks = toRecords(row[fields.tasks?.slug ?? '']);
+  const comments = toRecords(row[fields.comments?.slug ?? '']);
+
+  const rawAttachments = row[fields.attachments?.slug ?? ''];
 
   let attachmentStorages: Array<IStorage> = [];
   if (
     fields.attachments?.type === E_FIELD_TYPE.FILE &&
-    Array.isArray(row[fields.attachments.slug])
+    Array.isArray(rawAttachments)
   ) {
-    attachmentStorages = row[fields.attachments.slug].filter(
-      (value: unknown): value is IStorage =>
+    attachmentStorages = rawAttachments.filter(
+      (value): value is IStorage =>
         typeof value === 'object' &&
         value !== null &&
         '_id' in value &&
@@ -388,9 +395,9 @@ export function KanbanRowDialog({
   let attachmentGroupRows: Array<Record<string, unknown>> = [];
   if (
     fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
-    Array.isArray(row[fields.attachments.slug])
+    Array.isArray(rawAttachments)
   ) {
-    attachmentGroupRows = row[fields.attachments.slug];
+    attachmentGroupRows = toRecords(rawAttachments);
   }
 
   let attachmentGroupFileFieldSlug: string | undefined;

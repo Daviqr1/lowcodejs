@@ -126,8 +126,10 @@ export function rowIndentPxFromLeaf(
   const v = row[categorySlug];
   let leaf: string | null = null;
 
-  if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
-  else if (typeof v === 'string') leaf = v;
+  if (Array.isArray(v) && v.length) {
+    const last = v[v.length - 1];
+    if (typeof last === 'string') leaf = last;
+  } else if (typeof v === 'string') leaf = v;
 
   let depth = 0;
   if (leaf) depth = depthMap.get(leaf) ?? 0;
@@ -142,8 +144,10 @@ export function rowHeadingLevelFromLeaf(
   const v = row[categorySlug];
   let leaf: string | null = null;
 
-  if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
-  else if (typeof v === 'string') leaf = v;
+  if (Array.isArray(v) && v.length) {
+    const last = v[v.length - 1];
+    if (typeof last === 'string') leaf = last;
+  } else if (typeof v === 'string') leaf = v;
 
   let depth = 0;
   if (leaf) depth = depthMap.get(leaf) ?? 0;
@@ -158,8 +162,10 @@ export function rowLeafLabel(
 ): string | null {
   const v = row[categorySlug];
   let leaf: string | null = null;
-  if (Array.isArray(v) && v.length) leaf = v[v.length - 1];
-  else if (typeof v === 'string') leaf = v;
+  if (Array.isArray(v) && v.length) {
+    const last = v[v.length - 1];
+    if (typeof last === 'string') leaf = last;
+  } else if (typeof v === 'string') leaf = v;
 
   if (!leaf) return null;
   return labelMap.get(leaf) ?? null;
@@ -179,7 +185,10 @@ export function buildCategoryOrderMap(
 
 export function getRowLeafId(row: IRow, categorySlug: string): string | null {
   const v = row[categorySlug];
-  if (Array.isArray(v) && v.length) return v[v.length - 1];
+  if (Array.isArray(v) && v.length) {
+    const last = v[v.length - 1];
+    if (typeof last === 'string') return last;
+  }
   if (typeof v === 'string') return v;
   return null;
 }

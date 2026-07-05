@@ -26,7 +26,14 @@ export function TableRowEvaluationCell({
   field,
   tableSlug,
 }: TableRowEvaluationCellProps): React.JSX.Element {
-  const summary: IEvaluationSummary = row[field.slug] ?? {};
+  const rawSummary = row[field.slug];
+  let summary: IEvaluationSummary = {
+    _average: 0,
+    _count: 0,
+    _userValue: null,
+  };
+  if (rawSummary && typeof rawSummary === 'object' && '_average' in rawSummary)
+    summary = rawSummary;
   const average = summary._average ?? 0;
   const userValue = summary._userValue ?? null;
   const hasEvaluated = userValue !== null;

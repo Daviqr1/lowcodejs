@@ -14,7 +14,9 @@ export function TableRowTextLongCell({
   row,
   className,
 }: TableRowTextLongCellProps): React.JSX.Element {
-  const value = row[field.slug];
+  const raw = row[field.slug];
+  let value = '';
+  if (typeof raw === 'string') value = raw;
   const isRenderedMarkdown = field.format === E_FIELD_FORMAT.RICH_TEXT;
 
   if (!value) {

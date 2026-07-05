@@ -46,7 +46,8 @@ export function TableRowRelationshipCell({
 
   const tableSlug = relConfig?.table?.slug ?? null;
   const relatedFields = relatedTable.data?.fields;
-  const rawValues = Array.from(raw ?? []);
+  let rawValues: Array<unknown> = [];
+  if (Array.isArray(raw)) rawValues = raw;
 
   const values = rawValues.map<RelationshipItem>((item) => {
     if (typeof item === 'object' && item !== null) {

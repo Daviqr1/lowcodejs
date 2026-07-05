@@ -127,7 +127,8 @@ export function getAttachmentStorages(
     const storages: Array<IStorage> = [];
     for (const groupRow of raw) {
       if (typeof groupRow !== 'object' || groupRow === null) continue;
-      const files = groupRow[fileFieldSlug];
+      const groupRecord: Record<string, unknown> = groupRow;
+      const files = groupRecord[fileFieldSlug];
       if (Array.isArray(files)) {
         storages.push(...files.filter(isStorageValue));
       } else if (isStorageValue(files)) {
@@ -158,9 +159,22 @@ export function getMembersFromRow(
 ): Array<IUser | string> {
   if (!field) return [];
   const raw = row[field.slug];
-  if (Array.isArray(raw)) return raw;
-  if (raw) return [raw];
-  return [];
+  const isUser = (value: unknown): value is IUser =>
+    typeof value === 'object' &&
+    value !== null &&
+    'email' in value &&
+    'name' in value;
+  const members: Array<IUser | string> = [];
+  const push = (item: unknown): void => {
+    if (typeof item === 'string') members.push(item);
+    else if (isUser(item)) members.push(item);
+  };
+  if (Array.isArray(raw)) {
+    for (const item of raw) push(item);
+    return members;
+  }
+  push(raw);
+  return members;
 }
 
 export function getProgressValue(row: IRow, field?: IField): number | null {

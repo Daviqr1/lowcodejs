@@ -17,7 +17,7 @@ export function TableRowDateCell({
   const value = row[field.slug];
 
   let displayValue = '-';
-  if (value) {
+  if (typeof value === 'string' && value) {
     if (
       field.type === E_FIELD_TYPE.CREATED_AT ||
       field.type === E_FIELD_TYPE.UPDATED_AT ||

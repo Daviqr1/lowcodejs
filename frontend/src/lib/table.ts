@@ -213,7 +213,7 @@ export function buildUpdateRowDefaultValues(
 
     switch (field.type) {
       case E_FIELD_TYPE.TEXT_SHORT:
-        if (value) {
+        if (typeof value === 'string' && value) {
           defaults[field.slug] = value;
         } else if (typeof field.defaultValue === 'string') {
           defaults[field.slug] = field.defaultValue;
@@ -222,7 +222,7 @@ export function buildUpdateRowDefaultValues(
         }
         break;
       case E_FIELD_TYPE.TEXT_LONG:
-        if (value) {
+        if (typeof value === 'string' && value) {
           defaults[field.slug] = value;
         } else if (typeof field.defaultValue === 'string') {
           defaults[field.slug] = field.defaultValue;
@@ -235,9 +235,12 @@ export function buildUpdateRowDefaultValues(
         defaults[field.slug] = options;
         break;
       }
-      case E_FIELD_TYPE.DATE:
-        defaults[field.slug] = value ?? '';
+      case E_FIELD_TYPE.DATE: {
+        let dateValue = '';
+        if (typeof value === 'string') dateValue = value;
+        defaults[field.slug] = dateValue;
         break;
+      }
       case E_FIELD_TYPE.FILE: {
         const storages = toArray<IStorage>(value);
 
@@ -272,8 +275,11 @@ export function buildUpdateRowDefaultValues(
         });
         break;
       }
-      default:
-        defaults[field.slug] = value ?? '';
+      default: {
+        let fallback: UpdateRowDefaultValue = '';
+        if (typeof value === 'string') fallback = value;
+        defaults[field.slug] = fallback;
+      }
     }
   }
 

@@ -105,9 +105,12 @@ export function RelationshipRowsDataTable({
   const rowMap = React.useMemo((): Map<string, IRow> => {
     const map = new Map<string, IRow>();
     const projected = record[field.slug];
+    const isRow = (value: unknown): value is IRow =>
+      typeof value === 'object' && value !== null && '_id' in value;
     if (Array.isArray(projected)) {
       for (const item of projected) {
-        const id = String(item?._id ?? '');
+        if (!isRow(item)) continue;
+        const id = String(item._id ?? '');
         if (id) map.set(id, item);
       }
     }

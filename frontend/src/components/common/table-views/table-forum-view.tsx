@@ -328,7 +328,7 @@ export function TableForumView({
     (row: IRow): boolean => {
       if (channelPrivacyField) {
         const raw = row[channelPrivacyField.slug];
-        let value = raw;
+        let value: unknown = raw;
         if (Array.isArray(raw)) value = raw[0];
         return (
           String(value ?? '')
@@ -452,8 +452,13 @@ export function TableForumView({
   const rawMessages = React.useMemo(() => {
     if (!activeRow || !messagesField) return [];
     const value = activeRow[messagesField.slug];
-    if (Array.isArray(value)) return value;
-    return [];
+    const out: Array<Record<string, unknown>> = [];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) out.push(item);
+      }
+    }
+    return out;
   }, [activeRow, messagesField]);
 
   const messages = React.useMemo<Array<ForumMessage>>(() => {
