@@ -420,11 +420,8 @@ function buildColumns(params: {
   isMaster: boolean;
   getPositionLabel: (menu: IMenu) => string;
   onPermanentDelete: (menu: IMenu) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}): Array<ColumnDef<IMenu, any>> {
-  // ColumnDef usa TValue=any por padrão (colunas heterogêneas) — lib-idiom.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cols: Array<ColumnDef<IMenu, any>> = [];
+}): Array<ColumnDef<IMenu>> {
+  const cols: Array<ColumnDef<IMenu>> = [];
 
   if (params.canTrash) {
     cols.push({

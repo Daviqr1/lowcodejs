@@ -286,10 +286,7 @@ export function TableListView({
   });
 
   const columns = React.useMemo(() => {
-    // ColumnDef genérico sobre valores heterogêneos de célula — `any` é o
-    // padrão do TanStack Table para o tipo de valor da coluna.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cols: Array<ColumnDef<IRow, any>> = [];
+    const cols: Array<ColumnDef<IRow>> = [];
 
     if (canTrashRow) {
       cols.push({
