@@ -5,16 +5,19 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IField, ITable, Paginated } from '@/lib/interfaces';
+import type { IField, ITable, Merge, Paginated } from '@/lib/interfaces';
 
 type GroupFieldUpdatePayload = {
   tableSlug: string;
   groupSlug: string;
   fieldId: string;
-  data: Partial<IField> & {
-    trashed?: boolean;
-    trashedAt?: string | null;
-  };
+  data: Merge<
+    Partial<IField>,
+    {
+      trashed?: boolean;
+      trashedAt?: string | null;
+    }
+  >;
 };
 
 type UseGroupFieldUpdateProps = {

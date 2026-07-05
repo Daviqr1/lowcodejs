@@ -8,18 +8,26 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { ITable } from '@/lib/interfaces';
+import type { ITable, Merge } from '@/lib/interfaces';
 import type { TableUpdatePayload } from '@/lib/payloads';
 
-type UseTableUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<ITable, AxiosError | Error, TableUpdatePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseTableUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        ITable,
+        AxiosError | Error,
+        TableUpdatePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: ITable, variables: TableUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: ITable, variables: TableUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateTable(
   props: UseTableUpdateProps,

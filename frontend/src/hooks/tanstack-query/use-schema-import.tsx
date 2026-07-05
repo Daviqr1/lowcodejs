@@ -8,25 +8,29 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 import type { SchemaImportPayload, SchemaImportResponse } from '@/lib/payloads';
 
-type UseSchemaImportProps = Pick<
-  Omit<
-    UseMutationOptions<
-      SchemaImportResponse,
-      AxiosError | Error,
-      SchemaImportPayload,
-      unknown
+type UseSchemaImportProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        SchemaImportResponse,
+        AxiosError | Error,
+        SchemaImportPayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (
-    data: SchemaImportResponse,
-    variables: SchemaImportPayload,
-  ) => void;
-};
+  {
+    onSuccess?: (
+      data: SchemaImportResponse,
+      variables: SchemaImportPayload,
+    ) => void;
+  }
+>;
 
 export function useSchemaImport(
   props: UseSchemaImportProps = {},

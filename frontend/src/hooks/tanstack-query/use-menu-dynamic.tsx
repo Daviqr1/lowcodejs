@@ -17,7 +17,7 @@ import { useGroupReadList } from './use-group-read-list';
 import { useMenuReadList } from './use-menu-read-list';
 
 import { E_EXTENSION_TYPE, E_MENU_ITEM_TYPE } from '@/lib/constant';
-import type { IMenu } from '@/lib/interfaces';
+import type { IMenu, Merge } from '@/lib/interfaces';
 import { getStaticMenusByCapabilities } from '@/lib/menu/menu';
 import type { MenuGroupItem, MenuItem, MenuRoute } from '@/lib/menu/menu-route';
 import {
@@ -61,7 +61,7 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
 };
 
 // Tipo para menu com children
-type MenuWithChildren = IMenu & { children?: Array<MenuWithChildren> };
+type MenuWithChildren = Merge<IMenu, { children?: Array<MenuWithChildren> }>;
 
 /**
  * Função para construir a árvore hierárquica de menus

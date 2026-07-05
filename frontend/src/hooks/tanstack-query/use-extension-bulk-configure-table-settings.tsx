@@ -8,28 +8,32 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 import type {
   ExtensionBulkConfigureTableSettingsPayload,
   ExtensionBulkConfigureTableSettingsResponse,
 } from '@/lib/payloads';
 
-type UseProps = Pick<
-  Omit<
-    UseMutationOptions<
-      ExtensionBulkConfigureTableSettingsResponse,
-      AxiosError | Error,
-      ExtensionBulkConfigureTableSettingsPayload,
-      unknown
+type UseProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        ExtensionBulkConfigureTableSettingsResponse,
+        AxiosError | Error,
+        ExtensionBulkConfigureTableSettingsPayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (
-    data: ExtensionBulkConfigureTableSettingsResponse,
-    variables: ExtensionBulkConfigureTableSettingsPayload,
-  ) => void;
-};
+  {
+    onSuccess?: (
+      data: ExtensionBulkConfigureTableSettingsResponse,
+      variables: ExtensionBulkConfigureTableSettingsPayload,
+    ) => void;
+  }
+>;
 
 export function useExtensionBulkConfigureTableSettings(
   props: UseProps,

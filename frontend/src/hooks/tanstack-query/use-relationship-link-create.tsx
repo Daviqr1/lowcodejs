@@ -5,7 +5,7 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IRelationshipLink } from '@/lib/interfaces';
+import type { IRelationshipLink, Merge } from '@/lib/interfaces';
 
 type Context = {
   tableSlug: string;
@@ -19,10 +19,13 @@ type Payload = {
   metadata?: Record<string, unknown>;
 };
 
-type UseRelationshipLinkCreateProps = Context & {
-  onSuccess?: (link: IRelationshipLink, variables: Payload) => void;
-  onError?: (error: AxiosError | Error, variables: Payload) => void;
-};
+type UseRelationshipLinkCreateProps = Merge<
+  Context,
+  {
+    onSuccess?: (link: IRelationshipLink, variables: Payload) => void;
+    onError?: (error: AxiosError | Error, variables: Payload) => void;
+  }
+>;
 
 export function useRelationshipLinkCreate(
   props: UseRelationshipLinkCreateProps,

@@ -8,26 +8,29 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IExtension } from '@/lib/interfaces';
+import type { IExtension, Merge } from '@/lib/interfaces';
 import type { ExtensionConfigureTableScopePayload } from '@/lib/payloads';
 
-type UseExtensionConfigureTableScopeProps = Pick<
-  Omit<
-    UseMutationOptions<
-      IExtension,
-      AxiosError | Error,
-      ExtensionConfigureTableScopePayload,
-      unknown
+type UseExtensionConfigureTableScopeProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        IExtension,
+        AxiosError | Error,
+        ExtensionConfigureTableScopePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (
-    data: IExtension,
-    variables: ExtensionConfigureTableScopePayload,
-  ) => void;
-};
+  {
+    onSuccess?: (
+      data: IExtension,
+      variables: ExtensionConfigureTableScopePayload,
+    ) => void;
+  }
+>;
 
 export function useExtensionConfigureTableScope(
   props: UseExtensionConfigureTableScopeProps,

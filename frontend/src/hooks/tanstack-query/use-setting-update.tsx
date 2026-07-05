@@ -8,23 +8,26 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { ISetting } from '@/lib/interfaces';
+import type { ISetting, Merge } from '@/lib/interfaces';
 import type { SettingUpdatePayload } from '@/lib/payloads';
 
-type UseSettingUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<
-      ISetting,
-      AxiosError | Error,
-      SettingUpdatePayload,
-      unknown
+type UseSettingUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        ISetting,
+        AxiosError | Error,
+        SettingUpdatePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: ISetting, variables: SettingUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: ISetting, variables: SettingUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateSetting(
   props: UseSettingUpdateProps,

@@ -5,6 +5,7 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 
 type Context = {
   tableSlug: string;
@@ -15,10 +16,13 @@ type Context = {
 
 type Payload = { linkId: string };
 
-type UseRelationshipLinkDeleteProps = Context & {
-  onSuccess?: (variables: Payload) => void;
-  onError?: (error: AxiosError | Error, variables: Payload) => void;
-};
+type UseRelationshipLinkDeleteProps = Merge<
+  Context,
+  {
+    onSuccess?: (variables: Payload) => void;
+    onError?: (error: AxiosError | Error, variables: Payload) => void;
+  }
+>;
 
 export function useRelationshipLinkDelete(
   props: UseRelationshipLinkDeleteProps,

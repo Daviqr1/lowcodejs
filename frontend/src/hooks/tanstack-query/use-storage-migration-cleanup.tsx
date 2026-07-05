@@ -8,6 +8,7 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 
 export type StorageMigrationCleanupResponse = {
   job_id: string;
@@ -16,20 +17,23 @@ export type StorageMigrationCleanupResponse = {
 
 type Response = { data: StorageMigrationCleanupResponse };
 
-type Props = Pick<
-  Omit<
-    UseMutationOptions<
-      StorageMigrationCleanupResponse,
-      AxiosError | Error,
-      void,
-      unknown
+type Props = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        StorageMigrationCleanupResponse,
+        AxiosError | Error,
+        void,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: StorageMigrationCleanupResponse) => void;
-};
+  {
+    onSuccess?: (data: StorageMigrationCleanupResponse) => void;
+  }
+>;
 
 export function useStorageMigrationCleanup(
   props: Props = {},

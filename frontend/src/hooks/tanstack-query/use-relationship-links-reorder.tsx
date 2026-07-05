@@ -5,6 +5,7 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 
 type Context = {
   tableSlug: string;
@@ -16,10 +17,13 @@ type Context = {
 type ReorderItem = { linkId: string; order: number };
 type Payload = { items: Array<ReorderItem> };
 
-type UseRelationshipLinksReorderProps = Context & {
-  onSuccess?: (variables: Payload) => void;
-  onError?: (error: AxiosError | Error, variables: Payload) => void;
-};
+type UseRelationshipLinksReorderProps = Merge<
+  Context,
+  {
+    onSuccess?: (variables: Payload) => void;
+    onError?: (error: AxiosError | Error, variables: Payload) => void;
+  }
+>;
 
 export function useRelationshipLinksReorder(
   props: UseRelationshipLinksReorderProps,

@@ -6,8 +6,9 @@ import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
 import { downloadCsvFromApi } from '@/lib/csv-export';
+import type { Merge } from '@/lib/interfaces';
 
-type ExportTableRowsParams = Record<string, unknown> & { slug: string };
+type ExportTableRowsParams = Merge<Record<string, unknown>, { slug: string }>;
 
 type Props = Pick<
   Omit<

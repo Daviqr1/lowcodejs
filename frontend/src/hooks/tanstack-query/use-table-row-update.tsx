@@ -5,18 +5,21 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IRow } from '@/lib/interfaces';
+import type { IRow, Merge } from '@/lib/interfaces';
 import type { RowUpdatePayload } from '@/lib/payloads';
 
-type UseTableRowUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<IRow, AxiosError | Error, RowUpdatePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseTableRowUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<IRow, AxiosError | Error, RowUpdatePayload, unknown>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IRow, variables: RowUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: IRow, variables: RowUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateTableRow(
   props: UseTableRowUpdateProps,

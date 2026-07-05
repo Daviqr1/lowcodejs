@@ -8,23 +8,26 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IExtension } from '@/lib/interfaces';
+import type { IExtension, Merge } from '@/lib/interfaces';
 import type { ExtensionTogglePayload } from '@/lib/payloads';
 
-type UseExtensionToggleProps = Pick<
-  Omit<
-    UseMutationOptions<
-      IExtension,
-      AxiosError | Error,
-      ExtensionTogglePayload,
-      unknown
+type UseExtensionToggleProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        IExtension,
+        AxiosError | Error,
+        ExtensionTogglePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IExtension, variables: ExtensionTogglePayload) => void;
-};
+  {
+    onSuccess?: (data: IExtension, variables: ExtensionTogglePayload) => void;
+  }
+>;
 
 export function useExtensionToggle(
   props: UseExtensionToggleProps,
