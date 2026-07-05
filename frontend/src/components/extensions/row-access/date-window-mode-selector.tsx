@@ -12,6 +12,24 @@ type Props = {
   disabled?: boolean;
 };
 
+const DEFAULT_SETTINGS_BY_MODE: Record<
+  DateWindowSettings['mode'],
+  DateWindowSettings
+> = {
+  off: { mode: 'off' },
+  'createdAt-sliding': { mode: 'createdAt-sliding', slidingDays: 30 },
+  'createdAt-fixed': {
+    mode: 'createdAt-fixed',
+    fixedFrom: null,
+    fixedTo: null,
+  },
+  'field-range': {
+    mode: 'field-range',
+    validFromSlug: 'valid_from',
+    validUntilSlug: 'valid_until',
+  },
+};
+
 export function DateWindowModeSelector({
   value,
   onChange,
@@ -21,16 +39,7 @@ export function DateWindowModeSelector({
 
   function setMode(mode: DateWindowSettings['mode']): void {
     setErrors({});
-    if (mode === 'off') onChange({ mode: 'off' });
-    else if (mode === 'createdAt-sliding') onChange({ mode, slidingDays: 30 });
-    else if (mode === 'createdAt-fixed')
-      onChange({ mode, fixedFrom: null, fixedTo: null });
-    else
-      onChange({
-        mode,
-        validFromSlug: 'valid_from',
-        validUntilSlug: 'valid_until',
-      });
+    onChange(DEFAULT_SETTINGS_BY_MODE[mode]);
   }
 
   function validateSlug(field: string, slug: string): void {

@@ -239,25 +239,21 @@ export default class GenerateTestDataUseCase {
       const randomVal = Math.floor(Math.random() * 100000);
 
       switch (f.type) {
-        case 'TEXT_SHORT':
-          if (f.format === 'EMAIL') {
-            data[f.slug] = `teste_${randomVal}@exemplo.com`;
-          } else if (f.format === 'URL') {
-            data[f.slug] = `https://exemplo.com/teste_${randomVal}`;
-          } else if (f.format === 'INTEGER') {
-            data[f.slug] = `${randomVal}`;
-          } else if (f.format === 'DECIMAL') {
-            data[f.slug] = `${randomVal}.50`;
-          } else if (f.format === 'PHONE') {
-            data[f.slug] = `(11) 99999-9999`;
-          } else if (f.format === 'CNPJ') {
-            data[f.slug] = `12.345.678/0001-95`;
-          } else if (f.format === 'CPF') {
-            data[f.slug] = `123.456.789-01`;
-          } else {
-            data[f.slug] = `${f.name ?? 'Campo'} Mock ${randomVal}`;
-          }
+        case 'TEXT_SHORT': {
+          const mockByFormat: Record<string, string> = {
+            EMAIL: `teste_${randomVal}@exemplo.com`,
+            URL: `https://exemplo.com/teste_${randomVal}`,
+            INTEGER: `${randomVal}`,
+            DECIMAL: `${randomVal}.50`,
+            PHONE: `(11) 99999-9999`,
+            CNPJ: `12.345.678/0001-95`,
+            CPF: `123.456.789-01`,
+          };
+          data[f.slug] =
+            mockByFormat[f.format ?? ''] ??
+            `${f.name ?? 'Campo'} Mock ${randomVal}`;
           break;
+        }
 
         case 'TEXT_LONG':
           if (f.format === 'RICH_TEXT') {
