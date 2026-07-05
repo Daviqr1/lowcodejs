@@ -10,7 +10,7 @@ import { RelationshipBuilderContractService } from '@application/services/table/
 import type { RelationshipHydratableDoc } from '@application/services/table/relationship-builder-contract.service';
 import { getDataConnection } from '@config/database.config';
 
-interface SubdocArray<T = unknown> extends Array<T> {
+type SubdocArray<T = unknown> = Array<T> & {
   id(
     itemId: string,
   ): (T & { set(d: Record<string, unknown>): void; deleteOne(): void }) | null;
@@ -41,7 +41,7 @@ function isSubdocArray(value: unknown): value is SubdocArray {
   return typeof Reflect.get(value, 'id') === 'function';
 }
 
-interface MongooseDocWithToJSON {
+type MongooseDocWithToJSON = {
   toJSON(opts: { flattenObjectIds: boolean }): Record<string, unknown>;
   _id: { toString(): string };
 }

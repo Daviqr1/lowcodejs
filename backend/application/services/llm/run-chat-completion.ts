@@ -8,7 +8,7 @@ import { createLlmChatProvider } from './create-llm-provider';
 import type { LlmChatMessage, LlmChatTool } from './llm-chat.types';
 import { executeMcpTool } from './mcp-tool-executor';
 
-interface FileData {
+type FileData = {
   type: 'image' | 'pdf';
   filename: string;
   content_type?: string;

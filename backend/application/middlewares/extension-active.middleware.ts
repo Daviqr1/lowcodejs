@@ -9,7 +9,7 @@ import ExtensionMongooseRepository from '@application/repositories/extension/ext
 
 type ExtensionType = ValueOf<typeof E_EXTENSION_TYPE>;
 
-interface ExtensionActiveOptions {
+type ExtensionActiveOptions = {
   pkg: string;
   type: ExtensionType;
   extensionId: string;

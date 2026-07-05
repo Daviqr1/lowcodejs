@@ -3,7 +3,7 @@ import {
   type CsvImportJobPayload,
 } from './csv-import-queue-contract.service';
 
-interface StoredJob extends CsvImportJobPayload {
+type StoredJob = CsvImportJobPayload & {
   id: string;
   enqueuedAt: Date;
 }

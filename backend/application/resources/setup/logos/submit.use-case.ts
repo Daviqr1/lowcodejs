@@ -14,7 +14,7 @@ type Input = {
   LOGO_LARGE_URL: string | null;
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

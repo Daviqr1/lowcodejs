@@ -17,7 +17,7 @@ type Input = {
   EMAIL_PROVIDER_FROM?: string | null;
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

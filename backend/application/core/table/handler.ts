@@ -6,7 +6,7 @@ import type {
   FieldDefinition,
 } from './types';
 
-export interface ExecuteScriptParams {
+export type ExecuteScriptParams = {
   code: string;
   doc: Record<string, unknown>;
   tableSlug: string;

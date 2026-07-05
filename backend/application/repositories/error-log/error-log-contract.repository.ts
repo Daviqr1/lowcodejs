@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 // Usuário (populado) associado ao erro — exibido na coluna "Usuário" da tela.
-export interface IErrorLogUser {
+export type IErrorLogUser = {
   _id: string;
   name: string;
   email: string;
@@ -10,7 +10,7 @@ export interface IErrorLogUser {
 // Entidade de log de ERRO do sistema ("Histórico de erros"). Definida aqui (não
 // em entity.core) para manter o arquivo central enxuto — o model e os demais
 // consumidores importam deste contrato.
-export interface IErrorLog {
+export type IErrorLog = {
   _id: string;
   statusCode: number;
   message: string;
@@ -25,7 +25,7 @@ export interface IErrorLog {
   updatedAt: Date;
 }
 
-export interface ErrorLogCreatePayload {
+export type ErrorLogCreatePayload = {
   statusCode: number;
   message: string;
   cause?: string | null;
@@ -35,7 +35,7 @@ export interface ErrorLogCreatePayload {
   errors?: unknown;
 }
 
-export interface ErrorLogQueryPayload {
+export type ErrorLogQueryPayload = {
   page: number;
   perPage: number;
   search?: string;

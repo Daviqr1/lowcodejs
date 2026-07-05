@@ -7,7 +7,7 @@ import {
   getRequestCookie,
 } from '@application/utils/cookies.util';
 
-interface AuthOptions {
+type AuthOptions = {
   optional?: boolean;
 }
 

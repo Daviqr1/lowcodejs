@@ -1,12 +1,12 @@
 import type { TStorageLocation } from '@application/core/entity.core';
 
-export interface StorageMeta {
+export type StorageMeta = {
   originalName: string;
   mimetype: string;
   location: TStorageLocation;
 }
 
-interface CacheEntry {
+type CacheEntry = {
   meta: StorageMeta | null;
   expiresAt: number;
 }

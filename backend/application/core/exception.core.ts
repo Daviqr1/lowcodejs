@@ -1,4 +1,4 @@
-export interface Exception {
+export type Exception = {
   message: string;
   code: number;
   cause: string;

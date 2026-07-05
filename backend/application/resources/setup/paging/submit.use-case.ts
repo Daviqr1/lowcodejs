@@ -15,7 +15,7 @@ type Input = {
   MODEL_CLONE_TABLES?: string[];
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

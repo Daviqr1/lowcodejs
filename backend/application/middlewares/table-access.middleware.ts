@@ -20,7 +20,7 @@ const ParamsSchema = z.object({
   slug: z.string().trim().min(1).optional(),
 });
 
-interface AccessOptions {
+type AccessOptions = {
   requiredPermission: ValueOf<typeof E_TABLE_PERMISSION>;
 }
 

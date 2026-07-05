@@ -4,7 +4,7 @@ import {
   type EmailResult,
 } from './email-contract.service';
 
-interface StoredEmail extends EmailOptions {
+type StoredEmail = EmailOptions & {
   sentAt: Date;
 }
 

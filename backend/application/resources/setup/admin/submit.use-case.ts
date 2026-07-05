@@ -16,13 +16,13 @@ import { PasswordContractService } from '@application/services/password/password
 
 import { SETUP_STEPS, nextStep } from '../setup.steps';
 
-interface SetupAdminInput {
+type SetupAdminInput = {
   name: string;
   email: string;
   password: string;
 }
 
-interface SetupAdminOutput {
+type SetupAdminOutput = {
   completed: boolean;
   currentStep: string | null;
   hasAdmin: boolean;

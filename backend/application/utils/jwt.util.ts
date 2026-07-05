@@ -7,7 +7,7 @@ import {
   type IUser,
 } from '@application/core/entity.core';
 
-export interface TokenPair {
+export type TokenPair = {
   accessToken: string;
   refreshToken: string;
 }

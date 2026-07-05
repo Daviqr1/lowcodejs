@@ -11,14 +11,14 @@ import {
 } from './error-log-contract.repository';
 
 // Usuário populado via `.populate('user', 'name email')`.
-interface ErrorLogLeanUser {
+type ErrorLogLeanUser = {
   _id: unknown;
   name?: string;
   email?: string;
 }
 
 // Shape via `.lean<T>()` — inclui timestamps e evita `as` no mapeamento.
-interface ErrorLogLean {
+type ErrorLogLean = {
   _id: unknown;
   statusCode: number;
   message: string;

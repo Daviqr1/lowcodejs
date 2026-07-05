@@ -32,7 +32,7 @@ import { Env } from '@start/env';
 
 import { getChatSystemPrompt } from './system-prompt';
 
-interface FileData {
+type FileData = {
   type: 'image' | 'pdf';
   filename: string;
   content_type?: string;
@@ -41,7 +41,7 @@ interface FileData {
   page_count?: number;
 }
 
-interface ClientMessage {
+type ClientMessage = {
   message?: string;
   file?: FileData;
 }

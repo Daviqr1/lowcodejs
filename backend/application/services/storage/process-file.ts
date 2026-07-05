@@ -9,7 +9,7 @@ const IMAGE_MIMETYPES = [
   'image/tiff',
 ];
 
-export interface ProcessedFile {
+export type ProcessedFile = {
   filename: string;
   buffer: Buffer;
   mimetype: string;

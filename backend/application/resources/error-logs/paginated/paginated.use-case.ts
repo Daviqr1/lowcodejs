@@ -12,7 +12,7 @@ import {
 
 import type { ErrorLogPaginatedPayload } from './paginated.validator';
 
-interface Meta {
+type Meta = {
   total: number;
   perPage: number;
   page: number;
@@ -20,7 +20,7 @@ interface Meta {
   firstPage: number;
 }
 
-interface Result {
+type Result = {
   meta: Meta;
   data: IErrorLog[];
 }

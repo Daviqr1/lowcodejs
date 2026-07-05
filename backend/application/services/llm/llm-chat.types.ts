@@ -34,7 +34,7 @@ export type LlmChatCompletionResult = {
   finishReason: 'stop' | 'tool_calls' | 'error';
 };
 
-export interface LlmChatProvider {
+export type LlmChatProvider = {
   complete(params: {
     messages: Array<LlmChatMessage>;
     tools?: Array<LlmChatTool>;

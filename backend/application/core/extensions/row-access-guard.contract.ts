@@ -61,7 +61,7 @@ export type GuardEvalContext = {
   isPrivileged: boolean;
 };
 
-export interface RowAccessGuard {
+export type RowAccessGuard = {
   /** ex: "core:row-access" */
   pluginKey: string;
 

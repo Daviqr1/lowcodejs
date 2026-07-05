@@ -14,7 +14,7 @@ type Input = {
   LOCALE: 'pt-br' | 'en-us';
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

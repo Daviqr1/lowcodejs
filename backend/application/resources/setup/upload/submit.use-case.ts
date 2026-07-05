@@ -15,7 +15,7 @@ type Input = {
   FILE_UPLOAD_MAX_FILES_PER_UPLOAD: number;
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

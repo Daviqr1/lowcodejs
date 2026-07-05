@@ -10,7 +10,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 
 import { SETUP_STEPS } from '../setup.steps';
 
-interface SetupStatusResponse {
+type SetupStatusResponse = {
   completed: boolean;
   currentStep: string | null;
   hasAdmin: boolean;

@@ -20,7 +20,7 @@ type Input = {
   STORAGE_SECRET_KEY?: string;
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;

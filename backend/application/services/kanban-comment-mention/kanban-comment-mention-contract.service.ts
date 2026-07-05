@@ -1,13 +1,13 @@
 /* eslint-disable no-unused-vars */
 import type { IRow, ITable } from '@application/core/entity.core';
 
-export interface NotifyMentionsParams {
+export type NotifyMentionsParams = {
   table: ITable;
   row: IRow;
   actorUserId: string;
 }
 
-export interface NotifyMentionsResult {
+export type NotifyMentionsResult = {
   changed: boolean;
   data?: Record<string, unknown>;
 }

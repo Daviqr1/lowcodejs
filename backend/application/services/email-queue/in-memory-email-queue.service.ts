@@ -3,7 +3,7 @@ import {
   type EmailJobPayload,
 } from './email-queue-contract.service';
 
-interface StoredJob extends EmailJobPayload {
+type StoredJob = EmailJobPayload & {
   id: string;
   enqueuedAt: Date;
 }

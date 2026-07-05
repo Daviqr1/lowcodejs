@@ -68,7 +68,7 @@ function normalizeUserIds(input: unknown): string[] {
   return Array.from(new Set(out));
 }
 
-export interface BuildSandboxParams {
+export type BuildSandboxParams = {
   doc: Record<string, unknown>;
   tableSlug: string;
   fields: FieldDefinition[];

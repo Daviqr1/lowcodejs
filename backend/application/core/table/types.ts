@@ -5,14 +5,14 @@
 
 export type ExecutionErrorType = 'syntax' | 'runtime' | 'timeout' | 'unknown';
 
-export interface ExecutionError {
+export type ExecutionError = {
   type: ExecutionErrorType;
   message: string;
   line?: number;
   column?: number;
 }
 
-export interface ExecutionResult {
+export type ExecutionResult = {
   success: boolean;
   error?: ExecutionError;
   logs: string[];
@@ -29,13 +29,13 @@ export type ExecutionMoment =
   | 'antes_salvar'
   | 'depois_salvar';
 
-export interface TableInfo {
+export type TableInfo = {
   readonly _id: string;
   readonly name: string;
   readonly slug: string;
 }
 
-export interface ExecutionContext {
+export type ExecutionContext = {
   userAction: UserAction;
   executionMoment: ExecutionMoment;
   userId?: string;
@@ -56,7 +56,7 @@ export interface ExecutionContext {
   previous?: Record<string, unknown> | null;
 }
 
-export interface FieldDefinition {
+export type FieldDefinition = {
   slug: string;
   type: string;
   name: string;
@@ -77,20 +77,20 @@ export interface FieldDefinition {
   category?: Array<{ id: string; label: string; children: unknown[] }>;
 }
 
-export interface EmailResult {
+export type EmailResult = {
   success: boolean;
   message: string;
   recipients?: number;
 }
 
-export interface FieldApi {
+export type FieldApi = {
   get(slug: string): unknown;
   set(slug: string, value: unknown): void;
   getAll(): Record<string, unknown>;
   getLabel(slug: string, value?: string): string;
 }
 
-export interface ContextApi {
+export type ContextApi = {
   readonly action: UserAction;
   readonly moment: ExecutionMoment;
   readonly userId: string;
@@ -103,20 +103,20 @@ export interface ContextApi {
   readonly previous: Record<string, unknown> | null;
 }
 
-export interface SandboxUser {
+export type SandboxUser = {
   _id: string;
   name: string;
   email: string;
 }
 
-export interface UsersApi {
+export type UsersApi = {
   /** Resolve ids (string | objeto populado | ObjectId | array deles) em usuários. */
   resolve(ids: unknown): Promise<SandboxUser[]>;
   /** Atalho que retorna apenas os emails válidos e únicos dos ids informados. */
   emails(ids: unknown): Promise<string[]>;
 }
 
-export interface NotifyInput {
+export type NotifyInput = {
   userIds: unknown;
   title: string;
   body?: string | null;
@@ -137,12 +137,12 @@ export interface NotifyInput {
   actorUserId?: string | null;
 }
 
-export interface NotifyApi {
+export type NotifyApi = {
   /** Cria notificações in-app (uma por usuário) e emite via socket. */
   send(input: NotifyInput): Promise<{ success: boolean; recipients: number }>;
 }
 
-export interface EmailApi {
+export type EmailApi = {
   send(to: string[], subject: string, body: string): Promise<EmailResult>;
   sendTemplate(
     to: string[],
@@ -152,7 +152,7 @@ export interface EmailApi {
   ): Promise<EmailResult>;
 }
 
-export interface UtilsApi {
+export type UtilsApi = {
   today(): Date;
   now(): Date;
   formatDate(date: Date, format?: string): string;
@@ -160,7 +160,7 @@ export interface UtilsApi {
   uuid(): string;
 }
 
-export interface SandboxGlobals {
+export type SandboxGlobals = {
   field: FieldApi;
   context: ContextApi;
   email: EmailApi;

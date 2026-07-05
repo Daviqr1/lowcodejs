@@ -36,7 +36,7 @@ function resolvePlacementSlots(
   return [];
 }
 
-export interface LoadExtensionsResult {
+export type LoadExtensionsResult = {
   loaded: number;
   invalid: number;
   unavailable: number;

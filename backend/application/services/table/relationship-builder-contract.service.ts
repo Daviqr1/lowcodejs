@@ -10,7 +10,7 @@ import type { RelationshipLinkSide } from '@application/repositories/relationshi
 
 // Documento Mongoose minimo necessario para hidratar o path embedded a partir
 // dos links (sem depender do tipo concreto do model dinamico).
-export interface RelationshipHydratableDoc {
+export type RelationshipHydratableDoc = {
   _id: { toString(): string };
   set(path: string, value: unknown): void;
 }

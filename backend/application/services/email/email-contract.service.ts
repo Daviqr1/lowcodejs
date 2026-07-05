@@ -1,12 +1,12 @@
 /* eslint-disable no-unused-vars */
-export interface EmailOptions {
+export type EmailOptions = {
   to: string[];
   subject: string;
   body: string;
   from?: string;
 }
 
-export interface EmailResult {
+export type EmailResult = {
   success: boolean;
   message: string;
   testUrl?: string | boolean;

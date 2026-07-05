@@ -6,12 +6,12 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { ErrorLogContractRepository } from '@application/repositories/error-log/error-log-contract.repository';
 
-interface Input {
+type Input = {
   id: string;
   resolved: boolean;
 }
 
-interface Result {
+type Result = {
   id: string;
   resolved: boolean;
 }

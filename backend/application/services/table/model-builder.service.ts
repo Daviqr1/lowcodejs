@@ -16,9 +16,10 @@ import { getDataConnection } from '@config/database.config';
 import { ModelBuilderContractService } from './model-builder-contract.service';
 import { SchemaBuilderContractService } from './schema-builder-contract.service';
 
-export interface Entity extends Omit<IRow, '_id'>, mongoose.Document {
-  _id: mongoose.Types.ObjectId;
-}
+export type Entity = Omit<IRow, '_id'> &
+  mongoose.Document & {
+    _id: mongoose.Types.ObjectId;
+  };
 
 type BuildTable = Optional<
   ITable,

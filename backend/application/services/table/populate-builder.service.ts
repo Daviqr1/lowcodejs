@@ -39,7 +39,7 @@ type RelationshipTableDoc = ModelDocument<typeof Table>;
  * ramo irmão — O(branching^depth). Com eles cada tabela é buscada/compilada 1×
  * e cada subárvore `(tableId, depth)` é montada 1× e reusada — O(tabelas×depth).
  */
-interface PopulateBuildCaches {
+type PopulateBuildCaches = {
   table: Map<string, RelationshipTableDoc | null>;
   model: Map<string, RelationModel>;
   subtree: Map<string, mongoose.PopulateOptions[]>;
