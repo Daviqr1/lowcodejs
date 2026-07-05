@@ -6,6 +6,7 @@ import {
   E_TABLE_STYLE,
   type IField,
   type IGroupConfiguration,
+  type Merge,
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
@@ -18,7 +19,7 @@ import { groupItems } from '@test/helpers/row-data.helper';
 import ForumMessageUseCase from './forum-message.use-case';
 
 function makeField(
-  overrides: Partial<IField> & Pick<IField, 'name' | 'slug' | 'type'>,
+  overrides: Merge<Partial<IField>, Pick<IField, 'name' | 'slug' | 'type'>>,
 ): IField {
   return {
     _id: crypto.randomUUID(),

@@ -371,7 +371,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
   // ── Group rows (subdocumentos) ────────────────────────────
 
   async addGroupItem(
-    payload: RowGroupItemPayload & { data: Record<string, unknown> },
+    payload: Merge<RowGroupItemPayload, { data: Record<string, unknown> }>,
   ): Promise<IRow> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);
@@ -418,7 +418,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
   }
 
   async deleteGroupItem(
-    payload: RowGroupItemPayload & { itemId: string },
+    payload: Merge<RowGroupItemPayload, { itemId: string }>,
   ): Promise<boolean> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);

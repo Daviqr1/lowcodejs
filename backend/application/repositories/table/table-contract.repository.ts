@@ -39,8 +39,8 @@ export type TableCreatePayload = Merge<
 >;
 
 export type TableUpdatePayload = Merge<
-  Pick<ITable, '_id'>,
-  Partial<Omit<TableCreatePayload, 'owner'>> & {
+  Merge<Pick<ITable, '_id'>, Partial<Omit<TableCreatePayload, 'owner'>>>,
+  {
     owner?: string;
     trashed?: boolean;
     trashedAt?: Date | null;

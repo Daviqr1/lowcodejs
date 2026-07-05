@@ -7,6 +7,7 @@ import {
   type IField,
   type IGroupConfiguration,
   type ITable,
+  type Merge,
 } from '@application/core/entity.core';
 import { makeRow, makeUser } from '@application/repositories/entity-fixtures';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -17,7 +18,7 @@ import { groupItems } from '@test/helpers/row-data.helper';
 import KanbanCommentMentionService from './kanban-comment-mention.service';
 
 function makeField(
-  partial: Partial<IField> & Pick<IField, 'slug' | 'type'>,
+  partial: Merge<Partial<IField>, Pick<IField, 'slug' | 'type'>>,
 ): IField {
   return {
     _id: partial._id ?? `field-${partial.slug}`,

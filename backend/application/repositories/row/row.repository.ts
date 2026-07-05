@@ -413,7 +413,7 @@ export default class RowMongooseRepository implements RowContractRepository {
   // ── Group rows (subdocumentos) ────────────────────────────
 
   async addGroupItem(
-    payload: RowGroupItemPayload & { data: Record<string, unknown> },
+    payload: Merge<RowGroupItemPayload, { data: Record<string, unknown> }>,
   ): Promise<IRow> {
     const model = await this.getModel(payload.table);
     const populate = await this.getPopulate(payload.table);
@@ -467,7 +467,7 @@ export default class RowMongooseRepository implements RowContractRepository {
   }
 
   async deleteGroupItem(
-    payload: RowGroupItemPayload & { itemId: string },
+    payload: Merge<RowGroupItemPayload, { itemId: string }>,
   ): Promise<boolean> {
     const model = await this.getModel(payload.table);
 

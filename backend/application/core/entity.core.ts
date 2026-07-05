@@ -12,10 +12,13 @@
  * Optional<Post, 'name' | 'email>
  * ```
  */
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 export type Merge<T, U> = {
   [K in keyof (T & U)]: (T & U)[K];
 };
+export type Optional<T, K extends keyof T> = Merge<
+  Pick<Partial<T>, K>,
+  Omit<T, K>
+>;
 
 export type ValueOf<T> = T[keyof T];
 

@@ -144,7 +144,7 @@ export abstract class RowContractRepository {
   // ── Group rows (subdocumentos) ────────────────────────────
 
   abstract addGroupItem(
-    payload: RowGroupItemPayload & { data: Record<string, unknown> },
+    payload: Merge<RowGroupItemPayload, { data: Record<string, unknown> }>,
   ): Promise<IRow>;
 
   abstract updateGroupItem(
@@ -158,7 +158,7 @@ export abstract class RowContractRepository {
   ): Promise<IRow>;
 
   abstract deleteGroupItem(
-    payload: RowGroupItemPayload & { itemId: string },
+    payload: Merge<RowGroupItemPayload, { itemId: string }>,
   ): Promise<boolean>;
 
   // ── Atomic update (forum-message / backfill) ──────────────
