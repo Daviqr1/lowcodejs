@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   E_REACTION_TYPE,
   FindOptions,

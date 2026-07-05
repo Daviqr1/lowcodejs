@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type mongoose from 'mongoose';
 
 import type { ITable, Optional } from '@application/core/entity.core';

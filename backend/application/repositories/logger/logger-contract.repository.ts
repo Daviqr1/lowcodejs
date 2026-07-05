@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   E_LOGGER_ACTION_TYPE,
   E_LOGGER_OBJECT_TYPE,

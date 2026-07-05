@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { Either } from '@application/core/either.core';
 import type {
   E_RELATIONSHIP_ON_DELETE,

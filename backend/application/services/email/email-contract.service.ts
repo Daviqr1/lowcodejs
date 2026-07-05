@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 export type EmailOptions = {
   to: string[];
   subject: string;

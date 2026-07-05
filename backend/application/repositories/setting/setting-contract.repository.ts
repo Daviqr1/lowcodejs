@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { ISetting, Merge } from '@application/core/entity.core';
 
 export type SettingUpdatePayload = Partial<

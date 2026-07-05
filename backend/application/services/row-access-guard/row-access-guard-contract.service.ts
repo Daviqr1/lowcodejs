@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { IRow, ITable } from '@application/core/entity.core';
 import type {
   GuardEvalContext,

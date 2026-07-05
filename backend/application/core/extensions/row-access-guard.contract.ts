@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Row Access Guard — Contract v3 (group-keyed)
  *

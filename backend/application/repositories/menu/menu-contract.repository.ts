@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FindOptions, IMenu, Merge } from '@application/core/entity.core';
 
 export type MenuCreatePayload = Merge<

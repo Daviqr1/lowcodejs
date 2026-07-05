@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { TStorageLocation } from '@application/core/entity.core';

@@ -77,6 +77,21 @@ export default [
     },
   },
   {
+    // code-style: contratos abstratos declaram params nomeados nas assinaturas
+    // (documentam a interface) que nao sao usados no corpo — nao ha corpo. Este
+    // override desliga no-unused-vars so nesses arquivos, substituindo o
+    // /* eslint-disable no-unused-vars */ de topo antes espalhado em cada um.
+    files: [
+      '**/*-contract.repository.ts',
+      '**/*-contract.service.ts',
+      '**/*.contract.ts',
+    ],
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+  {
     ignores: ['node_modules', 'build'],
   },
 ];

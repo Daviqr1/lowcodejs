@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { RowTableContext } from '@application/repositories/row/row-contract.repository';
 
 export type FieldValidationOptions = {

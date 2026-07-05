@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { E_FIELD_VALIDATION, IField, ValueOf } from '../entity.core';
 
 // Campo minimo que uma regra inspeciona para decidir elegibilidade. Usado tanto

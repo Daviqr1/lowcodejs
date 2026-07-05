@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { IRelationshipLink } from '@application/core/entity.core';
 
 export type RelationshipLinkSide = 'source' | 'target';

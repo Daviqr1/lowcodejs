@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { SortOrder } from 'mongoose';
 import type mongoose from 'mongoose';
 

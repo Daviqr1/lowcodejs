@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { Either } from '@application/core/either.core';
 import type { ITable } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';

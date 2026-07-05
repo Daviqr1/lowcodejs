@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 // Usuário (populado) associado ao erro — exibido na coluna "Usuário" da tela.
 export type IErrorLogUser = {
   _id: string;

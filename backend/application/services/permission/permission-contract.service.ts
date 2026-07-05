@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { ITable, IUser, ValueOf } from '@application/core/entity.core';
