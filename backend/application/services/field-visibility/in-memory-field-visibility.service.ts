@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FieldVisibilityInput } from './field-visibility-contract.service';
 import { FieldVisibilityContractService } from './field-visibility-contract.service';
 

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { type FastifyRequest } from 'fastify';
 import { getInstanceByToken } from 'fastify-decorators';
 

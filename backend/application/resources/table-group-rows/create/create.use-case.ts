@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -87,6 +86,7 @@ export default class GroupRowCreateUseCase {
       await this.rowPasswordService.hash(payload, groupFields);
 
       // Remove campos de controle do payload para que o Mongoose gere um novo _id
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- desestrutura para omitir chaves do rest
       const { _id, slug, rowId, groupSlug, ...itemData } = payload;
 
       const row = await this.rowRepository.addGroupItem({

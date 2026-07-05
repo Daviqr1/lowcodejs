@@ -24,6 +24,21 @@ export default [
       ...js.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
       'prettier/prettier': 'error',
+      // A regra base `no-unused-vars` gera falso-positivo em parameter
+      // properties do TS (`constructor(private readonly x)` — usado via
+      // `this.x`). Desligada em favor da versao TS-aware, que entende
+      // parameter properties. Params/vars/erros intencionalmente nao usados
+      // usam prefixo `_`. Substitui o /* eslint-disable no-unused-vars */ de
+      // topo antes espalhado nos impls.
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import mongoose from 'mongoose';
 
@@ -528,6 +527,7 @@ export default class RowMongooseRepository implements RowContractRepository {
     creator?: string,
   ): Promise<IRow> {
     const model = await this.getModel(table);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- desestrutura para omitir chaves do rest
     const { _id, id, createdAt, updatedAt, ...data } = row;
     const doc = new model(data);
     if (creator) {

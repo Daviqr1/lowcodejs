@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { ExecutionResult } from '@application/core/table/types';
 
 import type { ScriptExecutionInput } from './script-execution-contract.service';

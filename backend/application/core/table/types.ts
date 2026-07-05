@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Types for the JavaScript code executor
  */

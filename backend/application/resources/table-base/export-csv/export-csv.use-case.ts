@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
@@ -11,7 +10,7 @@ import {
 } from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { ITable, IUser } from '@application/core/entity.core';
+import type { ITable } from '@application/core/entity.core';
 import { E_TABLE_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {

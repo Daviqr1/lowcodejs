@@ -16,7 +16,6 @@
  * Dependências (fieldRepo/tableRepo/rowRepo/builders) chegam por constructor
  * injection (@Service + di-registry) — sem setter global nem wiring manual.
  */
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import { left, right } from '@application/core/either.core';

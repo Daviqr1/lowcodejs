@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * BullMQ Worker for storage migration / cleanup jobs.
  *

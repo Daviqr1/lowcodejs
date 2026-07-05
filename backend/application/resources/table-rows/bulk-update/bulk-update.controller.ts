@@ -16,7 +16,6 @@ import {
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: BulkUpdateUseCase = getInstanceByToken(
       BulkUpdateUseCase,
     ),

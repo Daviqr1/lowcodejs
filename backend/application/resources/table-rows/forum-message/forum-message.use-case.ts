@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import { randomUUID } from 'node:crypto';
 
@@ -9,7 +8,6 @@ import {
   E_TABLE_STYLE,
   type IField,
   type IGroupConfiguration,
-  type IRow,
   type ITable,
 } from '@application/core/entity.core';
 import { E_NOTIFICATION_TYPE } from '@application/core/entity.core';

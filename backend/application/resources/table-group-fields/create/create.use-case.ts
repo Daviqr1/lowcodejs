@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -6,7 +5,6 @@ import { left, right } from '@application/core/either.core';
 import {
   E_FIELD_TYPE,
   type IField as Entity,
-  type IField,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldSlug } from '@application/core/field-slug.core';

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import type { RootFilterQuery, SortOrder } from 'mongoose';
 import mongoose from 'mongoose';
@@ -51,8 +50,8 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
     }: Partial<Query>,
     fields: IField[] = [],
     groups?: IGroupConfiguration[],
-    tableSlug?: string,
-    conn?: mongoose.Connection,
+    _tableSlug?: string,
+    _conn?: mongoose.Connection,
   ): Promise<Query> {
     let query: Query = {
       trashedAt: null,

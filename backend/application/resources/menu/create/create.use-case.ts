@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import slugify from 'slugify';
 
@@ -12,10 +11,7 @@ import {
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
-import {
-  MenuContractRepository,
-  type MenuCreatePayload as RepositoryMenuCreatePayload,
-} from '@application/repositories/menu/menu-contract.repository';
+import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 import type { MenuCreatePayload } from './create.validator';

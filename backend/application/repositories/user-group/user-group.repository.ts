@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import { E_ROLE, type IGroup } from '@application/core/entity.core';

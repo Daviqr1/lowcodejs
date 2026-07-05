@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import yaml from 'js-yaml';
 import slugify from 'slugify';
@@ -9,7 +8,6 @@ import { left, right } from '@application/core/either.core';
 import {
   buildDefaultTablePermissions,
   buildFieldPermissions,
-  E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_ROLE,
   E_TABLE_PROFILE,
@@ -18,7 +16,6 @@ import {
   FIELD_NATIVE_LIST,
   type FieldCreatePayload,
   type IField,
-  type ValueOf,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldSlug } from '@application/core/field-slug.core';

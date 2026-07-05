@@ -1,7 +1,4 @@
-/* eslint-disable no-unused-vars */
 import type {
-  E_TABLE_STYLE,
-  E_TABLE_TYPE,
   FindOptions,
   IField,
   IStorage,

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, PUT, getInstanceByToken } from 'fastify-decorators';
 import mongoose from 'mongoose';
@@ -134,10 +133,6 @@ async function getRelationshipOptionLabels(
   }
 
   return labels;
-}
-
-function getRowValue(row: Record<string, unknown>, fieldSlug: string): unknown {
-  return row[fieldSlug];
 }
 
 function toValueArray(value: unknown): string[] {

@@ -14,7 +14,6 @@ import { UserBulkUpdateBodyValidator } from './bulk-update.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserBulkUpdateUseCase = getInstanceByToken(
       UserBulkUpdateUseCase,
     ),

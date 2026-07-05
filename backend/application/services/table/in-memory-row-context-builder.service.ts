@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { IField } from '@application/core/entity.core';
 
 import { RowContextBuilderContractService } from './row-context-builder-contract.service';

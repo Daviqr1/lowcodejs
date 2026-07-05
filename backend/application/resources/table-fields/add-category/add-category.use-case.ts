@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { randomUUID } from 'crypto';
 import { Service } from 'fastify-decorators';
 

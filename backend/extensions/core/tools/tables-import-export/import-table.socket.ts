@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Socket.IO namespace `/table-import`.
  *

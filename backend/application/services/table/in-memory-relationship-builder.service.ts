@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { Either } from '@application/core/either.core';
 import { right } from '@application/core/either.core';
 import type {

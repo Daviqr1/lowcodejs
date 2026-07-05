@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
 import { createReadStream, existsSync } from 'node:fs';

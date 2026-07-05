@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 // Specs constroem mocks parciais de entidades do domínio via asserção; tipá-los
 // por completo aqui seria só ruído de teste.
 import { describe, it, expect, beforeEach } from 'vitest';

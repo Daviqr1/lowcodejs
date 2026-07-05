@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -11,7 +10,6 @@ import type {
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
-import type { RelationshipLinkSide } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';

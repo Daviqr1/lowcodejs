@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
@@ -85,7 +84,7 @@ export default class {
       setActiveSession(response, refreshTokenDecoded.sub, { ...tokens });
 
       return response.status(200).send();
-    } catch (error) {
+    } catch (_error) {
       return response.status(401).send({
         message: 'Invalid or expired refresh token',
         code: 401,

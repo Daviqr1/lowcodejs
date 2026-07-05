@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { AsyncParser } from '@json2csv/node';
 import { Readable } from 'node:stream';
 

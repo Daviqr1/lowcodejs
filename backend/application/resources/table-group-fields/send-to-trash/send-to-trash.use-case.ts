@@ -1,11 +1,9 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
-  type IField,
   type IField as Entity,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';

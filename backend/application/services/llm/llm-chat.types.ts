@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /** Formato interno alinhado ao Chat Completions (OpenAI). */
 export type LlmChatContentPart =
   | { type: 'text'; text: string }

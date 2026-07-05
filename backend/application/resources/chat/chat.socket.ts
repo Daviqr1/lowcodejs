@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Socket.IO handler para o chat com IA.
  * - Uma sessão MCP persistente por conexão

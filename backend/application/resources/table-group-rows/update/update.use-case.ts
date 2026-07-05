@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -143,10 +142,10 @@ export default class GroupRowUpdateUseCase {
 
       // Atualiza o subdocumento com os dados do payload
       const {
-        slug,
-        rowId,
-        groupSlug,
-        itemId,
+        slug: _slug,
+        rowId: _rowId,
+        groupSlug: _groupSlug,
+        itemId: _itemId,
         __actorUserId,
         __ownOnly,
         ...itemData
