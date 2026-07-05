@@ -449,7 +449,38 @@ minimo com comentario; nunca introduzir `as`/`any` novo.
 
 Modelar tipos com `type` (objeto, uniao, mapeado). `interface` so em _module
 augmentation_ (`declare module`), onde o TS exige merging (ex.:
-`lib/tanstack-table.d.ts`). Ver o skill `code-style`.
+`lib/tanstack-table.d.ts` e `interface Register` do router). Ver o skill
+`code-style`.
+
+### 5. Combinar tipos com `Merge`, nao `&`
+
+Para juntar dois tipos-objeto, usar `Merge<A, B>` (de `lib/interfaces.ts`) no
+lugar da intersecao `A & B` — mostra o tipo final flat no editor. 3+ partes
+aninham: `Merge<Merge<A, B>, C>`.
+
+```ts
+// Evitar
+type Props = Pick<Omit<UseMutationOptions<…>, …>, 'onError'> & { onSuccess?: … };
+// Preferir
+type Props = Merge<Pick<Omit<UseMutationOptions<…>, …>, 'onError'>, { onSuccess?: … }>;
+```
+
+Excecao: intersecao com `Array<T>` mantem `&`; uniao no operando esquerdo (ex.:
+`MenuItem & { … }` onde `MenuItem` e uniao) tambem fica `&` — `Merge` mapeia
+`keyof` e destroi a uniao discriminada.
+
+### 6. Lookup object no lugar de if/else-if 3+
+
+Quando mapeia um discriminante (chave/`type`/enum) para um valor ou handler em
+**3+ casos**, usar um lookup object no lugar da cadeia de `if`/`else if`. 1–2
+casos mantem `if`; logica booleana/narrowing (`Array.isArray`, `typeof`) fica
+`if`.
+
+```ts
+// Preferir
+const SETTINGS_BY_MODE: Record<Mode, Settings> = { off: …, sliding: …, fixed: … };
+onChange(SETTINGS_BY_MODE[mode]);
+```
 
 ### Tipagem de registros (rows)
 

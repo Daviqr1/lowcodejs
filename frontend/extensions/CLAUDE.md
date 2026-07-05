@@ -51,10 +51,10 @@ React que aceita esse contexto. Catálogo completo em
 import { Button } from '@/components/ui/button';
 import type { ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   table: ITable;
   selection: Array<string>;
-}
+};
 
 export default function ExportPdfPlugin({ table, selection }: Props) {
   return <Button onClick={...}>Baixar PDF</Button>;

@@ -298,6 +298,43 @@ spec, limitação de tipagem de lib), manter o mínimo com
 `// eslint-disable-next-line @typescript-eslint/consistent-type-assertions` e uma
 justificativa curta em PT-BR — nunca introduzir `as`/`any` novo silencioso.
 
+### 4. Sempre `type`, nunca `interface`
+
+Modelar tipos com `type` (objeto, união, mapeado). `interface` só em _module
+augmentation_ (`declare module`), onde o TS exige merging — não é escolha de
+estilo, é limite da linguagem. No código da aplicação, `interface X {}` vira
+`type X = {}`; `interface A extends B {}` vira `type A = Merge<B, {}>`.
+
+### 5. Combinar tipos com `Merge`, não `&`
+
+Para juntar dois tipos-objeto, usar `Merge<A, B>` (de
+`application/core/entity.core.ts`) no lugar da interseção `A & B` — mostra o tipo
+final flat no editor. 3+ partes aninham: `Merge<Merge<A, B>, C>`.
+
+```ts
+// Evitar
+type Payload = SomePayload & { user?: string };
+// Preferir
+type Payload = Merge<SomePayload, { user?: string }>;
+```
+
+Exceção: interseção com `Array<T>` (`Array<T> & { extra }`) mantém `&` — `Merge`
+mapeia as chaves e destrói a semântica de array (ex.: `SubdocArray` em
+`row.repository.ts`). Uniões (`|`) não são interseção e seguem normais.
+
+### 6. Lookup object no lugar de if/else-if 3+
+
+Quando mapeia um discriminante (chave/`type`/enum) para um valor ou handler em
+**3+ casos**, usar um lookup object no lugar da cadeia de `if`/`else if` ou
+`switch`. 1–2 casos mantêm `if`; lógica booleana arbitrária (ranges, condições
+combinadas) fica `if`.
+
+```ts
+// Preferir
+const MOCK_BY_FORMAT: Record<string, string> = { EMAIL: '…', URL: '…', CPF: '…' };
+data[slug] = MOCK_BY_FORMAT[format] ?? fallback;
+```
+
 Commits: Conventional Commits atômicos em pt-BR (`refactor(escopo): ...`).
 
 ## Comandos CLI
