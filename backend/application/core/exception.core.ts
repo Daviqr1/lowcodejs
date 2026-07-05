@@ -3,7 +3,7 @@ export type Exception = {
   code: number;
   cause: string;
   errors?: Record<string, string>;
-}
+};
 
 export default class HTTPException extends Error {
   public readonly code: number;

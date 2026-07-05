@@ -15,7 +15,7 @@ type SetupStatusResponse = {
   currentStep: string | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
-}
+};
 
 type Response = Either<HTTPException, SetupStatusResponse>;
 

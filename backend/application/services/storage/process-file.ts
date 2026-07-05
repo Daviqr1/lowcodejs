@@ -15,7 +15,7 @@ export type ProcessedFile = {
   mimetype: string;
   originalName: string;
   size: number;
-}
+};
 
 export async function processFile(
   part: MultipartFile,

@@ -15,7 +15,7 @@ type FileData = {
   data_uri?: string;
   extracted_text?: string;
   page_count?: number;
-}
+};
 
 function buildUserMessage(userInput: string, file?: FileData): LlmChatMessage {
   if (!file) {

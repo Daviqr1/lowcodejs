@@ -9,12 +9,12 @@ import { ErrorLogContractRepository } from '@application/repositories/error-log/
 type Input = {
   id: string;
   resolved: boolean;
-}
+};
 
 type Result = {
   id: string;
   resolved: boolean;
-}
+};
 
 type Response = Either<HTTPException, Result>;
 

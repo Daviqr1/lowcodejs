@@ -5,7 +5,7 @@ export type IErrorLogUser = {
   _id: string;
   name: string;
   email: string;
-}
+};
 
 // Entidade de log de ERRO do sistema ("Histórico de erros"). Definida aqui (não
 // em entity.core) para manter o arquivo central enxuto — o model e os demais
@@ -23,7 +23,7 @@ export type IErrorLog = {
   resolvedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
 export type ErrorLogCreatePayload = {
   statusCode: number;
@@ -33,7 +33,7 @@ export type ErrorLogCreatePayload = {
   url: string;
   user_id?: string | null;
   errors?: unknown;
-}
+};
 
 export type ErrorLogQueryPayload = {
   page: number;
@@ -48,7 +48,7 @@ export type ErrorLogQueryPayload = {
   resolved?: boolean;
   // Ordenação por coluna ({ createdAt: -1 } é o default no repositório).
   sort?: Record<string, 1 | -1>;
-}
+};
 
 export abstract class ErrorLogContractRepository {
   // Gravação é fire-and-forget (o hook não usa o retorno) — por isso void.

@@ -15,7 +15,7 @@ type ErrorLogLeanUser = {
   _id: unknown;
   name?: string;
   email?: string;
-}
+};
 
 // Shape via `.lean<T>()` — inclui timestamps e evita `as` no mapeamento.
 type ErrorLogLean = {
@@ -31,7 +31,7 @@ type ErrorLogLean = {
   resolvedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
 function buildFilter(payload: ErrorLogQueryPayload): Record<string, unknown> {
   // Nada anônimo: ignora qualquer log sem usuário (inclusive registros legados

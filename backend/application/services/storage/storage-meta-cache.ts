@@ -4,12 +4,12 @@ export type StorageMeta = {
   originalName: string;
   mimetype: string;
   location: TStorageLocation;
-}
+};
 
 type CacheEntry = {
   meta: StorageMeta | null;
   expiresAt: number;
-}
+};
 
 const TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();

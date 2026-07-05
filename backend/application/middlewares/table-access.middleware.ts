@@ -22,7 +22,7 @@ const ParamsSchema = z.object({
 
 type AccessOptions = {
   requiredPermission: ValueOf<typeof E_TABLE_PERMISSION>;
-}
+};
 
 /**
  * Middleware de acesso a tabelas.

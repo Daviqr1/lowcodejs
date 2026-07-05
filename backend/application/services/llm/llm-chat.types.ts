@@ -39,4 +39,4 @@ export type LlmChatProvider = {
     messages: Array<LlmChatMessage>;
     tools?: Array<LlmChatTool>;
   }): Promise<LlmChatCompletionResult>;
-}
+};

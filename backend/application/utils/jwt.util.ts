@@ -10,7 +10,7 @@ import {
 export type TokenPair = {
   accessToken: string;
   refreshToken: string;
-}
+};
 
 export const createTokens = async (
   user: Pick<IUser, '_id' | 'email' | 'group'>,

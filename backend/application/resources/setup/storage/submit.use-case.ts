@@ -25,7 +25,7 @@ type SetupStepOutput = {
   currentStep: SetupStep | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
-}
+};
 
 type Response = Either<HTTPException, SetupStepOutput>;
 

@@ -134,4 +134,4 @@ export type RowAccessGuard = {
     currentRow: IRow | null,
     settings: Record<string, unknown>,
   ): Record<string, unknown>;
-}
+};

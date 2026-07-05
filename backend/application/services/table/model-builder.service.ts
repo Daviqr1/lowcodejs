@@ -7,6 +7,7 @@ import type {
   IGroupConfiguration,
   IRow,
   ITable,
+  Merge,
   Optional,
 } from '@application/core/entity.core';
 import { executeScript } from '@application/core/table/handler';
@@ -16,10 +17,10 @@ import { getDataConnection } from '@config/database.config';
 import { ModelBuilderContractService } from './model-builder-contract.service';
 import { SchemaBuilderContractService } from './schema-builder-contract.service';
 
-export type Entity = Omit<IRow, '_id'> &
-  mongoose.Document & {
-    _id: mongoose.Types.ObjectId;
-  };
+export type Entity = Merge<
+  Merge<Omit<IRow, '_id'>, mongoose.Document>,
+  { _id: mongoose.Types.ObjectId }
+>;
 
 type BuildTable = Optional<
   ITable,

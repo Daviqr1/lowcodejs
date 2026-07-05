@@ -10,11 +10,13 @@ import { RelationshipBuilderContractService } from '@application/services/table/
 import type { RelationshipHydratableDoc } from '@application/services/table/relationship-builder-contract.service';
 import { getDataConnection } from '@config/database.config';
 
+// Interseção com Array<T>: mantém `&` (Merge mapearia as chaves e destruiria a
+// semântica de array). Exceção documentada no skill code-style.
 type SubdocArray<T = unknown> = Array<T> & {
   id(
     itemId: string,
   ): (T & { set(d: Record<string, unknown>): void; deleteOne(): void }) | null;
-}
+};
 
 import type {
   RowBulkDeletePayload,
@@ -44,7 +46,7 @@ function isSubdocArray(value: unknown): value is SubdocArray {
 type MongooseDocWithToJSON = {
   toJSON(opts: { flattenObjectIds: boolean }): Record<string, unknown>;
   _id: { toString(): string };
-}
+};
 
 function hasToJSON(value: unknown): value is MongooseDocWithToJSON {
   return isRecord(value) && typeof value['toJSON'] === 'function';

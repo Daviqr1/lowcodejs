@@ -10,13 +10,13 @@ export type ExecutionError = {
   message: string;
   line?: number;
   column?: number;
-}
+};
 
 export type ExecutionResult = {
   success: boolean;
   error?: ExecutionError;
   logs: string[];
-}
+};
 
 export type UserAction =
   | 'novo_registro'
@@ -33,7 +33,7 @@ export type TableInfo = {
   readonly _id: string;
   readonly name: string;
   readonly slug: string;
-}
+};
 
 export type ExecutionContext = {
   userAction: UserAction;
@@ -54,7 +54,7 @@ export type ExecutionContext = {
    * novas mensagens adicionadas a um grupo).
    */
   previous?: Record<string, unknown> | null;
-}
+};
 
 export type FieldDefinition = {
   slug: string;
@@ -75,20 +75,20 @@ export type FieldDefinition = {
   dropdown?: Array<{ id: string; label: string; color?: string | null }>;
   // Para CATEGORY
   category?: Array<{ id: string; label: string; children: unknown[] }>;
-}
+};
 
 export type EmailResult = {
   success: boolean;
   message: string;
   recipients?: number;
-}
+};
 
 export type FieldApi = {
   get(slug: string): unknown;
   set(slug: string, value: unknown): void;
   getAll(): Record<string, unknown>;
   getLabel(slug: string, value?: string): string;
-}
+};
 
 export type ContextApi = {
   readonly action: UserAction;
@@ -101,20 +101,20 @@ export type ContextApi = {
   readonly reentrant: boolean;
   /** Registro antes do save (update) ou null (create). */
   readonly previous: Record<string, unknown> | null;
-}
+};
 
 export type SandboxUser = {
   _id: string;
   name: string;
   email: string;
-}
+};
 
 export type UsersApi = {
   /** Resolve ids (string | objeto populado | ObjectId | array deles) em usuários. */
   resolve(ids: unknown): Promise<SandboxUser[]>;
   /** Atalho que retorna apenas os emails válidos e únicos dos ids informados. */
   emails(ids: unknown): Promise<string[]>;
-}
+};
 
 export type NotifyInput = {
   userIds: unknown;
@@ -135,12 +135,12 @@ export type NotifyInput = {
   type?: string;
   /** Ator excluído dos destinatários. Default: context.userId. */
   actorUserId?: string | null;
-}
+};
 
 export type NotifyApi = {
   /** Cria notificações in-app (uma por usuário) e emite via socket. */
   send(input: NotifyInput): Promise<{ success: boolean; recipients: number }>;
-}
+};
 
 export type EmailApi = {
   send(to: string[], subject: string, body: string): Promise<EmailResult>;
@@ -150,7 +150,7 @@ export type EmailApi = {
     message: string,
     data?: Record<string, unknown>,
   ): Promise<EmailResult>;
-}
+};
 
 export type UtilsApi = {
   today(): Date;
@@ -158,7 +158,7 @@ export type UtilsApi = {
   formatDate(date: Date, format?: string): string;
   sha256(text: string): string;
   uuid(): string;
-}
+};
 
 export type SandboxGlobals = {
   field: FieldApi;
@@ -176,4 +176,4 @@ export type SandboxGlobals = {
   };
   // Builtins will be added dynamically
   [key: string]: unknown;
-}
+};

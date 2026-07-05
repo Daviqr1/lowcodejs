@@ -1,12 +1,12 @@
+import type { Merge } from '@application/core/entity.core';
+
 import {
   EmailContractService,
   type EmailOptions,
   type EmailResult,
 } from './email-contract.service';
 
-type StoredEmail = EmailOptions & {
-  sentAt: Date;
-}
+type StoredEmail = Merge<EmailOptions, { sentAt: Date }>;
 
 export default class InMemoryEmailService implements EmailContractService {
   private emails: StoredEmail[] = [];

@@ -13,7 +13,7 @@ import type { RelationshipLinkSide } from '@application/repositories/relationshi
 export type RelationshipHydratableDoc = {
   _id: { toString(): string };
   set(path: string, value: unknown): void;
-}
+};
 
 // Um campo RELATIONSHIP do payload de escrita ja separado da row, com o
 // conjunto de ids desejado (fonte da reconciliacao de links).

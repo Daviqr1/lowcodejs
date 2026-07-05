@@ -5,12 +5,12 @@ export type NotifyMentionsParams = {
   table: ITable;
   row: IRow;
   actorUserId: string;
-}
+};
 
 export type NotifyMentionsResult = {
   changed: boolean;
   data?: Record<string, unknown>;
-}
+};
 
 export abstract class KanbanCommentMentionContractService {
   abstract notifyNewMentions(

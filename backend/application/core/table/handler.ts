@@ -13,7 +13,7 @@ export type ExecuteScriptParams = {
   fields: FieldDefinition[];
   context: ExecutionContext;
   timeout?: number;
-}
+};
 
 /**
  * Main entry point for executing user scripts

@@ -74,7 +74,7 @@ export type BuildSandboxParams = {
   fields: FieldDefinition[];
   context: ExecutionContext;
   logs: string[];
-}
+};
 
 /**
  * Builds the sandbox environment for script execution

@@ -9,7 +9,7 @@ import {
 
 type AuthOptions = {
   optional?: boolean;
-}
+};
 
 export function AuthenticationMiddleware(
   options: AuthOptions = { optional: false },

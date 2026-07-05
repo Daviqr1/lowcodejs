@@ -39,12 +39,12 @@ type FileData = {
   data_uri?: string;
   extracted_text?: string;
   page_count?: number;
-}
+};
 
 type ClientMessage = {
   message?: string;
   file?: FileData;
-}
+};
 
 function extractCookieValue(
   cookieHeader: string | undefined,

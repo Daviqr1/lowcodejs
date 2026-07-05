@@ -20,7 +20,7 @@ type SetupAdminInput = {
   name: string;
   email: string;
   password: string;
-}
+};
 
 type SetupAdminOutput = {
   completed: boolean;
@@ -28,7 +28,7 @@ type SetupAdminOutput = {
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
   user: IUser;
-}
+};
 
 type Response = Either<HTTPException, SetupAdminOutput>;
 

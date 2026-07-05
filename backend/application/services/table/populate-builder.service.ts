@@ -43,7 +43,7 @@ type PopulateBuildCaches = {
   table: Map<string, RelationshipTableDoc | null>;
   model: Map<string, RelationModel>;
   subtree: Map<string, mongoose.PopulateOptions[]>;
-}
+};
 
 @Service()
 export default class MongoosePopulateBuilder implements PopulateBuilderContractService {

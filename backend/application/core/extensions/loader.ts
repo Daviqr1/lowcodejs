@@ -40,7 +40,7 @@ export type LoadExtensionsResult = {
   loaded: number;
   invalid: number;
   unavailable: number;
-}
+};
 
 export async function loadExtensions(
   repository: ExtensionContractRepository,

@@ -18,12 +18,12 @@ type Meta = {
   page: number;
   lastPage: number;
   firstPage: number;
-}
+};
 
 type Result = {
   meta: Meta;
   data: IErrorLog[];
-}
+};
 
 type Response = Either<HTTPException, Result>;
 

@@ -4,13 +4,13 @@ export type EmailOptions = {
   subject: string;
   body: string;
   from?: string;
-}
+};
 
 export type EmailResult = {
   success: boolean;
   message: string;
   testUrl?: string | boolean;
-}
+};
 
 export abstract class EmailContractService {
   abstract sendEmail(options: EmailOptions): Promise<EmailResult>;

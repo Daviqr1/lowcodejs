@@ -13,7 +13,7 @@ type ExtensionActiveOptions = {
   pkg: string;
   type: ExtensionType;
   extensionId: string;
-}
+};
 
 /**
  * Garante que a extensão (pkg, type, extensionId) está habilitada e disponível.
