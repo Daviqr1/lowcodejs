@@ -10,11 +10,11 @@ import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowFieldLabelProps {
+type TableRowFieldLabelProps = {
   field: IField;
   htmlFor?: string;
   className?: string;
-}
+};
 
 export function TableRowFieldLabel({
   field,

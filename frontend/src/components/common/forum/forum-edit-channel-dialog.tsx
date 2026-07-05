@@ -25,7 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-interface ForumEditChannelDialogProps {
+type ForumEditChannelDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   // form do useAppForm: shape concreto desconhecido neste boundary reutilizável.
@@ -36,7 +36,7 @@ interface ForumEditChannelDialogProps {
   requiresMembers: boolean;
   requiresPrivacy: boolean;
   onCancel: () => void;
-}
+};
 
 export function ForumEditChannelDialog({
   open,

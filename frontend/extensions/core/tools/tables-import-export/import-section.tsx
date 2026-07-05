@@ -752,7 +752,7 @@ export function ImportTableSection(): React.JSX.Element {
   );
 }
 
-interface ImportProgressModalProps {
+type ImportProgressModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Tempo decorrido (ms) desde o início — alimenta o piso da barra. */
@@ -772,7 +772,7 @@ interface ImportProgressModalProps {
     tables: Array<{ slug: string; name: string }>;
   } | null;
   hardError: boolean;
-}
+};
 
 function ImportProgressModal({
   open,

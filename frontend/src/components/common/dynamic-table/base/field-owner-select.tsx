@@ -2,10 +2,10 @@ import { UserMultiSelect } from '@/components/common/selectors/user-multi-select
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldOwnerSelectProps {
+type FieldOwnerSelectProps = {
   label: string;
   disabled?: boolean;
-}
+};
 
 // Troca de dono. Reusa o UserMultiSelect, mas mantém apenas a última seleção
 // (comportamento single-select sobre o componente existente).

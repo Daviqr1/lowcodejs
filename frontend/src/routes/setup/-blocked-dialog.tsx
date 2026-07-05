@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { SETUP_STEP_LABELS } from '@/lib/constant';
 
-interface BlockedDialogProps {
+type BlockedDialogProps = {
   blocked?: string;
-}
+};
 
 export function BlockedDialog({
   blocked,

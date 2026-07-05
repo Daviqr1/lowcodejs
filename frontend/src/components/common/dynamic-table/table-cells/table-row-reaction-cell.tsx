@@ -7,11 +7,11 @@ import { handleApiError } from '@/lib/handle-api-error';
 import type { IField, IReactionSummary, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowReactionCellProps {
+type TableRowReactionCellProps = {
   row: IRow;
   field: IField;
   tableSlug: string;
-}
+};
 
 export function TableRowReactionCell({
   field,

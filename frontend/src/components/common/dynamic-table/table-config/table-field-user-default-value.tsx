@@ -17,10 +17,10 @@ import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableFieldUserDefaultValueProps {
+type TableFieldUserDefaultValueProps = {
   label?: string;
   disabled?: boolean;
-}
+};
 
 export function TableFieldUserDefaultValue({
   label = 'Valor padrão',

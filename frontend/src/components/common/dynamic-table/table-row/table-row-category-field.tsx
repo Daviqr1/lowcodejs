@@ -16,10 +16,10 @@ import type { ICategory, IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowCategoryFieldProps {
+type TableRowCategoryFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 function convertCategoriesToTreeNodes(
   categories: Array<ICategory>,

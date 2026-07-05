@@ -7,16 +7,16 @@ import { queryKeys } from './_query-keys';
 import { API } from '@/lib/api';
 import type { IField, ITable } from '@/lib/interfaces';
 
-interface GroupFieldCreatePayload {
+type GroupFieldCreatePayload = {
   tableSlug: string;
   groupSlug: string;
   data: Partial<IField>;
-}
+};
 
-interface UseGroupFieldCreateProps {
+type UseGroupFieldCreateProps = {
   onSuccess?: (data: IField) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useGroupFieldCreate(
   props: UseGroupFieldCreateProps,

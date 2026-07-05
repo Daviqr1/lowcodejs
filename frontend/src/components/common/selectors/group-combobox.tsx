@@ -13,13 +13,13 @@ import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { USER_GROUP_MAPPER } from '@/lib/constant';
 import type { IGroup } from '@/lib/interfaces';
 
-interface GroupComboboxProps {
+type GroupComboboxProps = {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
+};
 
 // Usa o nome amigavel para grupos de sistema (Master/Administrador/...).
 function resolveGroupName(group: IGroup): string {

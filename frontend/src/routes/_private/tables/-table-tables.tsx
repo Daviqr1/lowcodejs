@@ -364,11 +364,11 @@ const columns: Array<ColumnDef<ITable, any>> = [
   },
 ];
 
-interface Props {
+type Props = {
   data: Array<ITable>;
   toolbarPortal: HTMLDivElement | null;
   isTrashView: boolean;
-}
+};
 
 export function TableTables({
   data,

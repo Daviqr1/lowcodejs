@@ -28,9 +28,9 @@ import { QueryClient } from '@/lib/query-client';
 import { getAllowedTableStyles } from '@/lib/table-style';
 import { cn } from '@/lib/utils';
 
-interface TableStyleViewDropdownProps {
+type TableStyleViewDropdownProps = {
   slug: string;
-}
+};
 
 export function TableStyleViewDropdown({
   slug,

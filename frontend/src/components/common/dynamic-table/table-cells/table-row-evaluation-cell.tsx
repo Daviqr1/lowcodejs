@@ -7,14 +7,14 @@ import { handleApiError } from '@/lib/handle-api-error';
 import type { IEvaluationSummary, IField, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowEvaluationCellProps {
+type TableRowEvaluationCellProps = {
   size?: number;
   disabled?: boolean;
   className?: string;
   row: IRow;
   field: IField;
   tableSlug: string;
-}
+};
 
 const MAX_RATING = 5;
 

@@ -11,10 +11,10 @@ import {
 import type { IStorage } from '@/lib/interfaces';
 import { getStorageDownloadUrl, getStorageInlineUrl } from '@/lib/storage-url';
 
-interface AttachmentContextMenuProps {
+type AttachmentContextMenuProps = {
   storage: Pick<IStorage, 'url' | 'originalName'>;
   children: React.ReactNode;
-}
+};
 
 export function AttachmentContextMenu({
   storage,

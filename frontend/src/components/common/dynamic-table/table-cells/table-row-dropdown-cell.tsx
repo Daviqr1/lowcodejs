@@ -6,10 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import type { IField, IRow } from '@/lib/interfaces';
 import { getDropdownItem } from '@/lib/table';
 
-interface TableRowDropdownCellProps {
+type TableRowDropdownCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowDropdownCell({
   field,

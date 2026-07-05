@@ -12,12 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGroupFieldManagement } from '@/hooks/use-group-field-management';
 import type { ITable } from '@/lib/interfaces';
 
-interface GroupFieldManagementSheetProps {
+type GroupFieldManagementSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   table: ITable;
   groupSlug: string;
-}
+};
 
 export function GroupFieldManagementSheet({
   open,

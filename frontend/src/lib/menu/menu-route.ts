@@ -1,12 +1,12 @@
 import type { LinkProps } from '@tanstack/react-router';
 
-export interface MenuRouteBaseItem {
+export type MenuRouteBaseItem = {
   title: string;
   badge?: string;
   icon?: React.ElementType;
   iconUrl?: string | null;
   type?: string;
-}
+};
 
 export type LinkItem = MenuRouteBaseItem & {
   url: LinkProps['to'];

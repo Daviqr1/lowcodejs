@@ -17,7 +17,7 @@ import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { USER_GROUP_MAPPER } from '@/lib/constant';
 import type { IGroup } from '@/lib/interfaces';
 
-interface GroupMultiSelectProps {
+type GroupMultiSelectProps = {
   value?: Array<string>;
   onValueChange?: (value: Array<string>) => void;
   placeholder?: string;
@@ -26,7 +26,7 @@ interface GroupMultiSelectProps {
   // Grupo a ocultar da lista (ex.: o proprio grupo em edicao, para nao englobar
   // a si mesmo).
   excludeId?: string;
-}
+};
 
 // Usa o nome amigavel para grupos de sistema (Master/Administrador/...).
 function resolveGroupName(group: IGroup): string {

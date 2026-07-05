@@ -146,7 +146,7 @@ export function useMonacoTypes(monaco: Monaco | null, table?: ITable): void {
   }, [monaco, table?.fields, table?.slug]);
 }
 
-interface MonacoEditorOptions {
+type MonacoEditorOptions = {
   minimap: { enabled: boolean };
   fontSize: number;
   lineNumbers: 'on';
@@ -182,7 +182,7 @@ interface MonacoEditorOptions {
   folding: boolean;
   foldingHighlight: boolean;
   showFoldingControls: 'mouseover';
-}
+};
 
 /**
  * Hook configuration options for Monaco editor

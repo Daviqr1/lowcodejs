@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { useCallback, useMemo, useState } from 'react';
 
-export interface TreeNode {
+export type TreeNode = {
   id: string;
   label: string;
   children?: Array<TreeNode>;
-}
+};
 
-export interface UseTreeSelectProps {
+export type UseTreeSelectProps = {
   data: Array<TreeNode>;
   isMulti: boolean;
   value: string | Array<string> | null;
   enableSearch: boolean;
-}
+};
 
 export function useTreeSelect({
   data,

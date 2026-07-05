@@ -11,9 +11,9 @@ import type { FileData } from '@/hooks/use-chat-socket';
 
 const rootApi = getRouteApi('__root__');
 
-interface ChatPanelProps {
+type ChatPanelProps = {
   onClose?: () => void;
-}
+};
 
 export function ChatPanel({ onClose }: ChatPanelProps): React.JSX.Element {
   const { baseUrl, chatHistoryEnabled } = rootApi.useLoaderData();

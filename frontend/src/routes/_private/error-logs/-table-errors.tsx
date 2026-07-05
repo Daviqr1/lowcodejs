@@ -31,11 +31,11 @@ import { useErrorLogResolve } from '@/hooks/tanstack-query/use-error-log-resolve
 import { useDataTable } from '@/hooks/use-data-table';
 import { formatDate } from '@/lib/format-date';
 
-interface ActionsCellProps {
+type ActionsCellProps = {
   entry: IErrorLog;
   onOpenJson: (entry: IErrorLog) => void;
   onResolve: (entry: IErrorLog) => void;
-}
+};
 
 function ActionsCell({
   entry,
@@ -241,14 +241,14 @@ function buildColumns(params: {
   ];
 }
 
-interface Props {
+type Props = {
   data: Array<IErrorLog>;
   toolbarPortal: HTMLDivElement | null;
   onOpenJson: (entry: IErrorLog) => void;
   isLoading: boolean;
   isResolvedView: boolean;
   onViewResolved: (show: boolean) => void;
-}
+};
 
 export function TableErrors({
   data,

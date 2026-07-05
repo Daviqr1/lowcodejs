@@ -30,7 +30,7 @@ import { resolveFieldLabel } from '@/lib/table';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GroupRow = Record<string, any>;
 
-interface KanbanFieldGroupEditorProps {
+type KanbanFieldGroupEditorProps = {
   row: IRow;
   field: IField;
   table: ITable;
@@ -44,7 +44,7 @@ interface KanbanFieldGroupEditorProps {
     }) => Promise<unknown>;
     status: string;
   };
-}
+};
 
 function normalizeGroupRow(
   groupRow: GroupRow,

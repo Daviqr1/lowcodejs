@@ -11,11 +11,11 @@ import {
 import { useTableFieldManagement } from '@/hooks/use-table-field-management';
 import type { ITable } from '@/lib/interfaces';
 
-interface TableFieldManagementSheetProps {
+type TableFieldManagementSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   table: ITable;
-}
+};
 
 export function TableFieldManagementSheet({
   open,

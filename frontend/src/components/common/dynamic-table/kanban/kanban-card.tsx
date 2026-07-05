@@ -41,12 +41,12 @@ function renderCardAttachmentPreview(storage: IStorage): React.JSX.Element {
   );
 }
 
-export interface KanbanCardProps {
+export type KanbanCardProps = {
   row: IRow;
   fields: FieldMap;
   onClick: () => void;
   onFieldClick?: (field: 'members' | 'start' | 'due' | 'list') => void;
-}
+};
 
 export function KanbanCard({
   row,

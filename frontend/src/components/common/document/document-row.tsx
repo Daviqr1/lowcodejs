@@ -30,7 +30,7 @@ import { getRowLeafId, getStr, headerSorter } from '@/lib/document-helpers';
 import type { IField, IRow } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface DocumentRowProps {
+type DocumentRowProps = {
   row: IRow;
   blocks: Array<DocBlock>;
   indentPx: number;
@@ -38,7 +38,7 @@ interface DocumentRowProps {
   headingLevel?: number;
   categorySlug: string;
   showHeading?: boolean;
-}
+};
 
 function hasFieldValue(field: IField, row: IRow): boolean {
   const value = row[field.slug];

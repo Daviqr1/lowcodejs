@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
-interface FormFooterProps {
+type FormFooterProps = {
   form: {
     Subscribe: React.ComponentType<{
       selector: (state: {
@@ -20,7 +20,7 @@ interface FormFooterProps {
   cancelTestId?: string;
   submitDisabled?: boolean;
   className?: string;
-}
+};
 
 export function FormFooter({
   form,

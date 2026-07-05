@@ -5,11 +5,11 @@ import React from 'react';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface DataTableBodyProps<TData> {
+type DataTableBodyProps<TData> = {
   table: TanstackTable<TData>;
   onRowClick?: (row: TData) => void;
   emptyMessage: string;
-}
+};
 
 function DataTableBodyInner<TData>({
   table,

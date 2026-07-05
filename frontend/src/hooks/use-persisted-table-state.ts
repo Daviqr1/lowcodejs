@@ -5,11 +5,11 @@ import type {
 } from '@tanstack/react-table';
 import React from 'react';
 
-interface PersistedTableState {
+type PersistedTableState = {
   columnVisibility?: VisibilityState;
   columnOrder?: ColumnOrderState;
   columnSizing?: ColumnSizingState;
-}
+};
 
 const STORAGE_PREFIX = 'dt:';
 
@@ -32,12 +32,12 @@ function saveState(key: string, state: PersistedTableState): void {
   }
 }
 
-interface UsePersistedTableStateOptions {
+type UsePersistedTableStateOptions = {
   persistKey?: string;
   initialColumnVisibility?: VisibilityState;
   initialColumnOrder?: ColumnOrderState;
   initialColumnSizing?: ColumnSizingState;
-}
+};
 
 export function usePersistedTableState({
   persistKey,

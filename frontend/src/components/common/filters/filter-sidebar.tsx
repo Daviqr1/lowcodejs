@@ -19,13 +19,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { IFilterField, ITable } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface FilterSidebarProps {
+type FilterSidebarProps = {
   fields: Array<IFilterField>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Tabela em foco — usado pelo slot de extensões table.filters para filtrar por tableScope. */
   table?: ITable;
-}
+};
 
 export function FilterSidebar({
   fields,

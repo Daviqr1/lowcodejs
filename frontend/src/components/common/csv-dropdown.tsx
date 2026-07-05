@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-interface CsvDropdownProps {
+type CsvDropdownProps = {
   /** Ação de importar. Quando ausente, a opção "Importar" não é exibida. */
   onImport?: () => void;
   /** Ação de exportar. Quando ausente, a opção "Exportar" não é exibida. */
@@ -25,7 +25,7 @@ interface CsvDropdownProps {
   disabled?: boolean;
   label?: string;
   testId?: string;
-}
+};
 
 /**
  * Dropdown reutilizável de ações CSV (Importar / Exportar), no mesmo padrão

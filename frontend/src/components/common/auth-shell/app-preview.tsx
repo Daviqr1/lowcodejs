@@ -3,14 +3,14 @@ import type * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-interface AppPreviewProps {
+type AppPreviewProps = {
   className?: string;
-}
+};
 
-interface MockRow {
+type MockRow = {
   cells: Array<string>;
   status: 'on' | 'off';
-}
+};
 
 const ROWS: Array<MockRow> = [
   { cells: ['w-20', 'w-14', 'w-10'], status: 'on' },

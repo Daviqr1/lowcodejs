@@ -4,10 +4,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-interface TableRowUserCellProps {
+type TableRowUserCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowUserCell({
   field,

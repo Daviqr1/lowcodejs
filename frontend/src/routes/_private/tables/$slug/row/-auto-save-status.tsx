@@ -8,10 +8,10 @@ import React from 'react';
 
 import type { AutoSaveStatus } from '@/hooks/use-auto-save';
 
-interface AutoSaveStatusProps {
+type AutoSaveStatusProps = {
   status: AutoSaveStatus;
   lastSavedAt: Date | null;
-}
+};
 
 function formatElapsed(date: Date | null, now: number): string {
   if (!date) return '';

@@ -12,9 +12,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 
-interface LinkDisplayProps {
+type LinkDisplayProps = {
   editor: Editor;
-}
+};
 
 function LinkDisplay({ editor }: LinkDisplayProps): React.JSX.Element {
   const href = editor.getAttributes('link').href || '';
@@ -32,9 +32,9 @@ function LinkDisplay({ editor }: LinkDisplayProps): React.JSX.Element {
   );
 }
 
-interface LinkBubbleProps {
+type LinkBubbleProps = {
   editor: Editor;
-}
+};
 
 export function LinkBubble({ editor }: LinkBubbleProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);

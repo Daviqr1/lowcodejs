@@ -13,19 +13,19 @@ import {
   useComboboxAnchor,
 } from '@/components/ui/combobox';
 
-interface ValidationOption {
+type ValidationOption = {
   value: string;
   label: string;
   async?: boolean;
-}
+};
 
-interface ValidationMultiSelectProps {
+type ValidationMultiSelectProps = {
   options: Array<ValidationOption>;
   value?: Array<string>;
   onValueChange?: (value: Array<string>) => void;
   placeholder?: string;
   disabled?: boolean;
-}
+};
 
 export function ValidationMultiSelect({
   options,

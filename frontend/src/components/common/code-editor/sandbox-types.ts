@@ -4,7 +4,7 @@
  */
 export const STATIC_SANDBOX_TYPES = `
 // ====== FIELD API ======
-interface FieldApi {
+type FieldApi = {
   /**
    * Gets the value of a field by its slug
    * @param slug - The field slug (e.g., 'titulo', 'data-nascimento')
@@ -41,7 +41,7 @@ type UserAction = 'novo_registro' | 'editar_registro' | 'excluir_registro' | 'ca
 type ExecutionMoment = 'carregamento_formulario' | 'antes_salvar' | 'depois_salvar';
 
 // ====== TABLE INFO ======
-interface TableInfo {
+type TableInfo = {
   /** ID da tabela */
   readonly _id: string;
   /** Nome da tabela */
@@ -50,7 +50,7 @@ interface TableInfo {
   readonly slug: string;
 }
 
-interface ContextApi {
+type ContextApi = {
   /** The current user action */
   readonly action: UserAction;
   /** The execution moment (hook type) */
@@ -66,13 +66,13 @@ interface ContextApi {
 }
 
 // ====== EMAIL API ======
-interface EmailResult {
+type EmailResult = {
   success: boolean;
   message: string;
   recipients?: number;
 }
 
-interface EmailApi {
+type EmailApi = {
   /**
    * Sends a plain email
    * @param to - Array of recipient email addresses
@@ -94,7 +94,7 @@ interface EmailApi {
 }
 
 // ====== UTILS API ======
-interface UtilsApi {
+type UtilsApi = {
   /**
    * Returns today's date at midnight
    * @returns Date object for today at 00:00:00

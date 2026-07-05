@@ -26,18 +26,18 @@ import { resolveLayoutField } from '@/lib/layout-field-resolver';
 import { HeaderSorter } from '@/lib/layout-pickers';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
   layoutFields?: ILayoutFields | null;
-}
+};
 
-interface RenderMosaicCellProps {
+type RenderMosaicCellProps = {
   field: IField;
   row: IRow;
   tableSlug: string;
-}
+};
 
 function RenderMosaicCell({
   field,

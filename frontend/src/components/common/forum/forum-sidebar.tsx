@@ -13,7 +13,7 @@ import React from 'react';
 import type { IField, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface ForumSidebarProps {
+type ForumSidebarProps = {
   rows: Array<IRow>;
   activeRowId: string | null;
   channelField?: IField | null;
@@ -27,7 +27,7 @@ interface ForumSidebarProps {
   onEditRow: (row: IRow) => void;
   onDeleteRow: (row: IRow) => void;
   mentionCountByRowId?: Record<string, number>;
-}
+};
 
 export function ForumSidebar({
   rows,

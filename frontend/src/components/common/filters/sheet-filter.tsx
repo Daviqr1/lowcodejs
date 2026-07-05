@@ -20,9 +20,9 @@ import {
 import type { IFilterField } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface SheetFilterProps {
+type SheetFilterProps = {
   fields: Array<IFilterField>;
-}
+};
 
 export function SheetFilter({ fields }: SheetFilterProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);

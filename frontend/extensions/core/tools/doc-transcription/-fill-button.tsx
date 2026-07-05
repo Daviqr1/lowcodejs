@@ -23,9 +23,9 @@ import { useDocTranscriptionConfig } from '@/hooks/tanstack-query/use-doc-transc
 import { useDocTranscriptionTranscribe } from '@/hooks/tanstack-query/use-doc-transcription-transcribe';
 import { handleApiError } from '@/lib/handle-api-error';
 
-interface Props {
+type Props = {
   onFillFields?: (data: Record<string, string | null>) => void;
-}
+};
 
 const ACCEPTED = 'image/jpeg,image/png,image/webp,application/pdf';
 

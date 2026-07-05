@@ -85,7 +85,7 @@ export function findCategoryLabel(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FilterValues = Record<string, any>;
 
-interface UseFilterStateReturn {
+type UseFilterStateReturn = {
   filterValues: FilterValues;
   setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   handleSubmit: () => void;
@@ -93,7 +93,7 @@ interface UseFilterStateReturn {
   removeFilter: (key: string) => void;
   handleMultiValueChange: (field: IFilterField, value: Array<string>) => void;
   activeFiltersCount: number;
-}
+};
 
 export function useFilterState(
   fields: Array<IFilterField>,
@@ -330,14 +330,14 @@ export function getActiveFiltersCount(
   return fieldsCount + Number(Boolean(search.search));
 }
 
-interface FilterFieldsFormProps {
+type FilterFieldsFormProps = {
   fields: Array<IFilterField>;
   filterValues: FilterValues;
   setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   removeFilter: (key: string) => void;
   handleMultiValueChange: (field: IFilterField, value: Array<string>) => void;
   search: Record<string, unknown>;
-}
+};
 
 export function FilterFieldsForm({
   fields,
@@ -500,11 +500,11 @@ export function FilterTextShort({
   );
 }
 
-interface DropdownOption {
+type DropdownOption = {
   value: string;
   label: string;
   color?: string | null;
-}
+};
 
 export function FilterDropdown({
   field,

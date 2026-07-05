@@ -17,7 +17,7 @@ import type { TreeNode } from './tree-list';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface TreeNodeItemProps {
+type TreeNodeItemProps = {
   node: TreeNode;
   level: number;
   isSelected: boolean;
@@ -36,7 +36,7 @@ interface TreeNodeItemProps {
   dragAttributes?: React.HTMLAttributes<HTMLButtonElement>;
   dragListeners?: React.HTMLAttributes<HTMLButtonElement>;
   isDragging?: boolean;
-}
+};
 
 export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   node,

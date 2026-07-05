@@ -22,7 +22,7 @@ import { API } from '@/lib/api';
 import type { IStorage } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface FileUploadWithStorageProps {
+type FileUploadWithStorageProps = {
   value: Array<File>;
   onValueChange: (files: Array<File>) => void;
   onStorageChange: (storages: Array<IStorage>) => void;
@@ -38,7 +38,7 @@ interface FileUploadWithStorageProps {
   compact?: boolean;
   showHint?: boolean;
   staticName?: string;
-}
+};
 
 function dedupeStorages(storages: Array<IStorage>): Array<IStorage> {
   const map = new Map<string, IStorage>();

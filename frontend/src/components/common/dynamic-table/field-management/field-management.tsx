@@ -93,7 +93,7 @@ function isManageableField(field: IField, excludeNative?: boolean): boolean {
 
 // --- Internal components ---
 
-interface SortableManagementItemProps {
+type SortableManagementItemProps = {
   field: IField;
   disabled?: boolean;
   dimmed?: boolean;
@@ -104,7 +104,7 @@ interface SortableManagementItemProps {
   onWidthChange?: (width: number) => void;
   isTogglingVisibility?: boolean;
   isChangingWidth?: boolean;
-}
+};
 
 function SortableManagementItem({
   field,
@@ -231,14 +231,14 @@ function SortableManagementItem({
   );
 }
 
-interface TrashedItemProps {
+type TrashedItemProps = {
   field: IField;
   onEdit: () => void;
   onDelete: () => void;
   onRestore: () => void;
   isDeleting?: boolean;
   isRestoring?: boolean;
-}
+};
 
 function TrashedItem({
   field,
@@ -374,10 +374,10 @@ function TrashedItem({
 
 // --- Compound Components ---
 
-interface RootProps {
+type RootProps = {
   actions: FieldManagementActions;
   children: React.ReactNode;
-}
+};
 
 function FieldManagementRoot({
   actions,
@@ -395,10 +395,10 @@ function FieldManagementRoot({
   );
 }
 
-interface HeaderProps {
+type HeaderProps = {
   title: string;
   onBack: () => void;
-}
+};
 
 function FieldManagementHeader({
   title,
@@ -489,10 +489,10 @@ function FieldManagementTabs(): React.JSX.Element {
   );
 }
 
-interface ListProps {
+type ListProps = {
   visibilityKey: VisibilityKey;
   excludeNative?: boolean;
-}
+};
 
 function FieldManagementList({
   visibilityKey,
@@ -723,9 +723,9 @@ function FieldManagementList({
   );
 }
 
-interface TrashedListProps {
+type TrashedListProps = {
   excludeNative?: boolean;
-}
+};
 
 function FieldManagementTrashedList({
   excludeNative,

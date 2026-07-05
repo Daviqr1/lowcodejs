@@ -33,13 +33,13 @@ import { useExtensionBulkConfigureTableSettings } from '@/hooks/tanstack-query/u
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IExtension } from '@/lib/interfaces';
 
-interface RowAccessConfigSheetProps {
+type RowAccessConfigSheetProps = {
   extension: IExtension | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Quando definido, pré-carrega a config dessa tabela ao abrir (modo "editar"). */
   initialTableId?: string;
-}
+};
 
 function getResponseStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;

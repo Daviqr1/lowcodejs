@@ -4,12 +4,12 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface StatCardProps {
+type StatCardProps = {
   label: string;
   value: string | number;
   icon: typeof ActivityIcon;
   accentClass?: string;
-}
+};
 
 export function StatCard({
   label,

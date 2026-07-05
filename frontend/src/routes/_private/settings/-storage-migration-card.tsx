@@ -227,13 +227,13 @@ export function StorageMigrationCard(): React.JSX.Element | null {
   );
 }
 
-interface ProgressModalProps {
+type ProgressModalProps = {
   baseUrl: string;
   open: boolean;
 
   onOpenChange: (open: boolean) => void;
   active: boolean;
-}
+};
 
 function StorageMigrationProgressModal({
   baseUrl,

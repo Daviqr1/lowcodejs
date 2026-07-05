@@ -30,7 +30,7 @@ import {
 import { useTableKeyboardNavigation } from '@/hooks/use-table-keyboard-navigation';
 import { cn } from '@/lib/utils';
 
-interface DataTableProps<TData> {
+type DataTableProps<TData> = {
   table: TanstackTable<TData>;
   stickyHeader?: boolean;
   onRowClick?: (row: TData) => void;
@@ -38,7 +38,7 @@ interface DataTableProps<TData> {
   enableVirtualization?: boolean;
   enableKeyboardNavigation?: boolean;
   enableColumnDragging?: boolean;
-}
+};
 
 export type InteractiveDataTableProps<TData> = Omit<
   DataTableProps<TData>,

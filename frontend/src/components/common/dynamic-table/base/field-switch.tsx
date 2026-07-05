@@ -4,13 +4,13 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { E_USER_STATUS } from '@/lib/constant';
 import type { ValueOf } from '@/lib/interfaces';
 
-interface FieldSwitchProps {
+type FieldSwitchProps = {
   label: string;
   description?: string;
   disabled?: boolean;
   activeLabel?: string;
   inactiveLabel?: string;
-}
+};
 
 export function FieldSwitch({
   label,

@@ -84,11 +84,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface UserUpdateContentProps {
+type UserUpdateContentProps = {
   data: IUser;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function UserUpdateContent({
   data,

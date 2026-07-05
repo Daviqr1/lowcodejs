@@ -16,9 +16,9 @@ import {
 import { ColorPicker } from '../color-picker';
 import { ToolbarButton } from '../toolbar-button';
 
-interface TextBubbleProps {
+type TextBubbleProps = {
   editor: Editor;
-}
+};
 
 export function TextBubble({ editor }: TextBubbleProps): React.JSX.Element {
   return (

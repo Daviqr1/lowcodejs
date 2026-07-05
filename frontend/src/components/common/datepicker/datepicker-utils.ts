@@ -117,11 +117,11 @@ export function generateYearRange(centerYear: number): Array<number> {
   return years;
 }
 
-export interface CalendarDays {
+export type CalendarDays = {
   previous: Array<Date>;
   current: Array<Date>;
   next: Array<Date>;
-}
+};
 
 export function getCalendarDays(date: Date): CalendarDays {
   const monthStart = startOfMonth(date);
@@ -177,10 +177,10 @@ export function navigateMonth(date: Date, direction: 'prev' | 'next'): Date {
 }
 
 // Range utilities
-export interface DateRange {
+export type DateRange = {
   startDate: Date | null;
   endDate: Date | null;
-}
+};
 
 export function isDateInRange(
   date: Date,

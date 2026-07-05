@@ -14,13 +14,13 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IMenu } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface FieldMenuPositionSelectProps {
+type FieldMenuPositionSelectProps = {
   label: string;
   parentId?: string;
   disabled?: boolean;
   excludeId?: string;
   required?: boolean;
-}
+};
 
 function getParentId(menu: IMenu): string | null {
   if (!menu.parent) return null;

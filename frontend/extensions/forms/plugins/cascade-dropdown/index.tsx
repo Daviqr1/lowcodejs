@@ -39,7 +39,7 @@ type FilterOperator =
   | 'is_not_empty'
   | 'date_between';
 
-interface CascadeFilter {
+type CascadeFilter = {
   id: string;
   fieldId: string;
   fieldSlug: string;
@@ -49,9 +49,9 @@ interface CascadeFilter {
   values: Array<string>;
   dateStart: string | null;
   dateEnd: string | null;
-}
+};
 
-interface CascadeConfig {
+type CascadeConfig = {
   _id?: string;
   targetTableSlug: string;
   targetFieldId: string;
@@ -66,9 +66,9 @@ interface CascadeConfig {
   parentWidth: number;
   childWidth: number;
   filters: Array<CascadeFilter>;
-}
+};
 
-interface CascadeDropdownPluginProps {
+type CascadeDropdownPluginProps = {
   table?: ITable;
   tableSlug?: string;
   targetField?: IField;
@@ -77,7 +77,7 @@ interface CascadeDropdownPluginProps {
   sourceTableSlug?: string;
   relationshipFieldSlug?: string;
   disabled?: boolean;
-}
+};
 
 const EMPTY_VALUE = '__empty__';
 

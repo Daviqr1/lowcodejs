@@ -1,9 +1,9 @@
 import { ContentViewer } from '@/components/common/rich-editor';
 import type { IField } from '@/lib/interfaces';
 
-interface TableRowHtmlContentFieldProps {
+type TableRowHtmlContentFieldProps = {
   field: IField;
-}
+};
 
 export function TableRowHtmlContentField({
   field,

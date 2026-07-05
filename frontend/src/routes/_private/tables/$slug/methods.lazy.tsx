@@ -90,10 +90,10 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface MethodsFormContentProps {
+type MethodsFormContentProps = {
   data: ITable;
   tableSlug: string;
-}
+};
 
 function MethodsFormContent({
   data,

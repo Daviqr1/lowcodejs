@@ -8,9 +8,9 @@ import { API } from '@/lib/api';
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser, Paginated } from '@/lib/interfaces';
 
-export interface UseUserMentionSearch {
+export type UseUserMentionSearch = {
   resolvePage: ResolveMentionPage;
-}
+};
 
 export function useUserMentionSearch(): UseUserMentionSearch {
   const resolvePage = useCallback(

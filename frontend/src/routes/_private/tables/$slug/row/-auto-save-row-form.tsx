@@ -56,14 +56,14 @@ import {
 } from '@/lib/table';
 import { useAuthStore } from '@/stores/authentication';
 
-interface AutoSaveRowFormProps {
+type AutoSaveRowFormProps = {
   table: ITable;
   rowId?: string;
   existingRow?: IRow;
   initialCategory?: string;
   onBack?: () => void;
   backGuardRef?: React.MutableRefObject<(() => void) | null>;
-}
+};
 
 // Itens de um grupo de campos vêm embutidos no documento do registro
 // (existingRow[groupSlug]). Usados para semear os cards do grupo na edição.

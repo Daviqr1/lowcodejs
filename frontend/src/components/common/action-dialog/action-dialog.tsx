@@ -19,7 +19,7 @@ import {
 import { handleApiError } from '@/lib/handle-api-error';
 import { QueryClient } from '@/lib/query-client';
 
-export interface ActionDialogConfig {
+export type ActionDialogConfig = {
   mutationFn: () => Promise<void>;
   invalidateKeys: Array<QueryKey>;
   toast: { title: string; description: string };
@@ -30,7 +30,7 @@ export interface ActionDialogConfig {
   testId: string;
   confirmTestId?: string;
   cancelTestId?: string;
-}
+};
 
 export type ActionDialogProps = React.ComponentProps<typeof DialogTrigger> & {
   config: ActionDialogConfig;

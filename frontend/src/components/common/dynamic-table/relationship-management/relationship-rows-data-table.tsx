@@ -40,18 +40,18 @@ function columnWidth(field: IField): string | undefined {
   return `${field.widthInList}px`;
 }
 
-interface RelationshipRowsDataTableProps {
+type RelationshipRowsDataTableProps = {
   field: IField;
   record: IRow;
   parentTableSlug: string;
   canEdit: boolean;
-}
+};
 
-interface LinkedRow {
+type LinkedRow = {
   linkId: string;
   otherId: string;
   row: IRow | null;
-}
+};
 
 export function RelationshipRowsDataTable({
   field,

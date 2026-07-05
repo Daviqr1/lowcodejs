@@ -14,11 +14,11 @@ import {
 import { useTablePermission } from '@/hooks/use-table-permission';
 import type { IRow, ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   slug: string;
   row: IRow;
   table?: ITable;
-}
+};
 
 export function TableRowActionsMenu({
   slug,

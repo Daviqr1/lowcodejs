@@ -11,10 +11,10 @@ import { getMaskConfig } from '@/lib/field-masks';
 import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowMaskedTextFieldProps {
+type TableRowMaskedTextFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 function getFormatIcon(format: string | null | undefined): React.JSX.Element {
   if (format === E_FIELD_FORMAT.PHONE) return <PhoneIcon className="size-4" />;

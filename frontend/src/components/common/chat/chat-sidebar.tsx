@@ -11,10 +11,10 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-interface ChatSidebarProps {
+type ChatSidebarProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
 export function ChatSidebar({
   open,

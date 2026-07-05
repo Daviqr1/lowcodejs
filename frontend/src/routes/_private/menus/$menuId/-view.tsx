@@ -11,9 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { E_MENU_ITEM_TYPE, MENU_ITEM_TYPE_OPTIONS } from '@/lib/constant';
 import type { IMenu } from '@/lib/interfaces';
 
-interface MenuViewProps {
+type MenuViewProps = {
   data: IMenu;
-}
+};
 
 export function MenuView({ data }: MenuViewProps): React.JSX.Element {
   const typeLabel =

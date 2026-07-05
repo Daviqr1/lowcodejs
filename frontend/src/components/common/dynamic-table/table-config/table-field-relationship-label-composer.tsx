@@ -35,18 +35,18 @@ const SEPARATOR_OPTIONS: Array<{ value: string; label: string }> = [
   { value: ', ', label: ',' },
 ];
 
-interface TableFieldRelationshipLabelComposerProps {
+type TableFieldRelationshipLabelComposerProps = {
   rootTableSlug: string;
   parts: Array<IRelationshipLabelPart>;
   separator: string;
   onChange: (parts: Array<IRelationshipLabelPart>, separator: string) => void;
   disabled?: boolean;
-}
+};
 
-interface Step {
+type Step = {
   tableSlug: string;
   field: IField | null;
-}
+};
 
 function isNavigable(field: IField): boolean {
   return (

@@ -21,9 +21,9 @@ import {
 import { getLlmProviderLabel } from '@/lib/ai-llm-providers';
 import type { ISetting } from '@/lib/interfaces';
 
-interface SettingViewProps {
+type SettingViewProps = {
   data: ISetting;
-}
+};
 
 function formatFileSize(bytes: number): string {
   if (bytes >= 1048576) {

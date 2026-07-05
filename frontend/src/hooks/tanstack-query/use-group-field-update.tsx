@@ -7,7 +7,7 @@ import { queryKeys } from './_query-keys';
 import { API } from '@/lib/api';
 import type { IField, ITable, Paginated } from '@/lib/interfaces';
 
-interface GroupFieldUpdatePayload {
+type GroupFieldUpdatePayload = {
   tableSlug: string;
   groupSlug: string;
   fieldId: string;
@@ -15,12 +15,12 @@ interface GroupFieldUpdatePayload {
     trashed?: boolean;
     trashedAt?: string | null;
   };
-}
+};
 
-interface UseGroupFieldUpdateProps {
+type UseGroupFieldUpdateProps = {
   onSuccess?: (data: IField) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useGroupFieldUpdate(
   props: UseGroupFieldUpdateProps,

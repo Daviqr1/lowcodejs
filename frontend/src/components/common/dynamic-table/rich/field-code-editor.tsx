@@ -36,11 +36,11 @@ export function isValidIIFE(code: string): boolean {
   return trimmed.startsWith('(async') && trimmed.endsWith('})();');
 }
 
-interface FieldCodeEditorProps {
+type FieldCodeEditorProps = {
   label?: string;
   table?: ITable;
   hook?: HookType;
-}
+};
 
 export function FieldCodeEditor({
   label,

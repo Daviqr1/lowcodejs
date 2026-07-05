@@ -3,14 +3,14 @@ import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { IGroup } from '@/lib/interfaces';
 
-interface GroupMatrixProps {
+type GroupMatrixProps = {
   values: Array<string>;
   /** value → groupIds que podem ver aquele valor */
   matrix: Record<string, Array<string>>;
   groups: Array<IGroup>;
   onChange: (matrix: Record<string, Array<string>>) => void;
   disabled?: boolean;
-}
+};
 
 /**
  * Matriz valor×grupo: linhas = valores de visibilidade, colunas = grupos reais do sistema.

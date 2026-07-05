@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { tableListOptions } from '@/hooks/tanstack-query/_query-options';
 
-interface Props {
+type Props = {
   tableIds: Array<string>;
   onClick: (tableId: string) => void;
-}
+};
 
 const VISIBLE_LIMIT = 5;
 

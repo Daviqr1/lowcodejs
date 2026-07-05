@@ -7,10 +7,10 @@ import { API } from '@/lib/api';
 import type { ISetupStatus } from '@/lib/interfaces';
 import type { SetupNamePayload } from '@/lib/payloads';
 
-interface Props {
+type Props = {
   onSuccess?: (data: ISetupStatus) => void;
   onError?: (error: unknown) => void;
-}
+};
 
 export function useSetupSubmitName(
   props: Props = {},

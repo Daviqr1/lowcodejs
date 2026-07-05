@@ -30,18 +30,18 @@ import { getNextDropdownOptionColor } from '@/lib/dropdown-colors';
 import type { IDropdown, IField, ITable, Paginated } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowDropdownFieldProps {
+type TableRowDropdownFieldProps = {
   field: IField;
   disabled?: boolean;
   tableSlug?: string;
   groupSlug?: string;
-}
+};
 
-interface DropdownOption {
+type DropdownOption = {
   value: string;
   label: string;
   color?: string | null;
-}
+};
 
 function normalizeDropdownLabel(label: string): string {
   return label.trim().toLowerCase();

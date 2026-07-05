@@ -26,10 +26,10 @@ const GUEST_PROFILES = [
   E_TABLE_PROFILE.VIEWER,
 ];
 
-interface FieldTableMembersProps {
+type FieldTableMembersProps = {
   label: string;
   disabled?: boolean;
-}
+};
 
 export function FieldTableMembers({
   label,

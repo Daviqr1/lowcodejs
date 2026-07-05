@@ -47,9 +47,9 @@ const MODE_LABELS: Record<EditorMode, string> = {
 
 // --- Composable subcomponents ---
 
-interface EditorCharCountProps {
+type EditorCharCountProps = {
   editor: TiptapEditor;
-}
+};
 
 export function EditorCharCount({
   editor,
@@ -66,9 +66,9 @@ export function EditorCharCount({
   );
 }
 
-interface EditorBubbleProps {
+type EditorBubbleProps = {
   editor: TiptapEditor;
-}
+};
 
 export function EditorBubble({ editor }: EditorBubbleProps): React.JSX.Element {
   return (
@@ -86,11 +86,11 @@ export { EditorToolbar } from './toolbar';
 
 // --- Mode Tabs ---
 
-interface EditorModeTabsProps {
+type EditorModeTabsProps = {
   mode: EditorMode;
   availableModes: Array<EditorMode>;
   onChange: (mode: EditorMode) => void;
-}
+};
 
 function EditorModeTabs({
   mode,
@@ -123,10 +123,10 @@ function EditorModeTabs({
 
 // --- Markdown Textarea ---
 
-interface MarkdownTextareaProps {
+type MarkdownTextareaProps = {
   value: string;
   onChange: (value: string) => void;
-}
+};
 
 function MarkdownTextarea({
   value,
@@ -146,10 +146,10 @@ function MarkdownTextarea({
 
 // --- HTML Textarea ---
 
-interface HtmlTextareaProps {
+type HtmlTextareaProps = {
   value: string;
   onChange: (value: string) => void;
-}
+};
 
 function HtmlTextarea({
   value,
@@ -265,7 +265,7 @@ async function uploadAndInsertImages(
 
 // --- Main Editor ---
 
-export interface EditorProps {
+export type EditorProps = {
   value?: string;
   onChange?: (markdown: string) => void;
   placeholder?: string;
@@ -283,7 +283,7 @@ export interface EditorProps {
   availableModes?: Array<EditorMode>;
   mentions?: MentionConfig;
   onEditorReady?: (editor: TiptapEditor) => void;
-}
+};
 
 // Array<any> nos args e o idiom para restringir T a qualquer funcao (unknown[]
 // rejeitaria funcoes com parametros concretos por contravariancia).

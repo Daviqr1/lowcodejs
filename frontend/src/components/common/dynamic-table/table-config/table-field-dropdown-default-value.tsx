@@ -11,11 +11,11 @@ import {
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IDropdown } from '@/lib/interfaces';
 
-interface TableFieldDropdownDefaultValueProps {
+type TableFieldDropdownDefaultValueProps = {
   label?: string;
   disabled?: boolean;
   dropdown: Array<IDropdown>;
-}
+};
 
 export function TableFieldDropdownDefaultValue({
   label = 'Valor padrão',

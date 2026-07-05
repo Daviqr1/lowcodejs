@@ -5,14 +5,14 @@ import { toast } from 'sonner';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import type { IRow, ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   /** Tabela em foco. Recebida via context do `<ExtensionSlot id="table.row.actions">`. */
   table?: ITable;
   /** Registro da linha onde o dropdown foi aberto. */
   row: IRow;
   /** Slug da tabela atual. */
   slug: string;
-}
+};
 
 export default function CopyRecordLinkPlugin({
   row,

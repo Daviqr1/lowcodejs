@@ -217,7 +217,7 @@ export function createRequiredValidator(fieldName: string): RequiredValidator {
   };
 }
 
-interface RowFormFieldsProps {
+type RowFormFieldsProps = {
   // Instância do TanStack Form (AppForm) com campos dinâmicos — sem tipo estático.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
@@ -225,7 +225,7 @@ interface RowFormFieldsProps {
   disabled: boolean;
   tableSlug: string;
   rowId?: string;
-}
+};
 
 export function RowFormFields({
   form,

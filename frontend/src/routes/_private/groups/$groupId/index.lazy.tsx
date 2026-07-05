@@ -84,11 +84,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface GroupUpdateContentProps {
+type GroupUpdateContentProps = {
   data: IGroup;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function GroupUpdateContent({
   data,

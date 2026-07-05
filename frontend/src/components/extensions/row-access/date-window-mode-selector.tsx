@@ -6,11 +6,11 @@ import type { DateWindowSettings } from './types';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-interface Props {
+type Props = {
   value: DateWindowSettings;
   onChange: (value: DateWindowSettings) => void;
   disabled?: boolean;
-}
+};
 
 export function DateWindowModeSelector({
   value,

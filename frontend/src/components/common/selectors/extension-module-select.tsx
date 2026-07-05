@@ -12,7 +12,7 @@ import { useExtensionsActiveList } from '@/hooks/tanstack-query/use-extensions-a
 import { E_EXTENSION_TYPE } from '@/lib/constant';
 import type { IMenuExtensionRef } from '@/lib/interfaces';
 
-interface ExtensionModuleSelectProps {
+type ExtensionModuleSelectProps = {
   label: string;
   value: IMenuExtensionRef | null | undefined;
   onValueChange: (value: IMenuExtensionRef | null) => void;
@@ -20,7 +20,7 @@ interface ExtensionModuleSelectProps {
   disabled?: boolean;
   required?: boolean;
   error?: string | null;
-}
+};
 
 function buildKey(ref: IMenuExtensionRef | null | undefined): string {
   if (!ref) return '';

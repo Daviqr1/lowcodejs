@@ -27,13 +27,13 @@ export type TableAction =
   | 'UPDATE_ROW'
   | 'REMOVE_ROW';
 
-interface UseTablePermissionResult {
+type UseTablePermissionResult = {
   isOwner: boolean;
   isAdmin: boolean;
   isOwnerOrAdmin: boolean;
   can: (action: TableAction) => boolean;
   isLoading: boolean;
-}
+};
 
 /**
  * Hook para verificar permissões de tabela (gating de UX no client).

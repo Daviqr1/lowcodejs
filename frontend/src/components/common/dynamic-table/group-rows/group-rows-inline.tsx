@@ -33,7 +33,7 @@ import type {
 import { buildFieldValidator, resolveFieldLabel } from '@/lib/table';
 import { AutoSaveStatusIndicator } from '@/routes/_private/tables/$slug/row/-auto-save-status';
 
-interface GroupRowsInlineProps {
+type GroupRowsInlineProps = {
   tableSlug: string;
   rowId?: string;
   field: IField;
@@ -47,7 +47,7 @@ interface GroupRowsInlineProps {
   // Sinaliza ao pai que um item de grupo foi adicionado, para que ele não
   // ofereça descartar o rascunho ao sair.
   onChildAdded?: () => void;
-}
+};
 
 type Card = {
   key: string;
@@ -179,7 +179,7 @@ export function GroupRowsInline(
   );
 }
 
-interface GroupItemCardProps {
+type GroupItemCardProps = {
   index: number;
   tableSlug: string;
   rowId: string;
@@ -187,7 +187,7 @@ interface GroupItemCardProps {
   fields: Array<IField>;
   item: IRow | null;
   onRemove: () => void;
-}
+};
 
 function GroupItemCard(props: GroupItemCardProps): React.JSX.Element {
   return (

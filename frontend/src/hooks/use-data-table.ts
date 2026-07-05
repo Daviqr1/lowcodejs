@@ -13,7 +13,7 @@ import React from 'react';
 
 import { usePersistedTableState } from './use-persisted-table-state';
 
-interface UseDataTableOptions<TData> {
+type UseDataTableOptions<TData> = {
   data: Array<TData>;
   columns: Array<ColumnDef<TData, unknown>>;
   pageCount?: number;
@@ -26,7 +26,7 @@ interface UseDataTableOptions<TData> {
   initialColumnSizing?: ColumnSizingState;
   persistKey?: string;
   meta?: TableMeta<TData>;
-}
+};
 
 export function useDataTable<TData>({
   data,

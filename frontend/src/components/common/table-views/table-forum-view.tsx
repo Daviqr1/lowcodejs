@@ -91,12 +91,12 @@ const forumPollingStrategy: ForumRealtimeStrategy = {
   },
 };
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableForumView({
   data,

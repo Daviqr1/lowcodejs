@@ -27,13 +27,13 @@ const NOBODY_DESCRIPTION = 'Ninguém pode realizar esta ação (bloqueado).';
 const GROUP_DESCRIPTION =
   'Apenas membros deste grupo que também tenham a permissão correspondente no grupo (regra de interseção).';
 
-interface PermissionBindingSelectProps {
+type PermissionBindingSelectProps = {
   value?: IPermissionBinding;
   onValueChange?: (value: IPermissionBinding) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
+};
 
 function groupLabel(slug: string, name: string): string {
   for (const [groupSlug, label] of Object.entries(USER_GROUP_MAPPER)) {

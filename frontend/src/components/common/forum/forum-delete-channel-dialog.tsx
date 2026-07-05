@@ -10,11 +10,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface ForumDeleteChannelDialogProps {
+type ForumDeleteChannelDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-}
+};
 
 export function ForumDeleteChannelDialog({
   open,

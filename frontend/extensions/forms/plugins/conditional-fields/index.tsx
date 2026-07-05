@@ -50,9 +50,9 @@ import { findConditionalRuleConflicts } from '@/lib/conditional-form-rules';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { ICategory, IField, ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   table?: ITable;
-}
+};
 
 type Option = {
   id: string;
@@ -319,7 +319,7 @@ function getConflictMessage(
   return `${ruleLabel}: o campo "${fieldName}" está marcado para mostrar e ocultar ao mesmo tempo.`;
 }
 
-interface RuleEditorProps {
+type RuleEditorProps = {
   rule: ConditionalFieldRule;
   table: ITable;
   index: number;
@@ -330,7 +330,7 @@ interface RuleEditorProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
-}
+};
 
 function RuleEditor({
   rule,

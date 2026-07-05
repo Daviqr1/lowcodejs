@@ -16,7 +16,7 @@ import type { IDropdown, IUser } from '@/lib/interfaces';
 import { getUserInitials } from '@/lib/kanban-helpers';
 import { cn } from '@/lib/utils';
 
-interface GanttToolbarProps {
+type GanttToolbarProps = {
   zoom: ZoomLevel;
   onZoomChange: (level: ZoomLevel) => void;
   onPrev: () => void;
@@ -28,7 +28,7 @@ interface GanttToolbarProps {
   onFilterMemberChange: (id: string | null) => void;
   listOptions: Array<IDropdown>;
   allMembers: Array<IUser>;
-}
+};
 
 export function GanttToolbar({
   zoom,

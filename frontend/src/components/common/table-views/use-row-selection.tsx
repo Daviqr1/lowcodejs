@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Checkbox } from '@/components/ui/checkbox';
 
-export interface RowSelectionContextValue {
+export type RowSelectionContextValue = {
   selectedIds: Array<string>;
   count: number;
   isSelected: (id: string) => boolean;
@@ -10,19 +10,19 @@ export interface RowSelectionContextValue {
   selectMany: (ids: Array<string>) => void;
   deselectMany: (ids: Array<string>) => void;
   clear: () => void;
-}
+};
 
 const RowSelectionContext =
   React.createContext<RowSelectionContextValue | null>(null);
 
-interface RowSelectionProviderProps {
+type RowSelectionProviderProps = {
   /**
    * Quando muda, a selecao e zerada. Use para limpar ao trocar de tabela,
    * pagina, modo de visualizacao ou lixeira.
    */
   resetKey?: string;
   children: React.ReactNode;
-}
+};
 
 export function RowSelectionProvider({
   resetKey,

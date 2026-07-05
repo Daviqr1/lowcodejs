@@ -11,7 +11,7 @@ import type { DocBlock } from '@/lib/document-helpers';
 import { getRowLeafId } from '@/lib/document-helpers';
 import type { IRow } from '@/lib/interfaces';
 
-interface DocumentMainProps {
+type DocumentMainProps = {
   rows: Array<IRow>;
   total: number;
   filterLabel?: string | null;
@@ -21,7 +21,7 @@ interface DocumentMainProps {
   getHeadingLevel: (row: IRow) => number;
   categorySlug: string;
   selectedCategoryId?: string | null;
-}
+};
 
 export function DocumentMain({
   rows,

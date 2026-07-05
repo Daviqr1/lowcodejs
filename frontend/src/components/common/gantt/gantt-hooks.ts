@@ -15,7 +15,7 @@ import type { FieldMap } from '@/lib/kanban-types';
 
 // ─── Hook: drag de barras (mover, resize, troca de grupo) ───
 
-interface UseBarDragOptions {
+type UseBarDragOptions = {
   dayWidth: number;
   fields: FieldMap;
   tableSlug: string;
@@ -29,9 +29,9 @@ interface UseBarDragOptions {
     updateData: Record<string, unknown>,
     optimistic: (prev: Array<IRow>) => Array<IRow>,
   ) => void;
-}
+};
 
-interface UseBarDragReturn {
+type UseBarDragReturn = {
   dragState: DragState | null;
   dragDelta: number;
   dragDeltaY: number;
@@ -40,7 +40,7 @@ interface UseBarDragReturn {
     ganttRow: GanttRow,
     mode: DragMode,
   ) => void;
-}
+};
 
 export function useBarDrag({
   dayWidth,
@@ -195,19 +195,19 @@ export function useBarDrag({
 
 // ─── Hook: criar tarefa arrastando no timeline ───
 
-interface UseCreateDragOptions {
+type UseCreateDragOptions = {
   dayWidth: number;
   viewStart: Date;
   fields: FieldMap;
   tableSlug: string;
   timelineRef: React.RefObject<HTMLDivElement | null>;
   onCreate: (payload: Record<string, unknown>) => void;
-}
+};
 
-interface UseCreateDragReturn {
+type UseCreateDragReturn = {
   createDrag: CreateDragState | null;
   handleTimelineMouseDown: (e: React.MouseEvent, groupOptionId: string) => void;
-}
+};
 
 export function useCreateDrag({
   dayWidth,

@@ -5,18 +5,18 @@ import type { AxiosError } from 'axios';
 import { API } from '@/lib/api';
 import type { IRow } from '@/lib/interfaces';
 
-export interface GroupRowAutoSavePayload {
+export type GroupRowAutoSavePayload = {
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   itemId?: string;
   data: Record<string, unknown>;
-}
+};
 
-interface UseAutoSaveGroupRowProps {
+type UseAutoSaveGroupRowProps = {
   onSuccess?: (data: IRow, variables: GroupRowAutoSavePayload) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useAutoSaveGroupRow(
   props: UseAutoSaveGroupRowProps,

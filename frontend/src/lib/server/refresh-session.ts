@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
 
-interface RefreshResult {
+type RefreshResult = {
   ok: boolean;
   cookie: string;
-}
+};
 
 // Renova a sessão no contexto SSR: chama o backend com os cookies recebidos,
 // repassa os cookies renovados (Set-Cookie) ao browser e devolve um Cookie

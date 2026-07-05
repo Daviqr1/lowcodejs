@@ -13,14 +13,14 @@ import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface FieldComboboxProps {
+type FieldComboboxProps = {
   value?: string;
   onValueChange?: (value: string, slug?: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   tableSlug: string;
-}
+};
 
 export function FieldCombobox({
   value = '',

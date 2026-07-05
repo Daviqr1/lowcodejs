@@ -7,18 +7,18 @@ import { queryKeys } from './_query-keys';
 import { API } from '@/lib/api';
 import type { IRow } from '@/lib/interfaces';
 
-interface GroupRowUpdatePayload {
+type GroupRowUpdatePayload = {
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   itemId: string;
   data: Record<string, unknown>;
-}
+};
 
-interface UseUpdateGroupRowProps {
+type UseUpdateGroupRowProps = {
   onSuccess?: (data: IRow, variables: GroupRowUpdatePayload) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useUpdateGroupRow(
   props: UseUpdateGroupRowProps,

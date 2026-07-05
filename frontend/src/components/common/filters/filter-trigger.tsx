@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface FilterTriggerProps {
+type FilterTriggerProps = {
   activeFiltersCount: number;
   onClick: () => void;
   isOpen: boolean;
-}
+};
 
 export function FilterTrigger({
   activeFiltersCount,

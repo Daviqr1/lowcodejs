@@ -3,14 +3,14 @@ import { Switch } from '@/components/ui/switch';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface FieldBooleanSwitchProps {
+type FieldBooleanSwitchProps = {
   label: string;
   description?: string;
   disabled?: boolean;
   yesLabel?: string;
   noLabel?: string;
   className?: string;
-}
+};
 
 export function FieldBooleanSwitch({
   label,

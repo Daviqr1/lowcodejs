@@ -29,19 +29,19 @@ import { resolveLayoutField } from '@/lib/layout-field-resolver';
 import { HeaderSorter } from '@/lib/layout-pickers';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableGridViewProps {
+type TableGridViewProps = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
   layoutFields?: ILayoutFields | null;
-}
+};
 
-interface RenderGridCellProps {
+type RenderGridCellProps = {
   field: IField;
   row: IRow;
   tableSlug: string;
   isThumb?: boolean;
-}
+};
 
 function RenderGridCell({
   field,

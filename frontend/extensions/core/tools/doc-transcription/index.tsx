@@ -19,12 +19,12 @@ function TabSkeleton(): React.JSX.Element {
   );
 }
 
-interface Props {
+type Props = {
   slot?: string;
   table?: ITable;
   slug?: string;
   onFillFields?: (data: Record<string, string | null>) => void;
-}
+};
 
 export default function DocTranscriptionTool({
   slot,

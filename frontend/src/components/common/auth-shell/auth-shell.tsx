@@ -5,10 +5,10 @@ import { BrandPanel } from './brand-panel';
 import { Logo } from '@/components/common/layout/logo';
 import { cn } from '@/lib/utils';
 
-interface AuthShellProps {
+type AuthShellProps = {
   children: React.ReactNode;
   contentClassName?: string;
-}
+};
 
 export function AuthShell({
   children,

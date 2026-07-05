@@ -10,14 +10,14 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { FIELD_TYPE_OPTIONS } from '@/lib/constant';
 import { cn } from '@/lib/utils';
 
-interface TableFieldTypeSelectProps {
+type TableFieldTypeSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   blockedTypes?: Array<string>;
   required?: boolean;
   onTypeChange?: (type: string) => void;
-}
+};
 
 export function TableFieldTypeSelect({
   label,

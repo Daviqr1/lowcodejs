@@ -14,13 +14,13 @@ import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-table
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import type { ITable } from '@/lib/interfaces';
 
-interface TableComboboxPaginatedProps {
+type TableComboboxPaginatedProps = {
   value?: string;
   onValueChange?: (value: string, slug?: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
+};
 
 export function TableComboboxPaginated({
   value = '',

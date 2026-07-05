@@ -25,10 +25,10 @@ import type { IField, IUser } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowUserFieldProps {
+type TableRowUserFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 type UserOption = {
   value: string;

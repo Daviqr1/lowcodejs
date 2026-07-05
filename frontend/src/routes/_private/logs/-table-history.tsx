@@ -29,12 +29,12 @@ import { resolveLoggerNavigateTarget } from '@/lib/logger-route';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authentication';
 
-interface ActionsCellProps {
+type ActionsCellProps = {
   entry: ILogger;
   onOpenJson: (entry: ILogger) => void;
   onNavigate: (entry: ILogger) => void;
   canNavigate: boolean;
-}
+};
 
 function ActionsCell({
   entry,
@@ -349,12 +349,12 @@ function buildColumns(params: {
   ];
 }
 
-interface Props {
+type Props = {
   data: Array<ILogger>;
   toolbarPortal: HTMLDivElement | null;
   onOpenJson: (entry: ILogger) => void;
   isLoading: boolean;
-}
+};
 
 export function TableHistory({
   data,

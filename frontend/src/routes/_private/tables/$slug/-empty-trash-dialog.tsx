@@ -10,9 +10,9 @@ import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
 import { QueryClient } from '@/lib/query-client';
 
-interface RowEmptyTrashDialogProps {
+type RowEmptyTrashDialogProps = {
   slug: string;
-}
+};
 
 export function RowEmptyTrashDialog({
   slug,

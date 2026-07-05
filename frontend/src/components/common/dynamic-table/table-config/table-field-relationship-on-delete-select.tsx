@@ -25,12 +25,12 @@ const ON_DELETE_LIST = [
   },
 ];
 
-interface TableFieldRelationshipOnDeleteSelectProps {
+type TableFieldRelationshipOnDeleteSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function TableFieldRelationshipOnDeleteSelect({
   label,

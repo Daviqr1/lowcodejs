@@ -365,10 +365,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface Props {
+type Props = {
   data: Array<IUser>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
   const sidebar = useSidebar();

@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/card';
 import { useSettingRead } from '@/hooks/tanstack-query/use-setting-read';
 
-interface ShortcutCardProps {
+type ShortcutCardProps = {
   to: '/tables' | '/extensions' | '/tools';
   icon: typeof TableIcon;
   title: string;
   description: string;
-}
+};
 
 function ShortcutCard({
   to,

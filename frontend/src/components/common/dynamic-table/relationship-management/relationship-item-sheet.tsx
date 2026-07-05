@@ -35,7 +35,7 @@ import {
   buildUpdateRowDefaultValues,
 } from '@/lib/table';
 
-interface RelationshipItemSheetProps {
+type RelationshipItemSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   field: IField;
@@ -46,7 +46,7 @@ interface RelationshipItemSheetProps {
   recordId: string;
   editRow: IRow | null;
   onChanged: () => void;
-}
+};
 
 export function RelationshipItemSheet(
   props: RelationshipItemSheetProps,

@@ -318,10 +318,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface Props {
+type Props = {
   data: Array<IGroup>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
   const sidebar = useSidebar();

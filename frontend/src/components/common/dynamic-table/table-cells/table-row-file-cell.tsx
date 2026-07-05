@@ -5,12 +5,12 @@ import type { IField, IRow, IStorage } from '@/lib/interfaces';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { cn } from '@/lib/utils';
 
-interface TableRowFileCellProps {
+type TableRowFileCellProps = {
   row: IRow;
   field: IField;
   isGallery?: boolean;
   isCardOrMosaic?: boolean;
-}
+};
 
 export function TableRowFileCell({
   field,

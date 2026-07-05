@@ -1,10 +1,10 @@
 import { E_FIELD_FORMAT } from '@/lib/constant';
 import type { IField, IRow } from '@/lib/interfaces';
 
-interface TableRowTextShortCellProps {
+type TableRowTextShortCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowTextShortCell({
   field,

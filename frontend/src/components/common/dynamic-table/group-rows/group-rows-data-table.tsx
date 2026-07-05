@@ -36,13 +36,13 @@ function columnWidth(field: IField): string | undefined {
   return `${field.widthInList}px`;
 }
 
-interface GroupRowsDataTableProps {
+type GroupRowsDataTableProps = {
   tableSlug: string;
   rowId: string;
   field: IField;
   table: ITable;
   canManage?: boolean;
-}
+};
 
 export function GroupRowsDataTable({
   tableSlug,

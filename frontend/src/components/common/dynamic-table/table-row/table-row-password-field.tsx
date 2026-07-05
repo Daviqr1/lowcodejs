@@ -14,10 +14,10 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowPasswordFieldProps {
+type TableRowPasswordFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 export function TableRowPasswordField({
   field,

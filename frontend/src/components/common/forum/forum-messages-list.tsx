@@ -19,7 +19,7 @@ import { getUserInitials } from '@/lib/kanban-helpers';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { cn } from '@/lib/utils';
 
-interface ForumMessagesListProps {
+type ForumMessagesListProps = {
   messages: Array<ForumMessage>;
   currentUserId: string;
   endRef: React.RefObject<HTMLDivElement | null>;
@@ -33,7 +33,7 @@ interface ForumMessagesListProps {
   scrollToMessageTick?: number;
   highlightedMessageId?: string | null;
   highlightedMessageTick?: number;
-}
+};
 
 export function ForumMessagesList({
   messages,

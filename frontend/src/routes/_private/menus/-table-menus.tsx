@@ -625,10 +625,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface TableMenusProps {
+type TableMenusProps = {
   data: Array<IMenu>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableMenus({
   data,

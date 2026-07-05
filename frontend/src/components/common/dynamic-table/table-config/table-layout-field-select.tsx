@@ -9,13 +9,13 @@ import {
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface TableLayoutFieldSelectProps {
+type TableLayoutFieldSelectProps = {
   label: string;
   placeholder?: string;
   emptyLabel?: string;
   disabled?: boolean;
   options: Array<{ label: string; value: string }>;
-}
+};
 
 export function TableLayoutFieldSelect({
   label,

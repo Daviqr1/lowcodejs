@@ -3,11 +3,11 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
-interface ComboboxLoadMoreProps {
+type ComboboxLoadMoreProps = {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
-}
+};
 
 export function ComboboxLoadMore({
   hasNextPage,

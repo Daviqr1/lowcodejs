@@ -3,11 +3,11 @@ import { E_FIELD_FORMAT } from '@/lib/constant';
 import type { IField, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowTextLongCellProps {
+type TableRowTextLongCellProps = {
   row: IRow;
   field: IField;
   className?: string;
-}
+};
 
 export function TableRowTextLongCell({
   field,

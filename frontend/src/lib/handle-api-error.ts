@@ -3,14 +3,14 @@ import { toast } from 'sonner';
 
 import type { IHTTPExeptionError } from '@/lib/interfaces';
 
-interface HandleApiErrorOptions {
+type HandleApiErrorOptions = {
   context: string;
   onFieldErrors?: (errors: Record<string, string>) => void;
   causeHandlers?: Record<
     string,
     (errorData: IHTTPExeptionError<Record<string, string>>) => void
   >;
-}
+};
 
 export function handleApiError(
   error: unknown,

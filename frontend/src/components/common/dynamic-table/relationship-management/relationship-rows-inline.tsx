@@ -44,7 +44,13 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, IRelationshipLink, IRow, ITable } from '@/lib/interfaces';
+import type {
+  IField,
+  IRelationshipLink,
+  IRow,
+  ITable,
+  Merge,
+} from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import {
   buildCreateRowDefaultValues,
@@ -121,7 +127,7 @@ function allRequiredFilled(
   return true;
 }
 
-interface RelationshipRowsInlineProps {
+type RelationshipRowsInlineProps = {
   field: IField;
   parentTableSlug: string;
   rowId?: string;
@@ -129,7 +135,7 @@ interface RelationshipRowsInlineProps {
   onEnsureParentRow?: () => Promise<string | undefined>;
   onChildAdded?: () => void;
   onLinkCountChange?: (count: number) => void;
-}
+};
 
 export function RelationshipRowsInline(
   props: RelationshipRowsInlineProps,
@@ -490,7 +496,7 @@ export function RelationshipRowsInline(
   );
 }
 
-interface SortableRelationshipCardProps {
+type SortableRelationshipCardProps = {
   linkId: string;
   index: number;
   sortable: boolean;
@@ -500,7 +506,7 @@ interface SortableRelationshipCardProps {
   canEdit: boolean;
   isRemoving: boolean;
   onRemove: () => void;
-}
+};
 
 function SortableRelationshipCard({
   linkId,
@@ -555,7 +561,7 @@ function SortableRelationshipCard({
   );
 }
 
-interface RelationshipItemCardProps {
+type RelationshipItemCardProps = {
   index: number;
   otherTableSlug: string;
   otherId: string;
@@ -564,7 +570,7 @@ interface RelationshipItemCardProps {
   isRemoving: boolean;
   onRemove: () => void;
   dragHandle: React.ReactNode;
-}
+};
 
 export function RelationshipItemCard(
   props: RelationshipItemCardProps,
@@ -607,9 +613,12 @@ function RelationshipItemCardLoader(
   );
 }
 
-interface RelationshipItemCardFormProps extends RelationshipItemCardProps {
-  row: IRow;
-}
+type RelationshipItemCardFormProps = Merge<
+  RelationshipItemCardProps,
+  {
+    row: IRow;
+  }
+>;
 
 function RelationshipItemCardForm({
   row,
@@ -729,7 +738,7 @@ function RelationshipItemCardForm({
   );
 }
 
-interface RelationshipDraftCardProps {
+type RelationshipDraftCardProps = {
   index: number;
   otherTableSlug: string;
   parentTableSlug: string;
@@ -739,7 +748,7 @@ interface RelationshipDraftCardProps {
   fields: Array<IField>;
   onCreated: () => void;
   onCancel: () => void;
-}
+};
 
 function RelationshipDraftCard(
   props: RelationshipDraftCardProps,
@@ -905,7 +914,7 @@ function RelationshipDraftCardContent({
   );
 }
 
-interface RelationshipCardShellProps {
+type RelationshipCardShellProps = {
   index: number;
   status: React.ComponentProps<typeof AutoSaveStatusIndicator>['status'];
   lastSavedAt: React.ComponentProps<
@@ -916,7 +925,7 @@ interface RelationshipCardShellProps {
   onRemove: () => void;
   dragHandle: React.ReactNode;
   children: React.ReactNode;
-}
+};
 
 function RelationshipCardShell({
   index,

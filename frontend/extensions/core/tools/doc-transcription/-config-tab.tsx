@@ -29,13 +29,13 @@ import { useDocTranscriptionConfigUpdate } from '@/hooks/tanstack-query/use-doc-
 import { handleApiError } from '@/lib/handle-api-error';
 import { cn } from '@/lib/utils';
 
-interface OpenAIModel {
+type OpenAIModel = {
   id: string;
   label: string;
   group: string;
   inputPer1M: string;
   outputPer1M: string;
-}
+};
 
 const OPENAI_MODELS: Array<OpenAIModel> = [
   // GPT-5.5

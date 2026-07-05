@@ -11,10 +11,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-interface ImageUploadProps {
+type ImageUploadProps = {
   children: React.ReactNode;
   onUpload: (url: string) => void;
-}
+};
 
 export function ImageUpload({
   children,

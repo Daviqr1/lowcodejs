@@ -37,17 +37,17 @@ import { cn } from '@/lib/utils';
 // Sentinela para "sem ordenação por campo" (mantém a ordem manual de drag-drop).
 const MANUAL_SORT_VALUE = '__manual__';
 
-export interface KanbanColumnSortFieldOption {
+export type KanbanColumnSortFieldOption = {
   label: string;
   value: string;
-}
+};
 
-export interface KanbanListUpdate {
+export type KanbanListUpdate = {
   label: string;
   color: string | null;
   sortField: string | null;
   sortDirection: 'asc' | 'desc' | null;
-}
+};
 
 export function KanbanColumn({
   option,

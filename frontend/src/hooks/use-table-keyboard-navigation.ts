@@ -1,16 +1,16 @@
 import type { Table as TanstackTable } from '@tanstack/react-table';
 import React from 'react';
 
-interface FocusedCell {
+type FocusedCell = {
   rowIndex: number;
   colIndex: number;
-}
+};
 
-interface UseTableKeyboardNavigationOptions<TData> {
+type UseTableKeyboardNavigationOptions<TData> = {
   table: TanstackTable<TData>;
   enabled?: boolean;
   onRowClick?: (row: TData) => void;
-}
+};
 
 export function useTableKeyboardNavigation<TData>({
   table,

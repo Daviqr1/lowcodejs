@@ -3,12 +3,12 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-interface ForumHeaderProps {
+type ForumHeaderProps = {
   title: string;
   description: string;
   composerLayout: 'side' | 'bottom';
   onChangeLayout: (layout: 'side' | 'bottom') => void;
-}
+};
 
 export function ForumHeader({
   title,

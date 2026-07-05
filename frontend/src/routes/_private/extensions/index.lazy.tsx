@@ -122,7 +122,7 @@ function getTableScopeLabel(extension: IExtension): string | null {
   return `${count} tabela${plural} selecionada${plural}`;
 }
 
-interface ExtensionCardProps {
+type ExtensionCardProps = {
   extension: IExtension;
   canConfigurePlugins: boolean;
   onConfigureTableScope: (extension: IExtension) => void;
@@ -130,7 +130,7 @@ interface ExtensionCardProps {
     extension: IExtension,
     initialTableId?: string,
   ) => void;
-}
+};
 
 function ExtensionCard({
   extension,
@@ -267,7 +267,7 @@ function ExtensionCard({
   );
 }
 
-interface ExtensionTableRowProps {
+type ExtensionTableRowProps = {
   extension: IExtension;
   canConfigurePlugins: boolean;
   onConfigureTableScope: (extension: IExtension) => void;
@@ -275,7 +275,7 @@ interface ExtensionTableRowProps {
     extension: IExtension,
     initialTableId?: string,
   ) => void;
-}
+};
 
 function ExtensionTableRow({
   extension,
@@ -390,11 +390,11 @@ function ExtensionTableRow({
   );
 }
 
-interface TableScopeSheetProps {
+type TableScopeSheetProps = {
   extension: IExtension | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
 function TableScopeSheet({
   extension,

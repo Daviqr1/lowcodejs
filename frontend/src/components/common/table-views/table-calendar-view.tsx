@@ -33,12 +33,12 @@ import { isFieldShownInContext } from '@/lib/permission';
 import { QueryClient } from '@/lib/query-client';
 import { mountRowValue } from '@/lib/table';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableCalendarView({
   data,

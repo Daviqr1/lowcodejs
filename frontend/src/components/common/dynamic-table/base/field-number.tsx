@@ -8,13 +8,13 @@ import {
 } from '@/components/ui/input-group';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldNumberProps {
+type FieldNumberProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   min?: number;
   required?: boolean;
-}
+};
 
 export function FieldNumber({
   label,

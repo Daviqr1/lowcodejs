@@ -57,12 +57,12 @@ import {
 } from '@/routes/_private/tables/$slug/row/create/-create-form';
 import { useAuthStore } from '@/stores/authentication';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableKanbanView({
   data,

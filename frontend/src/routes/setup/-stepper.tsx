@@ -5,9 +5,9 @@ import { SETUP_STEPS, SETUP_STEP_LABELS } from '@/lib/constant';
 import type { SetupStep } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface StepperProps {
+type StepperProps = {
   currentStep: SetupStep;
-}
+};
 
 function resolveState(
   index: number,

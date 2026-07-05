@@ -97,11 +97,11 @@ function buildTimedLayouts(
   });
 }
 
-interface CalendarWeekViewProps {
+type CalendarWeekViewProps = {
   currentDate: Date;
   events: Array<CalendarEventItem>;
   onSelectEvent: (event: CalendarEventItem) => void;
-}
+};
 
 export function CalendarWeekView({
   currentDate,

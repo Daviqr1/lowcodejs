@@ -56,18 +56,18 @@ type MenuTreeNode = {
   children: Array<MenuTreeNode>;
 };
 
-interface MenuReorderDialogProps {
+type MenuReorderDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
-interface SortableMenuNodeProps {
+type SortableMenuNodeProps = {
   node: MenuTreeNode;
   level: number;
   parentId: string | null;
   dropMode: DropMode | null;
   children?: React.ReactNode;
-}
+};
 
 const TypeMapper = {
   [E_MENU_ITEM_TYPE.PAGE]: 'Página',

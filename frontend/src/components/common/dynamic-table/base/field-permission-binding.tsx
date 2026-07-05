@@ -3,11 +3,11 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IPermissionBinding } from '@/lib/interfaces';
 
-interface FieldPermissionBindingProps {
+type FieldPermissionBindingProps = {
   label: string;
   description?: string;
   disabled?: boolean;
-}
+};
 
 export function FieldPermissionBinding({
   label,

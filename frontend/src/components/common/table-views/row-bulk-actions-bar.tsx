@@ -32,11 +32,11 @@ import { API } from '@/lib/api';
 import type { ITable } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
 
-interface RowBulkActionsBarProps {
+type RowBulkActionsBarProps = {
   slug: string;
   table?: ITable;
   isTrashView: boolean;
-}
+};
 
 /**
  * Barra de acoes em lote, exibida quando ha registros selecionados em qualquer

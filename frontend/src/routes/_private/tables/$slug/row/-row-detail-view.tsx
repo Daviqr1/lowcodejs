@@ -44,12 +44,12 @@ import type { IField, IRow, ITable } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface RowDetailViewProps {
+type RowDetailViewProps = {
   table: ITable;
   data: IRow;
   onBack: () => void;
   onEdit: () => void;
-}
+};
 
 function renderCell(
   field: IField,

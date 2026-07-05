@@ -19,12 +19,12 @@ function extensionTypeToFolder(type: string): ExtensionEntryType {
  */
 export type ExtensionSlotContext = Record<string, unknown>;
 
-interface ExtensionSlotProps {
+type ExtensionSlotProps = {
   /** Identificador do slot (ex: "table.actions"). O plugin é renderizado se este id estiver em `placement.slots` do manifest. */
   id: string;
   /** Props passadas como spread para o componente da extensão. */
   context?: ExtensionSlotContext;
-}
+};
 
 function isPluginAllowedForTable(
   plugin: IActiveExtension,
@@ -36,11 +36,11 @@ function isPluginAllowedForTable(
   return plugin.tableScope.tableIds.includes(tableId);
 }
 
-interface ExtensionPluginRenderProps {
+type ExtensionPluginRenderProps = {
   plugin: IActiveExtension;
   slot: string;
   context: ExtensionSlotContext;
-}
+};
 
 function ExtensionPluginRender({
   plugin,

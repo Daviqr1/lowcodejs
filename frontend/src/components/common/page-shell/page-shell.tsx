@@ -1,11 +1,15 @@
 import { ArrowLeftIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import type { Merge } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface PageShellProps extends React.ComponentProps<'div'> {
-  children: React.ReactNode;
-}
+type PageShellProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    children: React.ReactNode;
+  }
+>;
 
 function PageShellRoot({
   children,
@@ -23,10 +27,13 @@ function PageShellRoot({
   );
 }
 
-interface PageShellHeaderProps extends React.ComponentProps<'div'> {
-  children: React.ReactNode;
-  borderBottom?: boolean;
-}
+type PageShellHeaderProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    children: React.ReactNode;
+    borderBottom?: boolean;
+  }
+>;
 
 function PageShellHeader({
   children,
@@ -49,9 +56,12 @@ function PageShellHeader({
   );
 }
 
-interface PageShellContentProps extends React.ComponentProps<'div'> {
-  children: React.ReactNode;
-}
+type PageShellContentProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    children: React.ReactNode;
+  }
+>;
 
 function PageShellContent({
   children,
@@ -72,9 +82,12 @@ function PageShellContent({
   );
 }
 
-interface PageShellFooterProps extends React.ComponentProps<'div'> {
-  children?: React.ReactNode;
-}
+type PageShellFooterProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    children?: React.ReactNode;
+  }
+>;
 
 function PageShellFooter({
   children,
@@ -92,12 +105,12 @@ function PageShellFooter({
   );
 }
 
-interface PageHeaderProps {
+type PageHeaderProps = {
   title: string;
   onBack?: () => void;
   children?: React.ReactNode;
   className?: string;
-}
+};
 
 export function PageHeader({
   title,

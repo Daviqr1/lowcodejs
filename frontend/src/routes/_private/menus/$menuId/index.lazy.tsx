@@ -79,11 +79,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface MenuUpdateContentProps {
+type MenuUpdateContentProps = {
   data: IMenu;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function MenuUpdateContent({
   data,

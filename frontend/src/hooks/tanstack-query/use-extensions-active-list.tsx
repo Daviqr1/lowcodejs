@@ -22,9 +22,9 @@ export const extensionActiveListOptions = (): ReturnType<
     staleTime: 60 * 1000,
   });
 
-interface UseExtensionsActiveListOptions {
+type UseExtensionsActiveListOptions = {
   enabled?: boolean;
-}
+};
 
 export function useExtensionsActiveList(
   options?: UseExtensionsActiveListOptions,

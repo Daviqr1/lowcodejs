@@ -10,7 +10,7 @@ import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import { getUserInitials } from '@/lib/kanban-helpers';
 import { cn } from '@/lib/utils';
 
-interface GanttBarProps {
+type GanttBarProps = {
   ganttRow: GanttRow;
   bar: { left: number; width: number };
   barColor: string;
@@ -24,7 +24,7 @@ interface GanttBarProps {
     mode: DragMode,
   ) => void;
   onBarClick: () => void;
-}
+};
 
 export function GanttBar({
   ganttRow,

@@ -125,7 +125,7 @@ ${fieldSlugsConst}
 };
 
 // Dynamic field.get() and field.set() overloads for this table
-interface FieldApiDynamic {
+type FieldApiDynamic = {
 ${fieldGetOverloads}
   get(slug: string): any;
 ${fieldSetOverloads}

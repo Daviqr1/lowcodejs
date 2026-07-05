@@ -32,13 +32,13 @@ import { useTreeEditor } from './use-tree-editor';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface TreeEditorProps {
+type TreeEditorProps = {
   initialData?: Array<TreeNode>;
   onChange?: (data: Array<TreeNode>) => void;
   className?: string;
-}
+};
 
-interface SortableTreeNodeItemProps {
+type SortableTreeNodeItemProps = {
   node: TreeNode;
   level: number;
   parentId: string | null;
@@ -53,7 +53,7 @@ interface SortableTreeNodeItemProps {
   onSaveEdit: (id: string, label: string) => void;
   onCancelEdit: () => void;
   children?: React.ReactNode;
-}
+};
 
 function SortableTreeNodeItem({
   node,

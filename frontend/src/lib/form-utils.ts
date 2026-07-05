@@ -2,11 +2,11 @@ import type { AnyFieldMetaBase, AnyFormApi } from '@tanstack/form-core';
 
 export const SERVER_ERROR_KEY = 'onServer' as const;
 
-interface FieldMetaLike {
+type FieldMetaLike = {
   isTouched?: boolean;
   isValid?: boolean;
   errorMap?: AnyFieldMetaBase['errorMap'];
-}
+};
 
 export function getFieldInvalidState(meta: FieldMetaLike): boolean {
   const hasServerError = Boolean(meta.errorMap?.[SERVER_ERROR_KEY]);

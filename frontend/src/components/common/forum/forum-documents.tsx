@@ -6,9 +6,9 @@ import type { ForumDocument } from './forum-types';
 import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 
-interface ForumDocumentsProps {
+type ForumDocumentsProps = {
   documents: Array<ForumDocument>;
-}
+};
 
 export function ForumDocuments({
   documents,

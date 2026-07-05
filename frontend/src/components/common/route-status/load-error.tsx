@@ -11,10 +11,10 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 
-interface LoadErrorProps {
+type LoadErrorProps = {
   message?: string;
   refetch: () => void;
-}
+};
 
 export function LoadError({
   message = 'Houve um problema ao carregar dados',

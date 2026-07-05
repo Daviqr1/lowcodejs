@@ -20,7 +20,7 @@ import { useUserReadPaginatedInfinite } from '@/hooks/tanstack-query/use-user-re
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser } from '@/lib/interfaces';
 
-interface MemberMultiSelectProps {
+type MemberMultiSelectProps = {
   value: Array<string>;
   onChange: (value: Array<string>) => void;
   /**
@@ -30,7 +30,7 @@ interface MemberMultiSelectProps {
   initialUsers?: Array<IPasswordUserRef>;
   disabled?: boolean;
   placeholder?: string;
-}
+};
 
 /**
  * Multi-select de membros baseado no `ForumUserMultiSelect`, porém aceita

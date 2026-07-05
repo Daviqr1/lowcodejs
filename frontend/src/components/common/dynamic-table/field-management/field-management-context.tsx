@@ -10,7 +10,7 @@ export type VisibilityKey =
 
 export type WidthKey = 'widthInForm' | 'widthInList' | 'widthInDetail';
 
-export interface FieldManagementActions {
+export type FieldManagementActions = {
   fields: Array<IField>;
   fieldOrderList: Array<string>;
   fieldOrderForm: Array<string>;
@@ -34,7 +34,7 @@ export interface FieldManagementActions {
   deletingFieldId: string | null;
   restoringFieldId: string | null;
   isSavingOrder: boolean;
-}
+};
 
 const FieldManagementContext = createContext<FieldManagementActions | null>(
   null,

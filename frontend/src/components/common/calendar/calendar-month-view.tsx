@@ -16,11 +16,11 @@ import { eventOccursOnDay, formatEventTimeRange } from '@/lib/calendar-helpers';
 import type { CalendarEventItem } from '@/lib/calendar-helpers';
 import { cn } from '@/lib/utils';
 
-interface CalendarMonthViewProps {
+type CalendarMonthViewProps = {
   currentDate: Date;
   events: Array<CalendarEventItem>;
   onSelectEvent: (event: CalendarEventItem) => void;
-}
+};
 
 export function CalendarMonthView({
   currentDate,

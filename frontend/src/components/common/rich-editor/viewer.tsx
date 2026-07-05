@@ -5,10 +5,10 @@ import remarkGfm from 'remark-gfm';
 
 import { cn } from '@/lib/utils';
 
-interface EditorViewerProps {
+type EditorViewerProps = {
   content: string;
   className?: string;
-}
+};
 
 export function ContentViewer({
   content,

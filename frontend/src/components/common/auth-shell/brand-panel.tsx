@@ -9,15 +9,15 @@ import { cn } from '@/lib/utils';
 
 const rootApi = getRouteApi('__root__');
 
-interface BrandPanelProps {
+type BrandPanelProps = {
   className?: string;
-}
+};
 
-interface Feature {
+type Feature = {
   icon: React.ReactNode;
   title: string;
   description: string;
-}
+};
 
 const FEATURES: Array<Feature> = [
   {

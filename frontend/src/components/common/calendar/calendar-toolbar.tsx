@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 
 export type CalendarViewMode = 'week' | 'month' | 'agenda';
 
-interface CalendarToolbarProps {
+type CalendarToolbarProps = {
   currentDate: Date;
   viewMode: CalendarViewMode;
   onPrevious: () => void;
@@ -28,7 +28,7 @@ interface CalendarToolbarProps {
   onToday: () => void;
   onChangeView: (mode: CalendarViewMode) => void;
   onSelectDate: (date: Date) => void;
-}
+};
 
 function getTitle(currentDate: Date, viewMode: CalendarViewMode): string {
   if (viewMode === 'month') {

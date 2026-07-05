@@ -45,12 +45,12 @@ async function copy(value: string, label: string): Promise<void> {
 
 const MASK = '••••••••••••';
 
-interface RowActionsProps {
+type RowActionsProps = {
   entry: IPasswordEntry;
   canEdit: boolean;
   onEdit: (entry: IPasswordEntry) => void;
   onDelete: (entry: IPasswordEntry) => void;
-}
+};
 
 function RowActions({
   entry,
@@ -116,12 +116,12 @@ function SecretCell({ secret }: { secret: string }): React.JSX.Element {
 // Tabela (visão principal, igual às demais aplicações)
 // ---------------------------------------------------------------------------
 
-interface EntryTableProps {
+type EntryTableProps = {
   entries: Array<IPasswordEntry>;
   canEdit: boolean;
   onEdit: (entry: IPasswordEntry) => void;
   onDelete: (entry: IPasswordEntry) => void;
-}
+};
 
 function EntryTable({
   entries,
@@ -209,12 +209,12 @@ function EntryTable({
 // Cards (visão alternativa)
 // ---------------------------------------------------------------------------
 
-interface EntryCardProps {
+type EntryCardProps = {
   entry: IPasswordEntry;
   canEdit: boolean;
   onEdit: (entry: IPasswordEntry) => void;
   onDelete: (entry: IPasswordEntry) => void;
-}
+};
 
 function EntryCard({
   entry,
@@ -285,14 +285,14 @@ function EntryCard({
 
 // ---------------------------------------------------------------------------
 
-interface EntryListProps {
+type EntryListProps = {
   entries: Array<IPasswordEntry>;
   isLoading: boolean;
   canEdit: boolean;
   view: SenhasView;
   onEdit: (entry: IPasswordEntry) => void;
   onDelete: (entry: IPasswordEntry) => void;
-}
+};
 
 export function EntryList({
   entries,

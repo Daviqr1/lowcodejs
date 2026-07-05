@@ -14,13 +14,13 @@ import { E_FIELD_VALIDATION, FIELD_VALIDATION_OPTIONS } from '@/lib/constant';
 import type { IFieldValidation, ValueOf } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableFieldValidationsFieldProps {
+type TableFieldValidationsFieldProps = {
   // Aceita string crua (vem do store do form) — comparada contra E_FIELD_TYPE.
   label: string;
   fieldType: string;
   multiple?: boolean;
   disabled?: boolean;
-}
+};
 
 type ValidationOption = (typeof FIELD_VALIDATION_OPTIONS)[number];
 

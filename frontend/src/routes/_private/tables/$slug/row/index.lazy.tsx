@@ -36,10 +36,10 @@ export const Route = createLazyFileRoute('/_private/tables/$slug/row/')({
   component: RouteComponent,
 });
 
-interface ApiErrorData {
+type ApiErrorData = {
   cause?: string;
   code?: number;
-}
+};
 
 function isApiErrorData(value: unknown): value is ApiErrorData {
   return typeof value === 'object' && value !== null;
@@ -101,11 +101,11 @@ function resolveExistingMode(
   return 'view';
 }
 
-interface CreateRowViewProps {
+type CreateRowViewProps = {
   slug: string;
   initialCategory?: string;
   onBack: () => void;
-}
+};
 
 function CreateRowView({
   slug,
@@ -160,12 +160,12 @@ function CreateRowView({
   );
 }
 
-interface ExistingRowViewProps {
+type ExistingRowViewProps = {
   slug: string;
   rowId: string;
   mode: 'view' | 'edit' | undefined;
   onBack: () => void;
-}
+};
 
 function ExistingRowView({
   slug,

@@ -12,9 +12,9 @@ const RoleMapper: Record<string, string> = {
   [E_ROLE.MASTER]: 'Dono',
 };
 
-interface GroupViewProps {
+type GroupViewProps = {
   data: IGroup;
-}
+};
 
 function renderPermissions(
   permissions: IGroup['permissions'],

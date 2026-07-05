@@ -5,7 +5,7 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IStorage } from '@/lib/interfaces';
 import { fileExtensionsToAccept } from '@/lib/utils';
 
-interface FieldFileUploadProps {
+type FieldFileUploadProps = {
   label: string;
   accept?: string;
   maxFiles?: number;
@@ -16,7 +16,7 @@ interface FieldFileUploadProps {
   showPreview?: boolean;
   previewUrl?: string;
   previewAlt?: string;
-}
+};
 
 export function FieldFileUpload({
   label,

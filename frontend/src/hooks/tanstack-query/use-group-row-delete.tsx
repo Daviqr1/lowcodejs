@@ -6,17 +6,17 @@ import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
 
-interface GroupRowDeletePayload {
+type GroupRowDeletePayload = {
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   itemId: string;
-}
+};
 
-interface UseDeleteGroupRowProps {
+type UseDeleteGroupRowProps = {
   onSuccess?: (variables: GroupRowDeletePayload) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useDeleteGroupRow(
   props: UseDeleteGroupRowProps,

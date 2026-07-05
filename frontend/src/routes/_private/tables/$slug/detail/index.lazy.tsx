@@ -94,12 +94,12 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface TableUpdateContentProps {
+type TableUpdateContentProps = {
   data: ITable;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
   permission: ReturnType<typeof useTablePermission>;
-}
+};
 
 function TableUpdateContent({
   data,

@@ -26,11 +26,11 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { handleApiError } from '@/lib/handle-api-error';
 
-interface ChannelDialogProps {
+type ChannelDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   channel?: IPasswordChannel | null;
-}
+};
 
 function emptyValues(): ChannelFormValues {
   return { name: '', description: '', private: true, members: [] };

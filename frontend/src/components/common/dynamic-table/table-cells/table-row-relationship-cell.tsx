@@ -6,16 +6,16 @@ import type { IField, IRow } from '@/lib/interfaces';
 import { resolveRelationshipLabel } from '@/lib/relationship-label';
 import { isManagedRelationship } from '@/lib/table';
 
-interface RelationshipItem {
+type RelationshipItem = {
   _id: string;
   label: string;
   tableSlug: string | null;
-}
+};
 
-interface TableRowRelationshipCellProps {
+type TableRowRelationshipCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 // Modo 'manage' (tabelas internas): badge de contagem. Modo 'select' (padrão,
 // multi-select): rótulos (chips) dos vinculados, via "Rótulo"/compositor.

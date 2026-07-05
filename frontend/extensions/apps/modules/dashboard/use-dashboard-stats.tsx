@@ -3,7 +3,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 
 import { API } from '@/lib/api';
 
-export interface DashboardStats {
+export type DashboardStats = {
   totals: {
     tables: number;
     users: number;
@@ -18,7 +18,7 @@ export interface DashboardStats {
     description: string;
     time: string;
   }>;
-}
+};
 
 export function useDashboardStats(): UseQueryResult<DashboardStats, Error> {
   return useQuery({

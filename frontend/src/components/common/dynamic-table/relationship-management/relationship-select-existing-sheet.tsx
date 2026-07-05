@@ -24,7 +24,7 @@ import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
 
-interface RelationshipSelectExistingSheetProps {
+type RelationshipSelectExistingSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   field: IField;
@@ -34,7 +34,7 @@ interface RelationshipSelectExistingSheetProps {
   side: 'source' | 'target';
   recordId: string;
   onChanged: () => void;
-}
+};
 
 export function RelationshipSelectExistingSheet(
   props: RelationshipSelectExistingSheetProps,

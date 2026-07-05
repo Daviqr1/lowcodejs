@@ -2,13 +2,13 @@ import { generateYearRange } from './datepicker-utils';
 
 import { cn } from '@/lib/utils';
 
-interface DatepickerYearsProps {
+type DatepickerYearsProps = {
   currentYear: number;
   centerYear: number;
   onSelectYear: (year: number) => void;
   minYear?: number | null;
   maxYear?: number | null;
-}
+};
 
 export function DatepickerYears({
   currentYear,

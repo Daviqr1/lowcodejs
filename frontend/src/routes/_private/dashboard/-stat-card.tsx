@@ -2,12 +2,12 @@ import type { LucideIcon } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface StatCardProps {
+type StatCardProps = {
   title: string;
   value: number | string;
   icon: LucideIcon;
   description?: string;
-}
+};
 
 export function StatCard({
   title,

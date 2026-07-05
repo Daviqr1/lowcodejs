@@ -5,13 +5,13 @@ import { API } from '@/lib/api';
 
 // Tipos do "Histórico de erros" definidos localmente (não em lib/interfaces)
 // para manter o feature autocontido.
-export interface IErrorLogUser {
+export type IErrorLogUser = {
   _id: string;
   name: string;
   email: string;
-}
+};
 
-export interface IErrorLog {
+export type IErrorLog = {
   _id: string;
   statusCode: number;
   message: string;
@@ -24,9 +24,9 @@ export interface IErrorLog {
   resolvedAt: string | null;
   createdAt: string;
   updatedAt: string;
-}
+};
 
-export interface ErrorLogPaginated {
+export type ErrorLogPaginated = {
   meta: {
     total: number;
     perPage: number;
@@ -35,9 +35,9 @@ export interface ErrorLogPaginated {
     firstPage: number;
   };
   data: Array<IErrorLog>;
-}
+};
 
-export interface ErrorLogQuery {
+export type ErrorLogQuery = {
   page?: number;
   perPage?: number;
   search?: string;
@@ -51,7 +51,7 @@ export interface ErrorLogQuery {
   'order-status'?: 'asc' | 'desc';
   'order-method'?: 'asc' | 'desc';
   'order-url'?: 'asc' | 'desc';
-}
+};
 
 export function useErrorLogReadPaginated(
   params: ErrorLogQuery,

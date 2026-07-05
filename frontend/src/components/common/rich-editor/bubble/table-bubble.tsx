@@ -15,9 +15,9 @@ import { ToolbarButton } from '../toolbar-button';
 
 import { Separator } from '@/components/ui/separator';
 
-interface TableBubbleProps {
+type TableBubbleProps = {
   editor: Editor;
-}
+};
 
 export function TableBubble({ editor }: TableBubbleProps): React.JSX.Element {
   return (

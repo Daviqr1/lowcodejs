@@ -40,9 +40,9 @@ import { handleApiError } from '@/lib/handle-api-error';
 import { resolveInitialMenuRoute } from '@/lib/menu/initial-menu-route';
 import type { MenuItem, MenuRoute } from '@/lib/menu/menu-route';
 
-interface SidebarProps {
+type SidebarProps = {
   menu: MenuRoute;
-}
+};
 
 const MAX_DEPTH = 4;
 const INDENT_PX = 16;

@@ -6,12 +6,12 @@ import { InputGroup, InputGroupAddon } from '@/components/ui/input-group';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface FieldMenuComboboxProps {
+type FieldMenuComboboxProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   excludeId?: string;
-}
+};
 
 export function FieldMenuCombobox({
   label,

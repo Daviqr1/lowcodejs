@@ -11,13 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 
-interface CalendarDeleteDialogProps {
+type CalendarDeleteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: string;
   isPending: boolean;
   onConfirm: () => void;
-}
+};
 
 export function CalendarDeleteDialog({
   open,

@@ -66,19 +66,19 @@ import {
 } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowRelationshipFieldProps {
+type TableRowRelationshipFieldProps = {
   field: IField;
   disabled?: boolean;
   tableSlug?: string;
   rowId?: string;
-}
+};
 
-interface RelatedRowCreateDialogProps {
+type RelatedRowCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   table: ITable;
   onCreated: (row: IRow) => void;
-}
+};
 
 function getFormFields(table: ITable): Array<IField> {
   const order = table.fieldOrderForm;

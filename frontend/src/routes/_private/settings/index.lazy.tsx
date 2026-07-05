@@ -145,11 +145,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface SettingUpdateContentProps {
+type SettingUpdateContentProps = {
   data: ISetting;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function SettingUpdateContent({
   data,

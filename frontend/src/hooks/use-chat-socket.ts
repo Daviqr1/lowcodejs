@@ -12,31 +12,31 @@ import { queryKeys } from './tanstack-query/_query-keys';
 
 import { E_CHAT_EVENT, E_CHAT_TOOL_PREFIX } from '@/lib/constant';
 
-export interface FileData {
+export type FileData = {
   type: 'image' | 'pdf';
   filename: string;
   content_type?: string;
   data_uri?: string;
   extracted_text?: string;
   page_count?: number;
-}
+};
 
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   file?: FileData;
   variant?: 'default' | 'system-warning';
-}
+};
 
-export interface ToolActivity {
+export type ToolActivity = {
   id: string;
   type: 'tool_call' | 'tool_result' | 'tool_error';
   name: string;
   args?: Record<string, unknown>;
   preview?: string;
   errorMessage?: string;
-}
+};
 
 export type ChatStatus = 'connecting' | 'ready' | 'thinking' | 'idle' | 'error';
 

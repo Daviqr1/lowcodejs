@@ -15,14 +15,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useDeleteGroupRow } from '@/hooks/tanstack-query/use-group-row-delete';
 import { handleApiError } from '@/lib/handle-api-error';
 
-interface GroupRowDeleteDialogProps {
+type GroupRowDeleteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   itemId: string;
-}
+};
 
 export function GroupRowDeleteDialog({
   open,

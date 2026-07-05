@@ -19,9 +19,9 @@ import type { IField } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface FieldViewProps {
+type FieldViewProps = {
   data: IField;
-}
+};
 
 export function FieldView({ data }: FieldViewProps): React.JSX.Element {
   const typeLabel =

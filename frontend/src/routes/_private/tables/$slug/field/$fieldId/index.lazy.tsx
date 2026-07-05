@@ -224,7 +224,7 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface FieldUpdateContentProps {
+type FieldUpdateContentProps = {
   data: IField;
   table?: ITable;
   slug: string;
@@ -232,7 +232,7 @@ interface FieldUpdateContentProps {
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
   /** Slug do grupo (quando em contexto de grupo) */
   groupSlug?: string;
-}
+};
 
 function FieldUpdateContent({
   data,

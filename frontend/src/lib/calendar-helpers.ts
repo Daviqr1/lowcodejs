@@ -14,7 +14,7 @@ import { resolveLayoutField } from '@/lib/layout-field-resolver';
 
 const DEFAULT_EVENT_COLOR = '#2563eb';
 
-export interface CalendarResolvedFields {
+export type CalendarResolvedFields = {
   titleField?: IField;
   descriptionField?: IField;
   startField?: IField;
@@ -22,9 +22,9 @@ export interface CalendarResolvedFields {
   colorField?: IField;
   participantsField?: IField;
   reminderField?: IField;
-}
+};
 
-export interface CalendarEventItem {
+export type CalendarEventItem = {
   row: IRow;
   rowId: string;
   title: string;
@@ -34,7 +34,7 @@ export interface CalendarEventItem {
   color: string;
   colorLabel: string | null;
   participants: Array<{ _id: string; name: string }>;
-}
+};
 
 function firstValue(value: unknown): unknown {
   if (Array.isArray(value)) return value[0];

@@ -11,18 +11,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface ApiEndpoint {
+type ApiEndpoint = {
   method: string;
   path: string;
   description: string;
   params?: string;
-}
+};
 
-interface ApiEndpointsModalProps {
+type ApiEndpointsModalProps = {
   tableSlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
 export function ApiEndpointsModal({
   tableSlug,

@@ -39,13 +39,13 @@ import type { IField, ITable } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface FieldGroupSubMenuProps {
+type FieldGroupSubMenuProps = {
   field: IField;
   originSlug: string;
   parentTable: ITable;
   onNavigate: () => void;
   onManageGroup: (groupSlug: string) => void;
-}
+};
 
 function FieldGroupSubMenu({
   field,
@@ -135,9 +135,9 @@ function FieldGroupSubMenu({
   );
 }
 
-interface TableConfigurationProps {
+type TableConfigurationProps = {
   tableSlug: string;
-}
+};
 
 export function TableConfigurationDropdown({
   tableSlug,

@@ -3,10 +3,10 @@ import { TableRowBadgeList } from './table-row-badge-list';
 import type { IField, IRow } from '@/lib/interfaces';
 import { getCategoryItem } from '@/lib/table';
 
-interface TableRowCategoryCellProps {
+type TableRowCategoryCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowCategoryCell({
   field,

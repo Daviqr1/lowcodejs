@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-interface Props {
+type Props = {
   values: Array<string>;
   /** groupMatrix acompanha values — ao remover um valor, remove a key da matriz */
   matrix: Record<string, Array<string>>;
@@ -17,7 +17,7 @@ interface Props {
     matrix: Record<string, Array<string>>,
   ) => void;
   disabled?: boolean;
-}
+};
 
 export function VisibilityValuesEditor({
   values,

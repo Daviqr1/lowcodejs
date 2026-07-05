@@ -7,17 +7,17 @@ import { queryKeys } from './_query-keys';
 import { API } from '@/lib/api';
 import type { IRow } from '@/lib/interfaces';
 
-interface GroupRowCreatePayload {
+type GroupRowCreatePayload = {
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   data: Record<string, unknown>;
-}
+};
 
-interface UseCreateGroupRowProps {
+type UseCreateGroupRowProps = {
   onSuccess?: (data: IRow, variables: GroupRowCreatePayload) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useCreateGroupRow(
   props: UseCreateGroupRowProps,

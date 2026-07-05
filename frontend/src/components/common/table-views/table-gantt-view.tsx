@@ -42,12 +42,12 @@ import {
 } from '@/lib/kanban-helpers';
 import type { FieldMap } from '@/lib/kanban-types';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableGanttView({
   data,

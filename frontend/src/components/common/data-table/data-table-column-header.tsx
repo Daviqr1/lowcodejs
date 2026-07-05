@@ -19,14 +19,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-interface DataTableColumnHeaderProps {
+type DataTableColumnHeaderProps = {
   title: string;
   orderKey?: string;
   routeId: string;
   canNavigate?: boolean;
   onTitleClick?: () => void;
   column?: Column<unknown, unknown>;
-}
+};
 
 export function DataTableColumnHeader({
   title,

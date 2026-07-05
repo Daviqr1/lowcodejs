@@ -153,12 +153,12 @@ function RenderCell({
   }
 }
 
-interface UseFieldColumnsOptions {
+type UseFieldColumnsOptions = {
   fields: Array<IField>;
   fieldOrder: Array<string>;
   tableSlug: string;
   canEditField: boolean;
-}
+};
 
 export function useFieldColumns({
   fields,

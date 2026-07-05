@@ -60,11 +60,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface ProfileUpdateContentProps {
+type ProfileUpdateContentProps = {
   data: IUser;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function ProfileUpdateContent({
   data,

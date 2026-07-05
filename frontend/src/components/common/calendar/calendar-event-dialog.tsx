@@ -49,7 +49,7 @@ type CalendarEventFormValues = {
   [key: string]: unknown;
 };
 
-interface CalendarEventDialogProps {
+type CalendarEventDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
@@ -70,7 +70,7 @@ interface CalendarEventDialogProps {
   }) => Promise<void> | void;
   onDeleteClick?: () => void;
   onOpenRecord?: (row: IRow) => void;
-}
+};
 
 function getColorOptions(fields: CalendarResolvedFields): Array<IDropdown> {
   if (Array.isArray(fields.colorField?.dropdown)) {

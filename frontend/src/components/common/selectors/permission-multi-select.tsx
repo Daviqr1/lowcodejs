@@ -17,13 +17,13 @@ import { usePermissionRead } from '@/hooks/tanstack-query/use-permission-read';
 import { PERMISSION_LABEL_MAPPER } from '@/lib/constant';
 import type { IPermission } from '@/lib/interfaces';
 
-interface PermissionMultiSelectProps {
+type PermissionMultiSelectProps = {
   value?: Array<string>;
   onValueChange?: (value: Array<string>) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
+};
 
 export function PermissionMultiSelect({
   value = [],

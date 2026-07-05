@@ -5,10 +5,10 @@ import { E_FIELD_TYPE } from '@/lib/constant';
 import { formatDate } from '@/lib/format-date';
 import type { IField, IRow } from '@/lib/interfaces';
 
-interface TableRowDateCellProps {
+type TableRowDateCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowDateCell({
   field,

@@ -6,9 +6,9 @@ import remarkGfm from 'remark-gfm';
 import type { ChatMessage as ChatMessageData } from '@/hooks/use-chat-socket';
 import { cn } from '@/lib/utils';
 
-interface ChatMessageProps {
+type ChatMessageProps = {
   message: ChatMessageData;
-}
+};
 
 export function ChatMessage({ message }: ChatMessageProps): React.JSX.Element {
   const isUser = message.role === 'user';

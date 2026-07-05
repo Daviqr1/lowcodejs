@@ -24,13 +24,13 @@ import type {
   IDocumentType,
 } from '@/hooks/tanstack-query/use-doc-transcription-config';
 
-interface Props {
+type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initial?: IDocumentType | null;
   onSave: (docType: IDocumentType) => void;
   isSaving?: boolean;
-}
+};
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-_]*$/;
 

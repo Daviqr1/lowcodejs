@@ -36,11 +36,11 @@ function EditorSkeleton(): React.JSX.Element {
   );
 }
 
-interface TableRowRichTextFieldProps {
+type TableRowRichTextFieldProps = {
   field: IField;
   disabled?: boolean;
   compact?: boolean;
-}
+};
 
 export function TableRowRichTextField({
   field,

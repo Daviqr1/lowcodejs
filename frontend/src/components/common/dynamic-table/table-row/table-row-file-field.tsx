@@ -10,10 +10,10 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IField, IStorage } from '@/lib/interfaces';
 import { cn, fileExtensionsToAccept } from '@/lib/utils';
 
-interface TableRowFileFieldProps {
+type TableRowFileFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 type FileValue = {
   files: Array<File>;

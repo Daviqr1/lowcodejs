@@ -5,12 +5,12 @@ import { badgeStyleFromColor } from './utils';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-interface TableRowBadgeListProps<T> {
+type TableRowBadgeListProps<T> = {
   values: Array<T>;
   renderLabel: (value: T, index: number) => React.ReactNode;
   getKey?: (value: T, index: number) => string | number;
   getColor?: (value: T, index: number) => string | null | undefined;
-}
+};
 
 export function TableRowBadgeList<T>({
   values,

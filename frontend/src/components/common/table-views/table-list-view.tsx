@@ -256,11 +256,11 @@ function RowActionsCell({
   );
 }
 
-interface TableListViewProps {
+type TableListViewProps = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
-}
+};
 
 export function TableListView({
   data,

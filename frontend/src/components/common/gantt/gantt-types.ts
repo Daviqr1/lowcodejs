@@ -9,7 +9,7 @@ export const DAY_WIDTH: Record<ZoomLevel, number> = {
   month: 6,
 };
 
-export interface GanttRow {
+export type GanttRow = {
   row: IRow;
   title: string;
   start: Date | null;
@@ -19,11 +19,11 @@ export interface GanttRow {
   progress: number | null;
   dependencyIds: Array<string>;
   isOverdue: boolean;
-}
+};
 
 export type DragMode = 'move' | 'resize-left' | 'resize-right';
 
-export interface DragState {
+export type DragState = {
   rowId: string;
   mode: DragMode;
   startX: number;
@@ -31,26 +31,26 @@ export interface DragState {
   originalStart: Date;
   originalEnd: Date;
   originalGroupId: string | null;
-}
+};
 
-export interface CreateDragState {
+export type CreateDragState = {
   groupOptionId: string;
   startX: number;
   currentX: number;
   timelineLeft: number;
   rowTop: number;
   rowHeight: number;
-}
+};
 
-export interface GanttGroup {
+export type GanttGroup = {
   option: IDropdown;
   rows: Array<GanttRow>;
-}
+};
 
-export interface GroupYRange {
+export type GroupYRange = {
   optionId: string;
   yStart: number;
   yEnd: number;
-}
+};
 
 export const ROW_HEIGHT = 36;

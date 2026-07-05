@@ -119,10 +119,10 @@ function EntryDetails({ entry }: { entry: ILogger }): React.JSX.Element {
   );
 }
 
-interface JsonDialogProps {
+type JsonDialogProps = {
   entry: ILogger | null;
   onClose: () => void;
-}
+};
 
 export function JsonDialog({
   entry,

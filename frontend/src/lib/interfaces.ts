@@ -692,7 +692,7 @@ export type ILogger = Merge<
   }
 >;
 
-export interface ICloneTableResponse {
+export type ICloneTableResponse = {
   tableId: string;
   slug: string;
   tables?: Array<{
@@ -702,4 +702,4 @@ export interface ICloneTableResponse {
   }>;
   fieldIdMap: Record<string, string>;
   fieldIdMaps?: Record<string, Record<string, string>>;
-}
+};

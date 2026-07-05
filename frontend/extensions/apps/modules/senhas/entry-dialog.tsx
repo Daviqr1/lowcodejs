@@ -19,12 +19,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { handleApiError } from '@/lib/handle-api-error';
 
-interface EntryDialogProps {
+type EntryDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   channelId: string;
   entry?: IPasswordEntry | null;
-}
+};
 
 function emptyValues(): EntryFormValues {
   return { title: '', username: '', url: '', secret: '', notes: '' };

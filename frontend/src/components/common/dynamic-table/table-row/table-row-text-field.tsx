@@ -22,10 +22,10 @@ import {
 import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowTextFieldProps {
+type TableRowTextFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 function getFormatIcon(format: string | null | undefined): React.JSX.Element {
   switch (format) {

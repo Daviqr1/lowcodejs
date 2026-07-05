@@ -21,13 +21,13 @@ export const ACTION_META: Record<
   DELETE: { icon: TrashIcon, className: 'bg-red-100 text-red-700' },
 };
 
-export interface FiltersState {
+export type FiltersState = {
   search: string;
   actions: Array<ActionType>;
   objects: Array<ObjectType>;
   dateFrom: string;
   dateTo: string;
-}
+};
 
 export const DEFAULT_FILTERS: FiltersState = {
   search: '',

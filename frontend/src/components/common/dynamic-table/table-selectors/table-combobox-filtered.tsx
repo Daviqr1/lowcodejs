@@ -9,13 +9,13 @@ import {
   ComboboxList,
 } from '@/components/ui/combobox';
 
-interface SelectOption {
+type SelectOption = {
   value: string;
   label: string;
   subLabel?: string;
-}
+};
 
-interface TableComboboxFilteredSafeProps {
+type TableComboboxFilteredSafeProps = {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
@@ -24,7 +24,7 @@ interface TableComboboxFilteredSafeProps {
 
   /** opções já filtradas */
   options: Array<SelectOption>;
-}
+};
 
 export function TableComboboxFilteredSafe({
   value = '',

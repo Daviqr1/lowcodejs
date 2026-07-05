@@ -6,11 +6,11 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IField } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowTextareaFieldProps {
+type TableRowTextareaFieldProps = {
   field: IField;
   disabled?: boolean;
   compact?: boolean;
-}
+};
 
 export function TableRowTextareaField({
   field,

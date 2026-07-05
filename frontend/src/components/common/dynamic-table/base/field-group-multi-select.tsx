@@ -3,14 +3,14 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface FieldGroupMultiSelectProps {
+type FieldGroupMultiSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
   // Grupo a ocultar (ex.: o proprio grupo em edicao, para nao englobar a si).
   excludeId?: string;
-}
+};
 
 export function FieldGroupMultiSelect({
   label,

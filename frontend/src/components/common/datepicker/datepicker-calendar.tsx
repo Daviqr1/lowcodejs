@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 
 type View = 'days' | 'months' | 'years';
 
-interface DatepickerCalendarProps {
+type DatepickerCalendarProps = {
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
   minDate?: Date | null;
@@ -30,7 +30,7 @@ interface DatepickerCalendarProps {
   displayMonth?: Date;
   onMonthChange?: (date: Date) => void;
   hideNavigation?: boolean;
-}
+};
 
 export function DatepickerCalendar({
   selectedDate,

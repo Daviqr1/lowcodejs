@@ -140,7 +140,7 @@ export const CloneTableFormFields = withForm({
   },
 });
 
-interface ModelSelectFieldProps {
+type ModelSelectFieldProps = {
   tables: Array<{
     _id: string;
     name: string;
@@ -148,7 +148,7 @@ interface ModelSelectFieldProps {
     description: string | null;
   }>;
   disabled?: boolean;
-}
+};
 
 function ModelSelectField({
   tables,

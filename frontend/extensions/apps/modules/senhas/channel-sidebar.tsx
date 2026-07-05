@@ -22,7 +22,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-interface ChannelSidebarProps {
+type ChannelSidebarProps = {
   channels: Array<IPasswordChannel>;
   activeChannelId: string | null;
   currentUserId: string;
@@ -30,7 +30,7 @@ interface ChannelSidebarProps {
   onCreate: () => void;
   onEdit: (channel: IPasswordChannel) => void;
   onDelete: (channel: IPasswordChannel) => void;
-}
+};
 
 export function ChannelSidebar({
   channels,

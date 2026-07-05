@@ -8,13 +8,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { IRow } from '@/lib/interfaces';
 import { getUserInitials } from '@/lib/kanban-helpers';
 
-interface GanttLeftPanelProps {
+type GanttLeftPanelProps = {
   groupedRows: Array<GanttGroup>;
   collapsedGroups: Set<string>;
   onToggleGroup: (groupId: string) => void;
   onRowClick: (row: IRow) => void;
   headerHeight: number;
-}
+};
 
 export function GanttLeftPanel({
   groupedRows,

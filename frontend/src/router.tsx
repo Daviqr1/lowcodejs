@@ -8,9 +8,9 @@ import { routeTree } from './routeTree.gen';
 
 import { QueryClient as queryClient } from '@/lib/query-client';
 
-export interface RouterContext {
+export type RouterContext = {
   queryClient: QueryClient;
-}
+};
 
 export const getRouter = () => {
   const router = createRouter({
@@ -35,6 +35,7 @@ export const getRouter = () => {
 };
 
 declare module '@tanstack/react-router' {
+  // Module augmentation exige interface (declaration merging) — nao usar type.
   interface Register {
     router: ReturnType<typeof getRouter>;
   }

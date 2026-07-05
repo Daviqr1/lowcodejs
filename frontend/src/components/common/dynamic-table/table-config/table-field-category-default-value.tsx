@@ -16,11 +16,11 @@ type CategoryNode = {
   children?: Array<CategoryNode>;
 };
 
-interface TableFieldCategoryDefaultValueProps {
+type TableFieldCategoryDefaultValueProps = {
   label?: string;
   disabled?: boolean;
   categories: Array<CategoryNode>;
-}
+};
 
 type FlatCategory = {
   id: string;

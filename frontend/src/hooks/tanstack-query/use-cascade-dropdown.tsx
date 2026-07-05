@@ -17,7 +17,7 @@ export type CascadeDropdownFilterOperator =
   | 'is_not_empty'
   | 'date_between';
 
-export interface CascadeDropdownFilter {
+export type CascadeDropdownFilter = {
   id: string;
   fieldId: string;
   fieldSlug: string;
@@ -27,9 +27,9 @@ export interface CascadeDropdownFilter {
   values: Array<string>;
   dateStart: string | null;
   dateEnd: string | null;
-}
+};
 
-export interface CascadeDropdownConfig {
+export type CascadeDropdownConfig = {
   _id?: string;
   targetTableSlug: string;
   targetFieldId: string;
@@ -44,12 +44,12 @@ export interface CascadeDropdownConfig {
   parentWidth: number;
   childWidth: number;
   filters: Array<CascadeDropdownFilter>;
-}
+};
 
-export interface CascadeDropdownOption {
+export type CascadeDropdownOption = {
   value: string;
   label: string;
-}
+};
 
 export const cascadeDropdownQueryKeys = {
   all: ['cascade-dropdown'] as const,

@@ -13,9 +13,9 @@ import {
 } from '@/lib/constant';
 import type { IPermissionBinding, ITable } from '@/lib/interfaces';
 
-interface TableViewProps {
+type TableViewProps = {
   data: ITable;
-}
+};
 
 // Rótulo legível de um binding (Grupo|Público|Ninguém) para exibição.
 function bindingLabel(

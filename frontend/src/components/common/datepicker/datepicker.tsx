@@ -73,12 +73,12 @@ function applyRangeMask(
   return start;
 }
 
-export interface DatepickerValue {
+export type DatepickerValue = {
   startDate: Date | null;
   endDate: Date | null;
-}
+};
 
-export interface DatepickerProps {
+export type DatepickerProps = {
   value: DatepickerValue | null;
   onChange: (value: DatepickerValue | null) => void;
   displayFormat?: string;
@@ -93,7 +93,7 @@ export interface DatepickerProps {
   useRange?: boolean; // true = 2 calendars, false = 1 calendar (default: true)
   asSingle?: boolean; // true = single date (start=end), false = range (default: false)
   separator?: string; // separator in input (default: "~")
-}
+};
 
 export type SingleDatepickerProps = Omit<
   DatepickerProps,

@@ -34,11 +34,11 @@ function EditorSkeleton(): React.JSX.Element {
   );
 }
 
-interface FieldEditorProps {
+type FieldEditorProps = {
   label: string;
   showPreview?: boolean;
   defaultMode?: EditorMode;
-}
+};
 
 export function FieldEditor({
   label,

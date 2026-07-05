@@ -12,14 +12,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import type { IMenu } from '@/lib/interfaces';
 
-interface MenuComboboxProps {
+type MenuComboboxProps = {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   excludeId?: string;
-}
+};
 
 function getParentId(menu: IMenu): string | undefined {
   if (typeof menu.parent === 'string') {

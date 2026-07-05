@@ -29,7 +29,7 @@ import type { IField, IRow } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import { buildFieldValidator } from '@/lib/table';
 
-interface GroupRowFormDialogProps {
+type GroupRowFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableSlug: string;
@@ -37,7 +37,7 @@ interface GroupRowFormDialogProps {
   groupSlug: string;
   groupFields: Array<IField>;
   editItem?: IRow | null;
-}
+};
 
 export function GroupRowFormDialog(
   props: GroupRowFormDialogProps,

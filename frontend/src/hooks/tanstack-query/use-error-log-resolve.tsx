@@ -4,20 +4,20 @@ import type { AxiosError } from 'axios';
 
 import { API } from '@/lib/api';
 
-interface ResolvePayload {
+type ResolvePayload = {
   id: string;
   resolved: boolean;
-}
+};
 
-interface ResolveResult {
+type ResolveResult = {
   id: string;
   resolved: boolean;
-}
+};
 
-interface UseErrorLogResolveProps {
+type UseErrorLogResolveProps = {
   onSuccess?: (data: ResolveResult, variables: ResolvePayload) => void;
   onError?: (error: AxiosError | Error, variables: ResolvePayload) => void;
-}
+};
 
 export function useErrorLogResolve(
   props: UseErrorLogResolveProps = {},

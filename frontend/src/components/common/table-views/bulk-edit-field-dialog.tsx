@@ -53,14 +53,14 @@ export function getBulkEditableFields(table?: ITable): Array<IField> {
   );
 }
 
-interface BulkEditFieldDialogProps {
+type BulkEditFieldDialogProps = {
   slug: string;
   table?: ITable;
   selectedIds: Array<string>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-}
+};
 
 export function BulkEditFieldDialog({
   slug,
@@ -167,12 +167,12 @@ export function BulkEditFieldDialog({
   );
 }
 
-interface BulkEditValueFormProps {
+type BulkEditValueFormProps = {
   slug: string;
   field: IField;
   ids: Array<string>;
   onDone: () => void;
-}
+};
 
 function BulkEditValueForm({
   slug,

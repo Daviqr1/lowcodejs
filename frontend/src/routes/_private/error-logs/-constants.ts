@@ -1,9 +1,9 @@
 export const ROUTE_ID = '/_private/error-logs/';
 
-export interface StatusOption {
+export type StatusOption = {
   id: string;
   label: string;
-}
+};
 
 // Status HTTP de erro mais comuns oferecidos no filtro. 401 é excluído de
 // propósito (o hook não registra "não autenticado" para evitar poluição).
