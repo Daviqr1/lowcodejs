@@ -1,6 +1,6 @@
 ---
 name: code-style
-description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, always `type` never `interface`, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
+description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, always `type` never `interface`, combine object types with `Merge` not `&`, lookup object over long if/else chains, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
 ---
 
 # Code style
@@ -108,7 +108,64 @@ type Props = {
 os `.d.ts` que aumentam libs externas (ex.: `fastify.d.ts`, `tanstack-table.d.ts`).
 Não é escolha de estilo, é limite da linguagem.
 
-## 5. Commits: conventional, atomic, semantic
+## 5. Combine tipos com `Merge`, não `&`
+
+Para juntar tipos objeto, use o utilitário `Merge<A, B>` no lugar da interseção
+`A & B`. `Merge` acha as chaves (`{ [K in keyof (A & B)]: (A & B)[K] }`),
+resolvendo sobreposições e mostrando o tipo final flat no editor — em vez de uma
+cadeia de `&`:
+
+```ts
+// Evitar
+type Props = React.ComponentProps<'div'> & { value: string }
+
+// Preferir
+type Props = Merge<React.ComponentProps<'div'>, { value: string }>
+```
+
+Três ou mais partes aninham: `Merge<Merge<A, B>, C>`. `Merge` vive em
+`lib/interfaces.ts` (frontend) e `core/entity.core.ts` (backend) — importe de lá.
+
+Exceção: interseção com `Array<T>` (ex.: `Array<T> & { extra }`) mantém `&` —
+`Merge` mapeia as chaves e destrói a semântica de array. Uniões (`|`) não são
+interseção e seguem normais.
+
+## 6. Lookup object no lugar de cadeia de if/else
+
+Quando você mapeia um discriminante (uma chave, um `type`, um enum) para um valor
+ou um handler em **3+ casos**, use um lookup object (mapa de despacho) no lugar de
+uma cadeia de `if`/`else if` ou `switch`. Declare o mapa uma vez e indexe:
+
+```ts
+// Evitar
+let label
+if (type === 'A') label = 'Alpha'
+else if (type === 'B') label = 'Beta'
+else if (type === 'C') label = 'Gamma'
+else label = 'Unknown'
+
+// Preferir
+const LABELS = { A: 'Alpha', B: 'Beta', C: 'Gamma' } as const
+const label = LABELS[type] ?? 'Unknown'
+```
+
+Vale para comportamento também — mapeie a chave para uma função e chame:
+
+```ts
+const HANDLERS = {
+  create: handleCreate,
+  update: handleUpdate,
+  remove: handleRemove,
+} as const
+HANDLERS[action]?.(payload)
+```
+
+O mapa lê como uma tabela, adicionar caso é uma linha, e o compilador cobra as
+chaves (`Record<Key, T>`). 1–2 casos mantenha `if` simples (mapa ali é exagero).
+É para despacho valor/handler por chave, não para lógica booleana arbitrária
+(ranges, condições combinadas) — essa fica `if`.
+
+## 7. Commits: conventional, atomic, semantic
 
 **Commit proactively, as you go.** Don't wait to be asked. The moment a logical
 change is complete and passing, commit it — atomically. One task usually becomes
@@ -132,5 +189,7 @@ refactor(sidebar): extrai navegação para hook dedicado
 
 ## Before you finish
 
-Reread your own diff for assignment ternaries, loose `any`, `as`, and `interface`
-in app code. Find one, fix it. Cheaper to catch now than later.
+Reread your own diff for assignment ternaries, loose `any`, `as`, `interface` in
+app code, object intersections with `&` that should be `Merge`, and long if/else
+chains that should be a lookup object. Find one, fix it. Cheaper to catch now
+than later.
