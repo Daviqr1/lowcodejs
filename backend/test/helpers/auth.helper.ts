@@ -11,11 +11,11 @@ import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { kernel } from '@start/kernel';
 
-export interface AuthenticatedUser {
+export type AuthenticatedUser = {
   user: { _id: string; email: string; name: string };
   cookies: string[];
   permissions: string[];
-}
+};
 
 export async function createAuthenticatedUser(
   overrides?: Partial<{ email: string; password: string; name: string }>,
@@ -152,14 +152,14 @@ export async function createAuthenticatedUser(
   };
 }
 
-interface GroupUserOptions {
+type GroupUserOptions = {
   groupSlug: string;
   groupName: string;
   permissionSlugs: string[];
   email?: string;
   password?: string;
   name?: string;
-}
+};
 
 // Cria um usuario autenticado num grupo nao-MASTER com um conjunto explicito de
 // permissoes. Usado pelos testes de NEGACAO (403): o slug do grupo deriva o

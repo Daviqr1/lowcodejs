@@ -1,4 +1,4 @@
-import type { IField, IRow } from '@application/core/entity.core';
+import type { IField, IRow, Merge } from '@application/core/entity.core';
 
 export type CascadeDropdownFilterOperator =
   | 'equals'
@@ -8,7 +8,7 @@ export type CascadeDropdownFilterOperator =
   | 'is_not_empty'
   | 'date_between';
 
-export interface CascadeDropdownFilter {
+export type CascadeDropdownFilter = {
   id: string;
   fieldId: string;
   fieldSlug: string;
@@ -18,9 +18,9 @@ export interface CascadeDropdownFilter {
   values: string[];
   dateStart: string | null;
   dateEnd: string | null;
-}
+};
 
-export interface CascadeDropdownConfig {
+export type CascadeDropdownConfig = {
   _id?: string;
   targetTableSlug: string;
   targetFieldId: string;
@@ -37,16 +37,17 @@ export interface CascadeDropdownConfig {
   filters: CascadeDropdownFilter[];
   createdAt?: Date;
   updatedAt?: Date;
-}
+};
 
-export interface CascadeDropdownOption {
+export type CascadeDropdownOption = {
   value: string;
   label: string;
-}
+};
 
-export interface CascadeDropdownChildOption extends CascadeDropdownOption {
-  row: IRow;
-}
+export type CascadeDropdownChildOption = Merge<
+  CascadeDropdownOption,
+  { row: IRow }
+>;
 
 export type CascadeDropdownFieldLookup = Pick<
   IField,

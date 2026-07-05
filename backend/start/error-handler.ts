@@ -3,7 +3,7 @@ import z, { ZodError } from 'zod';
 
 import HTTPException from '@application/core/exception.core';
 
-interface ValidationErrorDetail {
+type ValidationErrorDetail = {
   instancePath: string;
   schemaPath: string;
   keyword: string;
@@ -14,9 +14,9 @@ interface ValidationErrorDetail {
   };
   message: string;
   emUsed?: boolean;
-}
+};
 
-interface ValidationError {
+type ValidationError = {
   instancePath: string;
   schemaPath: string;
   keyword: string;
@@ -24,7 +24,7 @@ interface ValidationError {
     errors: ValidationErrorDetail[];
   };
   message: string;
-}
+};
 
 // `error` no handler é Record<string, unknown>; narra `error.validation` (AJV)
 // para ValidationError[] sem asserção.

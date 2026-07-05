@@ -7,12 +7,12 @@ import HTTPException from '@application/core/exception.core';
 import { getOrCreateConfig } from './doc-transcription-config.model';
 import type { ITranscribeResult } from './doc-transcription.types';
 
-interface Input {
+type Input = {
   documentTypeId: string;
   fileBuffer: Buffer;
   filename: string;
   mimetype: string;
-}
+};
 
 type Response = Either<HTTPException, ITranscribeResult>;
 

@@ -14,11 +14,11 @@ const errorBodySchema = z.object({
   errors: z.unknown().optional(),
 });
 
-interface ParsedErrorBody {
+type ParsedErrorBody = {
   message: string;
   cause: string | null;
   errors: unknown;
-}
+};
 
 function parseErrorBody(payload: unknown): ParsedErrorBody {
   let message = 'Erro na requisição';
