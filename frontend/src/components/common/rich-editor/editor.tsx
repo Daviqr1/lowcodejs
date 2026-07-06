@@ -463,38 +463,45 @@ export function Editor({
     (newMode: EditorMode) => {
       if (!ed || newMode === mode) return;
 
-      // Sync content FROM current mode before switching
-      if (mode === 'rich') {
-        const md = getMarkdownFromEditor(ed);
-        if (newMode === 'markdown') {
-          setRawMd(md);
-        } else if (newMode === 'html') {
-          setRawHtml(ed.getHTML());
-        }
-      } else if (mode === 'markdown') {
-        if (newMode === 'rich') {
-          ed.commands.setContent(rawMd, { emitUpdate: false });
-          if (isControlledRef.current) {
-            const normalized = getMarkdownFromEditor(ed);
-            onChangeRef.current?.(normalized);
+      // Sync content FROM the current mode before switching — despacho por modo
+      // (code-style regra 6). `preview` → qualquer: restaura sem efeitos.
+      const editor = ed;
+      const syncFromMode: Record<EditorMode, (target: EditorMode) => void> = {
+        rich: (target) => {
+          const md = getMarkdownFromEditor(editor);
+          if (target === 'markdown') {
+            setRawMd(md);
+          } else if (target === 'html') {
+            setRawHtml(editor.getHTML());
           }
-        } else if (newMode === 'html') {
-          ed.commands.setContent(rawMd, { emitUpdate: false });
-          setRawHtml(ed.getHTML());
-        }
-      } else if (mode === 'html') {
-        if (newMode === 'rich') {
-          ed.commands.setContent(rawHtml, { emitUpdate: false });
-          if (isControlledRef.current) {
-            const normalized = getMarkdownFromEditor(ed);
-            onChangeRef.current?.(normalized);
+        },
+        markdown: (target) => {
+          if (target === 'rich') {
+            editor.commands.setContent(rawMd, { emitUpdate: false });
+            if (isControlledRef.current) {
+              const normalized = getMarkdownFromEditor(editor);
+              onChangeRef.current?.(normalized);
+            }
+          } else if (target === 'html') {
+            editor.commands.setContent(rawMd, { emitUpdate: false });
+            setRawHtml(editor.getHTML());
           }
-        } else if (newMode === 'markdown') {
-          ed.commands.setContent(rawHtml, { emitUpdate: false });
-          setRawMd(getMarkdownFromEditor(ed));
-        }
-      }
-      // preview → any: restore without side effects
+        },
+        html: (target) => {
+          if (target === 'rich') {
+            editor.commands.setContent(rawHtml, { emitUpdate: false });
+            if (isControlledRef.current) {
+              const normalized = getMarkdownFromEditor(editor);
+              onChangeRef.current?.(normalized);
+            }
+          } else if (target === 'markdown') {
+            editor.commands.setContent(rawHtml, { emitUpdate: false });
+            setRawMd(getMarkdownFromEditor(editor));
+          }
+        },
+        preview: () => {},
+      };
+      syncFromMode[mode](newMode);
 
       previousModeRef.current = mode;
       setMode(newMode);

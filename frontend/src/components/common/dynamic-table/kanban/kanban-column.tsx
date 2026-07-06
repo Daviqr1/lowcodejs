@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IDropdown } from '@/lib/interfaces';
+import type { IDropdown, Merge } from '@/lib/interfaces';
 import {
   columnHeaderStyleFromColor,
   columnStyleFromColor,
@@ -105,7 +105,7 @@ export function KanbanColumn({
     if (!option.color) return undefined;
     const rgb = hexToRgb(option.color);
     if (!rgb) return undefined;
-    const vars: React.CSSProperties & Record<`--${string}`, string> = {
+    const vars: Merge<React.CSSProperties, Record<`--${string}`, string>> = {
       '--kanban-scroll-thumb': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
       '--kanban-scroll-thumb-hover': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
     };

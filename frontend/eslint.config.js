@@ -3,6 +3,8 @@ import prettier from 'eslint-plugin-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 
+import lowcodejs from '../eslint-local-rules/index.mjs';
+
 export default defineConfig([
   ...tanstackConfig,
   globalIgnores(['dist', 'node_modules', 'src/components/ui']),
@@ -49,19 +51,41 @@ export default defineConfig([
     },
   },
   {
-    // code-style: 3 regras aplicadas a TODO .ts/.tsx (src + extensions) — nada
-    // escapa. Exceções: routeTree.gen.ts (gerado) e components/ui (shadcn).
+    // code-style: as 6 regras aplicadas a TODO .ts/.tsx (src + extensions) —
+    // nada escapa. Exceções: routeTree.gen.ts (gerado) e components/ui (shadcn).
     // `as const` continua permitido; casts de fronteira runtime/lib-forced usam
     // eslint-disable pontual justificado.
     files: ['**/*.{ts,tsx}'],
     ignores: ['src/routeTree.gen.ts', 'src/components/ui/**'],
+    plugins: {
+      lowcodejs,
+    },
     rules: {
+      // regra 1: sem ternário como control-flow (?? / ?. / && seguem livres).
       'no-ternary': 'error',
+      // regra 3: sem `as` (assertion). `as const` continua permitido.
       '@typescript-eslint/consistent-type-assertions': [
         'error',
         { assertionStyle: 'never' },
       ],
+      // regra 2: sem `any` desnecessário.
       '@typescript-eslint/no-explicit-any': 'error',
+      // regra 4: sempre `type`, nunca `interface` (augmentation em .d.ts /
+      // `declare module` não dispara — é limite da linguagem, não estilo).
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      // regra 5: combinar tipos-objeto com Merge<A, B>, não `A & B`.
+      'lowcodejs/no-type-intersection': 'error',
+      // regra 6: lookup object no lugar de cadeia if/else-if 3+.
+      'lowcodejs/prefer-lookup-object': 'error',
+    },
+  },
+  {
+    // regra 4 (type não interface) não se aplica a `.d.ts` de module
+    // augmentation: o TS exige `interface` p/ declaration merging (`type` não
+    // funciona). Ex.: lib/tanstack-table.d.ts.
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
 ]);

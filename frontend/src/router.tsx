@@ -36,6 +36,7 @@ export const getRouter = () => {
 
 declare module '@tanstack/react-router' {
   // Module augmentation exige interface (declaration merging) — nao usar type.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmentation em .tsx: o TS exige interface p/ declaration merging
   interface Register {
     router: ReturnType<typeof getRouter>;
   }

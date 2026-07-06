@@ -18,6 +18,7 @@ import { hasAreaCapability } from '@/lib/menu/menu-access-permissions';
 
 // Itens de area do sistema com a capacidade que os libera. Itens sem capacidade
 // (Tabelas, Histórico, Perfil) sao sempre visiveis para o autenticado.
+// eslint-disable-next-line lowcodejs/no-type-intersection -- MenuItem é união discriminada (CollapsibleItem | LinkItem); Merge mapearia keyof e destruiria a união
 type CapabilityMenuItem = MenuItem & { capability?: string };
 
 const SYSTEM_ITEMS: Array<CapabilityMenuItem> = [

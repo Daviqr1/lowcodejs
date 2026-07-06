@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { useCallback, useMemo, useState } from 'react';
 
+import type { Merge } from '@/lib/interfaces';
+
 export type TreeNode = {
   id: string;
   label: string;
@@ -29,14 +31,17 @@ export function useTreeSelect({
     (
       nodes: Array<TreeNode>,
       level = 0,
-    ): Array<TreeNode & { level: number }> => {
-      return nodes.reduce<Array<TreeNode & { level: number }>>((acc, node) => {
-        acc.push({ ...node, level });
-        if (node.children) {
-          acc.push(...flattenTree(node.children, level + 1));
-        }
-        return acc;
-      }, []);
+    ): Array<Merge<TreeNode, { level: number }>> => {
+      return nodes.reduce<Array<Merge<TreeNode, { level: number }>>>(
+        (acc, node) => {
+          acc.push({ ...node, level });
+          if (node.children) {
+            acc.push(...flattenTree(node.children, level + 1));
+          }
+          return acc;
+        },
+        [],
+      );
     },
     [],
   );
