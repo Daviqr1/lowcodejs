@@ -1,6 +1,8 @@
 import { TableRowHtmlContentField } from '@/components/common/dynamic-table/table-row/table-row-html-content-field';
+import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, IStorage } from '@/lib/interfaces';
+import type { CreateRowDefaultValue } from '@/lib/table';
 import { buildFieldValidator, isManagedRelationship } from '@/lib/table';
 
 type SearchableOption = {
@@ -217,157 +219,158 @@ export function createRequiredValidator(fieldName: string): RequiredValidator {
   };
 }
 
+// withForm dá o `form` tipado (fieldComponents inferidos no AppField) sem passar
+// o form como `any`. defaultValues/props só p/ type-check; o form de row
+// dinâmico (Record<string, FieldValue>) vem do useAppForm do caller.
 type RowFormFieldsProps = {
-  // Instância do TanStack Form (AppForm) com campos dinâmicos — sem tipo estático.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  form: any;
   fields: Array<IField>;
   disabled: boolean;
   tableSlug: string;
   rowId?: string;
 };
 
-export function RowFormFields({
-  form,
-  fields,
-  disabled,
-  tableSlug,
-  rowId,
-}: RowFormFieldsProps): React.JSX.Element {
-  return (
-    <section
-      className="flex flex-wrap gap-4 p-2"
-      data-test-id="create-row-fields"
-    >
-      {fields.map((field) => {
-        // Skip native fields (_id, creator, createdAt)
-        if (field.native) return null;
+const ROW_FORM_FIELDS_DEFAULT_VALUES: CreateRowDefaultValue = {};
 
-        // Skip non-editable field types. RELATIONSHIP em modo 'manage' é
-        // renderizado pelo repetidor (RelationshipRowsInline); em modo 'select'
-        // (padrão) cai no switch abaixo como combobox de vínculo direto.
-        if (
-          field.type === E_FIELD_TYPE.REACTION ||
-          field.type === E_FIELD_TYPE.EVALUATION ||
-          field.type === E_FIELD_TYPE.FIELD_GROUP
-        ) {
-          return null;
-        }
-        // Só N:N 'manage' é renderizado pelo repetidor; 1:1/1:N caem no combobox.
-        if (isManagedRelationship(field)) {
-          return null;
-        }
+const ROW_FORM_FIELDS_DEFAULT_PROPS: RowFormFieldsProps = {
+  fields: [],
+  disabled: false,
+  tableSlug: '',
+};
 
-        if (field.type === E_FIELD_TYPE.HTML_CONTENT) {
+export const RowFormFields = withForm({
+  defaultValues: ROW_FORM_FIELDS_DEFAULT_VALUES,
+  props: ROW_FORM_FIELDS_DEFAULT_PROPS,
+  render: function Render({ form, fields, disabled, tableSlug, rowId }) {
+    return (
+      <section
+        className="flex flex-wrap gap-4 p-2"
+        data-test-id="create-row-fields"
+      >
+        {fields.map((field) => {
+          // Skip native fields (_id, creator, createdAt)
+          if (field.native) return null;
+
+          // Skip non-editable field types. RELATIONSHIP em modo 'manage' é
+          // renderizado pelo repetidor (RelationshipRowsInline); em modo 'select'
+          // (padrão) cai no switch abaixo como combobox de vínculo direto.
+          if (
+            field.type === E_FIELD_TYPE.REACTION ||
+            field.type === E_FIELD_TYPE.EVALUATION ||
+            field.type === E_FIELD_TYPE.FIELD_GROUP
+          ) {
+            return null;
+          }
+          // Só N:N 'manage' é renderizado pelo repetidor; 1:1/1:N caem no combobox.
+          if (isManagedRelationship(field)) {
+            return null;
+          }
+
+          if (field.type === E_FIELD_TYPE.HTML_CONTENT) {
+            return (
+              <div
+                key={field._id}
+                style={{ width: '100%' }}
+              >
+                <TableRowHtmlContentField field={field} />
+              </div>
+            );
+          }
+
           return (
             <div
               key={field._id}
-              style={{ width: '100%' }}
+              className="min-w-[200px]"
+              style={{ width: `calc(${field.widthInForm ?? 50}% - 1rem)` }}
             >
-              <TableRowHtmlContentField field={field} />
-            </div>
-          );
-        }
-
-        return (
-          <div
-            key={field._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${field.widthInForm ?? 50}% - 1rem)` }}
-          >
-            <form.AppField
-              name={field.slug}
-              validators={{
-                // value é o valor dinâmico do campo (FieldValue) vindo do form.
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onChange: ({ value }: { value: any }) => {
-                  return buildFieldValidator(field, value);
-                },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onBlur: ({ value }: { value: any }) => {
-                  return buildFieldValidator(field, value);
-                },
-              }}
-            >
-              {/* render prop do AppField do TanStack Form — API dinâmica */}
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(formField: any) => {
-                switch (field.type) {
-                  case E_FIELD_TYPE.TEXT_SHORT:
-                    return (
-                      <formField.TableRowTextField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  case E_FIELD_TYPE.TEXT_LONG:
-                    if (field.format === E_FIELD_FORMAT.RICH_TEXT) {
+              <form.AppField
+                name={field.slug}
+                validators={{
+                  onChange: ({ value }) => {
+                    return buildFieldValidator(field, value);
+                  },
+                  onBlur: ({ value }) => {
+                    return buildFieldValidator(field, value);
+                  },
+                }}
+              >
+                {(formField) => {
+                  switch (field.type) {
+                    case E_FIELD_TYPE.TEXT_SHORT:
                       return (
-                        <formField.TableRowRichTextField
+                        <formField.TableRowTextField
                           field={field}
                           disabled={disabled}
                         />
                       );
-                    }
-                    return (
-                      <formField.TableRowTextareaField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  case E_FIELD_TYPE.DROPDOWN:
-                    return (
-                      <formField.TableRowDropdownField
-                        field={field}
-                        disabled={disabled}
-                        tableSlug={tableSlug}
-                      />
-                    );
-                  case E_FIELD_TYPE.DATE:
-                    return (
-                      <formField.TableRowDateField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  case E_FIELD_TYPE.FILE:
-                    return (
-                      <formField.TableRowFileField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  case E_FIELD_TYPE.RELATIONSHIP:
-                    return (
-                      <formField.TableRowRelationshipField
-                        field={field}
-                        disabled={disabled}
-                        tableSlug={tableSlug}
-                        rowId={rowId}
-                      />
-                    );
-                  case E_FIELD_TYPE.CATEGORY:
-                    return (
-                      <formField.TableRowCategoryField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  case E_FIELD_TYPE.USER:
-                    return (
-                      <formField.TableRowUserField
-                        field={field}
-                        disabled={disabled}
-                      />
-                    );
-                  default:
-                    return null;
-                }
-              }}
-            </form.AppField>
-          </div>
-        );
-      })}
-    </section>
-  );
-}
+                    case E_FIELD_TYPE.TEXT_LONG:
+                      if (field.format === E_FIELD_FORMAT.RICH_TEXT) {
+                        return (
+                          <formField.TableRowRichTextField
+                            field={field}
+                            disabled={disabled}
+                          />
+                        );
+                      }
+                      return (
+                        <formField.TableRowTextareaField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    case E_FIELD_TYPE.DROPDOWN:
+                      return (
+                        <formField.TableRowDropdownField
+                          field={field}
+                          disabled={disabled}
+                          tableSlug={tableSlug}
+                        />
+                      );
+                    case E_FIELD_TYPE.DATE:
+                      return (
+                        <formField.TableRowDateField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    case E_FIELD_TYPE.FILE:
+                      return (
+                        <formField.TableRowFileField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    case E_FIELD_TYPE.RELATIONSHIP:
+                      return (
+                        <formField.TableRowRelationshipField
+                          field={field}
+                          disabled={disabled}
+                          tableSlug={tableSlug}
+                          rowId={rowId}
+                        />
+                      );
+                    case E_FIELD_TYPE.CATEGORY:
+                      return (
+                        <formField.TableRowCategoryField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    case E_FIELD_TYPE.USER:
+                      return (
+                        <formField.TableRowUserField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                }}
+              </form.AppField>
+            </div>
+          );
+        })}
+      </section>
+    );
+  },
+});
