@@ -18,6 +18,7 @@ import {
   E_CHAT_EVENT,
   E_JWT_TYPE,
   type IJWTPayload,
+  type Merge,
 } from '@application/core/entity.core';
 import { Setting } from '@application/model/setting.model';
 import UserMongooseRepository from '@application/repositories/user/user.repository';
@@ -62,7 +63,7 @@ function extractCookieValue(
 
 function getErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return String(err);
-  const errWithCause: Error & { cause?: unknown } = err;
+  const errWithCause: Merge<Error, { cause?: unknown }> = err;
   const cause = errWithCause.cause;
   let causeMsg = '';
   if (cause instanceof Error) causeMsg = ` — causa: ${cause.message}`;

@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import type { Merge } from '@application/core/entity.core';
+
 import type { ConditionalFieldsConfig } from './conditional-fields.types';
 
 const ConditionalFieldRuleSchema = new mongoose.Schema(
@@ -25,10 +27,10 @@ const ConditionalFieldsConfigSchema = new mongoose.Schema(
 );
 
 export const ConditionalFieldsConfigModel: mongoose.Model<
-  ConditionalFieldsConfig & mongoose.Document
+  Merge<ConditionalFieldsConfig, mongoose.Document>
 > =
   mongoose?.models?.ConditionalFieldsConfig ||
-  mongoose.model<ConditionalFieldsConfig & mongoose.Document>(
+  mongoose.model<Merge<ConditionalFieldsConfig, mongoose.Document>>(
     'ConditionalFieldsConfig',
     ConditionalFieldsConfigSchema,
     'conditional_fields_configs',

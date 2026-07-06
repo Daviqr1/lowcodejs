@@ -14,7 +14,10 @@ import { getDataConnection } from '@config/database.config';
 type SubdocArray<T = unknown> = Array<T> & {
   id(
     itemId: string,
-  ): (T & { set(d: Record<string, unknown>): void; deleteOne(): void }) | null;
+  ): Merge<
+    T,
+    { set(d: Record<string, unknown>): void; deleteOne(): void }
+  > | null;
 };
 
 import type {

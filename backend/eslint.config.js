@@ -4,6 +4,8 @@ import prettier from 'eslint-plugin-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+import lowcodejs from '../eslint-local-rules/index.mjs';
+
 export default [
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
@@ -76,19 +78,38 @@ export default [
     // hooks, config, test, bin, start...) — nada escapa. `as const` segue
     // permitido; casts de fronteira de runtime usam disable pontual justificado.
     files: ['**/*.ts'],
+    plugins: {
+      lowcodejs,
+    },
     rules: {
-      // code-style: sem ternário como control-flow (?? / ?. / && seguem livres,
+      // regra 1: sem ternário como control-flow (?? / ?. / && seguem livres,
       // não são ternários). Cada hit legítimo inline usa disable pontual.
       'no-ternary': 'error',
-      // code-style: sem `as` (assertion). `as const` continua permitido.
+      // regra 3: sem `as` (assertion). `as const` continua permitido.
       '@typescript-eslint/consistent-type-assertions': [
         'error',
         {
           assertionStyle: 'never',
         },
       ],
-      // code-style: sem `any` desnecessário.
+      // regra 2: sem `any` desnecessário.
       '@typescript-eslint/no-explicit-any': 'error',
+      // regra 4: sempre `type`, nunca `interface` (augmentation em .d.ts /
+      // `declare module` não dispara — é limite da linguagem, não estilo).
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      // regra 5: combinar tipos-objeto com Merge<A, B>, não `A & B`.
+      'lowcodejs/no-type-intersection': 'error',
+      // regra 6: lookup object no lugar de cadeia if/else-if 3+.
+      'lowcodejs/prefer-lookup-object': 'error',
+    },
+  },
+  {
+    // regra 4 (type não interface) não se aplica a `.d.ts` de module
+    // augmentation: o TS exige `interface` p/ declaration merging (`type` não
+    // funciona). Ex.: _types/fastify*.d.ts (`declare module 'fastify'`).
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
   {

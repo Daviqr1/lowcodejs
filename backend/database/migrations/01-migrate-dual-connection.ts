@@ -22,6 +22,8 @@
 import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
+import type { Merge } from '@application/core/entity.core';
+
 import { TaskLogger } from '../shared/task-logger';
 
 config({ path: '.env', quiet: true });
@@ -38,7 +40,9 @@ type SettingMarkerDoc = {
   MIGRATION_DUAL_CONNECTION_DROPPED_AT?: Date | null;
 };
 
-function isMongoDuplicateKeyError(e: unknown): e is Error & { code: number } {
+function isMongoDuplicateKeyError(
+  e: unknown,
+): e is Merge<Error, { code: number }> {
   return e instanceof Error && 'code' in e;
 }
 

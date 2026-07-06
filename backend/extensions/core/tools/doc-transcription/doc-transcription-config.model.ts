@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import type { Merge } from '@application/core/entity.core';
+
 import type { IDocTranscriptionConfig } from './doc-transcription.types';
 
 const SINGLETON_ID = 'singleton';
@@ -39,10 +41,10 @@ const DocTranscriptionConfigSchema = new mongoose.Schema(
 );
 
 export const DocTranscriptionConfigModel: mongoose.Model<
-  IDocTranscriptionConfig & mongoose.Document
+  Merge<IDocTranscriptionConfig, mongoose.Document>
 > =
   mongoose?.models?.DocTranscriptionConfig ||
-  mongoose.model<IDocTranscriptionConfig & mongoose.Document>(
+  mongoose.model<Merge<IDocTranscriptionConfig, mongoose.Document>>(
     'DocTranscriptionConfig',
     DocTranscriptionConfigSchema,
     'doc_transcription_config',

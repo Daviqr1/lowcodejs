@@ -13,6 +13,7 @@
  * ```
  */
 export type Merge<T, U> = {
+  // eslint-disable-next-line lowcodejs/no-type-intersection -- é a definição do próprio Merge; não há como usá-lo para defini-lo
   [K in keyof (T & U)]: (T & U)[K];
 };
 export type Optional<T, K extends keyof T> = Merge<

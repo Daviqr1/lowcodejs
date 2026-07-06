@@ -3,17 +3,21 @@ import {
   type IField,
   type IGroupConfiguration,
   type ITable,
+  type Merge,
 } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
 import { makeFieldGroupField } from './field-factory.helper';
 
 type TableOverrides = Partial<
-  Record<string, unknown> & {
-    name: string;
-    slug: string;
-    owner: string;
-  }
+  Merge<
+    Record<string, unknown>,
+    {
+      name: string;
+      slug: string;
+      owner: string;
+    }
+  >
 >;
 
 export async function makeTable(

@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import type { Merge } from '@application/core/entity.core';
+
 import type { CascadeDropdownConfig } from './cascade-dropdown.types';
 
 const FilterSchema = new mongoose.Schema(
@@ -53,10 +55,10 @@ CascadeDropdownConfigSchema.index(
 );
 
 export const CascadeDropdownConfigModel: mongoose.Model<
-  CascadeDropdownConfig & mongoose.Document
+  Merge<CascadeDropdownConfig, mongoose.Document>
 > =
   mongoose.models.CascadeDropdownConfig ||
-  mongoose.model<CascadeDropdownConfig & mongoose.Document>(
+  mongoose.model<Merge<CascadeDropdownConfig, mongoose.Document>>(
     'CascadeDropdownConfig',
     CascadeDropdownConfigSchema,
     'cascade_dropdown_field_configs',
