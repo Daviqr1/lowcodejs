@@ -27,6 +27,7 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IField, IRow } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
+import type { FieldValue } from '@/lib/table';
 import { buildFieldValidator } from '@/lib/table';
 
 type GroupRowFormDialogProps = {
@@ -171,9 +172,7 @@ function GroupRowFormDialogContent({
             <form.AppField
               name={field.slug}
               validators={{
-                // value dinâmico do campo (render prop do TanStack Form).
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onChange: ({ value }: { value: any }) =>
+                onChange: ({ value }: { value: FieldValue | undefined }) =>
                   buildFieldValidator(field, value),
               }}
             >

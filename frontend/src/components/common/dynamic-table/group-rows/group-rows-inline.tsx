@@ -391,7 +391,8 @@ function GroupItemCardContent({
             <form.AppField
               name={field.slug}
               validators={{
-                // value dinâmico do campo (render prop do TanStack Form).
+                // form de grupo é tipado Record<string, unknown>; buildFieldValidator
+                // espera FieldValue — impedância genuína neste boundary dinâmico.
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onChange: ({ value }: { value: any }) =>
                   buildFieldValidator(field, value),
