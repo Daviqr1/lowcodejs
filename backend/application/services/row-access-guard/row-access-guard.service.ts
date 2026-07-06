@@ -100,10 +100,12 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   private extractTableSettings(
-    extension: { tableSettings: Record<string, Record<string, unknown>> },
+    // `tableSettings` é Mixed com default `{}`; o `minimize` do Mongoose remove
+    // o objeto vazio na persistência, então pode chegar ausente — daí opcional.
+    extension: { tableSettings?: Record<string, Record<string, unknown>> },
     tableId: string,
   ): Record<string, unknown> {
-    return extension.tableSettings[tableId] ?? {};
+    return extension.tableSettings?.[tableId] ?? {};
   }
 
   private async getActiveGuardsWithSettings(
