@@ -177,9 +177,7 @@ function GroupRowFormDialogContent({
                   buildFieldValidator(field, value),
               }}
             >
-              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(formField: any) =>
+              {(formField) =>
                 renderGroupFormField(formField, field, tableSlug, groupSlug)
               }
             </form.AppField>

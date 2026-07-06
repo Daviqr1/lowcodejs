@@ -234,9 +234,7 @@ function BulkEditValueForm({
           }) => buildFieldValidator(field, value),
         }}
       >
-        {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(formField: any) => {
+        {(formField) => {
           switch (field.type) {
             case E_FIELD_TYPE.TEXT_SHORT:
               return (

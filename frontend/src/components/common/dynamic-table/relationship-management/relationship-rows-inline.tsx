@@ -52,6 +52,7 @@ import type {
   Merge,
 } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
+import type { FieldValue } from '@/lib/table';
 import {
   buildCreateRowDefaultValues,
   buildFieldValidator,
@@ -715,15 +716,14 @@ function RelationshipItemCardForm({
             <form.AppField
               name={cardField.slug}
               validators={{
-                // value dinâmico do campo (render prop do TanStack Form).
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onChange: ({ value }: { value: any }): string | undefined =>
-                  buildFieldValidator(cardField, value),
+                onChange: ({
+                  value,
+                }: {
+                  value: FieldValue | undefined;
+                }): string | undefined => buildFieldValidator(cardField, value),
               }}
             >
-              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(formField: any): React.JSX.Element | null =>
+              {(formField): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,
                   cardField,
@@ -891,15 +891,14 @@ function RelationshipDraftCardContent({
             <form.AppField
               name={cardField.slug}
               validators={{
-                // value dinâmico do campo (render prop do TanStack Form).
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onChange: ({ value }: { value: any }): string | undefined =>
-                  buildFieldValidator(cardField, value),
+                onChange: ({
+                  value,
+                }: {
+                  value: FieldValue | undefined;
+                }): string | undefined => buildFieldValidator(cardField, value),
               }}
             >
-              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(formField: any): React.JSX.Element | null =>
+              {(formField): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,
                   cardField,

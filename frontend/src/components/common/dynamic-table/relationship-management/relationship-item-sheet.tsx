@@ -27,7 +27,7 @@ import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
-import type { CreateRowDefaultValue } from '@/lib/table';
+import type { CreateRowDefaultValue, FieldValue } from '@/lib/table';
 import {
   buildCreateRowDefaultValues,
   buildFieldValidator,
@@ -180,15 +180,15 @@ function RelationshipItemSheetContent({
             <form.AppField
               name={relatedField.slug}
               validators={{
-                // value dinâmico do campo (render prop do TanStack Form).
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onChange: ({ value }: { value: any }): string | undefined =>
+                onChange: ({
+                  value,
+                }: {
+                  value: FieldValue | undefined;
+                }): string | undefined =>
                   buildFieldValidator(relatedField, value),
               }}
             >
-              {/* formField expõe componentes de campo do app — sem tipo exportado. */}
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(formField: any): React.JSX.Element | null =>
+              {(formField): React.JSX.Element | null =>
                 renderRelationshipCardField(
                   formField,
                   relatedField,

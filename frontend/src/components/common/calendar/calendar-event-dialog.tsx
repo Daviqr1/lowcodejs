@@ -382,9 +382,7 @@ export function CalendarEventDialog({
 
             {fields.participantsField && (
               <form.AppField name={fields.participantsField.slug}>
-                {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(formField: any) => (
+                {(formField) => (
                   <formField.TableRowUserField
                     field={fields.participantsField!}
                   />
@@ -536,9 +534,7 @@ export function CalendarEventDialog({
                     key={field._id}
                     name={field.slug}
                   >
-                    {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(formField: any) => {
+                    {(formField) => {
                       switch (field.type) {
                         case E_FIELD_TYPE.TEXT_SHORT:
                           return <formField.TableRowTextField field={field} />;
