@@ -741,14 +741,16 @@ Pos-migracao **todo** campo `RELATIONSHIP` fica top-level e materializado
 grava o marker** se sobrar campo sem `relationshipId` (reprocessa no boot). Os
 links/FK sao a fonte de verdade — nao ha fallback embedded.
 
-**Remodel manual (one-off, fora do boot, sem wrapper `.sh`):**
+**Remodel manual (one-off, fora do boot, sem wrapper `.sh`):** vive em
+`database/remodels/` (isolado das migrations de boot — natureza destrutiva/manual).
 
 ```bash
 node --import @swc-node/register/esm-register \
-  database/migrations/migrate-fieldgroup-to-relationship.ts \
+  database/remodels/migrate-fieldgroup-to-relationship.ts \
   --table=<slug> --group=<id|slug> --apply --i-have-backup
 ```
 
 Converte um `FIELD_GROUP` usado como falso-relacionamento (subdoc embedded) numa
 tabela independente + `RelationshipDefinition` + links. Destrutivo, exige backup,
-nao idempotente-por-marker (depende de decisao humana por tabela).
+nao idempotente-por-marker (depende de decisao humana por tabela). Ver
+`database/remodels/CLAUDE.md`.

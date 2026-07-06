@@ -37,7 +37,11 @@ e ordenada dos wrappers.
 | `25-migrate-relationship-backfill-form-mode.ts` | `MIGRATION_RELATIONSHIP_FORM_MODE_AT` | Backfilla `formMode='manage'` em campos-espelho N:N. |
 | `26-migrate-relationship-cleanup-broken-definitions.ts` | `MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT` | Quarentena campos-espelho cujas `RelationshipDefinitions` apontam para tabelas inexistentes. |
 | `27-migrate-repair-owns-fk.ts` | `MIGRATION_REPAIR_OWNS_FK_AT` | Restaura FKs inline OWNS_FK (1:1/1:N) apagadas pela migration 23 e remove os links criados por ela. |
-| `migrate-fieldgroup-to-relationship.ts` | — (**nao** idempotente por marker) | Remodel one-off **manual** (fora do boot, sem wrapper `.sh`): converte um `FIELD_GROUP` usado como falso-relacionamento numa tabela independente + `RelationshipDefinition` + links. Destrutivo com `--drop-group`; exige `--apply --i-have-backup`. |
+
+> **So migrations de boot.** Remodelagens **manuais/destrutivas** (one-off, sem
+> wrapper `.sh`, exigem `--apply --i-have-backup`) vivem separadas em
+> `../remodels/` — ver `database/remodels/CLAUDE.md`. Ex.:
+> `migrate-fieldgroup-to-relationship.ts`.
 
 ## Comandos
 

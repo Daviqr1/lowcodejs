@@ -30,9 +30,11 @@ A lista completa e ordenada (marker + proposito de cada uma) vive em:
 - `database/migrations/CLAUDE.md` — tabela por arquivo `.ts` + marker + pattern.
 - `scripts/migrations/CLAUDE.md` — wrappers `.sh`, ordem de boot e `_lib.sh`.
 
-Fora do boot ha um remodel **manual**: `migrate-fieldgroup-to-relationship.ts`
-(sem wrapper `.sh`) — converte um `FIELD_GROUP` falso-relacionamento numa tabela
-independente. Destrutivo, exige `--apply --i-have-backup`.
+Fora do boot ha remodelagens **manuais/destrutivas** isoladas em
+`database/remodels/` (ver `database/remodels/CLAUDE.md`) — ex.:
+`migrate-fieldgroup-to-relationship.ts` (sem wrapper `.sh`) converte um
+`FIELD_GROUP` falso-relacionamento numa tabela independente. Destrutivo, exige
+`--apply --i-have-backup`.
 
 ### Execucao
 

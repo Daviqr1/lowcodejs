@@ -239,7 +239,7 @@ async function migrate(): Promise<void> {
           `Marker NÃO gravado (reprocessa no próximo boot). Para rodar à mão, execute em ordem ` +
           `scripts/migrations/14, 15 e 16 (ex.: "sh scripts/migrations/16-migrate-backfill-relationship-endpoint-flags.sh --force"); ` +
           `e, para FIELD_GROUP usado como falso-relacionamento, ` +
-          `"node --import @swc-node/register/esm-register database/migrations/migrate-fieldgroup-to-relationship.ts --table=<slug> --group=<id|slug> --apply --i-have-backup".`,
+          `"node --import @swc-node/register/esm-register database/remodels/migrate-fieldgroup-to-relationship.ts --table=<slug> --group=<id|slug> --apply --i-have-backup".`,
       );
       return;
     }
