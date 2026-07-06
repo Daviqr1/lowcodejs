@@ -22,6 +22,7 @@ isso os colocaria no loop de boot e rodaria a ação destrutiva sem decisão hum
 | Arquivo | Propósito |
 |---------|-----------|
 | `migrate-fieldgroup-to-relationship.ts` | Converte um `FIELD_GROUP` usado como falso-relacionamento (subdoc embedded) numa tabela independente + `RelationshipDefinition` (1:N) + `RelationshipLink` por item. Dry-run por padrão; `--apply` exige `--i-have-backup`; `--drop-group` (destrutivo) remove o grupo/embedded da origem **após** validar contagem (item == registro == link). |
+| `remove-all-relationships.ts` | Remove TODOS os relacionamentos do install: campos `type=RELATIONSHIP` (source + espelho), `relationship-definitions`, `relationship-links`, configs `cascade_dropdown_field_configs` órfãos, limpa `fields`/`fieldOrder*`/`groups[].fields`/`_schema` das tabelas e `$unset` das FKs nas rows. **Mantém** tabelas, registros e campos não-relacionais. Dry-run por padrão; `--apply` exige `--i-have-backup`; `--table=<slug>` restringe aos relacionamentos que tocam a tabela. Idempotente (sem marker). |
 
 ## Execução
 
@@ -39,6 +40,12 @@ node --import @swc-node/register/esm-register \
 node --import @swc-node/register/esm-register \
   database/remodels/migrate-fieldgroup-to-relationship.ts \
   --table=<slug> --group=<id|slug> --apply --i-have-backup --drop-group
+
+# remover TODOS os relacionamentos (dry-run → apply)
+node --import @swc-node/register/esm-register \
+  database/remodels/remove-all-relationships.ts
+node --import @swc-node/register/esm-register \
+  database/remodels/remove-all-relationships.ts --apply --i-have-backup
 ```
 
 Por que não pode ser boot: `FIELD_GROUP` legítimo (composição) e
