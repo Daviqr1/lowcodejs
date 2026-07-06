@@ -1018,7 +1018,7 @@ export function TableKanbanView({
               setIsCreateCardOpen(open);
               if (!open) setCreateColumnId(null);
             }}
-            createForm={createForm}
+            form={createForm}
             fields={fields}
             extraFields={createDialogExtraFields}
             tableSlug={tableSlug}

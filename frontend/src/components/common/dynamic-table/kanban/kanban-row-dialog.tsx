@@ -66,6 +66,7 @@ import {
 import type { FieldMap } from '@/lib/kanban-types';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { buildRowPayload, buildUpdateRowDefaultValues } from '@/lib/table';
+import type { UpdateRowDefaultValue } from '@/lib/table';
 import { useAuthStore } from '@/stores/authentication';
 
 export function KanbanRowDialog({
@@ -280,8 +281,7 @@ export function KanbanRowDialog({
 
   const extraForm = useAppForm({
     // valores default do form são dinâmicos (payload low-code por slug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    defaultValues: ((): Record<string, any> => {
+    defaultValues: ((): Record<string, UpdateRowDefaultValue> => {
       if (row) {
         return buildUpdateRowDefaultValues(row, editableFields);
       }
@@ -460,8 +460,7 @@ export function KanbanRowDialog({
     });
     const nextProgress = getTaskCompletionPercent(updated);
     // dados de update são dinâmicos (payload low-code por slug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const progressData: Record<string, any> = {};
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -486,8 +485,7 @@ export function KanbanRowDialog({
     ];
     const nextProgress = getTaskCompletionPercent(updated);
     // dados de update são dinâmicos (payload low-code por slug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const progressData: Record<string, any> = {};
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -528,8 +526,7 @@ export function KanbanRowDialog({
     });
     const nextProgress = getTaskCompletionPercent(updated);
     // dados de update são dinâmicos (payload low-code por slug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const progressData: Record<string, any> = {};
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -549,8 +546,7 @@ export function KanbanRowDialog({
     const updated = tasks.filter((_, i) => i !== index);
     const nextProgress = getTaskCompletionPercent(updated);
     // dados de update são dinâmicos (payload low-code por slug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const progressData: Record<string, any> = {};
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -863,9 +859,7 @@ export function KanbanRowDialog({
   const renderExtraFieldEditor = (field: IField): React.JSX.Element => {
     return (
       <extraForm.AppField name={field.slug}>
-        {/* formField expõe componentes de campo do app (TableRow*) — sem tipo exportado. */}
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(formField: any) => {
+        {(formField) => {
           switch (field.type) {
             case E_FIELD_TYPE.TEXT_SHORT:
               return <formField.TableRowTextField field={field} />;
@@ -1008,7 +1002,7 @@ export function KanbanRowDialog({
               }}
               editTarget={editTarget}
               setEditTarget={setEditTarget}
-              quickForm={quickForm}
+              form={quickForm}
               tableSlug={tableSlug}
             />
 

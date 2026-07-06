@@ -165,7 +165,7 @@ export function buildCreateRowDefaultValues(
 
 // Build default values from existing row data (for editing)
 
-type UpdateRowDefaultValue =
+export type UpdateRowDefaultValue =
   | RowFieldValue
   | Array<Record<string, RowFieldValue>>;
 
