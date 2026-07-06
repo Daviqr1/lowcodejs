@@ -393,8 +393,14 @@ Tipos em `IExtension` (lib/interfaces.ts), enum `E_EXTENSION_TYPE`
 
 ## Convencoes de Codigo
 
-Tres regras de estilo aplicadas em todo o `src/` e `extensions/` (excecoes:
-`routeTree.gen.ts` gerado e `components/ui/**` shadcn).
+As 6 regras do code-style, **enforçadas pelo ESLint** em todo o `src/` e
+`extensions/` (excecoes: `routeTree.gen.ts` gerado, `components/ui/**` shadcn e
+`*.d.ts` de augmentation). Regras 1–3 via regras nativas (`no-ternary`,
+`consistent-type-assertions: never`, `no-explicit-any`); regra 4 via
+`consistent-type-definitions: type`; regras 5 e 6 via plugin local
+`lowcodejs/*` (`no-type-intersection`, `prefer-lookup-object`) em
+`eslint-local-rules/` na raiz do monorepo. `npm run lint` falha em qualquer nova
+violacao.
 
 ### 1. Sem ternario de atribuicao/controle
 
@@ -433,9 +439,14 @@ precomputar com `let` + `if` antes do JSX.
 
 ### 2. Sem `any` desnecessario
 
-Preferir `type` proprio, inferencia ou `unknown` + narrow. `any` so onde a lib
-forca (ex.: render props dinamicos do TanStack Form), sempre com comentario
-curto justificando. O `IRow` **nao** e mais `any`: o indice `[slug]` e tipado
+Preferir `type` proprio, inferencia ou `unknown` + narrow. Os **render props do
+TanStack Form nao usam mais `any`**: forms dinamicos passam por `withForm` (o
+`form` chega tipado, o `field` do `AppField` infere sozinho) e validators tipam
+`value` com `FieldValue | undefined` (o que `buildFieldValidator` espera). `any`
+so permanece em boundary genuino (dados dinamicos de row `Record<string, any>`,
+API do sandbox, helper de render de campo cujo tipo a lib nao exporta), sempre
+com comentario curto justificando. O `IRow` **nao** e mais `any`: o indice
+`[slug]` e tipado
 por `RowResultValue`; ao ler `row[slug]` faca narrow explicito (type guard /
 `if`), nunca `as`.
 

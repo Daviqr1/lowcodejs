@@ -265,10 +265,15 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 
 ## Convenções de Código
 
-Três regras de estilo aplicadas a **todo** `.ts` do backend (incluindo
+As **6 regras** do code-style aplicadas a **todo** `.ts` do backend (incluindo
 `extensions/`, `database/`, `hooks/`, `config/`, `test/`, `*.spec.ts`),
-enforçadas pelo ESLint (`eslint.config.js`, bloco `files: ['**/*.ts']`): rodar
-`npm run lint` falha em qualquer nova violação.
+**enforçadas pelo ESLint** (`eslint.config.js`, bloco `files: ['**/*.ts']`):
+regras 1–3 via regras nativas (`no-ternary`, `consistent-type-assertions:
+never`, `no-explicit-any`); regra 4 via `consistent-type-definitions: type`
+(override desliga em `**/*.d.ts` de augmentation); regras 5 e 6 via plugin local
+`lowcodejs/*` (`no-type-intersection`, `prefer-lookup-object`) em
+`eslint-local-rules/` na raiz do monorepo. `npm run lint` falha em qualquer nova
+violação.
 
 ### 1. Sem ternário de atribuição/controle
 
