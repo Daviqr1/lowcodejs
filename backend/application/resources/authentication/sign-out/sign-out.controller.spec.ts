@@ -68,10 +68,10 @@ describe('E2E Sign Out Controller', () => {
       const responseCookies = Array.from<string>(
         response.headers['set-cookie'],
       );
-      expect(responseCookies.some((c) => c.includes('accessToken_'))).toBe(
+      expect(responseCookies.some((c) => c.includes('accessToken=;'))).toBe(
         true,
       );
-      expect(responseCookies.some((c) => c.includes('refreshToken_'))).toBe(
+      expect(responseCookies.some((c) => c.includes('refreshToken=;'))).toBe(
         true,
       );
       expect(responseCookies.some((c) => c.includes('activeAccountId=;'))).toBe(
@@ -98,7 +98,8 @@ describe('E2E Sign Out Controller', () => {
         .set('Cookie', mergeSetCookies([firstSignIn.headers['set-cookie']]))
         .send({ email: second.user.email, password: 'password123' });
 
-      // After two sign-ins: accessToken_<id1>, accessToken_<id2>, activeAccountId=<id2>
+      // Apos dois sign-ins: accessToken/refreshToken (nome fixo) da conta ativa
+      // (id2), accountSessions guarda a inativa (id1), activeAccountId=<id2>.
       const cookiesBeforeSignOut = mergeSetCookies([
         firstSignIn.headers['set-cookie'],
         secondSignIn.headers['set-cookie'],
