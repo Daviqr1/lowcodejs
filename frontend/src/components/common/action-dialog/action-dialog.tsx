@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { Merge } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
@@ -44,13 +45,13 @@ export function ActionDialog({
   config,
   ...props
 }: ActionDialogProps): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
+  const { closeRef, close } = useDismissableDialog();
   const navigate = useNavigate();
 
   const mutation = useMutation({
     mutationFn: config.mutationFn,
     onSuccess() {
-      setOpen(false);
+      close();
 
       for (const key of config.invalidateKeys) {
         QueryClient.invalidateQueries({ queryKey: key });
@@ -75,16 +76,16 @@ export function ActionDialog({
   });
 
   return (
-    <Dialog
-      modal
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Dialog modal>
       <DialogTrigger {...props} />
       <DialogContent
         className="py-4 px-6"
         data-test-id={config.testId}
       >
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
         <DialogHeader>
           <DialogTitle>{config.title}</DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
