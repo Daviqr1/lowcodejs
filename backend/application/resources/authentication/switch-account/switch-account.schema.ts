@@ -29,6 +29,7 @@ export const SwitchAccountSchema: FastifySchema = {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string' },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     404: {
@@ -38,6 +39,7 @@ export const SwitchAccountSchema: FastifySchema = {
         message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string' },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
   },

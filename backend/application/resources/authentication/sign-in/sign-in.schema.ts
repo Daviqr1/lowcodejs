@@ -79,6 +79,10 @@ export const SignInSchema: FastifySchema = {
         message: { type: 'string' },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['MULTI_ACCOUNT_LIMIT_REACHED'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
       },
     },
     500: {
