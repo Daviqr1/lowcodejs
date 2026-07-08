@@ -152,7 +152,7 @@ export function TableConfigurationDropdown({
 
   const [apiModalOpen, setApiModalOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const [fieldManagementOpen, setFieldManagementOpen] = useState(false);
+  const fieldTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   // alvo de gerenciamento de grupo: slug + nonce. O nonce força remontar o Sheet
   // (chave) e reabrir o mesmo grupo, mantendo o Sheet uncontrolled (abre via
   // ref clicada a partir do menu — ver dialog/sheet-pattern).
@@ -247,7 +247,7 @@ export function TableConfigurationDropdown({
                       className="inline-flex space-x-1 w-full"
                       onClick={() => {
                         closeMenu();
-                        setFieldManagementOpen(true);
+                        fieldTriggerRef.current?.click();
                       }}
                     >
                       <Settings2Icon className="size-4" />
@@ -426,10 +426,16 @@ export function TableConfigurationDropdown({
 
       {table.data && (
         <TableFieldManagementSheet
-          open={fieldManagementOpen}
-          onOpenChange={setFieldManagementOpen}
+          ref={fieldTriggerRef}
+          asChild
           table={table.data}
-        />
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </TableFieldManagementSheet>
       )}
 
       {table.data && groupTarget && (

@@ -249,8 +249,6 @@ function TrashedItem({
   isDeleting,
   isRestoring,
 }: TrashedItemProps): React.JSX.Element {
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [restoreOpen, setRestoreOpen] = useState(false);
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/50 p-3">
       <FieldTitle
@@ -258,11 +256,7 @@ function TrashedItem({
         className="text-sm text-muted-foreground"
       />
       <div className="flex items-center gap-1">
-        <Dialog
-          modal
-          open={restoreOpen}
-          onOpenChange={setRestoreOpen}
-        >
+        <Dialog modal>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -291,19 +285,18 @@ function TrashedItem({
                   <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
                   </DialogClose>
-                  <Button
-                    type="button"
-                    disabled={isRestoring}
-                    onClick={() => {
-                      onRestore();
-                      setRestoreOpen(false);
-                    }}
-                  >
-                    {isRestoring && (
-                      <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    )}
-                    {!isRestoring && <span>Confirmar</span>}
-                  </Button>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      disabled={isRestoring}
+                      onClick={() => onRestore()}
+                    >
+                      {isRestoring && (
+                        <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                      )}
+                      {!isRestoring && <span>Confirmar</span>}
+                    </Button>
+                  </DialogClose>
                 </DialogFooter>
               </form>
             </section>
@@ -318,11 +311,7 @@ function TrashedItem({
         >
           <PencilIcon className="h-4 w-4" />
         </Button>
-        <Dialog
-          modal
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-        >
+        <Dialog modal>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -350,19 +339,18 @@ function TrashedItem({
                       Cancelar
                     </Button>
                   </DialogClose>
-                  <Button
-                    type="button"
-                    disabled={isDeleting}
-                    onClick={() => {
-                      onDelete();
-                      setDeleteOpen(false);
-                    }}
-                  >
-                    {isDeleting && (
-                      <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    )}
-                    {!isDeleting && <span>Confirmar</span>}
-                  </Button>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => onDelete()}
+                    >
+                      {isDeleting && (
+                        <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                      )}
+                      {!isDeleting && <span>Confirmar</span>}
+                    </Button>
+                  </DialogClose>
                 </DialogFooter>
               </form>
             </section>
