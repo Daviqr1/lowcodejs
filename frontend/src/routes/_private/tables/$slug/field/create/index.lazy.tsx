@@ -187,6 +187,11 @@ function RouteComponent(): React.JSX.Element {
         allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
       }
 
+      let fillWithCurrentUserWhenEmpty = false;
+      if (value.type === E_FIELD_TYPE.USER) {
+        fillWithCurrentUserWhenEmpty = value.fillWithCurrentUserWhenEmpty;
+      }
+
       let relationship: IField['relationship'] = null;
       if (hasRelationship) {
         let labelParts: typeof value.relationship.labelParts = [];
@@ -247,6 +252,7 @@ function RouteComponent(): React.JSX.Element {
         dropdown,
         allowCustomDropdownOptions,
         allowCreateRelationshipRecords,
+        fillWithCurrentUserWhenEmpty,
         relationship,
         category,
         htmlContent,

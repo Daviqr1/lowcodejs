@@ -2,8 +2,13 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow, ITable, Merge } from '@application/core/entity.core';
-import { E_ROW_STATUS } from '@application/core/entity.core';
+import type {
+  IField,
+  IRow,
+  ITable,
+  Merge,
+} from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldSlug } from '@application/core/field-slug.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
@@ -125,6 +130,10 @@ export default class TableRowUpdateUseCase {
       this.fieldVisibility.project(payload, hidden);
       delete payload.__isOwner;
       delete payload.__isAdministrator;
+
+      // Campos USER com a flag: grava o usuario logado quando nenhum id vem no
+      // payload. Roda antes da validacao (mesma regra do create).
+      this.applyUserSelfFill(payload, table.fields, actorUserId);
 
       const errors = RowPayloadValidator.validate(
         payload,
@@ -361,6 +370,31 @@ export default class TableRowUpdateUseCase {
           'UPDATE_ROW_TABLE_ERROR',
         ),
       );
+    }
+  }
+
+  // Campos USER com `fillWithCurrentUserWhenEmpty`: grava o usuario logado
+  // quando nenhum id vem no payload (ausente, null, '' ou []). Muta o payload.
+  private applyUserSelfFill(
+    payload: Record<string, unknown>,
+    fields: IField[],
+    userId: string | undefined,
+  ): void {
+    if (!userId) return;
+
+    for (const field of fields) {
+      if (field.type !== E_FIELD_TYPE.USER) continue;
+      if (!field.fillWithCurrentUserWhenEmpty) continue;
+
+      const value = payload[field.slug];
+      const isEmpty =
+        value === undefined ||
+        value === null ||
+        value === '' ||
+        (Array.isArray(value) && value.length === 0);
+      if (!isEmpty) continue;
+
+      payload[field.slug] = [userId];
     }
   }
 

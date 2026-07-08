@@ -25,6 +25,7 @@ export type TableFieldCreatePayload = Merge<
   Omit<
     z.infer<typeof TableFieldCreateBodyValidator>,
     | 'allowCustomDropdownOptions'
+    | 'fillWithCurrentUserWhenEmpty'
     | 'tip'
     | 'htmlContent'
     | 'slug'
@@ -34,6 +35,7 @@ export type TableFieldCreatePayload = Merge<
     slug?: string;
     tableSlug?: string;
     allowCustomDropdownOptions?: boolean;
+    fillWithCurrentUserWhenEmpty?: boolean;
     tip?: string | null;
     htmlContent?: string | null;
     // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.

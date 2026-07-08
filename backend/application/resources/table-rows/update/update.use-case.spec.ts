@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { E_TABLE_STYLE } from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_TABLE_STYLE } from '@application/core/entity.core';
+import { makeField } from '@application/repositories/entity-fixtures';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -101,6 +102,72 @@ describe('Table Row Update Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value).toMatchObject({ updater: 'user-123' });
+    }
+  });
+
+  async function createTableWithUserField(): Promise<
+    import('@application/core/entity.core').ITable
+  > {
+    const userField = {
+      ...makeField('responsavel'),
+      type: E_FIELD_TYPE.USER,
+      fillWithCurrentUserWhenEmpty: true,
+    };
+
+    const table = await tableInMemoryRepository.create({
+      name: 'Tarefas',
+      slug: 'tarefas',
+      _schema: {},
+      fields: [],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    table.fields = [userField];
+    return table;
+  }
+
+  it('deve gravar o usuario logado no campo USER com fillWithCurrentUserWhenEmpty quando nenhum id vem no payload', async () => {
+    const actor = '507f1f77bcf86cd799439011';
+    const table = await createTableWithUserField();
+
+    const row = await rowRepository.create({
+      table,
+      data: { responsavel: ['507f1f77bcf86cd799439099'] },
+    });
+
+    const result = await sut.execute({
+      slug: 'tarefas',
+      _id: row._id,
+      responsavel: [],
+      __actorUserId: actor,
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.responsavel).toEqual([actor]);
+    }
+  });
+
+  it('deve respeitar os ids enviados no campo USER com fillWithCurrentUserWhenEmpty', async () => {
+    const actor = '507f1f77bcf86cd799439011';
+    const enviado = '507f1f77bcf86cd799439022';
+    const table = await createTableWithUserField();
+
+    const row = await rowRepository.create({ table, data: {} });
+
+    const result = await sut.execute({
+      slug: 'tarefas',
+      _id: row._id,
+      responsavel: [enviado],
+      __actorUserId: actor,
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.responsavel).toEqual([enviado]);
     }
   });
 

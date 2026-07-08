@@ -415,6 +415,7 @@ function FieldUpdateContent({
       allowCustomDropdownOptions: data.allowCustomDropdownOptions ?? false,
       allowCreateRelationshipRecords:
         data.allowCreateRelationshipRecords ?? false,
+      fillWithCurrentUserWhenEmpty: data.fillWithCurrentUserWhenEmpty ?? false,
       relationship: {
         tableId: data.relationship?.table?._id ?? '',
         tableSlug: data.relationship?.table?.slug ?? '',
@@ -502,6 +503,11 @@ function FieldUpdateContent({
         allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
       }
 
+      let fillWithCurrentUserWhenEmpty = false;
+      if (value.type === E_FIELD_TYPE.USER) {
+        fillWithCurrentUserWhenEmpty = value.fillWithCurrentUserWhenEmpty;
+      }
+
       let relationship: IField['relationship'] = null;
       if (hasRelationship) {
         let labelParts: typeof value.relationship.labelParts = [];
@@ -564,6 +570,7 @@ function FieldUpdateContent({
         dropdown,
         allowCustomDropdownOptions,
         allowCreateRelationshipRecords,
+        fillWithCurrentUserWhenEmpty,
         relationship,
         category,
         htmlContent,

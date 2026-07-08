@@ -210,6 +210,7 @@ export const TableRemoveFromTrashSchema: FastifySchema = {
                     enum: ['source', 'target'],
                     nullable: true,
                   },
+                  max: { type: 'number', nullable: true },
                 },
               },
               dropdown: {
@@ -232,6 +233,11 @@ export const TableRemoveFromTrashSchema: FastifySchema = {
                 type: 'boolean',
                 description:
                   'Permite que usuários criem registros na tabela relacionada a partir do registro',
+              },
+              fillWithCurrentUserWhenEmpty: {
+                type: 'boolean',
+                description:
+                  'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
               },
               category: {
                 type: 'array',

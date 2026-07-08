@@ -2,8 +2,8 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow, Merge } from '@application/core/entity.core';
-import { E_ROW_STATUS } from '@application/core/entity.core';
+import type { IField, IRow, Merge } from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldSlug } from '@application/core/field-slug.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
@@ -104,6 +104,10 @@ export default class TableRowCreateUseCase {
       this.fieldVisibility.project(payload, hidden);
       delete payload.__isOwner;
       delete payload.__isAdministrator;
+
+      // Campos USER com a flag: grava o usuario logado quando nenhum id vem no
+      // payload. Roda antes da validacao para um USER required com a flag passar.
+      this.applyUserSelfFill(payload, table.fields, creatorId);
 
       const errors = RowPayloadValidator.validate(
         payload,
@@ -280,6 +284,31 @@ export default class TableRowCreateUseCase {
           'CREATE_ROW_ERROR',
         ),
       );
+    }
+  }
+
+  // Campos USER com `fillWithCurrentUserWhenEmpty`: grava o usuario logado
+  // quando nenhum id vem no payload (ausente, null, '' ou []). Muta o payload.
+  private applyUserSelfFill(
+    payload: Record<string, unknown>,
+    fields: IField[],
+    userId: string | undefined,
+  ): void {
+    if (!userId) return;
+
+    for (const field of fields) {
+      if (field.type !== E_FIELD_TYPE.USER) continue;
+      if (!field.fillWithCurrentUserWhenEmpty) continue;
+
+      const value = payload[field.slug];
+      const isEmpty =
+        value === undefined ||
+        value === null ||
+        value === '' ||
+        (Array.isArray(value) && value.length === 0);
+      if (!isEmpty) continue;
+
+      payload[field.slug] = [userId];
     }
   }
 }

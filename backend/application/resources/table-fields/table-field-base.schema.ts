@@ -170,6 +170,9 @@ export const FieldAllowCustomDropdownOptionsSchema = z.boolean().default(false);
 export const FieldAllowCreateRelationshipRecordsSchema = z
   .boolean()
   .default(false);
+export const FieldFillWithCurrentUserWhenEmptySchema = z
+  .boolean()
+  .default(false);
 export const FieldCategorySchema = z
   .array(Category)
   .nullish()
@@ -275,6 +278,7 @@ export const TableFieldBaseSchema = z.object({
   dropdown: FieldDropdownSchema,
   allowCustomDropdownOptions: FieldAllowCustomDropdownOptionsSchema,
   allowCreateRelationshipRecords: FieldAllowCreateRelationshipRecordsSchema,
+  fillWithCurrentUserWhenEmpty: FieldFillWithCurrentUserWhenEmptySchema,
   category: FieldCategorySchema,
   group: FieldGroupSchema,
 });

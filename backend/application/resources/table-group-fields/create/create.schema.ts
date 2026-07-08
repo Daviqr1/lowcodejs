@@ -85,6 +85,7 @@ export const GroupFieldCreateSchema: FastifySchema = {
       dropdown: { type: 'array', nullable: true, default: [] },
       allowCustomDropdownOptions: { type: 'boolean', default: false },
       allowCreateRelationshipRecords: { type: 'boolean', default: false },
+      fillWithCurrentUserWhenEmpty: { type: 'boolean', default: false },
       relationship: { type: 'object', nullable: true, default: null },
       category: { type: 'array', nullable: true, default: [] },
       group: {
@@ -195,6 +196,7 @@ export const GroupFieldCreateSchema: FastifySchema = {
         },
         allowCustomDropdownOptions: { type: 'boolean' },
         allowCreateRelationshipRecords: { type: 'boolean' },
+        fillWithCurrentUserWhenEmpty: { type: 'boolean' },
         relationship: {
           type: 'object',
           nullable: true,

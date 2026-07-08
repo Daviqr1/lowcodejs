@@ -38,6 +38,7 @@ export type TableFieldUpdatePayload = Merge<
   Omit<
     z.infer<typeof TableFieldUpdateBodyValidator>,
     | 'allowCustomDropdownOptions'
+    | 'fillWithCurrentUserWhenEmpty'
     | 'tip'
     | 'htmlContent'
     | 'slug'
@@ -48,6 +49,7 @@ export type TableFieldUpdatePayload = Merge<
     slug?: string;
     tableSlug?: string;
     allowCustomDropdownOptions?: boolean;
+    fillWithCurrentUserWhenEmpty?: boolean;
     tip?: string | null;
     htmlContent?: string | null;
     // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.

@@ -36,6 +36,7 @@ export type GroupFieldUpdatePayload = Merge<
   Omit<
     z.infer<typeof GroupFieldUpdateBodyValidator>,
     | 'allowCustomDropdownOptions'
+    | 'fillWithCurrentUserWhenEmpty'
     | 'tip'
     | 'htmlContent'
     | 'slug'
@@ -47,6 +48,7 @@ export type GroupFieldUpdatePayload = Merge<
     groupSlug: string;
     fieldId: string;
     allowCustomDropdownOptions?: boolean;
+    fillWithCurrentUserWhenEmpty?: boolean;
     tip?: string | null;
     htmlContent?: string | null;
     // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.

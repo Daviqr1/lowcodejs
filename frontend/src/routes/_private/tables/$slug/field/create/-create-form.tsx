@@ -100,6 +100,7 @@ export const FieldCreateSchema = z.object({
   dropdown: z.array(z.custom<IDropdown>()).default([]),
   allowCustomDropdownOptions: z.boolean().default(false),
   allowCreateRelationshipRecords: z.boolean().default(false),
+  fillWithCurrentUserWhenEmpty: z.boolean().default(false),
   relationship: z.object({
     tableId: z.string().default(''),
     tableSlug: z.string().default(''),
@@ -151,6 +152,7 @@ export const fieldCreateFormDefaultValues: FieldCreateFormValues = {
   dropdown: [],
   allowCustomDropdownOptions: false,
   allowCreateRelationshipRecords: false,
+  fillWithCurrentUserWhenEmpty: false,
   relationship: {
     tableId: '',
     tableSlug: '',
@@ -945,6 +947,19 @@ export const CreateFieldFormFields = withForm({
             {(field) => (
               <field.TableFieldUserDefaultValue
                 label="Valor padrão"
+                disabled={isPending}
+              />
+            )}
+          </form.AppField>
+        )}
+
+        {/* Campo USER: gravar o usuário logado quando vazio */}
+        {isUser && (
+          <form.AppField name="fillWithCurrentUserWhenEmpty">
+            {(field) => (
+              <field.FieldBooleanSwitch
+                label="Usar usuário logado quando vazio"
+                description="Preencher com o usuário logado quando nenhum usuário for informado no registro?"
                 disabled={isPending}
               />
             )}

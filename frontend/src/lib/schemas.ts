@@ -435,6 +435,7 @@ export const FieldBaseSchema = z.object({
   dropdown: z.array(DropdownSchema).default([]),
   allowCustomDropdownOptions: z.boolean().default(false),
   allowCreateRelationshipRecords: z.boolean().default(false),
+  fillWithCurrentUserWhenEmpty: z.boolean().default(false),
   category: z.array(CategorySchema).default([]),
   group: z
     .object({

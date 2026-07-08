@@ -549,6 +549,9 @@ export type IField = Merge<
     dropdown: IDropdown[];
     allowCustomDropdownOptions?: boolean;
     allowCreateRelationshipRecords?: boolean;
+    // Campo USER: quando true, grava o usuario logado no registro caso nenhum id
+    // de usuario seja enviado no payload (create e update). Ver user-self-fill.core.
+    fillWithCurrentUserWhenEmpty?: boolean;
     category: ICategory[];
     group: IFieldConfigurationGroup | null;
   }

@@ -332,6 +332,11 @@ export const Schema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Campo USER: grava o usuario logado quando nenhum id vem no payload.
+    fillWithCurrentUserWhenEmpty: {
+      type: Boolean,
+      default: false,
+    },
     category: {
       type: [Category],
       default: function (): null {

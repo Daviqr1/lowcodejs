@@ -171,6 +171,11 @@ export const TableFieldShowSchema: FastifySchema = {
           description:
             'Permitir que usuários criem registros na tabela relacionada a partir do formulário',
         },
+        fillWithCurrentUserWhenEmpty: {
+          type: 'boolean',
+          description:
+            'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
+        },
         relationship: {
           type: 'object',
           nullable: true,
@@ -229,6 +234,7 @@ export const TableFieldShowSchema: FastifySchema = {
               enum: ['source', 'target'],
               nullable: true,
             },
+            max: { type: 'number', nullable: true },
           },
         },
         group: {

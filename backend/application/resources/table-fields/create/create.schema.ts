@@ -192,6 +192,12 @@ export const TableFieldCreateSchema: FastifySchema = {
         description:
           'Permitir que usuários criem registros na tabela relacionada a partir do formulário',
       },
+      fillWithCurrentUserWhenEmpty: {
+        type: 'boolean',
+        default: false,
+        description:
+          'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
+      },
       relationship: {
         type: 'object',
         nullable: true,
@@ -252,6 +258,52 @@ export const TableFieldCreateSchema: FastifySchema = {
             type: 'string',
             default: ' - ',
             description: 'Separador entre as partes do rótulo',
+          },
+          visible: {
+            type: 'boolean',
+            default: true,
+            description: 'Mostra a tabela interna deste lado (source)',
+          },
+          onDelete: {
+            type: 'string',
+            enum: ['CASCADE', 'SET_NULL', 'RESTRICT'],
+            description:
+              'Política ao excluir o registro alvo: CASCADE remove os que apontavam, SET_NULL limpa o vínculo, RESTRICT bloqueia enquanto houver vínculo',
+          },
+          mirror: {
+            type: 'object',
+            description:
+              'Configuração do lado espelho (campo materializado na tabela alvo). Se label for omitido, o backend usa o nome da tabela source',
+            properties: {
+              multiple: {
+                type: 'boolean',
+                default: false,
+                description: 'O espelho aceita múltiplos vínculos',
+              },
+              visible: {
+                type: 'boolean',
+                default: false,
+                description: 'Mostra a tabela interna no lado espelho',
+              },
+              label: {
+                type: 'string',
+                description: 'Rótulo do campo espelho na tabela alvo',
+              },
+            },
+          },
+          formMode: {
+            type: 'string',
+            enum: ['select', 'manage'],
+            default: 'select',
+            description:
+              'UX no formulário: select (multi-select) ou manage (tabela interna embutida). Derivado: manage só quando ambos os lados são múltiplos (N:N)',
+          },
+          max: {
+            type: 'number',
+            nullable: true,
+            default: null,
+            description:
+              'Limite de vínculos deste lado (null = ilimitado, só para multiple)',
           },
         },
       },
@@ -429,6 +481,11 @@ export const TableFieldCreateSchema: FastifySchema = {
           description:
             'Permitir que usuários criem registros na tabela relacionada a partir do formulário',
         },
+        fillWithCurrentUserWhenEmpty: {
+          type: 'boolean',
+          description:
+            'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
+        },
         relationship: {
           type: 'object',
           nullable: true,
@@ -487,6 +544,7 @@ export const TableFieldCreateSchema: FastifySchema = {
               enum: ['source', 'target'],
               nullable: true,
             },
+            max: { type: 'number', nullable: true },
           },
         },
         category: {

@@ -245,6 +245,7 @@ export const TableShowSchema: FastifySchema = {
                     enum: ['source', 'target'],
                     nullable: true,
                   },
+                  max: { type: 'number', nullable: true },
                 },
               },
               dropdown: {
@@ -274,6 +275,11 @@ export const TableShowSchema: FastifySchema = {
                 type: 'boolean',
                 description:
                   'Permite que usuários criem registros na tabela relacionada a partir do registro',
+              },
+              fillWithCurrentUserWhenEmpty: {
+                type: 'boolean',
+                description:
+                  'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
               },
               category: {
                 type: 'array',
@@ -535,6 +541,7 @@ export const TableShowSchema: FastifySchema = {
                     },
                     allowCustomDropdownOptions: { type: 'boolean' },
                     allowCreateRelationshipRecords: { type: 'boolean' },
+                    fillWithCurrentUserWhenEmpty: { type: 'boolean' },
                     category: {
                       type: 'array',
                       nullable: true,

@@ -92,6 +92,7 @@ export const GroupFieldShowSchema: FastifySchema = {
         },
         allowCustomDropdownOptions: { type: 'boolean' },
         allowCreateRelationshipRecords: { type: 'boolean' },
+        fillWithCurrentUserWhenEmpty: { type: 'boolean' },
         relationship: {
           type: 'object',
           nullable: true,

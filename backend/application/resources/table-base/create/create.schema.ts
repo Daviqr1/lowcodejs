@@ -165,6 +165,11 @@ export const TableCreateSchema: FastifySchema = {
                 description:
                   'Permite que usuários criem registros na tabela relacionada a partir do registro',
               },
+              fillWithCurrentUserWhenEmpty: {
+                type: 'boolean',
+                description:
+                  'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
+              },
               category: {
                 type: 'array',
                 nullable: true,
@@ -347,6 +352,7 @@ export const TableCreateSchema: FastifySchema = {
                     },
                     allowCustomDropdownOptions: { type: 'boolean' },
                     allowCreateRelationshipRecords: { type: 'boolean' },
+                    fillWithCurrentUserWhenEmpty: { type: 'boolean' },
                     category: {
                       type: 'array',
                       nullable: true,
