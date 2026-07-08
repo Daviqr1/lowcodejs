@@ -20,11 +20,13 @@ import { Pagination } from '@/components/common/pagination';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
@@ -33,7 +35,7 @@ import { useRelationshipLinksList } from '@/hooks/tanstack-query/use-relationshi
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRelationshipLink, IRow } from '@/lib/interfaces';
+import type { IField, IRelationshipLink, IRow, ITable } from '@/lib/interfaces';
 
 function columnWidth(field: IField): string | undefined {
   if (!field.widthInList) return undefined;
@@ -70,12 +72,6 @@ export function RelationshipRowsDataTable({
   const { isFieldVisible } = useFieldVisibility();
   const [page, setPage] = React.useState<number>(1);
   const [perPage, setPerPage] = React.useState<number>(10);
-  const [sheetOpen, setSheetOpen] = React.useState<boolean>(false);
-  const [editRow, setEditRow] = React.useState<IRow | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(
-    null,
-  );
-  const [selectSheetOpen, setSelectSheetOpen] = React.useState<boolean>(false);
 
   const relatedTable = useReadTable({ slug: otherTableSlug });
 
@@ -167,30 +163,63 @@ export function RelationshipRowsDataTable({
 
   const singleLocked = !isMultiple && meta.total >= 1;
 
-  function openCreate(): void {
-    setEditRow(null);
-    setSheetOpen(true);
-  }
-
-  function openEdit(row: IRow | null): void {
-    if (!row) return;
-    setEditRow(row);
-    setSheetOpen(true);
-  }
-
   return (
     <div
       data-slot="relationship-rows-data-table"
       className="space-y-2"
     >
-      {canEdit && (
+      {canEdit && relatedTable.data && (
+        <div className="flex items-center justify-end gap-2">
+          <RelationshipSelectExistingSheet
+            asChild
+            field={field}
+            relatedTable={relatedTable.data}
+            parentTableSlug={parentTableSlug}
+            relationshipId={relationshipId}
+            side={side}
+            recordId={recordId}
+            onChanged={invalidate}
+          >
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={singleLocked}
+            >
+              <span>Vincular existente</span>
+            </Button>
+          </RelationshipSelectExistingSheet>
+          <RelationshipItemSheet
+            asChild
+            field={field}
+            relatedTable={relatedTable.data}
+            parentTableSlug={parentTableSlug}
+            relationshipId={relationshipId}
+            side={side}
+            recordId={recordId}
+            editRow={null}
+            onChanged={invalidate}
+          >
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={singleLocked}
+            >
+              <PlusIcon className="size-4" />
+              <span>Criar novo</span>
+            </Button>
+          </RelationshipItemSheet>
+        </div>
+      )}
+
+      {canEdit && !relatedTable.data && (
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={(): void => setSelectSheetOpen(true)}
-            disabled={singleLocked || !relatedTable.data}
+            disabled
           >
             <span>Vincular existente</span>
           </Button>
@@ -198,8 +227,7 @@ export function RelationshipRowsDataTable({
             type="button"
             variant="outline"
             size="sm"
-            onClick={openCreate}
-            disabled={singleLocked || !relatedTable.data}
+            disabled
           >
             <PlusIcon className="size-4" />
             <span>Criar novo</span>
@@ -244,61 +272,21 @@ export function RelationshipRowsDataTable({
                 </tr>
               )}
               {linkedRows.map((linked) => (
-                <tr
+                <RelationshipRow
                   key={linked.linkId}
-                  className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={(): void => openEdit(linked.row)}
-                >
-                  {columnFields.map((cf) => (
-                    <td
-                      key={cf._id}
-                      className="px-4 py-2"
-                    >
-                      <RenderRelationshipCell
-                        field={cf}
-                        row={linked.row}
-                      />
-                    </td>
-                  ))}
-                  <td
-                    className="w-20 px-4 py-2"
-                    onClick={(
-                      e: React.MouseEvent<HTMLTableCellElement>,
-                    ): void => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-1">
-                      {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={(
-                            e: React.MouseEvent<HTMLButtonElement>,
-                          ): void => {
-                            e.stopPropagation();
-                            openEdit(linked.row);
-                          }}
-                        >
-                          <PencilIcon className="size-3.5" />
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          disabled={deleteLink.isPending}
-                          onClick={(
-                            e: React.MouseEvent<HTMLButtonElement>,
-                          ): void => {
-                            e.stopPropagation();
-                            setConfirmDeleteId(linked.linkId);
-                          }}
-                        >
-                          <TrashIcon className="size-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                  linked={linked}
+                  columnFields={columnFields}
+                  canEdit={canEdit}
+                  field={field}
+                  relatedTable={relatedTable.data}
+                  parentTableSlug={parentTableSlug}
+                  relationshipId={relationshipId}
+                  side={side}
+                  recordId={recordId}
+                  onChanged={invalidate}
+                  onUnlink={(linkId): void => deleteLink.mutate({ linkId })}
+                  unlinkPending={deleteLink.isPending}
+                />
               ))}
             </tbody>
           </table>
@@ -317,77 +305,150 @@ export function RelationshipRowsDataTable({
           }}
         />
       )}
+    </div>
+  );
+}
 
-      <Dialog
-        open={confirmDeleteId !== null}
-        onOpenChange={(open: boolean): void => {
-          if (!open) setConfirmDeleteId(null);
-        }}
+type RelationshipRowProps = {
+  linked: LinkedRow;
+  columnFields: Array<IField>;
+  canEdit: boolean;
+  field: IField;
+  relatedTable?: ITable;
+  parentTableSlug: string;
+  relationshipId: string;
+  side: 'source' | 'target';
+  recordId: string;
+  onChanged: () => void;
+  onUnlink: (linkId: string) => void;
+  unlinkPending: boolean;
+};
+
+function RelationshipRow({
+  linked,
+  columnFields,
+  canEdit,
+  field,
+  relatedTable,
+  parentTableSlug,
+  relationshipId,
+  side,
+  recordId,
+  onChanged,
+  onUnlink,
+  unlinkPending,
+}: RelationshipRowProps): React.JSX.Element {
+  const editTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const canEditRow = canEdit && Boolean(relatedTable) && Boolean(linked.row);
+
+  return (
+    <tr
+      className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={(): void => {
+        if (canEditRow) editTriggerRef.current?.click();
+      }}
+    >
+      {columnFields.map((cf) => (
+        <td
+          key={cf._id}
+          className="px-4 py-2"
+        >
+          <RenderRelationshipCell
+            field={cf}
+            row={linked.row}
+          />
+        </td>
+      ))}
+      <td
+        className="w-20 px-4 py-2"
+        onClick={(e: React.MouseEvent<HTMLTableCellElement>): void =>
+          e.stopPropagation()
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Desvincular registro</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja desvincular este registro? Esta ação não
-              exclui o registro, apenas remove o vínculo.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <div className="flex items-center gap-1">
+          {canEditRow && relatedTable && linked.row && (
+            <RelationshipItemSheet
+              ref={editTriggerRef}
+              asChild
+              field={field}
+              relatedTable={relatedTable}
+              parentTableSlug={parentTableSlug}
+              relationshipId={relationshipId}
+              side={side}
+              recordId={recordId}
+              editRow={linked.row}
+              onChanged={onChanged}
+            >
+              <Button
+                variant="ghost"
+                size="icon-sm"
+              >
+                <PencilIcon className="size-3.5" />
+              </Button>
+            </RelationshipItemSheet>
+          )}
+          {canEdit && (
+            <UnlinkConfirmDialog
+              linkId={linked.linkId}
+              pending={unlinkPending}
+              onConfirm={onUnlink}
+            />
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function UnlinkConfirmDialog({
+  linkId,
+  pending,
+  onConfirm,
+}: {
+  linkId: string;
+  pending: boolean;
+  onConfirm: (linkId: string) => void;
+}): React.JSX.Element {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={pending}
+        >
+          <TrashIcon className="size-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Desvincular registro</DialogTitle>
+          <DialogDescription>
+            Tem certeza que deseja desvincular este registro? Esta ação não
+            exclui o registro, apenas remove o vínculo.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
             <Button
               variant="outline"
-              onClick={(): void => setConfirmDeleteId(null)}
-              disabled={deleteLink.isPending}
+              disabled={pending}
             >
               Cancelar
             </Button>
+          </DialogClose>
+          <DialogClose asChild>
             <Button
               variant="destructive"
-              disabled={deleteLink.isPending}
-              onClick={(): void => {
-                if (confirmDeleteId !== null) {
-                  deleteLink.mutate({ linkId: confirmDeleteId });
-                  setConfirmDeleteId(null);
-                }
-              }}
+              disabled={pending}
+              onClick={(): void => onConfirm(linkId)}
             >
               Desvincular
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {relatedTable.data && (
-        <RelationshipSelectExistingSheet
-          open={selectSheetOpen}
-          onOpenChange={setSelectSheetOpen}
-          field={field}
-          relatedTable={relatedTable.data}
-          parentTableSlug={parentTableSlug}
-          relationshipId={relationshipId}
-          side={side}
-          recordId={recordId}
-          onChanged={invalidate}
-        />
-      )}
-
-      {relatedTable.data && (
-        <RelationshipItemSheet
-          open={sheetOpen}
-          onOpenChange={(open: boolean): void => {
-            setSheetOpen(open);
-            if (!open) setEditRow(null);
-          }}
-          field={field}
-          relatedTable={relatedTable.data}
-          parentTableSlug={parentTableSlug}
-          relationshipId={relationshipId}
-          side={side}
-          recordId={recordId}
-          editRow={editRow}
-          onChanged={invalidate}
-        />
-      )}
-    </div>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

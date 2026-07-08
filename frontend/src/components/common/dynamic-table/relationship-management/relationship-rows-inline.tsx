@@ -166,7 +166,6 @@ export function RelationshipRowsInline(
   const [orderedLinks, setOrderedLinks] = React.useState<
     Array<IRelationshipLink>
   >([]);
-  const [selectSheetOpen, setSelectSheetOpen] = React.useState<boolean>(false);
 
   const relatedTable = useReadTable({ slug: otherTableSlug });
 
@@ -357,14 +356,36 @@ export function RelationshipRowsInline(
         </span>
         {showAdd && (
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(): void => setSelectSheetOpen(true)}
-            >
-              <span>Vincular existente</span>
-            </Button>
+            {relatedTable.data && (
+              <RelationshipSelectExistingSheet
+                asChild
+                field={field}
+                relatedTable={relatedTable.data}
+                parentTableSlug={parentTableSlug}
+                relationshipId={relationshipId}
+                side={side}
+                recordId={recordId}
+                onChanged={invalidateRows}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                >
+                  <span>Vincular existente</span>
+                </Button>
+              </RelationshipSelectExistingSheet>
+            )}
+            {!relatedTable.data && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled
+              >
+                <span>Vincular existente</span>
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -478,20 +499,6 @@ export function RelationshipRowsInline(
         <p className="text-xs text-muted-foreground">
           Este lado aceita apenas um item. Remova o atual para trocar.
         </p>
-      )}
-
-      {relatedTable.data && (
-        <RelationshipSelectExistingSheet
-          open={selectSheetOpen}
-          onOpenChange={setSelectSheetOpen}
-          field={field}
-          relatedTable={relatedTable.data}
-          parentTableSlug={parentTableSlug}
-          relationshipId={relationshipId}
-          side={side}
-          recordId={recordId}
-          onChanged={invalidateRows}
-        />
       )}
     </div>
   );

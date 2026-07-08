@@ -14,6 +14,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { useRelationshipLinkCreate } from '@/hooks/tanstack-query/use-relationship-link-create';
@@ -22,11 +23,9 @@ import { useRelationshipRowsReadPaginated } from '@/hooks/tanstack-query/use-rel
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRow, ITable } from '@/lib/interfaces';
+import type { IField, IRow, ITable, Merge } from '@/lib/interfaces';
 
-type RelationshipSelectExistingSheetProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type RelationshipSelectExistingContentProps = {
   field: IField;
   relatedTable: ITable;
   parentTableSlug: string;
@@ -36,20 +35,42 @@ type RelationshipSelectExistingSheetProps = {
   onChanged: () => void;
 };
 
-export function RelationshipSelectExistingSheet(
-  props: RelationshipSelectExistingSheetProps,
-): React.JSX.Element {
+type RelationshipSelectExistingSheetProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  RelationshipSelectExistingContentProps
+>;
+
+export function RelationshipSelectExistingSheet({
+  ref,
+  field,
+  relatedTable,
+  parentTableSlug,
+  relationshipId,
+  side,
+  recordId,
+  onChanged,
+  ...rest
+}: RelationshipSelectExistingSheetProps): React.JSX.Element {
   return (
-    <Sheet
-      data-slot="relationship-select-existing-sheet"
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Sheet>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
       <SheetContent
+        data-slot="relationship-select-existing-sheet"
         side="right"
         className="sm:max-w-2xl w-full gap-0 p-0 flex flex-col"
       >
-        <RelationshipSelectExistingSheetContent {...props} />
+        <RelationshipSelectExistingSheetContent
+          field={field}
+          relatedTable={relatedTable}
+          parentTableSlug={parentTableSlug}
+          relationshipId={relationshipId}
+          side={side}
+          recordId={recordId}
+          onChanged={onChanged}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -63,7 +84,7 @@ function RelationshipSelectExistingSheetContent({
   side,
   recordId,
   onChanged,
-}: RelationshipSelectExistingSheetProps): React.JSX.Element {
+}: RelationshipSelectExistingContentProps): React.JSX.Element {
   const { isFieldVisible } = useFieldVisibility();
   const [search, setSearch] = React.useState<string>('');
   const [page, setPage] = React.useState<number>(1);

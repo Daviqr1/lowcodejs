@@ -14,19 +14,22 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { useRelationshipLinkCreate } from '@/hooks/tanstack-query/use-relationship-link-create';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, IRow, ITable } from '@/lib/interfaces';
+import type { IField, IRow, ITable, Merge } from '@/lib/interfaces';
 import type { CreateRowDefaultValue, FieldValue } from '@/lib/table';
 import {
   buildCreateRowDefaultValues,
@@ -35,9 +38,7 @@ import {
   buildUpdateRowDefaultValues,
 } from '@/lib/table';
 
-type RelationshipItemSheetProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type RelationshipItemContentProps = {
   field: IField;
   relatedTable: ITable;
   parentTableSlug: string;
@@ -46,31 +47,17 @@ type RelationshipItemSheetProps = {
   recordId: string;
   editRow: IRow | null;
   onChanged: () => void;
+  close: () => void;
 };
 
-export function RelationshipItemSheet(
-  props: RelationshipItemSheetProps,
-): React.JSX.Element {
-  return (
-    <Sheet
-      data-slot="relationship-item-sheet"
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
-      <SheetContent
-        side="right"
-        className="sm:max-w-2xl w-full gap-0 p-0"
-      >
-        <UploadingProvider>
-          <RelationshipItemSheetContent {...props} />
-        </UploadingProvider>
-      </SheetContent>
-    </Sheet>
-  );
-}
+type RelationshipItemSheetProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  Omit<RelationshipItemContentProps, 'close'>
+>;
 
-function RelationshipItemSheetContent({
-  onOpenChange,
+export function RelationshipItemSheet({
+  ref,
+  field,
   relatedTable,
   parentTableSlug,
   relationshipId,
@@ -78,7 +65,53 @@ function RelationshipItemSheetContent({
   recordId,
   editRow,
   onChanged,
+  ...rest
 }: RelationshipItemSheetProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
+  return (
+    <Sheet>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
+      <SheetContent
+        data-slot="relationship-item-sheet"
+        side="right"
+        className="sm:max-w-2xl w-full gap-0 p-0"
+      >
+        <SheetClose
+          ref={closeRef}
+          className="hidden"
+        />
+        <UploadingProvider>
+          <RelationshipItemSheetContent
+            field={field}
+            relatedTable={relatedTable}
+            parentTableSlug={parentTableSlug}
+            relationshipId={relationshipId}
+            side={side}
+            recordId={recordId}
+            editRow={editRow}
+            onChanged={onChanged}
+            close={close}
+          />
+        </UploadingProvider>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function RelationshipItemSheetContent({
+  close,
+  relatedTable,
+  parentTableSlug,
+  relationshipId,
+  side,
+  recordId,
+  editRow,
+  onChanged,
+}: RelationshipItemContentProps): React.JSX.Element {
   const isEdit = Boolean(editRow);
   const isUploading = useIsUploading();
   const otherTableSlug = relatedTable.slug;
@@ -139,7 +172,7 @@ function RelationshipItemSheetContent({
           data: payload,
         });
         onChanged();
-        onOpenChange(false);
+        close();
         return;
       }
       const created = await createRow.mutateAsync({
@@ -147,7 +180,7 @@ function RelationshipItemSheetContent({
         data: payload,
       });
       await createLink.mutateAsync({ otherId: String(created._id) });
-      onOpenChange(false);
+      close();
     },
   });
 
@@ -201,14 +234,15 @@ function RelationshipItemSheetContent({
       </form>
 
       <SheetFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={(): void => onOpenChange(false)}
-          disabled={isPending}
-        >
-          Cancelar
-        </Button>
+        <SheetClose asChild>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+        </SheetClose>
         <Button
           type="button"
           disabled={isPending || isUploading}
