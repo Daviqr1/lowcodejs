@@ -10,6 +10,9 @@ type HandleApiErrorOptions = {
     string,
     (errorData: IHTTPExeptionError<Record<string, string>>) => void
   >;
+  // Mensagem de toast por `cause` (atalho para o caso comum de só trocar o texto,
+  // sem precisar de um handler completo em `causeHandlers`).
+  causes?: Record<string, string>;
 };
 
 export function handleApiError(
@@ -35,6 +38,11 @@ export function handleApiError(
 
   if (options.causeHandlers?.[cause]) {
     options.causeHandlers[cause](errorData);
+    return;
+  }
+
+  if (options.causes?.[cause]) {
+    toast.error(options.context, { description: options.causes[cause] });
     return;
   }
 

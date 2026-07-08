@@ -364,7 +364,7 @@ export function TableCalendarView({
           onDeleteClick={() => setIsDeleteOpen(true)}
           onOpenRecord={(row) => {
             router.navigate({
-              to: '/tables/$slug/row/',
+              to: '/tables/$slug/row',
               params: { slug: tableSlug },
               search: { _id: row._id },
             });

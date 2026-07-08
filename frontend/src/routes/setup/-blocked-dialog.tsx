@@ -27,7 +27,7 @@ export function BlockedDialog({
   const label = stepLabels[blocked] ?? blocked;
 
   function handleClose(): void {
-    navigate({ search: {} });
+    navigate({ to: '.', search: {} });
   }
 
   return (

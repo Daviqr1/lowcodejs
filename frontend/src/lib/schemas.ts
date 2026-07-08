@@ -93,6 +93,9 @@ export const UserUpdateFormSchema = UserBaseSchema.extend({
   status: z.enum([E_USER_STATUS.ACTIVE, E_USER_STATUS.INACTIVE], {
     message: 'O status deve ser ACTIVE ou INACTIVE',
   }),
+  // Form sempre provê `groups` (default []); sem `.default()` o input do schema
+  // fica `string[]` (não opcional), casando com UserUpdateFormValues no validador.
+  groups: z.array(z.string().trim()),
 });
 
 export const UserUpdateParamsSchema = z.object({

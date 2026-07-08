@@ -224,7 +224,7 @@ export function TableMosaicView({
           className="mb-4 break-inside-avoid rounded-2xl border border-border/60 bg-background shadow-sm overflow-hidden cursor-pointer hover:bg-muted/20"
           onClick={() => {
             router.navigate({
-              to: '/tables/$slug/row/',
+              to: '/tables/$slug/row',
               params: { slug },
               search: { _id: row._id },
             });

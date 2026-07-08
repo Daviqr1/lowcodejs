@@ -1315,7 +1315,6 @@ export const UpdateSettingFormFields = withForm({
                   E_AI_LLM_PROVIDER.OPENAI) as AiLlmProvider;
                 const needsKey = providerRequiresApiKey(provider);
                 const needsBaseUrl = providerShowsBaseUrl(provider);
-                const modelOptions = LLM_MODEL_OPTIONS[provider] ?? [];
                 const providerMeta = AI_LLM_PROVIDER_OPTIONS.find(
                   (o) => o.value === provider,
                 );

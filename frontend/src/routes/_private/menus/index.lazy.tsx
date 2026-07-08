@@ -43,7 +43,7 @@ function RouteComponent(): React.JSX.Element {
   const search = useSearch({ from: '/_private/menus/' });
   const sidebar = useSidebar();
   const router = useRouter();
-  const navigate = useNavigate({ from: '/menus' });
+  const navigate = useNavigate({ from: '/menus/' });
   const auth = useAuthStore();
 
   const { data } = useSuspenseQuery(menuListOptions(search));

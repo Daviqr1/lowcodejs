@@ -13,7 +13,12 @@ import { useGroupFieldUpdate } from '@/hooks/tanstack-query/use-group-field-upda
 import { useUpdateTable } from '@/hooks/tanstack-query/use-table-update';
 import { API } from '@/lib/api';
 import { E_PERMISSION_TARGET } from '@/lib/constant';
-import type { IField, ITable, Paginated } from '@/lib/interfaces';
+import type {
+  IField,
+  IPermissionBinding,
+  ITable,
+  Paginated,
+} from '@/lib/interfaces';
 import type { FieldContext } from '@/lib/permission';
 import { resolveFieldLabel } from '@/lib/table';
 
@@ -39,8 +44,14 @@ function buildVisibilityOverride(
   const context = CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
   if (!context) return {};
 
-  const publicBinding = { kind: E_PERMISSION_TARGET.PUBLIC, group: null };
-  const nobodyBinding = { kind: E_PERMISSION_TARGET.NOBODY, group: null };
+  const publicBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.PUBLIC,
+    group: null,
+  };
+  const nobodyBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.NOBODY,
+    group: null,
+  };
 
   const base = field.permissions ?? {
     list: publicBinding,
@@ -80,7 +91,7 @@ function buildGroupFieldPayload(
       formMode: field.relationship.formMode,
       visible: field.relationship.visible,
       onDelete: field.relationship.onDelete,
-      mirror: field.relationship.mirror ?? null,
+      mirror: field.relationship.mirror,
       max: field.relationship.max ?? null,
     };
   }

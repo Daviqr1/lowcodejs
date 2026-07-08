@@ -45,7 +45,7 @@ function RouteComponent(): React.JSX.Element {
 
   const sidebar = useSidebar();
   const router = useRouter();
-  const navigate = useNavigate({ from: '/groups' });
+  const navigate = useNavigate({ from: '/groups/' });
   const auth = useAuthStore();
 
   const { data } = useSuspenseQuery(groupListOptions(search));

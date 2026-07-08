@@ -56,8 +56,10 @@ function ExtensionPluginRender({
       );
       if (!Entry) {
         // Manifest registrado mas entry React não existe no bundle. Não quebra
-        // o slot — só não renderiza nada.
-        return { default: (): null => null };
+        // o slot — só não renderiza nada. Mesma assinatura de props do Entry
+        // para o React.lazy resolver um único tipo de componente.
+        const Empty: React.ComponentType<Record<string, unknown>> = () => null;
+        return { default: Empty };
       }
       return { default: Entry };
     });

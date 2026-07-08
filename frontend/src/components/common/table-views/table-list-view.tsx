@@ -127,7 +127,7 @@ function RowActionsCell({
             className="inline-flex space-x-1 w-full cursor-pointer"
             onClick={() =>
               router.navigate({
-                to: '/tables/$slug/row/',
+                to: '/tables/$slug/row',
                 params: { slug },
                 search: { _id: row._id },
               })
@@ -144,7 +144,7 @@ function RowActionsCell({
             )}
             onClick={() =>
               router.navigate({
-                to: '/tables/$slug/row/',
+                to: '/tables/$slug/row',
                 params: { slug },
                 search: { _id: row._id, mode: 'edit' as const },
               })
@@ -424,7 +424,7 @@ export function TableListView({
         table={table}
         onRowClick={(row) => {
           router.navigate({
-            to: '/tables/$slug/row/',
+            to: '/tables/$slug/row',
             params: { slug },
             search: { _id: row._id },
           });

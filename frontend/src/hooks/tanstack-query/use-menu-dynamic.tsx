@@ -1,4 +1,3 @@
-import type { LinkProps } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import {

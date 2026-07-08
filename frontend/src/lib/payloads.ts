@@ -613,3 +613,14 @@ export type ExtensionBulkConfigureTableSettingsResponse = {
   success: Array<string>;
   failed: Array<{ tableId: string; reason: string; message: string }>;
 };
+
+// ============== SCHEMA IMPORT ==============
+
+export type SchemaImportPayload = {
+  yaml: string;
+};
+
+export type SchemaImportResponse = {
+  created: Array<{ slug: string; name: string; fieldCount: number }>;
+  errors: Array<{ name: string; message: string }>;
+};

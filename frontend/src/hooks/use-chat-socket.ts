@@ -291,15 +291,13 @@ export function useChatSocket(
       E_CHAT_EVENT.MESSAGE,
       (data: { content: string; variant?: 'system-warning' }) => {
         setMessages((prev) => {
-          const next = [
-            ...prev,
-            {
-              id: nextId(),
-              role: 'assistant' as const,
-              content: data.content,
-              variant: data.variant ?? 'default',
-            },
-          ];
+          const message = {
+            id: nextId(),
+            role: 'assistant',
+            content: data.content,
+            variant: data.variant ?? 'default',
+          } satisfies ChatMessage;
+          const next = [...prev, message];
           saveMessages(next);
           return next;
         });

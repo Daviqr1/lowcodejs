@@ -456,9 +456,9 @@ function FieldUpdateContent({
       const hasDropdown = (value.dropdown?.length ?? 0) > 0;
       const hasCategory = (value.category?.length ?? 0) > 0;
 
-      let htmlContent: string | null = null;
+      let htmlContent: string | undefined;
       if (value.type === E_FIELD_TYPE.HTML_CONTENT) {
-        htmlContent = value.htmlContent || null;
+        htmlContent = value.htmlContent || undefined;
       }
 
       // Rótulo por contexto: vazio → null (volta ao name naquele contexto).
@@ -647,8 +647,9 @@ function FieldUpdateContent({
             form.handleSubmit();
           }}
         >
-          {/* @ts-ignore TanStack Form type depth issue with nested configuration */}
+          {/* @ts-expect-error TanStack Form: profundidade/identidade de tipo do withForm (mesmo problema do create form). */}
           <UpdateFieldFormFields
+            // @ts-expect-error idem — o `form` (ValueOf<E_FIELD_TYPE> em `type`) e o esperado pelo withForm são estruturalmente iguais mas nominalmente distintos.
             form={form}
             isPending={isPending}
             mode={mode}

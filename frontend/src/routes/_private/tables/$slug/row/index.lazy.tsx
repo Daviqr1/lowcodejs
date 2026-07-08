@@ -188,7 +188,7 @@ function ExistingRowView({
 
   const goToView = (): void => {
     void navigate({
-      to: '/tables/$slug/row/',
+      to: '/tables/$slug/row',
       params: { slug },
       // mode explícito: sair da edição vai para visualização mesmo se o
       // registro ainda for rascunho (sem isso o default reabriria em edição).
@@ -208,7 +208,7 @@ function ExistingRowView({
 
   const goToEdit = (): void => {
     void navigate({
-      to: '/tables/$slug/row/',
+      to: '/tables/$slug/row',
       params: { slug },
       search: { _id: rowId, mode: 'edit' as const },
     });

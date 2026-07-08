@@ -34,7 +34,7 @@ export const UpdateUserFormFields = withForm({
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
-    onAllowPasswordChangeChange: () => {},
+    onAllowPasswordChangeChange: (_value: boolean) => {},
   },
   render: function Render({
     form,

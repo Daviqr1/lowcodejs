@@ -42,7 +42,7 @@ export const UpdateProfileFormFields = withForm({
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
-    onAllowPasswordChangeChange: () => {},
+    onAllowPasswordChangeChange: (_value: boolean) => {},
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     groupData: null as IGroup | null,
   },

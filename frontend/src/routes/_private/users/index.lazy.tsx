@@ -46,7 +46,7 @@ function RouteComponent(): React.JSX.Element {
   });
 
   const router = useRouter();
-  const navigate = useNavigate({ from: '/users' });
+  const navigate = useNavigate({ from: '/users/' });
 
   const sidebar = useSidebar();
 

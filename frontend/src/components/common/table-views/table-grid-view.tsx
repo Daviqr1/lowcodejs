@@ -279,7 +279,7 @@ export function TableGridView({
                 className="p-0"
                 onClick={() => {
                   router.navigate({
-                    to: '/tables/$slug/row/',
+                    to: '/tables/$slug/row',
                     params: { slug },
                     search: { _id: row._id },
                   });

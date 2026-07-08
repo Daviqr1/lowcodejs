@@ -143,9 +143,9 @@ function RouteComponent(): React.JSX.Element {
       const hasDropdown = (value.dropdown?.length ?? 0) > 0;
       const hasCategory = (value.category?.length ?? 0) > 0;
 
-      let htmlContent: string | null = null;
+      let htmlContent: string | undefined;
       if (value.type === E_FIELD_TYPE.HTML_CONTENT) {
-        htmlContent = value.htmlContent || null;
+        htmlContent = value.htmlContent || undefined;
       }
 
       // Rótulo por contexto: vazio → null (volta ao name naquele contexto).

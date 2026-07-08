@@ -34,7 +34,12 @@ export const Route = createFileRoute('/_private/tables/$slug/')({
       z.union([z.enum(['asc', 'desc']).optional(), z.string().optional()]),
     ),
   search: {
-    middlewares: [stripSearchParams(defaultSearch)],
+    middlewares: [
+      // @ts-expect-error O `.catchall` (params dinâmicos order-<slug>) cria um
+      // índice string que faz o stripSearchParams exigir `page: string`; aqui é
+      // number. Limitação da combinação Zod catchall + stripSearchParams.
+      stripSearchParams(defaultSearch),
+    ],
   },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {

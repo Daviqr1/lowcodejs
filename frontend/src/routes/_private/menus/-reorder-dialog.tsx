@@ -45,7 +45,7 @@ import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import { useMenuReorder } from '@/hooks/tanstack-query/use-menu-reorder';
 import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IMenu } from '@/lib/interfaces';
+import type { IMenu, ValueOf } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
 type DropMode = 'before' | 'after' | 'nest';
@@ -69,12 +69,13 @@ type SortableMenuNodeProps = {
   children?: React.ReactNode;
 };
 
-const TypeMapper = {
+const TypeMapper: Record<ValueOf<typeof E_MENU_ITEM_TYPE>, string> = {
   [E_MENU_ITEM_TYPE.PAGE]: 'Página',
   [E_MENU_ITEM_TYPE.TABLE]: 'Tabela',
   [E_MENU_ITEM_TYPE.FORM]: 'Formulário',
   [E_MENU_ITEM_TYPE.EXTERNAL]: 'Link',
   [E_MENU_ITEM_TYPE.SEPARATOR]: 'Separador',
+  [E_MENU_ITEM_TYPE.EXTENSION_MODULE]: 'Módulo',
 };
 
 function getParentId(menu: IMenu): string | null {

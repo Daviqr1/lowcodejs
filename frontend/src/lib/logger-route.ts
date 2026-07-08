@@ -63,7 +63,7 @@ export function resolveLoggerNavigateTarget(
       const rowMatch = matchTableRow(url);
       if (rowMatch) {
         return {
-          to: '/tables/$slug/row/',
+          to: '/tables/$slug/row',
           params: { slug: rowMatch[1] },
           search: { _id: rowMatch[2] },
         };
@@ -113,7 +113,7 @@ export function resolveLoggerNavigateTarget(
       const rowMatch = matchTableRow(url);
       if (rowMatch) {
         return {
-          to: '/tables/$slug/row/',
+          to: '/tables/$slug/row',
           params: { slug: rowMatch[1] },
           search: { _id: rowMatch[2] },
         };

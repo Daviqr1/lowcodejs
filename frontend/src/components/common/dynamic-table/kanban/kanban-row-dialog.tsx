@@ -1416,7 +1416,7 @@ export function KanbanRowDialog({
                 data-test-id="kanban-view-btn"
                 onClick={(): void => {
                   void router.navigate({
-                    to: '/tables/$slug/row/',
+                    to: '/tables/$slug/row',
                     params: { slug: tableSlug },
                     search: { _id: row._id },
                   });
@@ -1433,7 +1433,7 @@ export function KanbanRowDialog({
                   data-test-id="kanban-edit-btn"
                   onClick={(): void => {
                     void router.navigate({
-                      to: '/tables/$slug/row/',
+                      to: '/tables/$slug/row',
                       params: { slug: tableSlug },
                       search: { _id: row._id, mode: 'edit' as const },
                     });

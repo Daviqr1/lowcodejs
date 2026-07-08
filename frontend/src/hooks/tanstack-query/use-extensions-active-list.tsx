@@ -9,9 +9,12 @@ import { useAuthStore } from '@/stores/authentication';
 
 export type IActiveExtension = Omit<IExtension, 'manifestSnapshot'>;
 
-export const extensionActiveListOptions = (): ReturnType<
-  typeof queryOptions<Array<IActiveExtension>>
-> =>
+// Sem return type explícito de propósito: anotar apaga a queryKey estreita (vira
+// `readonly unknown[]`) e/ou alarga para `UseQueryOptions`, quebrando o
+// `staleTime` e os consumidores `useSuspenseQuery`. O inferido do `queryOptions`
+// é o correto. Espelha os factories de `_query-options.ts`.
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const extensionActiveListOptions = () =>
   queryOptions({
     queryKey: queryKeys.extensions.active(),
     queryFn: async () => {
