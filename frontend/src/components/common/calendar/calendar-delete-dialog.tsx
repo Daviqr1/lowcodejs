@@ -1,40 +1,53 @@
-import React from 'react';
+import type * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import type { Merge } from '@/lib/interfaces';
 
-type CalendarDeleteDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title?: string;
-  isPending: boolean;
-  onConfirm: () => void;
-};
+type CalendarDeleteDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title?: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+  }
+>;
 
 export function CalendarDeleteDialog({
-  open,
-  onOpenChange,
+  ref,
   title,
   isPending,
   onConfirm,
+  ...rest
 }: CalendarDeleteDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      data-slot="calendar-delete-dialog"
-      data-test-id="calendar-delete-dialog"
-      open={open}
-      onOpenChange={onOpenChange}
-      modal
-    >
-      <DialogContent className="sm:max-w-sm">
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent
+        data-slot="calendar-delete-dialog"
+        data-test-id="calendar-delete-dialog"
+        className="sm:max-w-sm"
+      >
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
         <DialogHeader>
           <DialogTitle>Excluir agendamento</DialogTitle>
           <DialogDescription>
@@ -45,21 +58,25 @@ export function CalendarDeleteDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-2 flex gap-2 sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
-          >
-            Cancelar
-          </Button>
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+          </DialogClose>
           <Button
             data-test-id="calendar-delete-btn"
             type="button"
             variant="destructive"
             className="cursor-pointer"
-            onClick={onConfirm}
+            onClick={() => {
+              if (isPending) return;
+              onConfirm(close);
+            }}
             disabled={isPending}
           >
             {isPending && <Spinner />}

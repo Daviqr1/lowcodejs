@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 
 import {
   CalendarAgendaView,
-  CalendarDeleteDialog,
   CalendarEventDialog,
   CalendarMonthView,
   CalendarToolbar,
@@ -50,11 +49,24 @@ export function TableCalendarView({
   const [viewMode, setViewMode] = React.useState<CalendarViewMode>('week');
   const [currentDate, setCurrentDate] = React.useState<Date>(() => new Date());
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
-  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
-  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
-  const [createDefaultStart, setCreateDefaultStart] =
-    React.useState<Date | null>(null);
+  // alvo de edição: rowId + nonce (força reabrir/remontar o dialog uncontrolled
+  // via ref clicada — ver dialog/sheet-pattern).
+  const [editTarget, setEditTarget] = React.useState<{
+    rowId: string;
+    nonce: number;
+  } | null>(null);
+  const editTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  const openEvent = React.useCallback((rowId: string) => {
+    setEditTarget((previous) => ({ rowId, nonce: (previous?.nonce ?? 0) + 1 }));
+  }, []);
+
+  React.useEffect(
+    function openEditDialog() {
+      if (editTarget) editTriggerRef.current?.click();
+    },
+    [editTarget],
+  );
 
   React.useEffect(() => {
     setRowsState(data);
@@ -77,8 +89,8 @@ export function TableCalendarView({
     const exists = rowsState.some((row) => row._id === rowIdParam);
     if (!exists) return;
     deepLinkRowIdRef.current = rowIdParam;
-    setEditingRowId(rowIdParam);
-  }, [searchParams, rowsState]);
+    openEvent(rowIdParam);
+  }, [searchParams, rowsState, openEvent]);
 
   const resolvedFields = React.useMemo(
     () => resolveCalendarFields(headers, table.layoutFields),
@@ -115,8 +127,8 @@ export function TableCalendarView({
     [rowsState, headers, table.layoutFields],
   );
   const editingEvent = React.useMemo(
-    () => events.find((item) => item.rowId === editingRowId) ?? null,
-    [editingRowId, events],
+    () => events.find((item) => item.rowId === editTarget?.rowId) ?? null,
+    [editTarget, events],
   );
 
   const createRow = useCreateTableRow({
@@ -125,7 +137,6 @@ export function TableCalendarView({
         createdRow,
         ...prev.filter((r) => r._id !== createdRow._id),
       ]);
-      setIsCreateOpen(false);
       toast.success('Agendamento criado com sucesso');
     },
     onError() {
@@ -141,7 +152,6 @@ export function TableCalendarView({
           return row;
         }),
       );
-      setEditingRowId(null);
       toast.success('Agendamento atualizado com sucesso');
     },
     onError() {
@@ -156,8 +166,6 @@ export function TableCalendarView({
     },
     onSuccess: (rowId) => {
       setRowsState((prev) => prev.filter((row) => row._id !== rowId));
-      setEditingRowId(null);
-      setIsDeleteOpen(false);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.detail(tableSlug, rowId),
       });
@@ -229,9 +237,12 @@ export function TableCalendarView({
     [allExtraFields],
   );
 
-  const handleSelectEvent = React.useCallback((event: CalendarEventItem) => {
-    setEditingRowId(event.rowId);
-  }, []);
+  const handleSelectEvent = React.useCallback(
+    (event: CalendarEventItem) => {
+      openEvent(event.rowId);
+    },
+    [openEvent],
+  );
 
   const handlePrevious = React.useCallback(() => {
     setCurrentDate((value) => {
@@ -272,18 +283,31 @@ export function TableCalendarView({
           {table.name} • clique em um agendamento para editar
         </div>
         {!missingRequired && (
-          <Button
-            type="button"
-            size="sm"
-            className="shadow-none"
-            onClick={() => {
-              setCreateDefaultStart(new Date());
-              setIsCreateOpen(true);
+          <CalendarEventDialog
+            asChild
+            mode="create"
+            fields={resolvedFields}
+            event={null}
+            isPending={createRow.status === 'pending'}
+            extraFields={extraFields}
+            tableSlug={tableSlug}
+            table={table}
+            onSubmit={async (payload) => {
+              await createRow.mutateAsync({
+                slug: tableSlug,
+                data: buildCalendarPayload(resolvedFields, payload),
+              });
             }}
           >
-            <PlusIcon className="size-4" />
-            <span>Novo agendamento</span>
-          </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="shadow-none"
+            >
+              <PlusIcon className="size-4" />
+              <span>Novo agendamento</span>
+            </Button>
+          </CalendarEventDialog>
         )}
       </div>
 
@@ -318,34 +342,11 @@ export function TableCalendarView({
         </div>
       )}
 
-      {!missingRequired && (
+      {!missingRequired && editTarget && editingEvent && (
         <CalendarEventDialog
-          open={isCreateOpen}
-          onOpenChange={setIsCreateOpen}
-          mode="create"
-          fields={resolvedFields}
-          event={null}
-          defaultStartDate={createDefaultStart}
-          isPending={createRow.status === 'pending'}
-          extraFields={extraFields}
-          tableSlug={tableSlug}
-          table={table}
-          onSubmit={async (payload) => {
-            await createRow.mutateAsync({
-              slug: tableSlug,
-              data: buildCalendarPayload(resolvedFields, payload),
-            });
-          }}
-        />
-      )}
-
-      {!missingRequired && editingEvent && (
-        <CalendarEventDialog
-          key={editingEvent.rowId}
-          open
-          onOpenChange={(open) => {
-            if (!open) setEditingRowId(null);
-          }}
+          key={editTarget.nonce}
+          ref={editTriggerRef}
+          asChild
           mode="edit"
           fields={resolvedFields}
           event={editingEvent}
@@ -354,14 +355,15 @@ export function TableCalendarView({
           tableSlug={tableSlug}
           table={table}
           onSubmit={async (payload) => {
-            if (!editingEvent) return;
             await updateRow.mutateAsync({
               slug: tableSlug,
               rowId: editingEvent.rowId,
               data: buildCalendarPayload(resolvedFields, payload),
             });
           }}
-          onDeleteClick={() => setIsDeleteOpen(true)}
+          onDelete={async () => {
+            await deleteRow.mutateAsync(editingEvent.rowId);
+          }}
           onOpenRecord={(row) => {
             router.navigate({
               to: '/tables/$slug/row',
@@ -369,19 +371,14 @@ export function TableCalendarView({
               search: { _id: row._id },
             });
           }}
-        />
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </CalendarEventDialog>
       )}
-
-      <CalendarDeleteDialog
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-        title={editingEvent?.title}
-        isPending={deleteRow.status === 'pending'}
-        onConfirm={() => {
-          if (!editingEvent) return;
-          deleteRow.mutate(editingEvent.rowId);
-        }}
-      />
     </div>
   );
 }
