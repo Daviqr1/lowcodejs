@@ -1,26 +1,70 @@
 import { ImageIcon, Loader2 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
+import type * as React from 'react';
 
 import { uploadFile } from './upload';
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import type { Merge } from '@/lib/interfaces';
 
-type ImageUploadProps = {
-  children: React.ReactNode;
-  onUpload: (url: string) => void;
-};
+type ImageUploadProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { onUpload: (url: string) => void }
+>;
 
 export function ImageUpload({
-  children,
+  ref,
   onUpload,
+  ...rest
 }: ImageUploadProps): React.JSX.Element {
-  const [open, setOpen] = useState(false);
+  const { closeRef, close } = useDismissableDialog();
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent
+        data-slot="editor-image-upload"
+        data-test-id="rich-editor-image-upload"
+        className="sm:max-w-md"
+      >
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
+        <DialogHeader>
+          <DialogTitle>Inserir imagem</DialogTitle>
+          <DialogDescription className="sr-only">
+            Envie um arquivo ou informe a URL da imagem
+          </DialogDescription>
+        </DialogHeader>
+        <ImageUploadBody
+          onUpload={onUpload}
+          close={close}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ImageUploadBody({
+  onUpload,
+  close,
+}: {
+  onUpload: (url: string) => void;
+  close: () => void;
+}): React.JSX.Element {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<File | null>(null);
@@ -46,78 +90,57 @@ export function ImageUpload({
     try {
       const url = await uploadFile(file);
       onUpload(url);
-      setOpen(false);
-      setPreview(null);
-      fileRef.current = null;
+      close();
     } finally {
       setUploading(false);
     }
-  }, [onUpload]);
+  }, [onUpload, close]);
 
   return (
-    <Dialog
-      data-slot="editor-image-upload"
-      data-test-id="rich-editor-image-upload"
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (!v) {
-          setPreview(null);
-          fileRef.current = null;
-        }
-      }}
-    >
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Inserir imagem</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col items-center gap-4">
-          {preview && (
-            <img
-              src={preview}
-              alt="Preview"
-              className="max-h-48 rounded border object-contain"
+    <div className="flex flex-col items-center gap-4">
+      {preview && (
+        <img
+          src={preview}
+          alt="Preview"
+          className="max-h-48 rounded border object-contain"
+        />
+      )}
+      {!preview && (
+        <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-border hover:bg-accent/50 transition-colors">
+          <ImageIcon className="size-8 text-muted-foreground" />
+          <span className="mt-2 text-sm text-muted-foreground">
+            Clique para selecionar
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </label>
+      )}
+      {preview && (
+        <div className="flex gap-2 w-full">
+          <label className="flex-1 cursor-pointer text-center rounded border border-border py-1.5 text-sm hover:bg-accent transition-colors">
+            Trocar
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
             />
-          )}
-          {!preview && (
-            <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-border hover:bg-accent/50 transition-colors">
-              <ImageIcon className="size-8 text-muted-foreground" />
-              <span className="mt-2 text-sm text-muted-foreground">
-                Clique para selecionar
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </label>
-          )}
-          {preview && (
-            <div className="flex gap-2 w-full">
-              <label className="flex-1 cursor-pointer text-center rounded border border-border py-1.5 text-sm hover:bg-accent transition-colors">
-                Trocar
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={handleInsert}
-                className="flex-1 rounded bg-primary text-primary-foreground py-1.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer inline-flex items-center justify-center gap-2"
-              >
-                {uploading && <Loader2 className="size-4 animate-spin" />}
-                Inserir
-              </button>
-            </div>
-          )}
+          </label>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={handleInsert}
+            className="flex-1 rounded bg-primary text-primary-foreground py-1.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer inline-flex items-center justify-center gap-2"
+          >
+            {uploading && <Loader2 className="size-4 animate-spin" />}
+            Inserir
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 }

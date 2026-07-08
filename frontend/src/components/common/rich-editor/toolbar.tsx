@@ -216,6 +216,7 @@ export function EditorToolbar({
 
       {/* Image */}
       <ImageUpload
+        asChild
         onUpload={(url) => editor.chain().focus().setImage({ src: url }).run()}
       >
         <div>
