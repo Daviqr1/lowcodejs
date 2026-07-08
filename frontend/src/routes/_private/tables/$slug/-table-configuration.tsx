@@ -153,8 +153,20 @@ export function TableConfigurationDropdown({
   const [apiModalOpen, setApiModalOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [fieldManagementOpen, setFieldManagementOpen] = useState(false);
-  const [groupManagementSlug, setGroupManagementSlug] = useState<string | null>(
-    null,
+  // alvo de gerenciamento de grupo: slug + nonce. O nonce força remontar o Sheet
+  // (chave) e reabrir o mesmo grupo, mantendo o Sheet uncontrolled (abre via
+  // ref clicada a partir do menu — ver dialog/sheet-pattern).
+  const [groupTarget, setGroupTarget] = useState<{
+    slug: string;
+    nonce: number;
+  } | null>(null);
+  const groupTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openGroupManagement() {
+      if (groupTarget) groupTriggerRef.current?.click();
+    },
+    [groupTarget],
   );
 
   const closeMenu = (): void => setOpen(false);
@@ -304,7 +316,10 @@ export function TableConfigurationDropdown({
                         onNavigate={closeMenu}
                         onManageGroup={(gSlug) => {
                           closeMenu();
-                          setGroupManagementSlug(gSlug);
+                          setGroupTarget((previous) => ({
+                            slug: gSlug,
+                            nonce: (previous?.nonce ?? 0) + 1,
+                          }));
                         }}
                       />
                     ))}
@@ -417,15 +432,20 @@ export function TableConfigurationDropdown({
         />
       )}
 
-      {table.data && groupManagementSlug && (
+      {table.data && groupTarget && (
         <GroupFieldManagementSheet
-          open={Boolean(groupManagementSlug)}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) setGroupManagementSlug(null);
-          }}
+          key={groupTarget.nonce}
+          ref={groupTriggerRef}
+          asChild
           table={table.data}
-          groupSlug={groupManagementSlug}
-        />
+          groupSlug={groupTarget.slug}
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </GroupFieldManagementSheet>
       )}
     </>
   );

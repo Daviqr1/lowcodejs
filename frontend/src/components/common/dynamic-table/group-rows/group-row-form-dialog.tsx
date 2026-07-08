@@ -15,47 +15,81 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { useCreateGroupRow } from '@/hooks/tanstack-query/use-group-row-create';
 import { useUpdateGroupRow } from '@/hooks/tanstack-query/use-group-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, IRow } from '@/lib/interfaces';
+import type { IField, IRow, Merge } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import type { FieldValue } from '@/lib/table';
 import { buildFieldValidator } from '@/lib/table';
 
-type GroupRowFormDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type GroupRowFormDialogProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  {
+    tableSlug: string;
+    rowId: string;
+    groupSlug: string;
+    groupFields: Array<IField>;
+    editItem?: IRow | null;
+  }
+>;
+
+type GroupRowFormContentProps = {
   tableSlug: string;
   rowId: string;
   groupSlug: string;
   groupFields: Array<IField>;
   editItem?: IRow | null;
+  close: () => void;
 };
 
-export function GroupRowFormDialog(
-  props: GroupRowFormDialogProps,
-): React.JSX.Element {
+export function GroupRowFormDialog({
+  ref,
+  tableSlug,
+  rowId,
+  groupSlug,
+  groupFields,
+  editItem,
+  ...rest
+}: GroupRowFormDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Sheet
-      data-slot="group-row-form-dialog"
-      data-test-id="group-row-form-dialog"
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Sheet>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
       <SheetContent
+        data-slot="group-row-form-dialog"
+        data-test-id="group-row-form-dialog"
         side="right"
         className="sm:max-w-2xl w-full overflow-y-auto px-4"
       >
+        <SheetClose
+          ref={closeRef}
+          className="hidden"
+        />
         <UploadingProvider>
-          <GroupRowFormDialogContent {...props} />
+          <GroupRowFormDialogContent
+            tableSlug={tableSlug}
+            rowId={rowId}
+            groupSlug={groupSlug}
+            groupFields={groupFields}
+            editItem={editItem}
+            close={close}
+          />
         </UploadingProvider>
       </SheetContent>
     </Sheet>
@@ -63,13 +97,13 @@ export function GroupRowFormDialog(
 }
 
 function GroupRowFormDialogContent({
-  onOpenChange,
+  close,
   tableSlug,
   rowId,
   groupSlug,
   groupFields,
   editItem,
-}: GroupRowFormDialogProps): React.JSX.Element {
+}: GroupRowFormContentProps): React.JSX.Element {
   const isEdit = Boolean(editItem);
   const isUploading = useIsUploading();
 
@@ -100,7 +134,7 @@ function GroupRowFormDialogContent({
       toast.success('Item criado', {
         description: 'O item foi criado com sucesso',
       });
-      onOpenChange(false);
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao criar item' });
@@ -112,7 +146,7 @@ function GroupRowFormDialogContent({
       toast.success('Item atualizado', {
         description: 'O item foi atualizado com sucesso',
       });
-      onOpenChange(false);
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao atualizar item' });
@@ -154,6 +188,9 @@ function GroupRowFormDialogContent({
           {isEdit && 'Editar item'}
           {!isEdit && 'Adicionar item'}
         </SheetTitle>
+        <SheetDescription className="sr-only">
+          Preencha os campos do item do grupo
+        </SheetDescription>
       </SheetHeader>
 
       <form
@@ -185,14 +222,15 @@ function GroupRowFormDialogContent({
       </form>
 
       <SheetFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          disabled={isPending}
-        >
-          Cancelar
-        </Button>
+        <SheetClose asChild>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+        </SheetClose>
         <form.Subscribe
           selector={(state) => [state.canSubmit]}
           children={([canSubmit]) => (
