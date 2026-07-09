@@ -55,8 +55,6 @@ function RouteComponent(): React.JSX.Element {
   const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [reorderOpen, setReorderOpen] = React.useState(false);
-
   const exportCsv = useMenusExportCsv({
     onError(error) {
       handleApiError(error, { context: 'Erro ao exportar CSV' });
@@ -153,15 +151,16 @@ function RouteComponent(): React.JSX.Element {
             </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
-            <Button
-              data-test-id="reorder-menus-btn"
-              type="button"
-              variant="outline"
-              onClick={() => setReorderOpen(true)}
-            >
-              <ListTreeIcon className="size-4" />
-              <span>Ordenar</span>
-            </Button>
+            <MenuReorderDialog asChild>
+              <Button
+                data-test-id="reorder-menus-btn"
+                type="button"
+                variant="outline"
+              >
+                <ListTreeIcon className="size-4" />
+                <span>Ordenar</span>
+              </Button>
+            </MenuReorderDialog>
           )}
           {!isTrashView && (
             <Button
@@ -208,11 +207,6 @@ function RouteComponent(): React.JSX.Element {
           }
         />
       </PageShell.Footer>
-
-      <MenuReorderDialog
-        open={reorderOpen}
-        onOpenChange={setReorderOpen}
-      />
     </PageShell>
   );
 }

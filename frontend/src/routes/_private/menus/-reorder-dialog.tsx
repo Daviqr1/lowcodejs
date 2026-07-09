@@ -36,13 +36,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import { useMenuReorder } from '@/hooks/tanstack-query/use-menu-reorder';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IMenu, ValueOf } from '@/lib/interfaces';
@@ -56,10 +60,7 @@ type MenuTreeNode = {
   children: Array<MenuTreeNode>;
 };
 
-type MenuReorderDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+type MenuReorderDialogProps = React.ComponentProps<typeof DialogTrigger>;
 
 type SortableMenuNodeProps = {
   node: MenuTreeNode;
@@ -383,10 +384,34 @@ function DragPreview({ node }: { node: MenuTreeNode }): React.JSX.Element {
 }
 
 export function MenuReorderDialog({
-  open,
-  onOpenChange,
+  ref,
+  ...rest
 }: MenuReorderDialogProps): React.JSX.Element {
-  const { data: menus, status } = useMenuReadList({ enabled: open });
+  const { closeRef, close } = useDismissableDialog();
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent className="max-w-4xl">
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
+        <MenuReorderContent close={close} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MenuReorderContent({
+  close,
+}: {
+  close: () => void;
+}): React.JSX.Element {
+  const { data: menus, status } = useMenuReadList({ enabled: true });
   const [scope, setScope] = React.useState<ReorderScope>('root');
   const [tree, setTree] = React.useState<Array<MenuTreeNode>>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -401,16 +426,16 @@ export function MenuReorderDialog({
   );
 
   React.useEffect(() => {
-    if (!open || !menus) return;
+    if (!menus) return;
     setTree(buildTree(menus));
-  }, [menus, open]);
+  }, [menus]);
 
   const reorder = useMenuReorder({
     onSuccess() {
       toast.success('Ordem salva', {
         description: 'A ordem dos menus foi atualizada',
       });
-      onOpenChange(false);
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao ordenar menus' });
@@ -533,112 +558,109 @@ export function MenuReorderDialog({
   );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Ordenar menu lateral</DialogTitle>
-        </DialogHeader>
+    <React.Fragment>
+      <DialogHeader>
+        <DialogTitle>Ordenar menu lateral</DialogTitle>
+        <DialogDescription className="sr-only">
+          Arraste os itens para reordenar o menu lateral
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/20 p-2">
-          {isLoading && (
-            <div className="flex min-h-48 items-center justify-center">
-              <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {!isLoading && tree.length === 0 && (
-            <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
-              Nenhum menu encontrado
-            </div>
-          )}
-
-          {!isLoading && tree.length > 0 && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <div className="space-y-1">
-                {scope === 'root' &&
-                  renderNodes(
-                    visibleTree.map((node) => ({ ...node, children: [] })),
-                    0,
-                    null,
-                  )}
-                {scope !== 'root' && renderNodes(visibleTree, 0, null)}
-              </div>
-              {canRenderOverlay &&
-                createPortal(
-                  <DragOverlay>
-                    {activeNode && <DragPreview node={activeNode} />}
-                  </DragOverlay>,
-                  document.body,
-                )}
-            </DndContext>
-          )}
-        </div>
-
-        <DialogFooter>
-          <div className="mr-auto inline-flex rounded-md border bg-background p-1">
-            <Button
-              type="button"
-              variant={(scope === 'root' && 'secondary') || 'ghost'}
-              size="sm"
-              className="h-8"
-              onClick={() => setScope('root')}
-              disabled={reorder.isPending}
-            >
-              Raiz
-            </Button>
-            <Button
-              type="button"
-              variant={(scope === 'all' && 'secondary') || 'ghost'}
-              size="sm"
-              className="h-8"
-              onClick={() => setScope('all')}
-              disabled={reorder.isPending}
-            >
-              Todos
-            </Button>
+      <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/20 p-2">
+        {isLoading && (
+          <div className="flex min-h-48 items-center justify-center">
+            <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
           </div>
+        )}
+
+        {!isLoading && tree.length === 0 && (
+          <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
+            Nenhum menu encontrado
+          </div>
+        )}
+
+        {!isLoading && tree.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <div className="space-y-1">
+              {scope === 'root' &&
+                renderNodes(
+                  visibleTree.map((node) => ({ ...node, children: [] })),
+                  0,
+                  null,
+                )}
+              {scope !== 'root' && renderNodes(visibleTree, 0, null)}
+            </div>
+            {canRenderOverlay &&
+              createPortal(
+                <DragOverlay>
+                  {activeNode && <DragPreview node={activeNode} />}
+                </DragOverlay>,
+                document.body,
+              )}
+          </DndContext>
+        )}
+      </div>
+
+      <DialogFooter>
+        <div className="mr-auto inline-flex rounded-md border bg-background p-1">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => {
-              if (menus) setTree(buildTree(menus));
-            }}
-            disabled={reorder.isPending || isLoading}
+            variant={(scope === 'root' && 'secondary') || 'ghost'}
+            size="sm"
+            className="h-8"
+            onClick={() => setScope('root')}
+            disabled={reorder.isPending}
           >
-            Restaurar
+            Raiz
           </Button>
           <Button
             type="button"
+            variant={(scope === 'all' && 'secondary') || 'ghost'}
+            size="sm"
+            className="h-8"
+            onClick={() => setScope('all')}
+            disabled={reorder.isPending}
+          >
+            Todos
+          </Button>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (menus) setTree(buildTree(menus));
+          }}
+          disabled={reorder.isPending || isLoading}
+        >
+          Restaurar
+        </Button>
+        <DialogClose asChild>
+          <Button
+            type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
             disabled={reorder.isPending}
           >
             Cancelar
           </Button>
-          <Button
-            type="button"
-            onClick={() =>
-              reorder.mutate({ items: flattenPayload(tree, scope) })
-            }
-            disabled={reorder.isPending || isLoading || tree.length === 0}
-          >
-            {reorder.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            <span>Salvar ordem</span>
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogClose>
+        <Button
+          type="button"
+          onClick={() => reorder.mutate({ items: flattenPayload(tree, scope) })}
+          disabled={reorder.isPending || isLoading || tree.length === 0}
+        >
+          {reorder.isPending && (
+            <LoaderCircleIcon className="size-4 animate-spin" />
+          )}
+          <span>Salvar ordem</span>
+        </Button>
+      </DialogFooter>
+    </React.Fragment>
   );
 }
