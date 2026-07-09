@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
@@ -74,12 +75,18 @@ export function TableKanbanView({
   const currentUserId = useAuthStore((s) => s.user?._id) ?? '';
   const [activeRow, setActiveRow] = React.useState<IRow | null>(null);
   const activeRowId = activeRow?._id ?? null;
-  const [isAddListOpen, setIsAddListOpen] = React.useState(false);
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
-  const [isCreateCardOpen, setIsCreateCardOpen] = React.useState(false);
   const [createColumnId, setCreateColumnId] = React.useState<string | null>(
     null,
   );
+  const [rowNonce, setRowNonce] = React.useState(0);
+  const [addListNonce, setAddListNonce] = React.useState(0);
+  const [createCardNonce, setCreateCardNonce] = React.useState(0);
+  const rowTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const addListTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const createCardTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const addListDialog = useDismissableDialog();
+  const createCardDialog = useDismissableDialog();
   const [activeDragCardId, setActiveDragCardId] = React.useState<string | null>(
     null,
   );
@@ -240,7 +247,7 @@ export function TableKanbanView({
       toast.success('Lista adicionada', {
         description: 'A nova coluna foi criada com sucesso',
       });
-      setIsAddListOpen(false);
+      addListDialog.close();
     },
     onError() {
       toast.error('Erro ao adicionar lista', {
@@ -265,12 +272,8 @@ export function TableKanbanView({
   });
 
   React.useEffect(() => {
-    if (isAddListOpen) return;
-    addListForm.reset({
-      label: '',
-      color: '#a3a3a3',
-    });
-  }, [addListForm, isAddListOpen]);
+    if (addListNonce > 0) addListTriggerRef.current?.click();
+  }, [addListNonce]);
 
   const updateListOption = useMutation({
     mutationFn: async (payload: {
@@ -432,7 +435,7 @@ export function TableKanbanView({
       toast.success('Card criado', {
         description: 'O card foi criado com sucesso',
       });
-      setIsCreateCardOpen(false);
+      createCardDialog.close();
       setCreateColumnId(null);
     },
     onError() {
@@ -552,12 +555,33 @@ export function TableKanbanView({
   );
 
   React.useEffect(() => {
-    if (!isCreateCardOpen) return;
-    createForm.reset(buildDefaultValues(activeFields));
-    if (fields.list && createColumnId) {
-      createForm.setFieldValue(fields.list.slug, [createColumnId]);
-    }
-  }, [activeFields, createColumnId, createForm, fields.list, isCreateCardOpen]);
+    if (createCardNonce > 0) createCardTriggerRef.current?.click();
+  }, [createCardNonce]);
+
+  React.useEffect(() => {
+    if (rowNonce > 0) rowTriggerRef.current?.click();
+  }, [rowNonce]);
+
+  const openRow = React.useCallback(
+    (row: IRow, editTarget: 'members' | 'start' | 'due' | 'list' | null) => {
+      setActiveRow(row);
+      setRowEditTarget(editTarget);
+      setRowNonce((value) => value + 1);
+    },
+    [],
+  );
+
+  const openCreateCard = React.useCallback(
+    (columnId: string) => {
+      setCreateColumnId(columnId);
+      createForm.reset(buildDefaultValues(activeFields));
+      if (fields.list) {
+        createForm.setFieldValue(fields.list.slug, [columnId]);
+      }
+      setCreateCardNonce((value) => value + 1);
+    },
+    [activeFields, createForm, fields.list],
+  );
 
   // Auto-preenche o Título a partir do item escolhido num campo de origem
   // (Chamado / Caso de Uso / Caso de Teste / qualquer relacionamento). O valor
@@ -585,14 +609,14 @@ export function TableKanbanView({
   });
 
   React.useEffect(() => {
-    if (!isCreateCardOpen || !fields.title || !relationshipSeedLabel) return;
+    if (!fields.title || !relationshipSeedLabel) return;
     const titleSlug = fields.title.slug;
     const values: Record<string, unknown> = createForm.store.state.values;
     const currentTitle = String(values[titleSlug] ?? '').trim();
     // Só preenche quando vazio; se já houver texto, não sobrescreve.
     if (currentTitle) return;
     createForm.setFieldValue(titleSlug, relationshipSeedLabel);
-  }, [createForm, fields.title, isCreateCardOpen, relationshipSeedLabel]);
+  }, [createForm, fields.title, relationshipSeedLabel]);
 
   const ensureOrderField = React.useCallback(async (): Promise<
     string | null
@@ -930,14 +954,8 @@ export function TableKanbanView({
                     row={row}
                     fields={fields}
                     columnId={option.id}
-                    onClick={() => {
-                      setActiveRow(row);
-                      setRowEditTarget(null);
-                    }}
-                    onFieldClick={(field) => {
-                      setActiveRow(row);
-                      setRowEditTarget(field);
-                    }}
+                    onClick={() => openRow(row, null)}
+                    onFieldClick={(field) => openRow(row, field)}
                   />
                 ))}
               </SortableContext>
@@ -945,10 +963,7 @@ export function TableKanbanView({
                 type="button"
                 variant="ghost"
                 className="w-full justify-start text-muted-foreground cursor-pointer"
-                onClick={() => {
-                  setCreateColumnId(option.id);
-                  setIsCreateCardOpen(true);
-                }}
+                onClick={() => openCreateCard(option.id)}
               >
                 <PlusIcon className="size-4" />
                 <span>Adicionar card</span>
@@ -959,21 +974,18 @@ export function TableKanbanView({
           <KanbanUnassignedColumn
             rows={columns.unassigned}
             fields={fields}
-            onSelectRow={(row) => {
-              setActiveRow(row);
-              setRowEditTarget(null);
-            }}
-            onFieldClick={(row, field) => {
-              setActiveRow(row);
-              setRowEditTarget(field);
-            }}
+            onSelectRow={(row) => openRow(row, null)}
+            onFieldClick={(row, field) => openRow(row, field)}
           />
 
           <section className="w-72 shrink-0 rounded-xl border border-dashed bg-muted/10 p-4 flex items-center justify-center">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsAddListOpen(true)}
+              onClick={() => {
+                addListForm.reset({ label: '', color: '#a3a3a3' });
+                setAddListNonce((value) => value + 1);
+              }}
               disabled={!fields.list}
               className="cursor-pointer"
             >
@@ -983,11 +995,9 @@ export function TableKanbanView({
           </section>
 
           <KanbanRowDialog
+            key={rowNonce}
+            ref={rowTriggerRef}
             row={activeRow}
-            onClose={() => {
-              setActiveRow(null);
-              setRowEditTarget(null);
-            }}
             onRowUpdated={(row) => setActiveRow(row)}
             onRowDuplicated={handleRowDuplicated}
             onRowDeleted={handleRowDeleted}
@@ -998,33 +1008,22 @@ export function TableKanbanView({
           />
 
           <KanbanAddListDialog
-            open={isAddListOpen}
-            onOpenChange={(open) => {
-              setIsAddListOpen(open);
-              if (!open) {
-                addListForm.reset({
-                  label: '',
-                  color: '#a3a3a3',
-                });
-              }
-            }}
+            ref={addListTriggerRef}
             form={addListForm}
+            closeRef={addListDialog.closeRef}
             isSubmitting={addListOption.status === 'pending'}
           />
 
           <KanbanCreateCardDialog
-            open={isCreateCardOpen}
-            onOpenChange={(open) => {
-              setIsCreateCardOpen(open);
-              if (!open) setCreateColumnId(null);
-            }}
+            key={createColumnId ?? 'create-card'}
+            ref={createCardTriggerRef}
             form={createForm}
+            closeRef={createCardDialog.closeRef}
             fields={fields}
             extraFields={createDialogExtraFields}
             tableSlug={tableSlug}
             createColumnOption={createColumnOption}
             isSubmitting={createRow.status === 'pending'}
-            onCancel={() => setIsCreateCardOpen(false)}
           />
         </div>
       </SortableContext>

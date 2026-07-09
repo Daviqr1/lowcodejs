@@ -7,15 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
-import type { IField } from '@/lib/interfaces';
+import type { IField, Merge } from '@/lib/interfaces';
 import type { FieldMap } from '@/lib/kanban-types';
 
 // Grupo de campos é salvo via endpoints group-rows, que exigem o rowId.
@@ -35,27 +37,25 @@ function GroupFieldCreateHint({ name }: { name: string }): React.JSX.Element {
 // o form como `any`. defaultValues/props são só p/ type-check (form de row
 // dinâmico = Record<string, unknown>); os valores reais vêm do useAppForm do
 // caller. Tipos anotados nos consts abaixo evitam `as` (code-style regra 3).
-type CreateCardProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  fields: FieldMap;
-  extraFields: Array<IField>;
-  tableSlug: string;
-  createColumnOption?: { id: string; label: string; color?: string | null };
-  isSubmitting: boolean;
-  onCancel: () => void;
-};
+type CreateCardProps = Merge<
+  Omit<React.ComponentProps<typeof DialogTrigger>, 'form'>,
+  {
+    fields: FieldMap;
+    extraFields: Array<IField>;
+    tableSlug: string;
+    createColumnOption?: { id: string; label: string; color?: string | null };
+    isSubmitting: boolean;
+    closeRef?: React.RefObject<HTMLButtonElement | null>;
+  }
+>;
 
 const CREATE_CARD_DEFAULT_VALUES: Record<string, unknown> = {};
 
 const CREATE_CARD_DEFAULT_PROPS: CreateCardProps = {
-  open: false,
-  onOpenChange: () => {},
   fields: {},
   extraFields: [],
   tableSlug: '',
   isSubmitting: false,
-  onCancel: () => {},
 };
 
 export const KanbanCreateCardDialog = withForm({
@@ -63,21 +63,21 @@ export const KanbanCreateCardDialog = withForm({
   props: CREATE_CARD_DEFAULT_PROPS,
   render: function Render({
     form,
-    open,
-    onOpenChange,
+    ref,
     fields,
     extraFields,
     tableSlug,
     createColumnOption,
     isSubmitting,
-    onCancel,
+    closeRef,
+    ...rest
   }) {
     return (
-      <Dialog
-        modal={false}
-        open={open}
-        onOpenChange={onOpenChange}
-      >
+      <Dialog modal={false}>
+        <DialogTrigger
+          {...rest}
+          ref={ref}
+        />
         <DialogContent
           data-slot="kanban-create-card-dialog"
           data-test-id="kanban-create-card-dialog"
@@ -406,14 +406,16 @@ export const KanbanCreateCardDialog = withForm({
               </div>
 
               <div className="border-t bg-muted/40 p-4 flex flex-col gap-2 shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onCancel}
-                  className="cursor-pointer"
-                >
-                  Cancelar
-                </Button>
+                <DialogClose asChild>
+                  <Button
+                    ref={closeRef}
+                    type="button"
+                    variant="ghost"
+                    className="cursor-pointer"
+                  >
+                    Cancelar
+                  </Button>
+                </DialogClose>
                 <Button
                   type="submit"
                   disabled={isSubmitting}

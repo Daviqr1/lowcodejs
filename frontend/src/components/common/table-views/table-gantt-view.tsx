@@ -57,6 +57,8 @@ export function TableGanttView({
 }: Props): React.JSX.Element {
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
   const [activeRow, setActiveRow] = React.useState<IRow | null>(null);
+  const [rowNonce, setRowNonce] = React.useState(0);
+  const rowTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [zoom, setZoom] = React.useState<ZoomLevel>('week');
   const [viewStart, setViewStart] = React.useState<Date>(() =>
     startOfMonth(new Date()),
@@ -73,6 +75,15 @@ export function TableGanttView({
   React.useEffect(() => {
     setRowsState(data);
   }, [data]);
+
+  React.useEffect(() => {
+    if (rowNonce > 0) rowTriggerRef.current?.click();
+  }, [rowNonce]);
+
+  const openRow = React.useCallback((row: IRow) => {
+    setActiveRow(row);
+    setRowNonce((value) => value + 1);
+  }, []);
 
   const updateRow = useUpdateTableRow({
     onSuccess(updatedRow) {
@@ -91,7 +102,7 @@ export function TableGanttView({
   const createRow = useCreateTableRow({
     onSuccess(newRow) {
       setRowsState((prev) => [newRow, ...prev]);
-      setActiveRow(newRow);
+      openRow(newRow);
       toast.success('Tarefa criada');
     },
     onError() {
@@ -451,7 +462,7 @@ export function TableGanttView({
             groupedRows={groupedRows}
             collapsedGroups={collapsedGroups}
             onToggleGroup={toggleGroup}
-            onRowClick={setActiveRow}
+            onRowClick={openRow}
             headerHeight={headerHeight}
           />
         </div>
@@ -613,7 +624,7 @@ export function TableGanttView({
                                 isDragging={isDragging}
                                 dragOffsetY={dragOffsetY}
                                 onBarMouseDown={handleBarMouseDown}
-                                onBarClick={() => setActiveRow(ganttRow.row)}
+                                onBarClick={() => openRow(ganttRow.row)}
                               />
                             )}
                             {!bar && (
@@ -636,8 +647,9 @@ export function TableGanttView({
 
       {/* Dialog de edição (reutiliza do Kanban) */}
       <KanbanRowDialog
+        key={rowNonce}
+        ref={rowTriggerRef}
         row={activeRow}
-        onClose={() => setActiveRow(null)}
         onRowUpdated={(updatedRow) => {
           setRowsState((prev) =>
             prev.map((r) => {

@@ -1,45 +1,57 @@
 import { useStore } from '@tanstack/react-store';
+import type * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
+import type { Merge } from '@/lib/interfaces';
 
 // withForm dá o `form` tipado (shape { label, color } conhecido) — o store e os
 // AppField inferem os tipos, eliminando `any`/`as`. defaultValues/props só p/
 // type-check; os valores reais vêm do useAppForm do caller.
-type AddListProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  isSubmitting: boolean;
-};
+type AddListProps = Merge<
+  Omit<React.ComponentProps<typeof DialogTrigger>, 'form'>,
+  {
+    isSubmitting: boolean;
+    closeRef?: React.RefObject<HTMLButtonElement | null>;
+  }
+>;
 
 const ADD_LIST_DEFAULT_VALUES = { label: '', color: '' };
 
 const ADD_LIST_DEFAULT_PROPS: AddListProps = {
-  open: false,
-  onOpenChange: () => {},
   isSubmitting: false,
 };
 
 export const KanbanAddListDialog = withForm({
   defaultValues: ADD_LIST_DEFAULT_VALUES,
   props: ADD_LIST_DEFAULT_PROPS,
-  render: function Render({ form, open, onOpenChange, isSubmitting }) {
+  render: function Render({
+    form,
+    ref,
+    isSubmitting,
+    closeRef,
+    ...rest
+  }): React.JSX.Element {
     const label = useStore(form.store, (state) => state.values.label);
     useStore(form.store, (state) => state.values.color);
 
     return (
-      <Dialog
-        open={open}
-        onOpenChange={onOpenChange}
-      >
+      <Dialog>
+        <DialogTrigger
+          {...rest}
+          ref={ref}
+        />
         <DialogContent
           data-slot="kanban-add-list-dialog"
           data-test-id="kanban-add-list-dialog"
@@ -96,15 +108,17 @@ export const KanbanAddListDialog = withForm({
               </form.AppField>
             </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                className="cursor-pointer"
-              >
-                Cancelar
-              </Button>
+            <DialogFooter className="flex justify-end gap-2">
+              <DialogClose asChild>
+                <Button
+                  ref={closeRef}
+                  type="button"
+                  variant="ghost"
+                  className="cursor-pointer"
+                >
+                  Cancelar
+                </Button>
+              </DialogClose>
               <Button
                 type="submit"
                 className="cursor-pointer"
@@ -113,7 +127,7 @@ export const KanbanAddListDialog = withForm({
               >
                 Adicionar
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

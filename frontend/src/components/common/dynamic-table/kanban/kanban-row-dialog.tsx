@@ -37,20 +37,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useProfileRead } from '@/hooks/tanstack-query/use-profile-read';
 import { useRowUpdateTrash } from '@/hooks/tanstack-query/use-row-update-trash';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useUserMentionSearch } from '@/hooks/use-user-mention-search';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRow, IStorage, ITable } from '@/lib/interfaces';
+import type { IField, IRow, IStorage, ITable, Merge } from '@/lib/interfaces';
 import {
   ORDER_FIELD_SLUG,
   TEMPLATE_FIELD_SLUGS,
@@ -69,9 +72,23 @@ import { buildRowPayload, buildUpdateRowDefaultValues } from '@/lib/table';
 import type { UpdateRowDefaultValue } from '@/lib/table';
 import { useAuthStore } from '@/stores/authentication';
 
+type KanbanRowDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    row: IRow | null;
+    onRowUpdated?: (row: IRow) => void;
+    onRowDuplicated?: (row: IRow) => void;
+    onRowDeleted?: (rowId: string) => void;
+    tableSlug: string;
+    table: ITable;
+    fields: FieldMap;
+    initialEditTarget?: 'members' | 'start' | 'due' | 'list' | null;
+  }
+>;
+
 export function KanbanRowDialog({
   row,
-  onClose,
+  ref,
   onRowUpdated,
   onRowDuplicated,
   onRowDeleted,
@@ -79,17 +96,9 @@ export function KanbanRowDialog({
   table,
   fields,
   initialEditTarget,
-}: {
-  row: IRow | null;
-  onClose: () => void;
-  onRowUpdated?: (row: IRow) => void;
-  onRowDuplicated?: (row: IRow) => void;
-  onRowDeleted?: (rowId: string) => void;
-  tableSlug: string;
-  table: ITable;
-  fields: FieldMap;
-  initialEditTarget?: 'members' | 'start' | 'due' | 'list' | null;
-}): React.JSX.Element | null {
+  ...rest
+}: KanbanRowDialogProps): React.JSX.Element | null {
+  const { closeRef, close } = useDismissableDialog();
   const auth = useAuthStore((s) => s.user);
   const { data: profile } = useProfileRead();
   const permission = useTablePermission(table);
@@ -196,7 +205,7 @@ export function KanbanRowDialog({
         description: 'O card foi enviado para a lixeira',
       });
       if (row) onRowDeleted?.(row._id);
-      onClose();
+      close();
     },
     onError() {
       toast.error('Erro ao excluir', {
@@ -907,13 +916,11 @@ export function KanbanRowDialog({
     );
   };
   return (
-    <Dialog
-      modal={false}
-      open={!!row}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog modal={false}>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         data-slot="kanban-row-dialog"
         data-test-id="kanban-row-dialog"
@@ -1509,6 +1516,17 @@ export function KanbanRowDialog({
               <p className="text-xs uppercase text-muted-foreground">Criador</p>
               <Badge variant="outline">{creatorName}</Badge>
             </div>
+
+            <DialogClose asChild>
+              <Button
+                ref={closeRef}
+                type="button"
+                variant="outline"
+                className="mt-auto w-full cursor-pointer"
+              >
+                Fechar
+              </Button>
+            </DialogClose>
           </aside>
         </div>
       </DialogContent>
