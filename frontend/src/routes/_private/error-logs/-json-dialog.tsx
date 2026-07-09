@@ -9,9 +9,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import type { IErrorLog } from '@/hooks/tanstack-query/use-error-log-read-paginated';
 import { formatDate } from '@/lib/format-date';
+import type { Merge } from '@/lib/interfaces';
 
 function formatJson(value: unknown): string {
   try {
@@ -129,22 +131,22 @@ function EntryDetails({ entry }: { entry: IErrorLog }): React.JSX.Element {
   );
 }
 
-type JsonDialogProps = {
-  entry: IErrorLog | null;
-  onClose: () => void;
-};
+type JsonDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { entry: IErrorLog }
+>;
 
 export function JsonDialog({
+  ref,
   entry,
-  onClose,
+  ...rest
 }: JsonDialogProps): React.JSX.Element {
   return (
-    <Dialog
-      open={entry !== null}
-      onOpenChange={(open): void => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -156,7 +158,7 @@ export function JsonDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {entry && <EntryDetails entry={entry} />}
+        <EntryDetails entry={entry} />
       </DialogContent>
     </Dialog>
   );

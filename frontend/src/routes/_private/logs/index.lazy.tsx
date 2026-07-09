@@ -52,7 +52,23 @@ function RouteComponent(): React.JSX.Element {
   const privileged = isPrivileged(auth.user, groups.data ?? []);
 
   const filterSidebar = useFilterSidebar();
-  const [jsonEntry, setJsonEntry] = React.useState<ILogger | null>(null);
+  // alvo do modal de JSON: entrada + nonce (reabre o dialog uncontrolled via ref).
+  const [jsonTarget, setJsonTarget] = React.useState<{
+    entry: ILogger;
+    nonce: number;
+  } | null>(null);
+  const jsonTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openJsonDialog() {
+      if (jsonTarget) jsonTriggerRef.current?.click();
+    },
+    [jsonTarget],
+  );
+
+  const openJson = React.useCallback((entry: ILogger) => {
+    setJsonTarget((previous) => ({ entry, nonce: (previous?.nonce ?? 0) + 1 }));
+  }, []);
   const [toolbarNode, setToolbarNode] = React.useState<HTMLDivElement | null>(
     null,
   );
@@ -246,7 +262,7 @@ function RouteComponent(): React.JSX.Element {
           <TableHistory
             data={entries}
             toolbarPortal={toolbarNode}
-            onOpenJson={setJsonEntry}
+            onOpenJson={openJson}
             isLoading={isLoading}
           />
         </PageShell.Content>
@@ -266,10 +282,20 @@ function RouteComponent(): React.JSX.Element {
         />
       </PageShell.Footer>
 
-      <JsonDialog
-        entry={jsonEntry}
-        onClose={() => setJsonEntry(null)}
-      />
+      {jsonTarget && (
+        <JsonDialog
+          key={jsonTarget.nonce}
+          ref={jsonTriggerRef}
+          asChild
+          entry={jsonTarget.entry}
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </JsonDialog>
+      )}
     </PageShell>
   );
 }

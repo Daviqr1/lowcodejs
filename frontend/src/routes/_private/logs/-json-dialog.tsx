@@ -9,10 +9,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { LOGGER_OBJECT_LABEL } from '@/lib/constant';
 import { formatDate } from '@/lib/format-date';
-import type { ILogger } from '@/lib/interfaces';
+import type { ILogger, Merge } from '@/lib/interfaces';
 
 function formatJson(value: unknown): string {
   try {
@@ -119,22 +120,22 @@ function EntryDetails({ entry }: { entry: ILogger }): React.JSX.Element {
   );
 }
 
-type JsonDialogProps = {
-  entry: ILogger | null;
-  onClose: () => void;
-};
+type JsonDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { entry: ILogger }
+>;
 
 export function JsonDialog({
+  ref,
   entry,
-  onClose,
+  ...rest
 }: JsonDialogProps): React.JSX.Element {
   return (
-    <Dialog
-      open={entry !== null}
-      onOpenChange={(open): void => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -146,7 +147,7 @@ export function JsonDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {entry && <EntryDetails entry={entry} />}
+        <EntryDetails entry={entry} />
       </DialogContent>
     </Dialog>
   );

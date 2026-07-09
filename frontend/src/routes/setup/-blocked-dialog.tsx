@@ -4,6 +4,7 @@ import type * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -31,11 +32,11 @@ export function BlockedDialog({
   }
 
   return (
-    <Dialog
-      open
-      onOpenChange={handleClose}
-    >
-      <DialogContent>
+    <Dialog defaultOpen>
+      <DialogContent
+        onEscapeKeyDown={handleClose}
+        onPointerDownOutside={handleClose}
+      >
         <DialogHeader>
           <DialogTitle>Etapa não disponível</DialogTitle>
           <DialogDescription>
@@ -44,7 +45,9 @@ export function BlockedDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleClose}>Entendi</Button>
+          <DialogClose asChild>
+            <Button onClick={handleClose}>Entendi</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
