@@ -340,11 +340,23 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
   );
   const [singleRestoreGroup, setSingleRestoreGroup] =
     React.useState<IGroup | null>(null);
-  const [singleDeleteGroup, setSingleDeleteGroup] =
-    React.useState<IGroup | null>(null);
   const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
   const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+
+  // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    group: IGroup;
+    nonce: number;
+  } | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
+  );
 
   const tableRef = React.useRef<Table<IGroup> | null>(null);
 
@@ -397,7 +409,6 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const groupDelete = useGroupDelete({
     onSuccess() {
-      setSingleDeleteGroup(null);
       toast.success('Grupo excluído permanentemente!', {
         description: 'O grupo foi excluído permanentemente',
       });
@@ -443,7 +454,6 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkDelete = useGroupBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
       let message = result.deleted
         .toString()
@@ -471,7 +481,11 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         isPending: isAnySinglePending,
         onSendToTrash: (group) => setSingleTrashGroup(group),
         onRemoveFromTrash: (group) => setSingleRestoreGroup(group),
-        onPermanentDelete: (group) => setSingleDeleteGroup(group),
+        onPermanentDelete: (group) =>
+          setSingleDeleteTarget((previous) => ({
+            group,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
         onView: (group) => navigateToGroup(group._id),
         onEdit: (group) => navigateToEditGroup(group._id),
       }),
@@ -530,7 +544,7 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
           onClear={() => table.resetRowSelection()}
           onTrash={() => setBulkTrashOpen(true)}
           onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
         />
@@ -568,21 +582,30 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         testId="restore-group-dialog"
       />
 
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteGroup(null);
-        }}
-        title="Excluir grupo permanentemente"
-        description="Essa ação é irreversível. O grupo será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={groupDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteGroup) return;
-          groupDelete.mutate({ _id: singleDeleteGroup._id });
-        }}
-        testId="delete-group-dialog"
-      />
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          asChild
+          title="Excluir grupo permanentemente"
+          description="Essa ação é irreversível. O grupo será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={groupDelete.isPending}
+          onConfirm={(close) => {
+            void groupDelete
+              .mutateAsync({ _id: singleDeleteTarget.group._id })
+              .then(close)
+              .catch(() => {});
+          }}
+          testId="delete-group-dialog"
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </PermanentDeleteConfirmDialog>
+      )}
 
       <ConfirmDialog
         open={bulkTrashOpen}
@@ -607,15 +630,26 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
+        asChild
         title="Excluir grupos permanentemente"
         description="Essa ação é irreversível. Os grupos selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          void bulkDelete
+            .mutateAsync({ ids: selectedIds })
+            .then(close)
+            .catch(() => {});
+        }}
         testId="bulk-delete-groups-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
     </>
   );
 }

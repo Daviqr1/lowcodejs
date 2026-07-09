@@ -388,12 +388,23 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
   );
   const [singleRestoreUser, setSingleRestoreUser] =
     React.useState<IUser | null>(null);
-  const [singleDeleteUser, setSingleDeleteUser] = React.useState<IUser | null>(
-    null,
-  );
   const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
   const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+
+  // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    user: IUser;
+    nonce: number;
+  } | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
+  );
 
   const tableRef = React.useRef<Table<IUser> | null>(null);
 
@@ -446,7 +457,6 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const userDelete = useUserDelete({
     onSuccess() {
-      setSingleDeleteUser(null);
       toast.success('Usuário excluído permanentemente!', {
         description: 'O usuário foi excluído permanentemente',
       });
@@ -494,7 +504,6 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkDelete = useUserBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
       let message = result.deleted
         .toString()
@@ -538,7 +547,11 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
         isPending: isAnySinglePending,
         onSendToTrash: (user) => setSingleTrashUser(user),
         onRemoveFromTrash: (user) => setSingleRestoreUser(user),
-        onPermanentDelete: (user) => setSingleDeleteUser(user),
+        onPermanentDelete: (user) =>
+          setSingleDeleteTarget((previous) => ({
+            user,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
         onView: (user) => navigateToUser(user._id),
         onEdit: (user) => navigateToEditUser(user._id),
       }),
@@ -591,7 +604,7 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
           onClear={() => table.resetRowSelection()}
           onTrash={() => setBulkTrashOpen(true)}
           onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
           extraActions={
@@ -678,21 +691,30 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
         testId="restore-user-dialog"
       />
 
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteUser !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteUser(null);
-        }}
-        title="Excluir usuário permanentemente"
-        description="Essa ação é irreversível. O usuário será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={userDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteUser) return;
-          userDelete.mutate({ _id: singleDeleteUser._id });
-        }}
-        testId="delete-user-dialog"
-      />
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          asChild
+          title="Excluir usuário permanentemente"
+          description="Essa ação é irreversível. O usuário será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={userDelete.isPending}
+          onConfirm={(close) => {
+            void userDelete
+              .mutateAsync({ _id: singleDeleteTarget.user._id })
+              .then(close)
+              .catch(() => {});
+          }}
+          testId="delete-user-dialog"
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </PermanentDeleteConfirmDialog>
+      )}
 
       <ConfirmDialog
         open={bulkTrashOpen}
@@ -717,15 +739,26 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
+        asChild
         title="Excluir usuários permanentemente"
         description="Essa ação é irreversível. Os usuários selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          void bulkDelete
+            .mutateAsync({ ids: selectedIds })
+            .then(close)
+            .catch(() => {});
+        }}
         testId="bulk-delete-users-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
     </>
   );
 }

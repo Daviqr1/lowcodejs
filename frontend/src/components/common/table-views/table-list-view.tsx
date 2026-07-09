@@ -6,7 +6,6 @@ import {
   ArrowRightIcon,
   EllipsisIcon,
   EyeIcon,
-  LoaderCircleIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
@@ -17,19 +16,11 @@ import { toast } from 'sonner';
 
 import { RowSelectAllCheckbox, RowSelectCheckbox } from './use-row-selection';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { InteractiveDataTable } from '@/components/common/data-table';
 import { ExtensionSlot } from '@/components/common/extension-slot';
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,16 +53,15 @@ function RowActionsCell({
   canRemoveRow: boolean;
 }): React.JSX.Element {
   const router = useRouter();
-  const [dialogType, setDialogType] = React.useState<
-    'trash' | 'restore' | 'delete' | null
-  >(null);
+  const trashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const restoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const trashMutation = useMutation({
     mutationFn: async () => {
       await API.patch(`/tables/${slug}/rows/${row._id}/trash`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -84,7 +74,6 @@ function RowActionsCell({
       await API.patch(`/tables/${slug}/rows/${row._id}/restore`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -97,17 +86,12 @@ function RowActionsCell({
       await API.delete(`/tables/${slug}/rows/${row._id}`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
       toast.success('Registro excluido permanentemente!');
     },
   });
-
-  let activeMutation = deleteMutation;
-  if (dialogType === 'trash') activeMutation = trashMutation;
-  if (dialogType === 'restore') activeMutation = restoreMutation;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -159,7 +143,7 @@ function RowActionsCell({
               'inline-flex space-x-1 w-full cursor-pointer',
               (row.trashedAt != null || !canUpdateRow) && 'hidden',
             )}
-            onClick={() => setDialogType('trash')}
+            onClick={() => trashTriggerRef.current?.click()}
           >
             <TrashIcon className="size-4" />
             <span>Enviar para lixeira</span>
@@ -170,7 +154,7 @@ function RowActionsCell({
               'inline-flex space-x-1 w-full cursor-pointer',
               (row.trashedAt == null || !canUpdateRow) && 'hidden',
             )}
-            onClick={() => setDialogType('restore')}
+            onClick={() => restoreTriggerRef.current?.click()}
           >
             <ArchiveRestoreIcon className="size-4" />
             <span>Restaurar</span>
@@ -181,7 +165,7 @@ function RowActionsCell({
               'inline-flex space-x-1 w-full cursor-pointer',
               (row.trashedAt == null || !canRemoveRow) && 'hidden',
             )}
-            onClick={() => setDialogType('delete')}
+            onClick={() => deleteTriggerRef.current?.click()}
           >
             <Trash2Icon className="size-4" />
             <span>Excluir permanentemente</span>
@@ -194,64 +178,69 @@ function RowActionsCell({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog
-        modal
-        open={dialogType === 'trash' || dialogType === 'restore'}
-        onOpenChange={(open) => {
-          if (!open) setDialogType(null);
+      <ConfirmDialog
+        ref={trashTriggerRef}
+        asChild
+        title="Enviar para lixeira"
+        description="Ao confirmar essa acao, o registro sera enviado para a lixeira."
+        confirmLabel="Confirmar"
+        isPending={trashMutation.status === 'pending'}
+        onConfirm={(close) => {
+          void trashMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
         }}
       >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogType === 'trash' && 'Enviar para lixeira'}
-              {dialogType === 'restore' && 'Restaurar da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogType === 'trash' &&
-                'Ao confirmar essa acao, o registro sera enviado para a lixeira.'}
-              {dialogType === 'restore' &&
-                'Ao confirmar essa acao, o registro sera restaurado da lixeira.'}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={activeMutation.status === 'pending'}
-                  onClick={() => activeMutation.mutateAsync()}
-                >
-                  {activeMutation.status === 'pending' && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {activeMutation.status !== 'pending' && (
-                    <span>Confirmar</span>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        ref={restoreTriggerRef}
+        asChild
+        title="Restaurar da lixeira"
+        description="Ao confirmar essa acao, o registro sera restaurado da lixeira."
+        confirmLabel="Confirmar"
+        isPending={restoreMutation.status === 'pending'}
+        onConfirm={(close) => {
+          void restoreMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
+        }}
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </ConfirmDialog>
 
       <PermanentDeleteConfirmDialog
-        open={dialogType === 'delete'}
-        onOpenChange={(open) => {
-          if (!open) setDialogType(null);
-        }}
+        ref={deleteTriggerRef}
+        asChild
         title="Excluir registro permanentemente"
         description="Essa ação é irreversível. O registro será excluído permanentemente e não poderá ser recuperado."
         itemsCount={1}
         isPending={deleteMutation.isPending}
-        onConfirm={() => deleteMutation.mutate()}
+        onConfirm={(close) => {
+          void deleteMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
+        }}
         testId="delete-row-singular-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
     </div>
   );
 }

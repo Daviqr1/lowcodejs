@@ -55,7 +55,6 @@ function RouteComponent(): React.JSX.Element {
   const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [emptyTrashOpen, setEmptyTrashOpen] = React.useState(false);
   const [reorderOpen, setReorderOpen] = React.useState(false);
 
   const exportCsv = useMenusExportCsv({
@@ -66,7 +65,6 @@ function RouteComponent(): React.JSX.Element {
 
   const emptyTrash = useMenuEmptyTrash({
     onSuccess(result) {
-      setEmptyTrashOpen(false);
       let message = result.deleted
         .toString()
         .concat(' menus excluídos permanentemente!');
@@ -131,14 +129,28 @@ function RouteComponent(): React.JSX.Element {
             />
           )}
           {isTrashView && master && (
-            <Button
-              data-test-id="empty-trash-menus-btn"
-              variant="destructive"
-              onClick={() => setEmptyTrashOpen(true)}
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Esvaziar lixeira de menus"
+              description="Essa ação é irreversível. Todos os menus na lixeira serão excluídos permanentemente."
+              itemsCount={data.meta?.total ?? 0}
+              isPending={emptyTrash.isPending}
+              onConfirm={(close) => {
+                void emptyTrash
+                  .mutateAsync()
+                  .then(close)
+                  .catch(() => {});
+              }}
+              testId="empty-trash-menus-dialog"
             >
-              <Trash2Icon className="size-4" />
-              <span>Esvaziar lixeira</span>
-            </Button>
+              <Button
+                data-test-id="empty-trash-menus-btn"
+                variant="destructive"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Esvaziar lixeira</span>
+              </Button>
+            </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
             <Button
@@ -197,16 +209,6 @@ function RouteComponent(): React.JSX.Element {
         />
       </PageShell.Footer>
 
-      <PermanentDeleteConfirmDialog
-        open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Esvaziar lixeira de menus"
-        description="Essa ação é irreversível. Todos os menus na lixeira serão excluídos permanentemente."
-        itemsCount={data.meta?.total ?? 0}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-menus-dialog"
-      />
       <MenuReorderDialog
         open={reorderOpen}
         onOpenChange={setReorderOpen}

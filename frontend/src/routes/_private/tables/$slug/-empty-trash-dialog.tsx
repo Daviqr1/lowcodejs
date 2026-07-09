@@ -17,8 +17,6 @@ type RowEmptyTrashDialogProps = {
 export function RowEmptyTrashDialog({
   slug,
 }: RowEmptyTrashDialogProps): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
-
   const emptyTrash = useMutation({
     mutationFn: async function () {
       const route = '/tables/'.concat(slug).concat('/rows/empty-trash');
@@ -26,8 +24,6 @@ export function RowEmptyTrashDialog({
       return response.data;
     },
     onSuccess(result) {
-      setOpen(false);
-
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -46,27 +42,28 @@ export function RowEmptyTrashDialog({
   });
 
   return (
-    <>
+    <PermanentDeleteConfirmDialog
+      asChild
+      title="Esvaziar lixeira"
+      description="Essa ação é irreversível. Todos os registros na lixeira serão excluídos permanentemente e não poderão ser recuperados."
+      itemsCount={0}
+      isPending={emptyTrash.isPending}
+      onConfirm={(close) => {
+        void emptyTrash
+          .mutateAsync()
+          .then(close)
+          .catch(() => {});
+      }}
+      testId="empty-trash-rows-dialog"
+    >
       <Button
         variant="destructive"
         size="sm"
         className="py-1 px-2 h-auto inline-flex gap-1"
-        onClick={() => setOpen(true)}
       >
         <Trash2Icon className="size-4" />
         <span>Esvaziar lixeira</span>
       </Button>
-
-      <PermanentDeleteConfirmDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Esvaziar lixeira"
-        description="Essa ação é irreversível. Todos os registros na lixeira serão excluídos permanentemente e não poderão ser recuperados."
-        itemsCount={0}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-rows-dialog"
-      />
-    </>
+    </PermanentDeleteConfirmDialog>
   );
 }

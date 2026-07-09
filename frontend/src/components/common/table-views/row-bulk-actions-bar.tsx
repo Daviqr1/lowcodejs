@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import {
   ArchiveRestoreIcon,
-  LoaderCircleIcon,
   PencilIcon,
   Trash2Icon,
   XIcon,
@@ -15,17 +14,9 @@ import {
 } from './bulk-edit-field-dialog';
 import { useRowSelection } from './use-row-selection';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { API } from '@/lib/api';
@@ -53,12 +44,6 @@ export function RowBulkActionsBar({
   const canUpdateRow = permission.can('UPDATE_ROW');
   const canRemoveRow = permission.can('REMOVE_ROW');
 
-  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
-  const [dialogAction, setDialogAction] = React.useState<
-    'trash' | 'restore' | 'delete'
-  >('trash');
-  const [showBulkEdit, setShowBulkEdit] = React.useState(false);
-
   const selectedIds = selection?.selectedIds ?? [];
   const selectedCount = selectedIds.length;
 
@@ -69,7 +54,6 @@ export function RowBulkActionsBar({
       return response.data;
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.modified} registros enviados para lixeira!`;
@@ -87,7 +71,6 @@ export function RowBulkActionsBar({
       return response.data;
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.modified} registros restaurados!`;
@@ -107,7 +90,6 @@ export function RowBulkActionsBar({
       return response.data;
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       selection?.clear();
       QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.deleted} registros excluídos permanentemente!`;
@@ -121,161 +103,120 @@ export function RowBulkActionsBar({
 
   const hasEditableFields = getBulkEditableFields(table).length > 0;
 
-  return (
-    <React.Fragment>
-      <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
-        <span className="text-sm font-medium">
-          {selectedCount === 1 && '1 registro selecionado'}
-          {selectedCount !== 1 && `${selectedCount} registros selecionados`}
-        </span>
+  let confirmCount = `${selectedCount} registros`;
+  if (selectedCount === 1) confirmCount = '1 registro';
 
-        {isTrashView && (
-          <React.Fragment>
+  return (
+    <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
+      <span className="text-sm font-medium">
+        {selectedCount === 1 && '1 registro selecionado'}
+        {selectedCount !== 1 && `${selectedCount} registros selecionados`}
+      </span>
+
+      {isTrashView && (
+        <React.Fragment>
+          <ConfirmDialog
+            asChild
+            title="Restaurar registros da lixeira"
+            description={`Ao confirmar essa ação, ${confirmCount} ${
+              (selectedCount === 1 && 'será restaurado') || 'serão restaurados'
+            } da lixeira.`}
+            isPending={bulkRestore.status === 'pending'}
+            confirmLabel="Confirmar"
+            onConfirm={(close) => {
+              void bulkRestore
+                .mutateAsync(selectedIds)
+                .then(close)
+                .catch(() => {});
+            }}
+          >
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setDialogAction('restore');
-                setShowConfirmDialog(true);
-              }}
             >
               <ArchiveRestoreIcon className="size-4" />
               <span>Restaurar</span>
             </Button>
-            {canRemoveRow && (
+          </ConfirmDialog>
+          {canRemoveRow && (
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Excluir registros permanentemente"
+              description="Essa ação é irreversível. Os registros selecionados serão excluídos permanentemente."
+              itemsCount={selectedCount}
+              isPending={bulkDelete.status === 'pending'}
+              onConfirm={(close) => {
+                void bulkDelete
+                  .mutateAsync(selectedIds)
+                  .then(close)
+                  .catch(() => {});
+              }}
+              testId="bulk-delete-rows-dialog"
+            >
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
-                  setDialogAction('delete');
-                  setShowConfirmDialog(true);
-                }}
               >
                 <Trash2Icon className="size-4" />
                 <span>Excluir permanentemente</span>
               </Button>
-            )}
-          </React.Fragment>
-        )}
-        {!isTrashView && (
-          <React.Fragment>
-            {hasEditableFields && (
+            </PermanentDeleteConfirmDialog>
+          )}
+        </React.Fragment>
+      )}
+      {!isTrashView && (
+        <React.Fragment>
+          {hasEditableFields && (
+            <BulkEditFieldDialog
+              asChild
+              slug={slug}
+              table={table}
+              selectedIds={selectedIds}
+              onSuccess={() => selection.clear()}
+            >
               <Button
                 variant="outline"
                 size="sm"
                 data-test-id="bulk-edit-field-btn"
-                onClick={() => setShowBulkEdit(true)}
               >
                 <PencilIcon className="size-4" />
                 <span>Editar campo</span>
               </Button>
-            )}
+            </BulkEditFieldDialog>
+          )}
+          <ConfirmDialog
+            asChild
+            title="Enviar registros para a lixeira"
+            description={`Ao confirmar essa ação, ${confirmCount} ${
+              (selectedCount === 1 && 'será enviado') || 'serão enviados'
+            } para a lixeira.`}
+            isPending={bulkTrash.status === 'pending'}
+            confirmLabel="Confirmar"
+            onConfirm={(close) => {
+              void bulkTrash
+                .mutateAsync(selectedIds)
+                .then(close)
+                .catch(() => {});
+            }}
+          >
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => {
-                setDialogAction('trash');
-                setShowConfirmDialog(true);
-              }}
             >
               <Trash2Icon className="size-4" />
               <span>Enviar para lixeira</span>
             </Button>
-          </React.Fragment>
-        )}
+          </ConfirmDialog>
+        </React.Fragment>
+      )}
 
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => selection.clear()}
-        >
-          <XIcon className="size-4" />
-        </Button>
-      </div>
-
-      <Dialog
-        modal
-        open={showConfirmDialog && dialogAction !== 'delete'}
-        onOpenChange={setShowConfirmDialog}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => selection.clear()}
       >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogAction === 'trash' && 'Enviar registros para a lixeira'}
-              {dialogAction === 'restore' && 'Restaurar registros da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogAction === 'trash' &&
-                selectedCount === 1 &&
-                'Ao confirmar essa ação, 1 registro será enviado para a lixeira.'}
-              {dialogAction === 'trash' &&
-                selectedCount !== 1 &&
-                `Ao confirmar essa ação, ${selectedCount} registros serão enviados para a lixeira.`}
-              {dialogAction === 'restore' &&
-                selectedCount === 1 &&
-                'Ao confirmar essa ação, 1 registro será restaurado da lixeira.'}
-              {dialogAction === 'restore' &&
-                selectedCount !== 1 &&
-                `Ao confirmar essa ação, ${selectedCount} registros serão restaurados da lixeira.`}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  }
-                  onClick={() => {
-                    if (dialogAction === 'trash') {
-                      bulkTrash.mutateAsync(selectedIds);
-                    }
-                    if (dialogAction === 'restore') {
-                      bulkRestore.mutateAsync(selectedIds);
-                    }
-                  }}
-                >
-                  {(bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending') && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {!(
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  ) && <span>Confirmar</span>}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
-
-      <PermanentDeleteConfirmDialog
-        open={showConfirmDialog && dialogAction === 'delete'}
-        onOpenChange={setShowConfirmDialog}
-        title="Excluir registros permanentemente"
-        description="Essa ação é irreversível. Os registros selecionados serão excluídos permanentemente."
-        itemsCount={selectedCount}
-        isPending={bulkDelete.status === 'pending'}
-        onConfirm={() => bulkDelete.mutateAsync(selectedIds)}
-        testId="bulk-delete-rows-dialog"
-      />
-
-      <BulkEditFieldDialog
-        slug={slug}
-        table={table}
-        selectedIds={selectedIds}
-        open={showBulkEdit}
-        onOpenChange={setShowBulkEdit}
-        onSuccess={() => selection.clear()}
-      />
-    </React.Fragment>
+        <XIcon className="size-4" />
+      </Button>
+    </div>
   );
 }

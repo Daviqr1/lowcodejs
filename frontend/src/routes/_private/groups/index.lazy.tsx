@@ -57,8 +57,6 @@ function RouteComponent(): React.JSX.Element {
   const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [emptyTrashOpen, setEmptyTrashOpen] = React.useState(false);
-
   const exportCsv = useGroupsExportCsv({
     onError(error) {
       handleApiError(error, { context: 'Erro ao exportar CSV' });
@@ -67,7 +65,6 @@ function RouteComponent(): React.JSX.Element {
 
   const emptyTrash = useGroupEmptyTrash({
     onSuccess(result) {
-      setEmptyTrashOpen(false);
       let message = result.deleted
         .toString()
         .concat(' grupos excluídos permanentemente!');
@@ -132,14 +129,28 @@ function RouteComponent(): React.JSX.Element {
             />
           )}
           {isTrashView && master && (
-            <Button
-              data-test-id="empty-trash-groups-btn"
-              variant="destructive"
-              onClick={() => setEmptyTrashOpen(true)}
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Esvaziar lixeira de grupos"
+              description="Essa ação é irreversível. Todos os grupos na lixeira serão excluídos permanentemente."
+              itemsCount={data.meta.total}
+              isPending={emptyTrash.isPending}
+              onConfirm={(close) => {
+                void emptyTrash
+                  .mutateAsync()
+                  .then(close)
+                  .catch(() => {});
+              }}
+              testId="empty-trash-groups-dialog"
             >
-              <Trash2Icon className="size-4" />
-              <span>Esvaziar lixeira</span>
-            </Button>
+              <Button
+                data-test-id="empty-trash-groups-btn"
+                variant="destructive"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Esvaziar lixeira</span>
+              </Button>
+            </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
             <Button
@@ -186,17 +197,6 @@ function RouteComponent(): React.JSX.Element {
           }
         />
       </PageShell.Footer>
-
-      <PermanentDeleteConfirmDialog
-        open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Esvaziar lixeira de grupos"
-        description="Essa ação é irreversível. Todos os grupos na lixeira serão excluídos permanentemente."
-        itemsCount={data.meta.total}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-groups-dialog"
-      />
     </PageShell>
   );
 }

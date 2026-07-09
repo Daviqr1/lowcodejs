@@ -380,7 +380,7 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
 
   const { state } = useSidebar();
 
-  const [logoutOpen, setLogoutOpen] = React.useState(false);
+  const logoutTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const setting = useSettingRead();
 
@@ -401,8 +401,6 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
 
   const signOut = useAuthenticationSignOut({
     onSuccess() {
-      setLogoutOpen(false);
-
       toast.success('Logout realizado com sucesso!', {
         description: 'Volte sempre!',
       });
@@ -502,7 +500,7 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     data-test-id="sidebar-logout-btn"
-                    onClick={() => setLogoutOpen(true)}
+                    onClick={() => logoutTriggerRef.current?.click()}
                     className="w-full rounded-none cursor-pointer"
                   >
                     {signOut.status !== 'pending' && (
@@ -521,17 +519,28 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
         </SidebarGroup>
       </SidebarContent>
       <ConfirmDialog
-        open={logoutOpen}
-        onOpenChange={setLogoutOpen}
+        ref={logoutTriggerRef}
+        asChild
         icon={<LogOutIcon className="size-4 text-destructive" />}
         title="Sair da conta"
         description="Você será desconectado e voltará para a tela de login. Deseja continuar?"
         isPending={signOut.status === 'pending'}
-        onConfirm={() => signOut.mutateAsync()}
+        onConfirm={(close) => {
+          void signOut
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
+        }}
         testId="sidebar-logout-confirm-dialog"
         confirmTestId="sidebar-logout-confirm"
         cancelTestId="sidebar-logout-cancel"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </ConfirmDialog>
     </Root>
   );
 }

@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import {
   ArchiveRestoreIcon,
-  LoaderCircleIcon,
   PencilIcon,
   Trash2Icon,
   TrashIcon,
@@ -9,6 +8,7 @@ import {
 import React from 'react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { RelationshipRowsDataTable } from '@/components/common/dynamic-table/relationship-management/relationship-rows-data-table';
 import { TableRowCategoryCell } from '@/components/common/dynamic-table/table-cells/table-row-category-cell';
 import { TableRowDateCell } from '@/components/common/dynamic-table/table-cells/table-row-date-cell';
@@ -25,15 +25,6 @@ import { TableRowHtmlContentField } from '@/components/common/dynamic-table/tabl
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useFieldVisibility } from '@/hooks/use-field-visibility';
@@ -157,9 +148,9 @@ export function RowDetailView({
 }: RowDetailViewProps): React.JSX.Element {
   const permission = useTablePermission(table);
 
-  const [dialogType, setDialogType] = React.useState<
-    'trash' | 'restore' | 'delete' | null
-  >(null);
+  const trashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const restoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const slug = table.slug;
   const rowId = data._id;
@@ -169,7 +160,6 @@ export function RowDetailView({
       await API.patch(`/tables/${slug}/rows/${rowId}/trash`);
     },
     onSuccess(): void {
-      setDialogType(null);
       void QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -185,7 +175,6 @@ export function RowDetailView({
       await API.patch(`/tables/${slug}/rows/${rowId}/restore`);
     },
     onSuccess(): void {
-      setDialogType(null);
       void QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -201,7 +190,6 @@ export function RowDetailView({
       await API.delete(`/tables/${slug}/rows/${rowId}`);
     },
     onSuccess(): void {
-      setDialogType(null);
       void QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
@@ -262,18 +250,6 @@ export function RowDetailView({
     [visibleFields],
   );
 
-  const isConfirmPending =
-    trashMutation.status === 'pending' || restoreMutation.status === 'pending';
-
-  const handleConfirmAction = (): void => {
-    if (dialogType === 'trash') {
-      void trashMutation.mutateAsync();
-    }
-    if (dialogType === 'restore') {
-      void restoreMutation.mutateAsync();
-    }
-  };
-
   const canRemoveRow = permission.can('REMOVE_ROW');
   const canUpdateRow = permission.can('UPDATE_ROW');
 
@@ -318,7 +294,7 @@ export function RowDetailView({
             type="button"
             variant="outline"
             size="sm"
-            onClick={(): void => setDialogType('trash')}
+            onClick={(): void => trashTriggerRef.current?.click()}
           >
             <TrashIcon className="size-4" />
             <span>Enviar para lixeira</span>
@@ -330,7 +306,7 @@ export function RowDetailView({
             type="button"
             variant="outline"
             size="sm"
-            onClick={(): void => setDialogType('restore')}
+            onClick={(): void => restoreTriggerRef.current?.click()}
           >
             <ArchiveRestoreIcon className="size-4" />
             <span>Restaurar</span>
@@ -342,7 +318,7 @@ export function RowDetailView({
             type="button"
             variant="destructive"
             size="sm"
-            onClick={(): void => setDialogType('delete')}
+            onClick={(): void => deleteTriggerRef.current?.click()}
           >
             <Trash2Icon className="size-4" />
             <span>Excluir permanentemente</span>
@@ -477,63 +453,69 @@ export function RowDetailView({
         </div>
       </div>
 
-      <Dialog
-        modal
-        open={dialogType === 'trash' || dialogType === 'restore'}
-        onOpenChange={(open: boolean): void => {
-          if (!open) setDialogType(null);
+      <ConfirmDialog
+        ref={trashTriggerRef}
+        asChild
+        title="Enviar para lixeira"
+        description="Ao confirmar, o registro será enviado para a lixeira."
+        confirmLabel="Confirmar"
+        isPending={trashMutation.status === 'pending'}
+        onConfirm={(close): void => {
+          void trashMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
         }}
       >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogType === 'trash' && 'Enviar para lixeira'}
-              {dialogType === 'restore' && 'Restaurar da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogType === 'trash' &&
-                'Ao confirmar, o registro será enviado para a lixeira.'}
-              {dialogType === 'restore' &&
-                'Ao confirmar, o registro será restaurado da lixeira.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="inline-flex w-full gap-2 justify-end">
-            <DialogClose asChild>
-              <Button
-                variant="outline"
-                disabled={isConfirmPending}
-              >
-                Cancelar
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              disabled={isConfirmPending}
-              onClick={handleConfirmAction}
-            >
-              {isConfirmPending && (
-                <LoaderCircleIcon className="size-4 animate-spin" />
-              )}
-              {!isConfirmPending && <span>Confirmar</span>}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        ref={restoreTriggerRef}
+        asChild
+        title="Restaurar da lixeira"
+        description="Ao confirmar, o registro será restaurado da lixeira."
+        confirmLabel="Confirmar"
+        isPending={restoreMutation.status === 'pending'}
+        onConfirm={(close): void => {
+          void restoreMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
+        }}
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </ConfirmDialog>
 
       <PermanentDeleteConfirmDialog
-        open={dialogType === 'delete'}
-        onOpenChange={(open: boolean): void => {
-          if (!open) setDialogType(null);
-        }}
+        ref={deleteTriggerRef}
+        asChild
         title="Excluir registro permanentemente"
         description="Essa ação é irreversível. O registro será excluído permanentemente."
         itemsCount={1}
         isPending={deleteMutation.isPending}
-        onConfirm={(): void => {
-          deleteMutation.mutate();
+        onConfirm={(close): void => {
+          void deleteMutation
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
         }}
         testId="delete-row-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
     </React.Fragment>
   );
 }

@@ -11,8 +11,6 @@ import { handleApiError } from '@/lib/handle-api-error';
 import { QueryClient } from '@/lib/query-client';
 
 export function TableEmptyTrashDialog(): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
-
   const emptyTrash = useMutation({
     mutationFn: async function () {
       const response = await API.delete<{ deleted: number }>(
@@ -21,8 +19,6 @@ export function TableEmptyTrashDialog(): React.JSX.Element {
       return response.data;
     },
     onSuccess(result) {
-      setOpen(false);
-
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
@@ -40,27 +36,28 @@ export function TableEmptyTrashDialog(): React.JSX.Element {
   });
 
   return (
-    <>
+    <PermanentDeleteConfirmDialog
+      asChild
+      title="Esvaziar lixeira"
+      description="Essa ação é irreversível. Todas as tabelas na lixeira serão excluídas permanentemente, incluindo seus campos e registros."
+      itemsCount={0}
+      isPending={emptyTrash.isPending}
+      onConfirm={(close) => {
+        void emptyTrash
+          .mutateAsync()
+          .then(close)
+          .catch(() => {});
+      }}
+      testId="empty-trash-tables-dialog"
+    >
       <Button
         variant="destructive"
         size="sm"
         className="py-1 px-2 h-auto inline-flex gap-1"
-        onClick={() => setOpen(true)}
       >
         <Trash2Icon className="size-4" />
         <span>Esvaziar lixeira</span>
       </Button>
-
-      <PermanentDeleteConfirmDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Esvaziar lixeira"
-        description="Essa ação é irreversível. Todas as tabelas na lixeira serão excluídas permanentemente, incluindo seus campos e registros."
-        itemsCount={0}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-tables-dialog"
-      />
-    </>
+    </PermanentDeleteConfirmDialog>
   );
 }

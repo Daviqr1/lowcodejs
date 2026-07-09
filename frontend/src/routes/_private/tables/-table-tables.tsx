@@ -7,7 +7,6 @@ import {
   EllipsisIcon,
   EyeIcon,
   ImageOffIcon,
-  LoaderCircleIcon,
   PencilIcon,
   Share2Icon,
   Trash2Icon,
@@ -19,6 +18,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 import { ActionDialog } from '@/components/common/action-dialog';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import {
   DataTable,
   DataTableColumnToggle,
@@ -28,15 +28,6 @@ import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-dele
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,14 +63,13 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
   const permission = useTablePermission(table);
   const router = useRouter();
   const sidebar = useSidebar();
-  const [hardDeleteOpen, setHardDeleteOpen] = React.useState(false);
+  const hardDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const hardDelete = useMutation({
     mutationFn: async function () {
       await API.delete('/tables/'.concat(table.slug));
     },
     onSuccess() {
-      setHardDeleteOpen(false);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.detail(table.slug),
       });
@@ -163,7 +153,7 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
               !table.trashed && 'hidden',
               !permission.can('REMOVE_TABLE') && 'hidden',
             )}
-            onClick={() => setHardDeleteOpen(true)}
+            onClick={() => hardDeleteTriggerRef.current?.click()}
           >
             <TrashIcon className="size-4" />
             <span>Excluir</span>
@@ -196,15 +186,26 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
       </DropdownMenu>
 
       <PermanentDeleteConfirmDialog
-        open={hardDeleteOpen}
-        onOpenChange={setHardDeleteOpen}
+        ref={hardDeleteTriggerRef}
+        asChild
         title="Excluir tabela permanentemente"
         description="Essa ação é irreversível. A tabela será excluída permanentemente e não poderá ser recuperada."
         itemsCount={1}
         isPending={hardDelete.isPending}
-        onConfirm={() => hardDelete.mutate()}
+        onConfirm={(close) => {
+          void hardDelete
+            .mutateAsync()
+            .then(close)
+            .catch(() => {});
+        }}
         testId="delete-table-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
       <ActionDialog
         ref={tableRemoveFromTrashButtonRef}
         config={{
@@ -380,11 +381,6 @@ export function TableTables({
   const canUpdateTable = permission.can('UPDATE_TABLE');
   const canSelect = canRemoveTable || canUpdateTable;
 
-  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
-  const [dialogAction, setDialogAction] = React.useState<
-    'trash' | 'restore' | 'delete'
-  >('trash');
-
   const allColumns = React.useMemo(() => {
     const cols: Array<ColumnDef<ITable>> = [];
 
@@ -448,7 +444,6 @@ export function TableTables({
       return response.data;
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       table.resetRowSelection();
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
@@ -470,7 +465,6 @@ export function TableTables({
       return response.data;
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       table.resetRowSelection();
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
@@ -506,7 +500,6 @@ export function TableTables({
       return { deleted };
     },
     onSuccess(result) {
-      setShowConfirmDialog(false);
       table.resetRowSelection();
       QueryClient.invalidateQueries({
         queryKey: queryKeys.tables.lists(),
@@ -543,45 +536,82 @@ export function TableTables({
           {isTrashView && (
             <React.Fragment>
               {canUpdateTable && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setDialogAction('restore');
-                    setShowConfirmDialog(true);
+                <ConfirmDialog
+                  asChild
+                  title="Restaurar tabelas da lixeira"
+                  description={`Ao confirmar essa ação, ${selectedCount} ${
+                    (selectedCount === 1 && 'tabela será restaurada') ||
+                    'tabelas serão restauradas'
+                  } da lixeira.`}
+                  confirmLabel="Confirmar"
+                  isPending={bulkRestore.status === 'pending'}
+                  onConfirm={(close) => {
+                    void bulkRestore
+                      .mutateAsync(selectedIds)
+                      .then(close)
+                      .catch(() => {});
                   }}
                 >
-                  <ArchiveRestoreIcon className="size-4" />
-                  <span>Restaurar</span>
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ArchiveRestoreIcon className="size-4" />
+                    <span>Restaurar</span>
+                  </Button>
+                </ConfirmDialog>
               )}
               {canRemoveTable && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setDialogAction('delete');
-                    setShowConfirmDialog(true);
+                <PermanentDeleteConfirmDialog
+                  asChild
+                  title="Excluir tabelas permanentemente"
+                  description="Essa ação é irreversível. As tabelas selecionadas serão excluídas permanentemente, incluindo seus campos e registros."
+                  itemsCount={selectedCount}
+                  isPending={bulkDelete.status === 'pending'}
+                  onConfirm={(close) => {
+                    void bulkDelete
+                      .mutateAsync(selectedSlugs)
+                      .then(close)
+                      .catch(() => {});
                   }}
+                  testId="bulk-delete-tables-dialog"
                 >
-                  <Trash2Icon className="size-4" />
-                  <span>Excluir permanentemente</span>
-                </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2Icon className="size-4" />
+                    <span>Excluir permanentemente</span>
+                  </Button>
+                </PermanentDeleteConfirmDialog>
               )}
             </React.Fragment>
           )}
           {!isTrashView && canRemoveTable && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                setDialogAction('trash');
-                setShowConfirmDialog(true);
+            <ConfirmDialog
+              asChild
+              title="Enviar tabelas para a lixeira"
+              description={`Ao confirmar essa ação, ${selectedCount} ${
+                (selectedCount === 1 && 'tabela será enviada') ||
+                'tabelas serão enviadas'
+              } para a lixeira.`}
+              confirmLabel="Confirmar"
+              isPending={bulkTrash.status === 'pending'}
+              onConfirm={(close) => {
+                void bulkTrash
+                  .mutateAsync(selectedIds)
+                  .then(close)
+                  .catch(() => {});
               }}
             >
-              <Trash2Icon className="size-4" />
-              <span>Enviar para lixeira</span>
-            </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Enviar para lixeira</span>
+              </Button>
+            </ConfirmDialog>
           )}
           <Button
             variant="ghost"
@@ -592,81 +622,6 @@ export function TableTables({
           </Button>
         </div>
       )}
-
-      <Dialog
-        modal
-        open={showConfirmDialog && dialogAction !== 'delete'}
-        onOpenChange={setShowConfirmDialog}
-      >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogAction === 'trash' && 'Enviar tabelas para a lixeira'}
-              {dialogAction === 'restore' && 'Restaurar tabelas da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogAction === 'trash' &&
-                selectedCount === 1 &&
-                'Ao confirmar essa ação, 1 tabela será enviada para a lixeira.'}
-              {dialogAction === 'trash' &&
-                selectedCount !== 1 &&
-                `Ao confirmar essa ação, ${selectedCount} tabelas serão enviadas para a lixeira.`}
-              {dialogAction === 'restore' &&
-                selectedCount === 1 &&
-                'Ao confirmar essa ação, 1 tabela será restaurada da lixeira.'}
-              {dialogAction === 'restore' &&
-                selectedCount !== 1 &&
-                `Ao confirmar essa ação, ${selectedCount} tabelas serão restauradas da lixeira.`}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  }
-                  onClick={() => {
-                    if (dialogAction === 'trash') {
-                      bulkTrash.mutateAsync(selectedIds);
-                    }
-                    if (dialogAction === 'restore') {
-                      bulkRestore.mutateAsync(selectedIds);
-                    }
-                  }}
-                >
-                  {(bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending') && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {!(
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  ) && <span>Confirmar</span>}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
-
-      <PermanentDeleteConfirmDialog
-        open={showConfirmDialog && dialogAction === 'delete'}
-        onOpenChange={setShowConfirmDialog}
-        title="Excluir tabelas permanentemente"
-        description="Essa ação é irreversível. As tabelas selecionadas serão excluídas permanentemente, incluindo seus campos e registros."
-        itemsCount={selectedCount}
-        isPending={bulkDelete.status === 'pending'}
-        onConfirm={() => bulkDelete.mutateAsync(selectedSlugs)}
-        testId="bulk-delete-tables-dialog"
-      />
     </div>
   );
 }

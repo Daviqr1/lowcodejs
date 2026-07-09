@@ -1,5 +1,5 @@
 import { LoaderCircleIcon } from 'lucide-react';
-import React from 'react';
+import type * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -10,71 +10,91 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import type { Merge } from '@/lib/interfaces';
 
-export type ConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  icon?: React.ReactNode;
-  testId?: string;
-  confirmTestId?: string;
-  cancelTestId?: string;
-};
+export type ConfirmDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title: string;
+    description: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    icon?: React.ReactNode;
+    testId?: string;
+    confirmTestId?: string;
+    cancelTestId?: string;
+  }
+>;
 
-export function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element {
-  const confirmLabel = props.confirmLabel ?? 'Sair';
-  const cancelLabel = props.cancelLabel ?? 'Cancelar';
+export function ConfirmDialog({
+  ref,
+  title,
+  description,
+  isPending,
+  onConfirm,
+  confirmLabel,
+  cancelLabel,
+  icon,
+  testId,
+  confirmTestId,
+  cancelTestId,
+  ...rest
+}: ConfirmDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+  const resolvedConfirmLabel = confirmLabel ?? 'Sair';
+  const resolvedCancelLabel = cancelLabel ?? 'Cancelar';
 
   function handleConfirm(): void {
-    if (props.isPending) return;
-    props.onConfirm();
+    if (isPending) return;
+    onConfirm(close);
   }
 
   return (
-    <Dialog
-      modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="py-4 px-6"
-        data-test-id={props.testId}
+        data-test-id={testId}
       >
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
         <DialogHeader>
           <DialogTitle className="inline-flex items-center gap-2">
-            {props.icon}
-            {props.title}
+            {icon}
+            {title}
           </DialogTitle>
-          <DialogDescription>{props.description}</DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
               variant="outline"
-              disabled={props.isPending}
-              data-test-id={props.cancelTestId}
+              disabled={isPending}
+              data-test-id={cancelTestId}
             >
-              {cancelLabel}
+              {resolvedCancelLabel}
             </Button>
           </DialogClose>
           <Button
             type="button"
             variant="destructive"
-            disabled={props.isPending}
+            disabled={isPending}
             onClick={handleConfirm}
-            data-test-id={props.confirmTestId}
+            data-test-id={confirmTestId}
           >
-            {props.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            {!props.isPending && <span>{confirmLabel}</span>}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <span>{resolvedConfirmLabel}</span>}
           </Button>
         </DialogFooter>
       </DialogContent>

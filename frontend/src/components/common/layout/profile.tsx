@@ -58,7 +58,26 @@ export function Profile(): React.JSX.Element {
   const [switchingAccountId, setSwitchingAccountId] = useState<string | null>(
     null,
   );
-  const [logoutMode, setLogoutMode] = useState<LogoutMode | null>(null);
+  // alvo de logout: modo + nonce (reabre o dialog uncontrolled via ref clicada).
+  const [logoutTarget, setLogoutTarget] = useState<{
+    mode: LogoutMode;
+    nonce: number;
+  } | null>(null);
+  const logoutTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openLogoutDialog() {
+      if (logoutTarget) logoutTriggerRef.current?.click();
+    },
+    [logoutTarget],
+  );
+
+  function requestLogout(mode: LogoutMode): void {
+    setLogoutTarget((previous) => ({
+      mode,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+  }
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -128,8 +147,6 @@ export function Profile(): React.JSX.Element {
 
   const signOut = useAuthenticationSignOut({
     async onSuccess(response) {
-      setLogoutMode(null);
-
       if (response.activeAccountId) {
         const nextUser = useAuthStore.getState().user;
         toast.success('Conta removida com sucesso!', {
@@ -151,7 +168,6 @@ export function Profile(): React.JSX.Element {
       });
     },
     onError(error) {
-      setLogoutMode(null);
       handleApiError(error, { context: 'Erro ao fazer logout' });
     },
   });
@@ -260,7 +276,7 @@ export function Profile(): React.JSX.Element {
 
               <DropdownMenuItem
                 data-test-id="logout-btn"
-                onClick={() => setLogoutMode('current')}
+                onClick={() => requestLogout('current')}
                 className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
               >
                 {signOut.status !== 'pending' && (
@@ -273,7 +289,7 @@ export function Profile(): React.JSX.Element {
               {accounts.length > 1 && (
                 <DropdownMenuItem
                   data-test-id="logout-all-btn"
-                  onClick={() => setLogoutMode('all')}
+                  onClick={() => requestLogout('all')}
                   className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
                   {signOut.status !== 'pending' && (
@@ -294,22 +310,32 @@ export function Profile(): React.JSX.Element {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {logoutMode && (
+      {logoutTarget && (
         <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setLogoutMode(null);
-          }}
+          key={logoutTarget.nonce}
+          ref={logoutTriggerRef}
+          asChild
           icon={<LogOut className="size-4 text-destructive" />}
-          title={LOGOUT_COPY[logoutMode].title}
-          description={LOGOUT_COPY[logoutMode].description}
-          confirmLabel={LOGOUT_COPY[logoutMode].confirmLabel}
+          title={LOGOUT_COPY[logoutTarget.mode].title}
+          description={LOGOUT_COPY[logoutTarget.mode].description}
+          confirmLabel={LOGOUT_COPY[logoutTarget.mode].confirmLabel}
           isPending={signOut.status === 'pending'}
-          onConfirm={() => signOut.mutateAsync(LOGOUT_PAYLOAD[logoutMode])}
+          onConfirm={(close) => {
+            void signOut
+              .mutateAsync(LOGOUT_PAYLOAD[logoutTarget.mode])
+              .then(close)
+              .catch(() => {});
+          }}
           testId="profile-logout-confirm-dialog"
           confirmTestId="profile-logout-confirm"
           cancelTestId="profile-logout-cancel"
-        />
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </ConfirmDialog>
       )}
     </React.Fragment>
   );

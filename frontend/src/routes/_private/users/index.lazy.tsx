@@ -66,8 +66,6 @@ function RouteComponent(): React.JSX.Element {
   const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [emptyTrashOpen, setEmptyTrashOpen] = React.useState(false);
-
   const exportCsv = useUsersExportCsv({
     onError(error) {
       handleApiError(error, { context: 'Erro ao exportar CSV' });
@@ -76,7 +74,6 @@ function RouteComponent(): React.JSX.Element {
 
   const emptyTrash = useUserEmptyTrash({
     onSuccess(result) {
-      setEmptyTrashOpen(false);
       let message = result.deleted
         .toString()
         .concat(' usuários excluídos permanentemente!');
@@ -143,14 +140,28 @@ function RouteComponent(): React.JSX.Element {
             />
           )}
           {isTrashView && master && (
-            <Button
-              data-test-id="empty-trash-users-btn"
-              variant="destructive"
-              onClick={() => setEmptyTrashOpen(true)}
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Esvaziar lixeira de usuários"
+              description="Essa ação é irreversível. Todos os usuários na lixeira serão excluídos permanentemente."
+              itemsCount={data.meta.total}
+              isPending={emptyTrash.isPending}
+              onConfirm={(close) => {
+                void emptyTrash
+                  .mutateAsync()
+                  .then(close)
+                  .catch(() => {});
+              }}
+              testId="empty-trash-users-dialog"
             >
-              <Trash2Icon className="size-4" />
-              <span>Esvaziar lixeira</span>
-            </Button>
+              <Button
+                data-test-id="empty-trash-users-btn"
+                variant="destructive"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Esvaziar lixeira</span>
+              </Button>
+            </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
             <Button
@@ -197,17 +208,6 @@ function RouteComponent(): React.JSX.Element {
           }
         />
       </PageShell.Footer>
-
-      <PermanentDeleteConfirmDialog
-        open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Esvaziar lixeira de usuários"
-        description="Essa ação é irreversível. Todos os usuários na lixeira serão excluídos permanentemente."
-        itemsCount={data.meta.total}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-users-dialog"
-      />
     </PageShell>
   );
 }

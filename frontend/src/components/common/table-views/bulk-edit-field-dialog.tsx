@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -20,10 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useBulkUpdateTableRows } from '@/hooks/tanstack-query/use-table-rows-bulk-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, ITable, ValueOf } from '@/lib/interfaces';
+import type { IField, ITable, Merge, ValueOf } from '@/lib/interfaces';
 import {
   buildCreateRowDefaultValues,
   buildFieldValidator,
@@ -53,23 +55,64 @@ export function getBulkEditableFields(table?: ITable): Array<IField> {
   );
 }
 
-type BulkEditFieldDialogProps = {
+type BulkEditFieldContentProps = {
   slug: string;
   table?: ITable;
   selectedIds: Array<string>;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  close: () => void;
 };
 
+type BulkEditFieldDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    slug: string;
+    table?: ITable;
+    selectedIds: Array<string>;
+    onSuccess: () => void;
+  }
+>;
+
 export function BulkEditFieldDialog({
+  ref,
   slug,
   table,
   selectedIds,
-  open,
-  onOpenChange,
   onSuccess,
+  ...rest
 }: BulkEditFieldDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
+  return (
+    <Dialog modal={false}>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent className="py-4 px-6">
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
+        <BulkEditFieldContent
+          slug={slug}
+          table={table}
+          selectedIds={selectedIds}
+          onSuccess={onSuccess}
+          close={close}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkEditFieldContent({
+  slug,
+  table,
+  selectedIds,
+  onSuccess,
+  close,
+}: BulkEditFieldContentProps): React.JSX.Element {
   const editableFields = React.useMemo(
     () => getBulkEditableFields(table),
     [table],
@@ -77,93 +120,83 @@ export function BulkEditFieldDialog({
 
   const [fieldId, setFieldId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (!open) setFieldId(null);
-  }, [open]);
-
   const selectedField =
     editableFields.find((field) => field._id === fieldId) ?? null;
 
   const count = selectedIds.length;
 
   return (
-    <Dialog
-      modal={false}
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="py-4 px-6">
-        <DialogHeader>
-          <DialogTitle>Editar campo em massa</DialogTitle>
-          <DialogDescription>
-            {count === 1 && '1 registro selecionado. '}
-            {count !== 1 && `${count} registros selecionados. `}
-            Escolha um campo e o novo valor a ser aplicado.
-          </DialogDescription>
-        </DialogHeader>
+    <React.Fragment>
+      <DialogHeader>
+        <DialogTitle>Editar campo em massa</DialogTitle>
+        <DialogDescription>
+          {count === 1 && '1 registro selecionado. '}
+          {count !== 1 && `${count} registros selecionados. `}
+          Escolha um campo e o novo valor a ser aplicado.
+        </DialogDescription>
+      </DialogHeader>
 
-        {editableFields.length === 0 && (
-          <section className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Nenhum campo desta tabela pode ser editado em massa.
-            </p>
-            <DialogFooter className="pt-4">
+      {editableFields.length === 0 && (
+        <section className="py-4">
+          <p className="text-sm text-muted-foreground">
+            Nenhum campo desta tabela pode ser editado em massa.
+          </p>
+          <DialogFooter className="pt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Fechar</Button>
+            </DialogClose>
+          </DialogFooter>
+        </section>
+      )}
+      {editableFields.length > 0 && (
+        <section className="space-y-4 py-2">
+          <div className="space-y-1">
+            <span className="text-sm font-medium">Campo</span>
+            <Select
+              value={fieldId ?? ''}
+              onValueChange={(value) => setFieldId(value)}
+            >
+              <SelectTrigger
+                data-test-id="bulk-edit-field-select"
+                className="w-full"
+              >
+                <SelectValue placeholder="Selecione o campo" />
+              </SelectTrigger>
+              <SelectContent>
+                {editableFields.map((field) => (
+                  <SelectItem
+                    key={field._id}
+                    value={field._id}
+                  >
+                    {resolveFieldLabel(field)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedField && (
+            <BulkEditValueForm
+              key={selectedField._id}
+              slug={slug}
+              field={selectedField}
+              ids={selectedIds}
+              onDone={() => {
+                close();
+                onSuccess();
+              }}
+            />
+          )}
+          {!selectedField && (
+            <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Fechar</Button>
+                <Button variant="outline">Cancelar</Button>
               </DialogClose>
             </DialogFooter>
-          </section>
-        )}
-        {editableFields.length > 0 && (
-          <section className="space-y-4 py-2">
-            <div className="space-y-1">
-              <span className="text-sm font-medium">Campo</span>
-              <Select
-                value={fieldId ?? ''}
-                onValueChange={(value) => setFieldId(value)}
-              >
-                <SelectTrigger
-                  data-test-id="bulk-edit-field-select"
-                  className="w-full"
-                >
-                  <SelectValue placeholder="Selecione o campo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {editableFields.map((field) => (
-                    <SelectItem
-                      key={field._id}
-                      value={field._id}
-                    >
-                      {resolveFieldLabel(field)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedField && (
-              <BulkEditValueForm
-                key={selectedField._id}
-                slug={slug}
-                field={selectedField}
-                ids={selectedIds}
-                onDone={() => {
-                  onOpenChange(false);
-                  onSuccess();
-                }}
-              />
-            )}
-            {!selectedField && (
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancelar</Button>
-                </DialogClose>
-              </DialogFooter>
-            )}
-          </section>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+        </section>
+      )}
+    </React.Fragment>
   );
 }
 

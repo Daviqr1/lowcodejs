@@ -643,12 +643,23 @@ export function TableMenus({
   const canTrash = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [singleDeleteMenu, setSingleDeleteMenu] = React.useState<IMenu | null>(
-    null,
-  );
   const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
   const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+
+  // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    menu: IMenu;
+    nonce: number;
+  } | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
+  );
 
   const tableRef = React.useRef<Table<IMenu> | null>(null);
 
@@ -671,7 +682,6 @@ export function TableMenus({
 
   const singleDelete = useMenuBulkDelete({
     onSuccess() {
-      setSingleDeleteMenu(null);
       toast.success('Menu excluído permanentemente!', {
         description: 'O menu foi excluído permanentemente',
       });
@@ -717,7 +727,6 @@ export function TableMenus({
 
   const bulkDelete = useMenuBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
       let message = result.deleted
         .toString()
@@ -741,7 +750,11 @@ export function TableMenus({
         isMaster: master,
         getPositionLabel: (menu) =>
           positionLabels.get(menu._id) ?? String(menu.order ?? 0),
-        onPermanentDelete: (menu) => setSingleDeleteMenu(menu),
+        onPermanentDelete: (menu) =>
+          setSingleDeleteTarget((previous) => ({
+            menu,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
       }),
     [canTrash, master, positionLabels],
   );
@@ -794,27 +807,36 @@ export function TableMenus({
           onClear={() => table.resetRowSelection()}
           onTrash={() => setBulkTrashOpen(true)}
           onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
         />
       )}
 
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteMenu !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteMenu(null);
-        }}
-        title="Excluir menu permanentemente"
-        description="Essa ação é irreversível. O menu será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={singleDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteMenu) return;
-          singleDelete.mutate({ ids: [singleDeleteMenu._id] });
-        }}
-        testId="delete-menu-dialog"
-      />
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          asChild
+          title="Excluir menu permanentemente"
+          description="Essa ação é irreversível. O menu será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={singleDelete.isPending}
+          onConfirm={(close) => {
+            void singleDelete
+              .mutateAsync({ ids: [singleDeleteTarget.menu._id] })
+              .then(close)
+              .catch(() => {});
+          }}
+          testId="delete-menu-dialog"
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </PermanentDeleteConfirmDialog>
+      )}
 
       <ConfirmDialog
         open={bulkTrashOpen}
@@ -839,15 +861,26 @@ export function TableMenus({
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
+        asChild
         title="Excluir menus permanentemente"
         description="Essa ação é irreversível. Os menus selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          void bulkDelete
+            .mutateAsync({ ids: selectedIds })
+            .then(close)
+            .catch(() => {});
+        }}
         testId="bulk-delete-menus-dialog"
-      />
+      >
+        <button
+          type="button"
+          className="hidden"
+          aria-hidden
+        />
+      </PermanentDeleteConfirmDialog>
     </>
   );
 }
