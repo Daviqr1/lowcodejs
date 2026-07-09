@@ -47,6 +47,7 @@ export function ForumDeleteChannelDialog({
         <DialogFooter className="mt-3 flex gap-2 sm:justify-end">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               type="button"
               variant="outline"
             >
@@ -61,10 +62,6 @@ export function ForumDeleteChannelDialog({
             Excluir
           </Button>
         </DialogFooter>
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
       </DialogContent>
     </Dialog>
   );

@@ -194,6 +194,7 @@ export const ForumEditChannelDialog = withForm({
             <DialogFooter className="mt-3 flex gap-2 sm:justify-end">
               <DialogClose asChild>
                 <Button
+                  ref={closeRef}
                   type="button"
                   variant="outline"
                   disabled={isPending}
@@ -210,10 +211,6 @@ export const ForumEditChannelDialog = withForm({
               </Button>
             </DialogFooter>
           </form>
-          <DialogClose
-            ref={closeRef}
-            className="hidden"
-          />
         </DialogContent>
       </Dialog>
     );
