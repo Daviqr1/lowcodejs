@@ -1,4 +1,5 @@
 import { CopyIcon, InfoIcon } from 'lucide-react';
+import type * as React from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import type { Merge } from '@/lib/interfaces';
 
 type ApiEndpoint = {
   method: string;
@@ -18,16 +21,15 @@ type ApiEndpoint = {
   params?: string;
 };
 
-type ApiEndpointsModalProps = {
-  tableSlug: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+type ApiEndpointsModalProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { tableSlug: string }
+>;
 
 export function ApiEndpointsModal({
+  ref,
   tableSlug,
-  open,
-  onOpenChange,
+  ...rest
 }: ApiEndpointsModalProps): React.JSX.Element {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -102,10 +104,11 @@ export function ApiEndpointsModal({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="w-full sm:max-w-[85vw] max-h-[85vh] overflow-y-auto"
         data-test-id="api-endpoints-modal"

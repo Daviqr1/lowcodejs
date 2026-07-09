@@ -150,9 +150,9 @@ export function TableConfigurationDropdown({
   const table = useReadTable({ slug: tableSlug });
   const permission = useTablePermission(table.data);
 
-  const [apiModalOpen, setApiModalOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const fieldTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const apiModalTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   // alvo de gerenciamento de grupo: slug + nonce. O nonce força remontar o Sheet
   // (chave) e reabrir o mesmo grupo, mantendo o Sheet uncontrolled (abre via
   // ref clicada a partir do menu — ver dialog/sheet-pattern).
@@ -386,7 +386,7 @@ export function TableConfigurationDropdown({
                     data-test-id="api-endpoints-btn"
                     onClick={() => {
                       closeMenu();
-                      setApiModalOpen(true);
+                      apiModalTriggerRef.current?.click();
                     }}
                   >
                     <InfoIcon className="size-4" />
@@ -418,10 +418,16 @@ export function TableConfigurationDropdown({
         </DropdownMenuContent>
 
         <ApiEndpointsModal
+          ref={apiModalTriggerRef}
+          asChild
           tableSlug={tableSlug}
-          open={apiModalOpen}
-          onOpenChange={setApiModalOpen}
-        />
+        >
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+          />
+        </ApiEndpointsModal>
       </DropdownMenu>
 
       {table.data && (
