@@ -7,11 +7,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -26,6 +28,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { cascadeDropdownQueryKeys } from '@/hooks/tanstack-query/use-cascade-dropdown';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { API } from '@/lib/api';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
@@ -240,7 +243,7 @@ export default function CascadeDropdownPlugin({
 }: CascadeDropdownPluginProps): React.JSX.Element | null {
   const queryClient = useQueryClient();
   const sourceTable = useReadTable({ slug: sourceTableSlug });
-  const [isConfigOpen, setIsConfigOpen] = React.useState(false);
+  const { closeRef, close } = useDismissableDialog();
   const initializedDraftKeyRef = React.useRef('');
 
   const configQuery = useQuery({
@@ -418,7 +421,7 @@ export default function CascadeDropdownPlugin({
     onSuccess(data) {
       const next = normalizeConfig(data);
       setDraft(next);
-      setIsConfigOpen(false);
+      close();
       queryClient.setQueryData(
         cascadeDropdownQueryKeys.config(tableSlug, targetFieldId),
         next,
@@ -814,146 +817,147 @@ export default function CascadeDropdownPlugin({
               }
             />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => setIsConfigOpen(true)}
-          >
-            <SettingsIcon className="size-4" />
-            <span>Configurar</span>
-          </Button>
-        </div>
-      </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={disabled}
+              >
+                <SettingsIcon className="size-4" />
+                <span>Configurar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Configurar atualização de {targetField.name}
+                </DialogTitle>
+                <DialogDescription>
+                  Escolha qual campo, ao sofrer alteração, deve atualizar as
+                  opções deste campo.
+                </DialogDescription>
+              </DialogHeader>
 
-      <Dialog
-        open={isConfigOpen}
-        onOpenChange={setIsConfigOpen}
-      >
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>
-              Configurar atualização de {targetField.name}
-            </DialogTitle>
-            <DialogDescription>
-              Escolha qual campo, ao sofrer alteração, deve atualizar as opções
-              deste campo.
-            </DialogDescription>
-          </DialogHeader>
+              <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+                <div className={filterFieldsGridClass}>
+                  <Field>
+                    <FieldLabel>
+                      Campo que atualiza {targetField.name}
+                    </FieldLabel>
+                    <Select
+                      value={draft.parentFieldSlug || EMPTY_VALUE}
+                      disabled={disabled}
+                      onValueChange={(value) => {
+                        if (value !== EMPTY_VALUE) setParentField(value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o campo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={EMPTY_VALUE}>Selecione</SelectItem>
+                        {parentFields.map((field) => (
+                          <SelectItem
+                            key={field._id}
+                            value={field.slug}
+                          >
+                            {field.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
 
-          <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-            <div className={filterFieldsGridClass}>
-              <Field>
-                <FieldLabel>Campo que atualiza {targetField.name}</FieldLabel>
-                <Select
-                  value={draft.parentFieldSlug || EMPTY_VALUE}
-                  disabled={disabled}
-                  onValueChange={(value) => {
-                    if (value !== EMPTY_VALUE) setParentField(value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o campo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={EMPTY_VALUE}>Selecione</SelectItem>
-                    {parentFields.map((field) => (
-                      <SelectItem
-                        key={field._id}
-                        value={field.slug}
+                  {showFilterFieldSelect && (
+                    <Field>
+                      <FieldLabel>
+                        Campo correspondente em {sourceTable.data.name}
+                      </FieldLabel>
+                      <Select
+                        value={draft.childFieldSlug || EMPTY_VALUE}
+                        disabled={disabled}
+                        onValueChange={(value) => {
+                          if (value !== EMPTY_VALUE) setFilterField(value);
+                        }}
                       >
-                        {field.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {showFilterFieldSelect && (
-                <Field>
-                  <FieldLabel>
-                    Campo correspondente em {sourceTable.data.name}
-                  </FieldLabel>
-                  <Select
-                    value={draft.childFieldSlug || EMPTY_VALUE}
-                    disabled={disabled}
-                    onValueChange={(value) => {
-                      if (value !== EMPTY_VALUE) setFilterField(value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o campo correspondente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={EMPTY_VALUE}>Selecione</SelectItem>
-                      {compatibleFilterFieldsForParent.map((field) => (
-                        <SelectItem
-                          key={field._id}
-                          value={field.slug}
-                        >
-                          {field.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">
-                    Filtros da fonte de dados
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Sem filtros extras, apenas o campo escolhido limita as
-                    opções.
-                  </p>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o campo correspondente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={EMPTY_VALUE}>Selecione</SelectItem>
+                          {compatibleFilterFieldsForParent.map((field) => (
+                            <SelectItem
+                              key={field._id}
+                              value={field.slug}
+                            >
+                              {field.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={disabled}
-                  onClick={() =>
-                    setDraft((current) => {
-                      if (!current) return current;
-                      return {
-                        ...current,
-                        filters: [...(current.filters ?? []), newFilter()],
-                      };
-                    })
-                  }
-                >
-                  <PlusIcon className="size-4" />
-                  <span>Adicionar filtro</span>
-                </Button>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Filtros da fonte de dados
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Sem filtros extras, apenas o campo escolhido limita as
+                        opções.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() =>
+                        setDraft((current) => {
+                          if (!current) return current;
+                          return {
+                            ...current,
+                            filters: [...(current.filters ?? []), newFilter()],
+                          };
+                        })
+                      }
+                    >
+                      <PlusIcon className="size-4" />
+                      <span>Adicionar filtro</span>
+                    </Button>
+                  </div>
+
+                  {filtersContent}
+                </div>
               </div>
 
-              {filtersContent}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsConfigOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              disabled={!canSave}
-              onClick={handleSave}
-            >
-              {saveConfig.status === 'pending' && <Spinner />}
-              <span>Salvar configuração</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button
+                    ref={closeRef}
+                    type="button"
+                    variant="outline"
+                  >
+                    Cancelar
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="button"
+                  disabled={!canSave}
+                  onClick={handleSave}
+                >
+                  {saveConfig.status === 'pending' && <Spinner />}
+                  <span>Salvar configuração</span>
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
     </section>
   );
 }
