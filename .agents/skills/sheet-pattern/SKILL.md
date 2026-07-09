@@ -138,18 +138,6 @@ export function SheetExample({
     com atributo DOM do trigger (`onSubmit`, `onError`, `title`…), faça
     `Omit<React.ComponentProps<typeof SheetTrigger>, 'onSubmit'>` antes do `Merge`.
 
-## Exceção — painel de layout colapsável (NÃO é sheet-pattern)
-
-Um componente que no **desktop** é um `<div>` de largura animada
-(`open && 'w-70'` / `!open && 'w-0'`) e só usa `<Sheet>` como **fallback mobile**
-NÃO é caso de sheet-pattern: no desktop ele não é Radix, é uma região de layout
-do app-shell que **precisa** do booleano `open` controlado (pra largura) e pode
-persistir aberto/fechado (localStorage). Mantenha controlado
-(`open`/`onOpenChange` + hook de estado). Ex.: `chat-sidebar.tsx` +
-`use-chat-sidebar.ts`, `filter-sidebar.tsx` + `use-filter-sidebar.ts`. O
-sheet-pattern vale só pro Sheet **modal** (drawer sobre overlay) — ex.:
-`sheet-filter.tsx`, que é uncontrolled + `SheetTrigger asChild`.
-
 ## Antes de terminar
 
 Releia o diff: props via `Merge<React.ComponentProps<typeof SheetTrigger>, …>`;
