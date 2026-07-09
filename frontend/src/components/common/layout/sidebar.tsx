@@ -520,7 +520,6 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
       </SidebarContent>
       <ConfirmDialog
         ref={logoutTriggerRef}
-        asChild
         icon={<LogOutIcon className="size-4 text-destructive" />}
         title="Sair da conta"
         description="Você será desconectado e voltará para a tela de login. Deseja continuar?"
@@ -534,13 +533,7 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
         testId="sidebar-logout-confirm-dialog"
         confirmTestId="sidebar-logout-confirm"
         cancelTestId="sidebar-logout-cancel"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </ConfirmDialog>
+      />
     </Root>
   );
 }

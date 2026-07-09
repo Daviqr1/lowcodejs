@@ -284,7 +284,6 @@ export function TableCalendarView({
         </div>
         {!missingRequired && (
           <CalendarEventDialog
-            asChild
             mode="create"
             fields={resolvedFields}
             event={null}
@@ -371,13 +370,7 @@ export function TableCalendarView({
               search: { _id: row._id },
             });
           }}
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </CalendarEventDialog>
+        />
       )}
     </div>
   );

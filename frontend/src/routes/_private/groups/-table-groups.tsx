@@ -586,7 +586,6 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         <PermanentDeleteConfirmDialog
           key={singleDeleteTarget.nonce}
           ref={singleDeleteTriggerRef}
-          asChild
           title="Excluir grupo permanentemente"
           description="Essa ação é irreversível. O grupo será excluído permanentemente e não poderá ser recuperado."
           itemsCount={1}
@@ -598,13 +597,7 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
               .catch(() => {});
           }}
           testId="delete-group-dialog"
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </PermanentDeleteConfirmDialog>
+        />
       )}
 
       <ConfirmDialog
@@ -631,7 +624,6 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
       <PermanentDeleteConfirmDialog
         ref={bulkDeleteTriggerRef}
-        asChild
         title="Excluir grupos permanentemente"
         description="Essa ação é irreversível. Os grupos selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
@@ -643,13 +635,7 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
             .catch(() => {});
         }}
         testId="bulk-delete-groups-dialog"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </PermanentDeleteConfirmDialog>
+      />
     </>
   );
 }

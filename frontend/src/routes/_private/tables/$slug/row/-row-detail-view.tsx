@@ -455,7 +455,6 @@ export function RowDetailView({
 
       <ConfirmDialog
         ref={trashTriggerRef}
-        asChild
         title="Enviar para lixeira"
         description="Ao confirmar, o registro será enviado para a lixeira."
         confirmLabel="Confirmar"
@@ -466,17 +465,10 @@ export function RowDetailView({
             .then(close)
             .catch(() => {});
         }}
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </ConfirmDialog>
+      />
 
       <ConfirmDialog
         ref={restoreTriggerRef}
-        asChild
         title="Restaurar da lixeira"
         description="Ao confirmar, o registro será restaurado da lixeira."
         confirmLabel="Confirmar"
@@ -487,17 +479,10 @@ export function RowDetailView({
             .then(close)
             .catch(() => {});
         }}
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </ConfirmDialog>
+      />
 
       <PermanentDeleteConfirmDialog
         ref={deleteTriggerRef}
-        asChild
         title="Excluir registro permanentemente"
         description="Essa ação é irreversível. O registro será excluído permanentemente."
         itemsCount={1}
@@ -509,13 +494,7 @@ export function RowDetailView({
             .catch(() => {});
         }}
         testId="delete-row-dialog"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </PermanentDeleteConfirmDialog>
+      />
     </React.Fragment>
   );
 }

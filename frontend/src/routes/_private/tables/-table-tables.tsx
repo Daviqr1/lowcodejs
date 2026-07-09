@@ -187,7 +187,6 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
 
       <PermanentDeleteConfirmDialog
         ref={hardDeleteTriggerRef}
-        asChild
         title="Excluir tabela permanentemente"
         description="Essa ação é irreversível. A tabela será excluída permanentemente e não poderá ser recuperada."
         itemsCount={1}
@@ -199,13 +198,7 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
             .catch(() => {});
         }}
         testId="delete-table-dialog"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </PermanentDeleteConfirmDialog>
+      />
       <ActionDialog
         ref={tableRemoveFromTrashButtonRef}
         config={{

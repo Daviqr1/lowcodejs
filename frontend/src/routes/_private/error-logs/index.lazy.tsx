@@ -287,15 +287,8 @@ function RouteComponent(): React.JSX.Element {
         <JsonDialog
           key={jsonTarget.nonce}
           ref={jsonTriggerRef}
-          asChild
           entry={jsonTarget.entry}
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </JsonDialog>
+        />
       )}
     </PageShell>
   );

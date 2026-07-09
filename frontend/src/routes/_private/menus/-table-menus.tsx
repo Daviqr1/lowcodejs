@@ -817,7 +817,6 @@ export function TableMenus({
         <PermanentDeleteConfirmDialog
           key={singleDeleteTarget.nonce}
           ref={singleDeleteTriggerRef}
-          asChild
           title="Excluir menu permanentemente"
           description="Essa ação é irreversível. O menu será excluído permanentemente e não poderá ser recuperado."
           itemsCount={1}
@@ -829,13 +828,7 @@ export function TableMenus({
               .catch(() => {});
           }}
           testId="delete-menu-dialog"
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </PermanentDeleteConfirmDialog>
+        />
       )}
 
       <ConfirmDialog
@@ -862,7 +855,6 @@ export function TableMenus({
 
       <PermanentDeleteConfirmDialog
         ref={bulkDeleteTriggerRef}
-        asChild
         title="Excluir menus permanentemente"
         description="Essa ação é irreversível. Os menus selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
@@ -874,13 +866,7 @@ export function TableMenus({
             .catch(() => {});
         }}
         testId="bulk-delete-menus-dialog"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </PermanentDeleteConfirmDialog>
+      />
     </>
   );
 }

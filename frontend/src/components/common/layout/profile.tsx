@@ -314,7 +314,6 @@ export function Profile(): React.JSX.Element {
         <ConfirmDialog
           key={logoutTarget.nonce}
           ref={logoutTriggerRef}
-          asChild
           icon={<LogOut className="size-4 text-destructive" />}
           title={LOGOUT_COPY[logoutTarget.mode].title}
           description={LOGOUT_COPY[logoutTarget.mode].description}
@@ -329,13 +328,7 @@ export function Profile(): React.JSX.Element {
           testId="profile-logout-confirm-dialog"
           confirmTestId="profile-logout-confirm"
           cancelTestId="profile-logout-cancel"
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </ConfirmDialog>
+        />
       )}
     </React.Fragment>
   );

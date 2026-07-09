@@ -180,7 +180,6 @@ function RowActionsCell({
 
       <ConfirmDialog
         ref={trashTriggerRef}
-        asChild
         title="Enviar para lixeira"
         description="Ao confirmar essa acao, o registro sera enviado para a lixeira."
         confirmLabel="Confirmar"
@@ -191,17 +190,10 @@ function RowActionsCell({
             .then(close)
             .catch(() => {});
         }}
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </ConfirmDialog>
+      />
 
       <ConfirmDialog
         ref={restoreTriggerRef}
-        asChild
         title="Restaurar da lixeira"
         description="Ao confirmar essa acao, o registro sera restaurado da lixeira."
         confirmLabel="Confirmar"
@@ -212,17 +204,10 @@ function RowActionsCell({
             .then(close)
             .catch(() => {});
         }}
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </ConfirmDialog>
+      />
 
       <PermanentDeleteConfirmDialog
         ref={deleteTriggerRef}
-        asChild
         title="Excluir registro permanentemente"
         description="Essa ação é irreversível. O registro será excluído permanentemente e não poderá ser recuperado."
         itemsCount={1}
@@ -234,13 +219,7 @@ function RowActionsCell({
             .catch(() => {});
         }}
         testId="delete-row-singular-dialog"
-      >
-        <button
-          type="button"
-          className="hidden"
-          aria-hidden
-        />
-      </PermanentDeleteConfirmDialog>
+      />
     </div>
   );
 }

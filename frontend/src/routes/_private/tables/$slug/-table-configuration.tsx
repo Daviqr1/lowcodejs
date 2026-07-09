@@ -419,45 +419,24 @@ export function TableConfigurationDropdown({
 
         <ApiEndpointsModal
           ref={apiModalTriggerRef}
-          asChild
           tableSlug={tableSlug}
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </ApiEndpointsModal>
+        />
       </DropdownMenu>
 
       {table.data && (
         <TableFieldManagementSheet
           ref={fieldTriggerRef}
-          asChild
           table={table.data}
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </TableFieldManagementSheet>
+        />
       )}
 
       {table.data && groupTarget && (
         <GroupFieldManagementSheet
           key={groupTarget.nonce}
           ref={groupTriggerRef}
-          asChild
           table={table.data}
           groupSlug={groupTarget.slug}
-        >
-          <button
-            type="button"
-            className="hidden"
-            aria-hidden
-          />
-        </GroupFieldManagementSheet>
+        />
       )}
     </>
   );
