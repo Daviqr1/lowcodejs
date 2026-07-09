@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -569,42 +570,16 @@ function RuleEditor({
 export default function ConditionalFieldsPlugin({
   table,
 }: Props): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
   const permission = useTablePermission(table);
-  const slug = table?.slug ?? '';
   let label = 'Configurar campos condicionais';
   if (table) label = `Configurar campos condicionais de ${table.name}`;
-
-  const config = useConditionalFieldsConfig(slug, open && Boolean(table));
-  const saveConfig = useSaveConditionalFieldsConfig(slug);
-  const [rules, setRules] = React.useState<Array<ConditionalFieldRule>>([]);
-  const [openRuleIds, setOpenRuleIds] = React.useState<Set<string>>(
-    () => new Set(),
-  );
-
-  React.useEffect(() => {
-    if (config.data && table) {
-      const nextRules = config.data.rules.map(normalizeRule);
-      setRules(nextRules);
-      setOpenRuleIds(new Set());
-    }
-  }, [config.data, table]);
 
   if (!table || permission.isLoading || !permission.can('UPDATE_TABLE')) {
     return <></>;
   }
 
-  const conditionFields = getConditionFields(table);
-  const canAddRule = conditionFields.length > 0;
-  const conflicts = findConditionalRuleConflicts(rules);
-  const targetFields = getTargetFields(table);
-  const hasConflicts = conflicts.length > 0;
-
   return (
-    <Sheet
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Sheet>
       <SheetTrigger asChild>
         <DropdownMenuItem
           className="w-full"
@@ -618,159 +593,197 @@ export default function ConditionalFieldsPlugin({
       </SheetTrigger>
 
       <SheetContent className="sm:max-w-2xl">
-        <SheetHeader>
-          <SheetTitle>Campos condicionais</SheetTitle>
-          <SheetDescription>
-            Configure regras desta tabela para mostrar ou ocultar campos nos
-            formulários.
-          </SheetDescription>
-        </SheetHeader>
+        <ConditionalFieldsSheetBody table={table} />
+      </SheetContent>
+    </Sheet>
+  );
+}
 
-        <div className="flex-1 space-y-3 overflow-auto px-4">
-          {conditionFields.length === 0 && (
-            <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              Crie um campo do tipo dropdown ou categoria para usar como
-              controlador das regras.
-            </div>
-          )}
+// Corpo montado só quando o Sheet abre (Radix monta o SheetContent na abertura):
+// a config é buscada aqui (preserva o lazy-load que antes dependia de `open`);
+// rules/openRuleIds self-inicializam. O salvar não fecha (só toast); o fechar é
+// pelo Cancelar (SheetClose) / Esc / clique-fora.
+function ConditionalFieldsSheetBody({
+  table,
+}: {
+  table: ITable;
+}): React.JSX.Element {
+  const slug = table.slug;
+  const config = useConditionalFieldsConfig(slug, Boolean(slug));
+  const saveConfig = useSaveConditionalFieldsConfig(slug);
+  const [rules, setRules] = React.useState<Array<ConditionalFieldRule>>([]);
+  const [openRuleIds, setOpenRuleIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
 
-          {config.status === 'pending' && (
-            <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              Carregando configuração...
-            </div>
-          )}
+  React.useEffect(() => {
+    if (config.data) {
+      setRules(config.data.rules.map(normalizeRule));
+      setOpenRuleIds(new Set());
+    }
+  }, [config.data]);
 
-          {config.status === 'error' && (
-            <div className="rounded-md border border-destructive p-3 text-sm text-destructive">
-              Não foi possível carregar a configuração desta tabela.
-            </div>
-          )}
+  const conditionFields = getConditionFields(table);
+  const canAddRule = conditionFields.length > 0;
+  const conflicts = findConditionalRuleConflicts(rules);
+  const targetFields = getTargetFields(table);
+  const hasConflicts = conflicts.length > 0;
 
-          {config.status === 'success' &&
-            rules.map((rule, index) => (
-              <RuleEditor
-                key={rule.id}
-                rule={rule}
-                table={table}
-                index={index}
-                totalRules={rules.length}
-                open={openRuleIds.has(rule.id)}
-                onChange={(nextRule) => {
-                  setRules((current) =>
-                    current.map((item) => {
-                      if (item.id === nextRule.id) return nextRule;
-                      return item;
-                    }),
-                  );
-                }}
-                onOpenChange={(nextOpen) => {
-                  setOpenRuleIds((current) => {
-                    const next = new Set(current);
-                    if (nextOpen) {
-                      next.add(rule.id);
-                    } else {
-                      next.delete(rule.id);
-                    }
-                    return next;
-                  });
-                }}
-                onMoveUp={() => {
-                  setRules((current) => {
-                    if (index > 0) return moveRule(current, index, index - 1);
-                    return current;
-                  });
-                }}
-                onMoveDown={() => {
-                  setRules((current) => {
-                    if (index < current.length - 1) {
-                      return moveRule(current, index, index + 1);
-                    }
-                    return current;
-                  });
-                }}
-                onRemove={() => {
-                  setRules((current) =>
-                    current.filter((item) => item.id !== rule.id),
-                  );
-                  setOpenRuleIds((current) => {
-                    const next = new Set(current);
+  return (
+    <React.Fragment>
+      <SheetHeader>
+        <SheetTitle>Campos condicionais</SheetTitle>
+        <SheetDescription>
+          Configure regras desta tabela para mostrar ou ocultar campos nos
+          formulários.
+        </SheetDescription>
+      </SheetHeader>
+
+      <div className="flex-1 space-y-3 overflow-auto px-4">
+        {conditionFields.length === 0 && (
+          <div className="rounded-md border p-3 text-sm text-muted-foreground">
+            Crie um campo do tipo dropdown ou categoria para usar como
+            controlador das regras.
+          </div>
+        )}
+
+        {config.status === 'pending' && (
+          <div className="rounded-md border p-3 text-sm text-muted-foreground">
+            Carregando configuração...
+          </div>
+        )}
+
+        {config.status === 'error' && (
+          <div className="rounded-md border border-destructive p-3 text-sm text-destructive">
+            Não foi possível carregar a configuração desta tabela.
+          </div>
+        )}
+
+        {config.status === 'success' &&
+          rules.map((rule, index) => (
+            <RuleEditor
+              key={rule.id}
+              rule={rule}
+              table={table}
+              index={index}
+              totalRules={rules.length}
+              open={openRuleIds.has(rule.id)}
+              onChange={(nextRule) => {
+                setRules((current) =>
+                  current.map((item) => {
+                    if (item.id === nextRule.id) return nextRule;
+                    return item;
+                  }),
+                );
+              }}
+              onOpenChange={(nextOpen) => {
+                setOpenRuleIds((current) => {
+                  const next = new Set(current);
+                  if (nextOpen) {
+                    next.add(rule.id);
+                  } else {
                     next.delete(rule.id);
-                    return next;
-                  });
-                }}
-              />
-            ))}
+                  }
+                  return next;
+                });
+              }}
+              onMoveUp={() => {
+                setRules((current) => {
+                  if (index > 0) return moveRule(current, index, index - 1);
+                  return current;
+                });
+              }}
+              onMoveDown={() => {
+                setRules((current) => {
+                  if (index < current.length - 1) {
+                    return moveRule(current, index, index + 1);
+                  }
+                  return current;
+                });
+              }}
+              onRemove={() => {
+                setRules((current) =>
+                  current.filter((item) => item.id !== rule.id),
+                );
+                setOpenRuleIds((current) => {
+                  const next = new Set(current);
+                  next.delete(rule.id);
+                  return next;
+                });
+              }}
+            />
+          ))}
 
-          {config.status === 'success' && hasConflicts && (
-            <Alert variant="destructive">
-              <AlertCircleIcon />
-              <AlertTitle>Existem conflitos nas regras</AlertTitle>
-              <AlertDescription>
-                {conflicts.map((conflict) => (
-                  <p key={`${conflict.ruleIds.join('-')}-${conflict.fieldId}`}>
-                    {getConflictMessage(conflict, rules, targetFields)}
-                  </p>
-                ))}
-              </AlertDescription>
-            </Alert>
-          )}
+        {config.status === 'success' && hasConflicts && (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertTitle>Existem conflitos nas regras</AlertTitle>
+            <AlertDescription>
+              {conflicts.map((conflict) => (
+                <p key={`${conflict.ruleIds.join('-')}-${conflict.fieldId}`}>
+                  {getConflictMessage(conflict, rules, targetFields)}
+                </p>
+              ))}
+            </AlertDescription>
+          </Alert>
+        )}
 
-          {config.status === 'success' && rules.length === 0 && (
-            <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              Nenhuma regra configurada para esta tabela.
-            </div>
-          )}
-        </div>
+        {config.status === 'success' && rules.length === 0 && (
+          <div className="rounded-md border p-3 text-sm text-muted-foreground">
+            Nenhuma regra configurada para esta tabela.
+          </div>
+        )}
+      </div>
 
-        <SheetFooter className="border-t">
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!canAddRule || config.status !== 'success'}
-              onClick={() =>
-                setRules((current) => [
-                  ...current,
-                  createRule(table, current.length),
-                ])
-              }
-            >
-              <PlusIcon className="size-4" />
-              <span>Adicionar regra</span>
-            </Button>
+      <SheetFooter className="border-t">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canAddRule || config.status !== 'success'}
+            onClick={() =>
+              setRules((current) => [
+                ...current,
+                createRule(table, current.length),
+              ])
+            }
+          >
+            <PlusIcon className="size-4" />
+            <span>Adicionar regra</span>
+          </Button>
 
-            <div className="flex gap-2">
+          <div className="flex gap-2">
+            <SheetClose asChild>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
               >
                 Cancelar
               </Button>
-              <Button
-                type="button"
-                disabled={
-                  saveConfig.isPending ||
-                  config.status !== 'success' ||
-                  hasConflicts
+            </SheetClose>
+            <Button
+              type="button"
+              disabled={
+                saveConfig.isPending ||
+                config.status !== 'success' ||
+                hasConflicts
+              }
+              onClick={() => {
+                if (hasConflicts) {
+                  toast.error('Conflito nas regras', {
+                    description: 'Resolva os conflitos antes de salvar.',
+                  });
+                  return;
                 }
-                onClick={() => {
-                  if (hasConflicts) {
-                    toast.error('Conflito nas regras', {
-                      description: 'Resolva os conflitos antes de salvar.',
-                    });
-                    return;
-                  }
 
-                  saveConfig.mutate(rules.map(normalizeRule));
-                }}
-              >
-                Salvar
-              </Button>
-            </div>
+                saveConfig.mutate(rules.map(normalizeRule));
+              }}
+            >
+              Salvar
+            </Button>
           </div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </SheetFooter>
+    </React.Fragment>
   );
 }
