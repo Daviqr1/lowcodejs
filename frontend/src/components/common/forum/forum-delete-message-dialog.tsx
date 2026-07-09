@@ -1,34 +1,42 @@
-import React from 'react';
+import type * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import type { Merge } from '@/lib/interfaces';
 
-type ForumDeleteMessageDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-};
+type ForumDeleteMessageDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { onConfirm: (close: () => void) => void }
+>;
 
 export function ForumDeleteMessageDialog({
-  open,
-  onOpenChange,
+  ref,
   onConfirm,
+  ...rest
 }: ForumDeleteMessageDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      data-slot="forum-delete-message-dialog"
-      data-test-id="forum-delete-message-dialog"
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="sm:max-w-sm">
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent
+        className="sm:max-w-sm"
+        data-slot="forum-delete-message-dialog"
+        data-test-id="forum-delete-message-dialog"
+      >
         <DialogHeader>
           <DialogTitle>Excluir mensagem</DialogTitle>
           <DialogDescription>
@@ -36,21 +44,26 @@ export function ForumDeleteMessageDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-3 flex gap-2 sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+          </DialogClose>
           <Button
             type="button"
             variant="destructive"
-            onClick={onConfirm}
+            onClick={() => onConfirm(close)}
           >
             Excluir
           </Button>
         </DialogFooter>
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
       </DialogContent>
     </Dialog>
   );

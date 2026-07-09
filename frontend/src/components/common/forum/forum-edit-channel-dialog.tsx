@@ -1,15 +1,18 @@
 import { useStore } from '@tanstack/react-store';
+import type * as React from 'react';
 
 import { ForumUserMultiSelect } from './forum-user-multi-select';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,6 +25,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
+import type { Merge } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
 // withForm dá o `form` tipado (shape { label, description, privacy, members }
@@ -34,15 +38,16 @@ type ForumEditChannelValues = {
   members: Array<string>;
 };
 
-type ForumEditChannelProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  isPending: boolean;
-  labelValue: string;
-  requiresMembers: boolean;
-  requiresPrivacy: boolean;
-  onCancel: () => void;
-};
+type ForumEditChannelProps = Merge<
+  Omit<React.ComponentProps<typeof DialogTrigger>, 'form'>,
+  {
+    isPending: boolean;
+    labelValue: string;
+    requiresMembers: boolean;
+    requiresPrivacy: boolean;
+    closeRef?: React.RefObject<HTMLButtonElement | null>;
+  }
+>;
 
 const EDIT_CHANNEL_DEFAULT_VALUES: ForumEditChannelValues = {
   label: '',
@@ -52,13 +57,10 @@ const EDIT_CHANNEL_DEFAULT_VALUES: ForumEditChannelValues = {
 };
 
 const EDIT_CHANNEL_DEFAULT_PROPS: ForumEditChannelProps = {
-  open: false,
-  onOpenChange: () => {},
   isPending: false,
   labelValue: '',
   requiresMembers: false,
   requiresPrivacy: false,
-  onCancel: () => {},
 };
 
 export const ForumEditChannelDialog = withForm({
@@ -66,14 +68,14 @@ export const ForumEditChannelDialog = withForm({
   props: EDIT_CHANNEL_DEFAULT_PROPS,
   render: function Render({
     form,
-    open,
-    onOpenChange,
+    ref,
     isPending,
     labelValue,
     requiresMembers,
     requiresPrivacy,
-    onCancel,
-  }) {
+    closeRef,
+    ...rest
+  }): React.JSX.Element {
     const privacyValue = useStore(form.store, (state) => state.values.privacy);
     let normalizedPrivacy = 'publico';
     if (typeof privacyValue === 'string') {
@@ -83,14 +85,16 @@ export const ForumEditChannelDialog = withForm({
       requiresMembers && (!requiresPrivacy || normalizedPrivacy === 'privado');
 
     return (
-      <Dialog
-        data-slot="forum-edit-channel-dialog"
-        data-test-id="forum-edit-channel-dialog"
-        open={open}
-        onOpenChange={onOpenChange}
-        modal={false}
-      >
-        <DialogContent className="sm:max-w-md">
+      <Dialog modal={false}>
+        <DialogTrigger
+          {...rest}
+          ref={ref}
+        />
+        <DialogContent
+          className="sm:max-w-md"
+          data-slot="forum-edit-channel-dialog"
+          data-test-id="forum-edit-channel-dialog"
+        >
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -188,14 +192,15 @@ export const ForumEditChannelDialog = withForm({
               )}
             </div>
             <DialogFooter className="mt-3 flex gap-2 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isPending}
-              >
-                Cancelar
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending}
+                >
+                  Cancelar
+                </Button>
+              </DialogClose>
               <Button
                 type="submit"
                 disabled={!labelValue.trim() || isPending}
@@ -205,6 +210,10 @@ export const ForumEditChannelDialog = withForm({
               </Button>
             </DialogFooter>
           </form>
+          <DialogClose
+            ref={closeRef}
+            className="hidden"
+          />
         </DialogContent>
       </Dialog>
     );

@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfileRead } from '@/hooks/tanstack-query/use-profile-read';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
 import { E_FIELD_TYPE, E_TABLE_PROFILE } from '@/lib/constant';
@@ -133,18 +134,26 @@ export function TableForumView({
   >([]);
   const [replyToId, setReplyToId] = React.useState<string | null>(null);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
-  const [isAddChannelOpen, setIsAddChannelOpen] = React.useState(false);
-  const [isEditChannelOpen, setIsEditChannelOpen] = React.useState(false);
   const [editingChannelId, setEditingChannelId] = React.useState<string | null>(
     null,
   );
   const [editingChannelRow, setEditingChannelRow] = React.useState<IRow | null>(
     null,
   );
-  const [deleteIndex, setDeleteIndex] = React.useState<number | null>(null);
-  const [deleteChannelId, setDeleteChannelId] = React.useState<string | null>(
-    null,
-  );
+  const [deleteChannelTarget, setDeleteChannelTarget] = React.useState<{
+    id: string;
+    nonce: number;
+  } | null>(null);
+  const [deleteMessageTarget, setDeleteMessageTarget] = React.useState<{
+    index: number;
+    nonce: number;
+  } | null>(null);
+  const addChannelDialog = useDismissableDialog();
+  const editChannelDialog = useDismissableDialog();
+  const addChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const editChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteMessageTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const composerEditorRef = React.useRef<TiptapEditor | null>(null);
   const pollingRef = React.useRef<{ inFlight: boolean; rowId: string | null }>({
@@ -734,7 +743,7 @@ export function TableForumView({
     onSuccess(newRow) {
       setRowsState((prev) => [...prev, newRow]);
       setActiveRowId(newRow._id);
-      setIsAddChannelOpen(false);
+      addChannelDialog.close();
       toast.success('Canal criado', {
         description: 'O canal foi criado com sucesso',
       });
@@ -803,17 +812,6 @@ export function TableForumView({
     },
   });
 
-  React.useEffect(() => {
-    if (!isAddChannelOpen) {
-      addChannelForm.reset({
-        label: '',
-        description: '',
-        privacy: 'publico',
-        members: [],
-      });
-    }
-  }, [addChannelForm, isAddChannelOpen]);
-
   const addChannelLabel = useStore(
     addChannelForm.store,
     (state) => state.values.label,
@@ -857,25 +855,13 @@ export function TableForumView({
         rowId: editingChannelId,
         data: payload,
       });
-      setIsEditChannelOpen(false);
+      editChannelDialog.close();
       setEditingChannelId(null);
       toast.success('Canal atualizado', {
         description: 'O canal foi atualizado com sucesso',
       });
     },
   });
-
-  React.useEffect(() => {
-    if (!isEditChannelOpen) {
-      editChannelForm.reset({
-        label: '',
-        description: '',
-        privacy: 'publico',
-        members: [],
-      });
-      setEditingChannelRow(null);
-    }
-  }, [editChannelForm, isEditChannelOpen]);
 
   const editChannelLabel = useStore(
     editChannelForm.store,
@@ -1033,7 +1019,7 @@ export function TableForumView({
       editChannelForm.setFieldValue('members', members);
       setEditingChannelId(row._id);
       setEditingChannelRow(row);
-      setIsEditChannelOpen(true);
+      editChannelTriggerRef.current?.click();
     },
     [
       canManageChannel,
@@ -1046,11 +1032,11 @@ export function TableForumView({
   );
 
   const handleChannelDelete = React.useCallback(
-    async (rowId: string) => {
+    async (rowId: string, close: () => void) => {
       const row = rowsState.find((item) => item._id === rowId);
       if (!row || !canManageChannel(row)) {
         toast.warning('Apenas o criador pode editar este canal');
-        setDeleteChannelId(null);
+        close();
         return;
       }
       await API.delete(`/tables/${tableSlug}/rows/${rowId}`);
@@ -1062,10 +1048,18 @@ export function TableForumView({
         });
         return nextRows;
       });
-      setDeleteChannelId(null);
+      close();
     },
     [canManageChannel, rowsState, tableSlug],
   );
+
+  React.useEffect(() => {
+    if (deleteChannelTarget) deleteChannelTriggerRef.current?.click();
+  }, [deleteChannelTarget]);
+
+  React.useEffect(() => {
+    if (deleteMessageTarget) deleteMessageTriggerRef.current?.click();
+  }, [deleteMessageTarget]);
 
   const buildMessagesPayload = React.useCallback(
     (messagesValue: Array<Record<string, unknown>>) => {
@@ -1206,7 +1200,7 @@ export function TableForumView({
   }, []);
 
   const handleDelete = React.useCallback(
-    async (index: number) => {
+    async (index: number, close: () => void) => {
       if (!activeRow) return;
       const message = messages[index];
       if (!message) return;
@@ -1216,6 +1210,7 @@ export function TableForumView({
           `/tables/${tableSlug}/rows/${activeRow._id}/forum/messages/${message.id}`,
         );
         await refreshRowById(activeRow._id);
+        close();
       } catch {
         toast.error('Erro ao excluir mensagem', {
           description: 'Voce so pode excluir mensagens enviadas por voce',
@@ -1379,58 +1374,66 @@ export function TableForumView({
         canAddChannel={canAddChannel}
         isOpen={isSidebarOpen}
         onToggleOpen={() => setIsSidebarOpen((value) => !value)}
-        onAddChannel={() => setIsAddChannelOpen(true)}
+        onAddChannel={() => {
+          addChannelForm.reset({
+            label: '',
+            description: '',
+            privacy: 'publico',
+            members: [],
+          });
+          addChannelTriggerRef.current?.click();
+        }}
         onSelectRow={handleSelectRow}
         canAccessRow={canAccessChannel}
         canManageRow={canManageChannel}
         onEditRow={handleChannelEdit}
-        onDeleteRow={(row) => setDeleteChannelId(row._id)}
+        onDeleteRow={(row) =>
+          setDeleteChannelTarget((prev) => ({
+            id: row._id,
+            nonce: (prev?.nonce ?? 0) + 1,
+          }))
+        }
         mentionCountByRowId={mentionCountByRowId}
       />
 
       <ForumAddChannelDialog
-        open={isAddChannelOpen}
-        onOpenChange={setIsAddChannelOpen}
+        ref={addChannelTriggerRef}
         form={addChannelForm}
+        closeRef={addChannelDialog.closeRef}
         isPending={createRow.status === 'pending'}
         labelValue={addChannelLabel}
         requiresMembers={Boolean(channelMembersField)}
         requiresPrivacy={Boolean(channelPrivacyField)}
-        onCancel={() => setIsAddChannelOpen(false)}
       />
 
       <ForumEditChannelDialog
         key={editingChannelId ?? 'edit-channel'}
-        open={isEditChannelOpen}
-        onOpenChange={setIsEditChannelOpen}
+        ref={editChannelTriggerRef}
         form={editChannelForm}
+        closeRef={editChannelDialog.closeRef}
         isPending={updateRow.status === 'pending'}
         labelValue={editChannelLabel}
         requiresMembers={Boolean(channelMembersField)}
         requiresPrivacy={Boolean(channelPrivacyField)}
-        onCancel={() => setIsEditChannelOpen(false)}
       />
 
       <ForumDeleteChannelDialog
-        open={deleteChannelId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteChannelId(null);
-        }}
-        onConfirm={async () => {
-          if (!deleteChannelId) return;
-          await handleChannelDelete(deleteChannelId);
+        key={deleteChannelTarget?.nonce ?? 'delete-channel'}
+        ref={deleteChannelTriggerRef}
+        onConfirm={(close) => {
+          const id = deleteChannelTarget?.id;
+          if (!id) return;
+          void handleChannelDelete(id, close);
         }}
       />
 
       <ForumDeleteMessageDialog
-        open={deleteIndex !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteIndex(null);
-        }}
-        onConfirm={async () => {
-          if (deleteIndex === null) return;
-          await handleDelete(deleteIndex);
-          setDeleteIndex(null);
+        key={deleteMessageTarget?.nonce ?? 'delete-message'}
+        ref={deleteMessageTriggerRef}
+        onConfirm={(close) => {
+          const index = deleteMessageTarget?.index;
+          if (index === undefined) return;
+          void handleDelete(index, close);
         }}
       />
 
@@ -1482,7 +1485,12 @@ export function TableForumView({
                   endRef={messagesEndRef}
                   onReply={setReplyToId}
                   onEdit={handleStartEdit}
-                  onDelete={(index) => setDeleteIndex(index)}
+                  onDelete={(index) =>
+                    setDeleteMessageTarget((prev) => ({
+                      index,
+                      nonce: (prev?.nonce ?? 0) + 1,
+                    }))
+                  }
                   onToggleReaction={toggleReaction}
                   trackedMentionMessageIds={
                     (activeRowId && unseenMentionIdsByChannel[activeRowId]) ||
