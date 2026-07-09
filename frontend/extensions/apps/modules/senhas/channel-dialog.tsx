@@ -14,35 +14,51 @@ import { useCreateChannel, useUpdateChannel } from './use-senhas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
+import type { Merge } from '@/lib/interfaces';
 
-type ChannelDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  channel?: IPasswordChannel | null;
-};
+type ChannelDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    channel?: IPasswordChannel | null;
+  }
+>;
 
 function emptyValues(): ChannelFormValues {
   return { name: '', description: '', private: true, members: [] };
 }
 
 export function ChannelDialog({
-  open,
-  onOpenChange,
+  ref,
   channel,
+  ...rest
 }: ChannelDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
   const isEdit = Boolean(channel);
-  const [values, setValues] = React.useState<ChannelFormValues>(emptyValues);
+  const [values, setValues] = React.useState<ChannelFormValues>(() => {
+    if (channel) {
+      return {
+        name: channel.name,
+        description: channel.description ?? '',
+        private: channel.private,
+        members: channel.members.map(refId),
+      };
+    }
+    return emptyValues();
+  });
 
   const createMutation = useCreateChannel();
   const updateMutation = useUpdateChannel();
@@ -57,20 +73,6 @@ export function ChannelDialog({
     [channel],
   );
 
-  React.useEffect(() => {
-    if (!open) return;
-    if (channel) {
-      setValues({
-        name: channel.name,
-        description: channel.description ?? '',
-        private: channel.private,
-        members: channel.members.map(refId),
-      });
-    } else {
-      setValues(emptyValues());
-    }
-  }, [open, channel]);
-
   function handleSubmit(event: React.FormEvent): void {
     event.preventDefault();
     if (!values.name.trim()) {
@@ -84,7 +86,7 @@ export function ChannelDialog({
         {
           onSuccess: () => {
             toast.success('Canal atualizado');
-            onOpenChange(false);
+            close();
           },
           onError: (error) =>
             handleApiError(error, { context: 'Erro ao atualizar canal' }),
@@ -96,7 +98,7 @@ export function ChannelDialog({
     createMutation.mutate(values, {
       onSuccess: () => {
         toast.success('Canal criado');
-        onOpenChange(false);
+        close();
       },
       onError: (error) =>
         handleApiError(error, { context: 'Erro ao criar canal' }),
@@ -104,10 +106,11 @@ export function ChannelDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -183,14 +186,16 @@ export function ChannelDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={pending}
-            >
-              Cancelar
-            </Button>
+            <DialogClose asChild>
+              <Button
+                ref={closeRef}
+                type="button"
+                variant="outline"
+                disabled={pending}
+              >
+                Cancelar
+              </Button>
+            </DialogClose>
             <Button
               type="submit"
               disabled={pending}

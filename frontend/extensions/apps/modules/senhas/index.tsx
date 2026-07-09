@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 
 import { ChannelDialog } from './channel-dialog';
 import { ChannelSidebar } from './channel-sidebar';
-import { ConfirmDialog } from './confirm-dialog';
 import { EntryDialog } from './entry-dialog';
 import { EntryList } from './entry-list';
 import type { SenhasView } from './entry-list';
@@ -23,6 +22,7 @@ import {
   useEntries,
 } from './use-senhas';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
 import { LoadError } from '@/components/common/route-status/load-error';
 import { Button } from '@/components/ui/button';
@@ -47,19 +47,37 @@ export default function SenhasModule(): React.JSX.Element {
     window.localStorage.setItem('senhas-view', next);
   }
 
-  // Dialog state
-  const [channelDialog, setChannelDialog] = React.useState<{
-    open: boolean;
-    channel: IPasswordChannel | null;
-  }>({ open: false, channel: null });
-  const [entryDialog, setEntryDialog] = React.useState<{
-    open: boolean;
-    entry: IPasswordEntry | null;
-  }>({ open: false, entry: null });
+  // Dialog state — alvo (dado) + nonce p/ abrir por ref (uncontrolled).
+  const [channelTarget, setChannelTarget] =
+    React.useState<IPasswordChannel | null>(null);
+  const [channelNonce, setChannelNonce] = React.useState(0);
+  const channelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const [entryTarget, setEntryTarget] = React.useState<IPasswordEntry | null>(
+    null,
+  );
+  const [entryNonce, setEntryNonce] = React.useState(0);
+  const entryTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [channelToDelete, setChannelToDelete] =
     React.useState<IPasswordChannel | null>(null);
+  const [channelDeleteNonce, setChannelDeleteNonce] = React.useState(0);
+  const channelDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [entryToDelete, setEntryToDelete] =
     React.useState<IPasswordEntry | null>(null);
+  const [entryDeleteNonce, setEntryDeleteNonce] = React.useState(0);
+  const entryDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(() => {
+    if (channelNonce > 0) channelTriggerRef.current?.click();
+  }, [channelNonce]);
+  React.useEffect(() => {
+    if (entryNonce > 0) entryTriggerRef.current?.click();
+  }, [entryNonce]);
+  React.useEffect(() => {
+    if (channelDeleteNonce > 0) channelDeleteTriggerRef.current?.click();
+  }, [channelDeleteNonce]);
+  React.useEffect(() => {
+    if (entryDeleteNonce > 0) entryDeleteTriggerRef.current?.click();
+  }, [entryDeleteNonce]);
 
   const channels = channelsQuery.data ?? [];
 
@@ -86,24 +104,24 @@ export default function SenhasModule(): React.JSX.Element {
     return activeChannel.members.some((m) => refId(m) === currentUserId);
   }, [activeChannel, currentUserId]);
 
-  function confirmDeleteChannel(): void {
+  function confirmDeleteChannel(close: () => void): void {
     if (!channelToDelete) return;
     deleteChannel.mutate(channelToDelete._id, {
       onSuccess: () => {
         toast.success('Canal excluído');
-        setChannelToDelete(null);
+        close();
       },
       onError: (error) =>
         handleApiError(error, { context: 'Erro ao excluir canal' }),
     });
   }
 
-  function confirmDeleteEntry(): void {
+  function confirmDeleteEntry(close: () => void): void {
     if (!entryToDelete) return;
     deleteEntry.mutate(entryToDelete._id, {
       onSuccess: () => {
         toast.success('Senha excluída');
-        setEntryToDelete(null);
+        close();
       },
       onError: (error) =>
         handleApiError(error, { context: 'Erro ao excluir senha' }),
@@ -142,9 +160,18 @@ export default function SenhasModule(): React.JSX.Element {
               activeChannelId={activeId}
               currentUserId={currentUserId}
               onSelect={(c) => setActiveId(c._id)}
-              onCreate={() => setChannelDialog({ open: true, channel: null })}
-              onEdit={(c) => setChannelDialog({ open: true, channel: c })}
-              onDelete={(c) => setChannelToDelete(c)}
+              onCreate={() => {
+                setChannelTarget(null);
+                setChannelNonce((value) => value + 1);
+              }}
+              onEdit={(c) => {
+                setChannelTarget(c);
+                setChannelNonce((value) => value + 1);
+              }}
+              onDelete={(c) => {
+                setChannelToDelete(c);
+                setChannelDeleteNonce((value) => value + 1);
+              }}
             />
 
             <div className="flex min-w-0 flex-1 flex-col">
@@ -200,9 +227,10 @@ export default function SenhasModule(): React.JSX.Element {
                       {canEdit && (
                         <Button
                           size="sm"
-                          onClick={() =>
-                            setEntryDialog({ open: true, entry: null })
-                          }
+                          onClick={() => {
+                            setEntryTarget(null);
+                            setEntryNonce((value) => value + 1);
+                          }}
                         >
                           <PlusIcon className="size-4" />
                           Nova senha
@@ -217,8 +245,14 @@ export default function SenhasModule(): React.JSX.Element {
                       isLoading={entriesQuery.isPending}
                       canEdit={canEdit}
                       view={view}
-                      onEdit={(entry) => setEntryDialog({ open: true, entry })}
-                      onDelete={(entry) => setEntryToDelete(entry)}
+                      onEdit={(entry) => {
+                        setEntryTarget(entry);
+                        setEntryNonce((value) => value + 1);
+                      }}
+                      onDelete={(entry) => {
+                        setEntryToDelete(entry);
+                        setEntryDeleteNonce((value) => value + 1);
+                      }}
                     />
                   </div>
                 </React.Fragment>
@@ -229,36 +263,38 @@ export default function SenhasModule(): React.JSX.Element {
       </PageShell.Content>
 
       <ChannelDialog
-        open={channelDialog.open}
-        onOpenChange={(open) => setChannelDialog((prev) => ({ ...prev, open }))}
-        channel={channelDialog.channel}
+        key={channelNonce}
+        ref={channelTriggerRef}
+        channel={channelTarget}
       />
 
       {activeChannel && (
         <EntryDialog
-          open={entryDialog.open}
-          onOpenChange={(open) => setEntryDialog((prev) => ({ ...prev, open }))}
+          key={entryNonce}
+          ref={entryTriggerRef}
           channelId={activeChannel._id}
-          entry={entryDialog.entry}
+          entry={entryTarget}
         />
       )}
 
       <ConfirmDialog
-        open={Boolean(channelToDelete)}
-        onOpenChange={(open) => !open && setChannelToDelete(null)}
+        key={channelDeleteNonce}
+        ref={channelDeleteTriggerRef}
         title="Excluir canal"
         description={`Excluir "${channelToDelete?.name ?? ''}" e TODAS as suas senhas? Esta ação não pode ser desfeita.`}
-        pending={deleteChannel.isPending}
-        onConfirm={confirmDeleteChannel}
+        isPending={deleteChannel.isPending}
+        confirmLabel="Excluir"
+        onConfirm={(close) => confirmDeleteChannel(close)}
       />
 
       <ConfirmDialog
-        open={Boolean(entryToDelete)}
-        onOpenChange={(open) => !open && setEntryToDelete(null)}
+        key={entryDeleteNonce}
+        ref={entryDeleteTriggerRef}
         title="Excluir senha"
         description={`Excluir "${entryToDelete?.title ?? ''}"? Esta ação não pode ser desfeita.`}
-        pending={deleteEntry.isPending}
-        onConfirm={confirmDeleteEntry}
+        isPending={deleteEntry.isPending}
+        confirmLabel="Excluir"
+        onConfirm={(close) => confirmDeleteEntry(close)}
       />
     </PageShell>
   );

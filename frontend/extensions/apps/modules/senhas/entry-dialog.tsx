@@ -8,23 +8,28 @@ import { useCreateEntry, useUpdateEntry } from './use-senhas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
+import type { Merge } from '@/lib/interfaces';
 
-type EntryDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  channelId: string;
-  entry?: IPasswordEntry | null;
-};
+type EntryDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    channelId: string;
+    entry?: IPasswordEntry | null;
+  }
+>;
 
 function emptyValues(): EntryFormValues {
   return { title: '', username: '', url: '', secret: '', notes: '' };
@@ -44,34 +49,30 @@ function generatePassword(length = 20): string {
 }
 
 export function EntryDialog({
-  open,
-  onOpenChange,
+  ref,
   channelId,
   entry,
+  ...rest
 }: EntryDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
   const isEdit = Boolean(entry);
-  const [values, setValues] = React.useState<EntryFormValues>(emptyValues);
-  const [reveal, setReveal] = React.useState(false);
-
-  const createMutation = useCreateEntry(channelId);
-  const updateMutation = useUpdateEntry(channelId);
-  const pending = createMutation.isPending || updateMutation.isPending;
-
-  React.useEffect(() => {
-    if (!open) return;
-    setReveal(false);
+  const [values, setValues] = React.useState<EntryFormValues>(() => {
     if (entry) {
-      setValues({
+      return {
         title: entry.title,
         username: entry.username ?? '',
         url: entry.url ?? '',
         secret: entry.secret,
         notes: entry.notes ?? '',
-      });
-    } else {
-      setValues(emptyValues());
+      };
     }
-  }, [open, entry]);
+    return emptyValues();
+  });
+  const [reveal, setReveal] = React.useState(false);
+
+  const createMutation = useCreateEntry(channelId);
+  const updateMutation = useUpdateEntry(channelId);
+  const pending = createMutation.isPending || updateMutation.isPending;
 
   function handleSubmit(event: React.FormEvent): void {
     event.preventDefault();
@@ -90,7 +91,7 @@ export function EntryDialog({
         {
           onSuccess: () => {
             toast.success('Senha atualizada');
-            onOpenChange(false);
+            close();
           },
           onError: (error) =>
             handleApiError(error, { context: 'Erro ao atualizar senha' }),
@@ -102,7 +103,7 @@ export function EntryDialog({
     createMutation.mutate(values, {
       onSuccess: () => {
         toast.success('Senha criada');
-        onOpenChange(false);
+        close();
       },
       onError: (error) =>
         handleApiError(error, { context: 'Erro ao criar senha' }),
@@ -115,10 +116,11 @@ export function EntryDialog({
   if (reveal) revealTitle = 'Ocultar';
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -224,14 +226,16 @@ export function EntryDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={pending}
-            >
-              Cancelar
-            </Button>
+            <DialogClose asChild>
+              <Button
+                ref={closeRef}
+                type="button"
+                variant="outline"
+                disabled={pending}
+              >
+                Cancelar
+              </Button>
+            </DialogClose>
             <Button
               type="submit"
               disabled={pending}
