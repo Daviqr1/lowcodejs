@@ -19,11 +19,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
@@ -127,8 +129,9 @@ function AutoSaveRowFormContent({
     existingRow?.status === 'draft',
   );
   const [missingRequired, setMissingRequired] = React.useState<boolean>(false);
-  const [confirmDiscardOpen, setConfirmDiscardOpen] =
-    React.useState<boolean>(false);
+  const [confirmDiscardNonce, setConfirmDiscardNonce] =
+    React.useState<number>(0);
+  const confirmDiscardTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   // Marca que o usuário adicionou um item de grupo. Os grupos têm form próprio,
   // então o isDirty do form principal não os reflete; sem isso, um rascunho com
   // filhos seria oferecido para descarte ao sair.
@@ -531,11 +534,15 @@ function AutoSaveRowFormContent({
   const requestBack = React.useCallback((): void => {
     cancelPending();
     if (isDiscardableDraft()) {
-      setConfirmDiscardOpen(true);
+      setConfirmDiscardNonce((value) => value + 1);
       return;
     }
     finishAndBack();
   }, [cancelPending, isDiscardableDraft, finishAndBack]);
+
+  React.useEffect(() => {
+    if (confirmDiscardNonce > 0) confirmDiscardTriggerRef.current?.click();
+  }, [confirmDiscardNonce]);
 
   // Permite que o botao Voltar do cabecalho (renderizado pelo componente pai)
   // passe pela mesma guarda de descarte do rascunho.
@@ -547,7 +554,6 @@ function AutoSaveRowFormContent({
     if (rowIdRef.current) {
       await _deleteDraft.mutateAsync({ slug, rowId: rowIdRef.current });
     }
-    setConfirmDiscardOpen(false);
     onBack?.();
   };
 
@@ -684,10 +690,8 @@ function AutoSaveRowFormContent({
         </Button>
       </div>
 
-      <Dialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-      >
+      <Dialog>
+        <DialogTrigger ref={confirmDiscardTriggerRef} />
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Descartar rascunho?</DialogTitle>
@@ -697,18 +701,17 @@ function AutoSaveRowFormContent({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={_deleteDraft.isPending}
-              onClick={(): void => {
-                setConfirmDiscardOpen(false);
-                finishAndBack();
-              }}
-            >
-              Manter rascunho
-            </Button>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={_deleteDraft.isPending}
+                onClick={finishAndBack}
+              >
+                Manter rascunho
+              </Button>
+            </DialogClose>
             <Button
               type="button"
               variant="destructive"
