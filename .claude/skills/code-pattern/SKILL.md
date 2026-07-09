@@ -1,6 +1,6 @@
 ---
-name: code-style
-description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, always `type` never `interface`, combine object types with `Merge` not `&`, lookup object over long if/else chains, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
+name: code-pattern
+description: TypeScript/React code style and git commit conventions — no needless ternaries, no needless `any`, no `as` type assertions, always `type` never `interface`, combine object types with `Merge` not `&`, lookup object over long if/else chains, async/await over `.then/.catch` chains, proactive atomic commits. Use whenever you write, edit, or review TS/JS/TSX/JSX in any project, and whenever you create a git commit, even if the user doesn't ask explicitly.
 ---
 
 # Code style
@@ -166,7 +166,35 @@ chaves (`Record<Key, T>`). 1–2 casos mantenha `if` simples (mapa ali é exager
 É para despacho valor/handler por chave, não para lógica booleana arbitrária
 (ranges, condições combinadas) — essa fica `if`.
 
-## 7. Commits: conventional, atomic, semantic
+## 7. async/await, nunca `.then/.catch`
+
+Nunca encadeie `.then()` / `.catch()` / `.finally()` numa promise. Sempre `await`
+dentro de uma função `async`, e trate erro com `try/catch`. Lê de cima pra baixo,
+sem callbacks aninhados nem contexto de erro perdido — combina com o resto do
+estilo (if clássico, nada de control flow escondido):
+
+```ts
+// Evitar
+function load() {
+  return fetch(url).then((r) => r.json()).catch((e) => handle(e))
+}
+
+// Preferir
+async function load() {
+  try {
+    const r = await fetch(url)
+    return await r.json()
+  } catch (e) {
+    handle(e)
+  }
+}
+```
+
+O alvo é a **cadeia** `.then().catch()`, não o objeto Promise. Combinadores
+seguem válidos — `await Promise.all([...])`, `await Promise.race([...])` — desde
+que você faça `await` do resultado em vez de encadear `.then` nele.
+
+## 8. Commits: conventional, atomic, semantic
 
 **Commit proactively, as you go.** Don't wait to be asked. The moment a logical
 change is complete and passing, commit it — atomically. One task usually becomes
@@ -191,6 +219,6 @@ refactor(sidebar): extrai navegação para hook dedicado
 ## Before you finish
 
 Reread your own diff for assignment ternaries, loose `any`, `as`, `interface` in
-app code, object intersections with `&` that should be `Merge`, and long if/else
-chains that should be a lookup object. Find one, fix it. Cheaper to catch now
-than later.
+app code, object intersections with `&` that should be `Merge`, long if/else
+chains that should be a lookup object, and `.then().catch()` chains that should be
+`async/await`. Find one, fix it. Cheaper to catch now than later.

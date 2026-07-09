@@ -11,7 +11,7 @@ lowcodejs/
 ├── frontend/             # React + TanStack Start (SSR)
 │   └── CLAUDE.md         # Arquitetura detalhada do frontend
 ├── _docs/                # Documentacao de negocio e testes
-├── eslint-local-rules/   # Plugin ESLint local (regras 5 e 6 do code-style)
+├── eslint-local-rules/   # Plugin ESLint local (regras 5 e 6 do code-pattern)
 ├── .github/workflows/    # CI/CD (build, test, push :latest no Docker Hub)
 ├── docker-compose.yml              # Desenvolvimento (core + profiles opcionais)
 ├── docker-compose.oficial.yml      # Self-host minimo via imagens :latest

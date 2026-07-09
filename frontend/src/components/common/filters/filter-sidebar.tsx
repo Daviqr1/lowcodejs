@@ -10,7 +10,9 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
@@ -62,6 +64,9 @@ export function FilterSidebar({
               <FilterIcon className="size-4" />
               Filtros
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Aplique filtros para a busca de dados
+            </SheetDescription>
           </SheetHeader>
 
           <div className="flex flex-col gap-4 w-full flex-1">
@@ -80,26 +85,24 @@ export function FilterSidebar({
           </div>
 
           <SheetFooter className="flex-row w-full justify-end gap-4 px-0">
-            <Button
-              data-test-id="filter-clear-btn"
-              onClick={() => {
-                handleClear();
-                onOpenChange(false);
-              }}
-              type="button"
-              className="shadow-none border bg-transparent border-destructive text-destructive hover:bg-destructive/20"
-            >
-              Limpar
-            </Button>
-            <Button
-              data-test-id="filter-submit-btn"
-              onClick={() => {
-                handleSubmit();
-                onOpenChange(false);
-              }}
-            >
-              Pesquisar
-            </Button>
+            <SheetClose asChild>
+              <Button
+                data-test-id="filter-clear-btn"
+                onClick={handleClear}
+                type="button"
+                className="shadow-none border bg-transparent border-destructive text-destructive hover:bg-destructive/20"
+              >
+                Limpar
+              </Button>
+            </SheetClose>
+            <SheetClose asChild>
+              <Button
+                data-test-id="filter-submit-btn"
+                onClick={handleSubmit}
+              >
+                Pesquisar
+              </Button>
+            </SheetClose>
           </SheetFooter>
         </SheetContent>
       </Sheet>

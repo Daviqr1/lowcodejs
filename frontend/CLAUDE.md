@@ -393,7 +393,7 @@ Tipos em `IExtension` (lib/interfaces.ts), enum `E_EXTENSION_TYPE`
 
 ## Convencoes de Codigo
 
-As 6 regras do code-style, **enforçadas pelo ESLint** em todo o `src/` e
+As 6 regras do code-pattern, **enforçadas pelo ESLint** em todo o `src/` e
 `extensions/` (excecoes: `routeTree.gen.ts` gerado, `components/ui/**` shadcn e
 `*.d.ts` de augmentation). Regras 1–3 via regras nativas (`no-ternary`,
 `consistent-type-assertions: never`, `no-explicit-any`); regra 4 via
@@ -459,7 +459,7 @@ minimo com comentario; nunca introduzir `as`/`any` novo.
 Modelar tipos com `type` (objeto, uniao, mapeado). `interface` so em _module
 augmentation_ (`declare module`), onde o TS exige merging (ex.:
 `lib/tanstack-table.d.ts` e `interface Register` do router). Ver o skill
-`code-style`.
+`code-pattern`.
 
 ### 5. Combinar tipos com `Merge`, nao `&`
 

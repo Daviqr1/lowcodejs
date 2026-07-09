@@ -5,6 +5,7 @@ import { ChatPanel } from './chat-panel';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -36,6 +37,9 @@ export function ChatSidebar({
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Assistente IA</SheetTitle>
+            <SheetDescription>
+              Converse com o assistente de inteligência artificial
+            </SheetDescription>
           </SheetHeader>
           <ChatPanel onClose={() => onOpenChange(false)} />
         </SheetContent>

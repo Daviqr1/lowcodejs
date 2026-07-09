@@ -296,6 +296,16 @@ function SetupAdminPage(): React.JSX.Element {
             </Field>
           </FieldGroup>
         </form>
+        {/* <DialogExample asChild>
+          <Button
+            variant="outline"
+            className="mt-4"
+          >
+            Abrir Dialg
+          </Button>
+        </DialogExample>
+        <DropdownMenuExample />
+        <TableExample /> */}
       </CardContent>
     </Card>
   );

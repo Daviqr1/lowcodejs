@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -25,7 +26,6 @@ type SheetFilterProps = {
 };
 
 export function SheetFilter({ fields }: SheetFilterProps): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
   const search = useSearch({ strict: false });
 
   const {
@@ -36,17 +36,10 @@ export function SheetFilter({ fields }: SheetFilterProps): React.JSX.Element {
     removeFilter,
     handleMultiValueChange,
     activeFiltersCount,
-  } = useFilterState(fields, {
-    closeOnSubmit: true,
-    onClose: () => setOpen(false),
-  });
+  } = useFilterState(fields);
 
   return (
-    <Sheet
-      data-slot="sheet-filter"
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Sheet data-slot="sheet-filter">
       <SheetTrigger asChild>
         <div className="relative">
           <Button
@@ -86,20 +79,24 @@ export function SheetFilter({ fields }: SheetFilterProps): React.JSX.Element {
           />
 
           <SheetFooter className="flex-row w-full justify-end gap-4 px-0">
-            <Button
-              data-test-id="filter-clear-btn"
-              onClick={handleClear}
-              type="button"
-              className="shadow-none border bg-transparent border-destructive text-destructive hover:bg-destructive/20"
-            >
-              Limpar
-            </Button>
-            <Button
-              data-test-id="filter-submit-btn"
-              onClick={handleSubmit}
-            >
-              Pesquisar
-            </Button>
+            <SheetClose asChild>
+              <Button
+                data-test-id="filter-clear-btn"
+                onClick={handleClear}
+                type="button"
+                className="shadow-none border bg-transparent border-destructive text-destructive hover:bg-destructive/20"
+              >
+                Limpar
+              </Button>
+            </SheetClose>
+            <SheetClose asChild>
+              <Button
+                data-test-id="filter-submit-btn"
+                onClick={handleSubmit}
+              >
+                Pesquisar
+              </Button>
+            </SheetClose>
           </SheetFooter>
         </div>
       </SheetContent>

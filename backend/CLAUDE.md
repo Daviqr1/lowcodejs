@@ -265,7 +265,7 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 
 ## Convenções de Código
 
-As **6 regras** do code-style aplicadas a **todo** `.ts` do backend (incluindo
+As **6 regras** do code-pattern aplicadas a **todo** `.ts` do backend (incluindo
 `extensions/`, `database/`, `hooks/`, `config/`, `test/`, `*.spec.ts`),
 **enforçadas pelo ESLint** (`eslint.config.js`, bloco `files: ['**/*.ts']`):
 regras 1–3 via regras nativas (`no-ternary`, `consistent-type-assertions:
