@@ -48,11 +48,12 @@ type RelationshipItemContentProps = {
   editRow: IRow | null;
   onChanged: () => void;
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 type RelationshipItemSheetProps = Merge<
   React.ComponentProps<typeof SheetTrigger>,
-  Omit<RelationshipItemContentProps, 'close'>
+  Omit<RelationshipItemContentProps, 'close' | 'closeRef'>
 >;
 
 export function RelationshipItemSheet({
@@ -80,10 +81,6 @@ export function RelationshipItemSheet({
         side="right"
         className="sm:max-w-2xl w-full gap-0 p-0"
       >
-        <SheetClose
-          ref={closeRef}
-          className="hidden"
-        />
         <UploadingProvider>
           <RelationshipItemSheetContent
             field={field}
@@ -95,6 +92,7 @@ export function RelationshipItemSheet({
             editRow={editRow}
             onChanged={onChanged}
             close={close}
+            closeRef={closeRef}
           />
         </UploadingProvider>
       </SheetContent>
@@ -104,6 +102,7 @@ export function RelationshipItemSheet({
 
 function RelationshipItemSheetContent({
   close,
+  closeRef,
   relatedTable,
   parentTableSlug,
   relationshipId,
@@ -236,6 +235,7 @@ function RelationshipItemSheetContent({
       <SheetFooter>
         <SheetClose asChild>
           <Button
+            ref={closeRef}
             type="button"
             variant="outline"
             disabled={isPending}

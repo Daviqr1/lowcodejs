@@ -195,10 +195,6 @@ function ConfirmDialog({
         className="py-4 px-6"
         data-test-id={testId}
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -206,6 +202,7 @@ function ConfirmDialog({
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               variant="outline"
               disabled={isPending}
             >

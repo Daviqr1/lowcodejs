@@ -52,6 +52,7 @@ type GroupRowFormContentProps = {
   groupFields: Array<IField>;
   editItem?: IRow | null;
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 export function GroupRowFormDialog({
@@ -77,10 +78,6 @@ export function GroupRowFormDialog({
         side="right"
         className="sm:max-w-2xl w-full overflow-y-auto px-4"
       >
-        <SheetClose
-          ref={closeRef}
-          className="hidden"
-        />
         <UploadingProvider>
           <GroupRowFormDialogContent
             tableSlug={tableSlug}
@@ -89,6 +86,7 @@ export function GroupRowFormDialog({
             groupFields={groupFields}
             editItem={editItem}
             close={close}
+            closeRef={closeRef}
           />
         </UploadingProvider>
       </SheetContent>
@@ -98,6 +96,7 @@ export function GroupRowFormDialog({
 
 function GroupRowFormDialogContent({
   close,
+  closeRef,
   tableSlug,
   rowId,
   groupSlug,
@@ -224,6 +223,7 @@ function GroupRowFormDialogContent({
       <SheetFooter>
         <SheetClose asChild>
           <Button
+            ref={closeRef}
             type="button"
             variant="outline"
             disabled={isPending}

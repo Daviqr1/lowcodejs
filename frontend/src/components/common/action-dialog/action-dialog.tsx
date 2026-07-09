@@ -82,10 +82,6 @@ export function ActionDialog({
         className="py-4 px-6"
         data-test-id={config.testId}
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle>{config.title}</DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
@@ -95,6 +91,7 @@ export function ActionDialog({
             <DialogFooter className="inline-flex w-full gap-2 justify-end">
               <DialogClose asChild>
                 <Button
+                  ref={closeRef}
                   className="bg-destructive hover:bg-destructive"
                   data-test-id={config.cancelTestId}
                 >

@@ -24,7 +24,6 @@ import { Label } from '@/components/ui/label';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useTableRowsImportCsv } from '@/hooks/tanstack-query/use-table-rows-import-csv';
 import { useCsvImportSocket } from '@/hooks/use-csv-import-socket';
-import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { downloadCsvFromApi } from '@/lib/csv-export';
 import type { Merge } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
@@ -43,8 +42,6 @@ export function ImportCsvDialog({
   slug,
   ...rest
 }: ImportCsvDialogProps): React.JSX.Element {
-  const { closeRef, close } = useDismissableDialog();
-
   return (
     <Dialog>
       <DialogTrigger
@@ -52,26 +49,13 @@ export function ImportCsvDialog({
         ref={ref}
       />
       <DialogContent>
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
-        <ImportCsvContent
-          slug={slug}
-          close={close}
-        />
+        <ImportCsvContent slug={slug} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function ImportCsvContent({
-  slug,
-  close,
-}: {
-  slug: string;
-  close: () => void;
-}): React.JSX.Element {
+function ImportCsvContent({ slug }: { slug: string }): React.JSX.Element {
   const { baseUrl } = rootApi.useLoaderData();
 
   const [file, setFile] = React.useState<File | null>(null);
@@ -237,7 +221,11 @@ function ImportCsvContent({
           </Button>
         )}
 
-        {isDone && <Button onClick={() => close()}>Fechar</Button>}
+        {isDone && (
+          <DialogClose asChild>
+            <Button>Fechar</Button>
+          </DialogClose>
+        )}
       </DialogFooter>
     </React.Fragment>
   );

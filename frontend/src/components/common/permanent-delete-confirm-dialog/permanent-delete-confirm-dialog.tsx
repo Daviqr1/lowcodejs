@@ -31,11 +31,15 @@ type PermanentDeleteContentProps = {
   onConfirm: (close: () => void) => void;
   confirmLabel?: string;
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 export type PermanentDeleteConfirmDialogProps = Merge<
   React.ComponentProps<typeof DialogTrigger>,
-  Merge<Omit<PermanentDeleteContentProps, 'close'>, { testId?: string }>
+  Merge<
+    Omit<PermanentDeleteContentProps, 'close' | 'closeRef'>,
+    { testId?: string }
+  >
 >;
 
 export function PermanentDeleteConfirmDialog({
@@ -61,10 +65,6 @@ export function PermanentDeleteConfirmDialog({
         className="py-4 px-6"
         data-test-id={testId}
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <PermanentDeleteBody
           title={title}
           description={description}
@@ -73,6 +73,7 @@ export function PermanentDeleteConfirmDialog({
           onConfirm={onConfirm}
           confirmLabel={confirmLabel}
           close={close}
+          closeRef={closeRef}
         />
       </DialogContent>
     </Dialog>
@@ -87,6 +88,7 @@ function PermanentDeleteBody({
   onConfirm,
   confirmLabel,
   close,
+  closeRef,
 }: PermanentDeleteContentProps): React.JSX.Element {
   const captcha = useMathCaptcha();
   const [answer, setAnswer] = React.useState('');
@@ -163,6 +165,7 @@ function PermanentDeleteBody({
       <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
         <DialogClose asChild>
           <Button
+            ref={closeRef}
             variant="outline"
             disabled={isPending}
             data-test-id="permanent-delete-cancel"

@@ -44,10 +44,6 @@ export function CalendarDeleteDialog({
         data-test-id="calendar-delete-dialog"
         className="sm:max-w-sm"
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle>Excluir agendamento</DialogTitle>
           <DialogDescription>
@@ -60,6 +56,7 @@ export function CalendarDeleteDialog({
         <DialogFooter className="mt-2 flex gap-2 sm:justify-end">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               type="button"
               variant="outline"
               className="cursor-pointer"

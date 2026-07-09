@@ -61,10 +61,6 @@ export function GroupRowDeleteDialog({
         data-slot="group-row-delete-dialog"
         data-test-id="group-row-delete-dialog"
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle>Remover item</DialogTitle>
           <DialogDescription>
@@ -75,6 +71,7 @@ export function GroupRowDeleteDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               type="button"
               variant="outline"
               disabled={_delete.status === 'pending'}

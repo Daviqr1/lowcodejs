@@ -61,6 +61,7 @@ type BulkEditFieldContentProps = {
   selectedIds: Array<string>;
   onSuccess: () => void;
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 type BulkEditFieldDialogProps = Merge<
@@ -90,16 +91,13 @@ export function BulkEditFieldDialog({
         ref={ref}
       />
       <DialogContent className="py-4 px-6">
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <BulkEditFieldContent
           slug={slug}
           table={table}
           selectedIds={selectedIds}
           onSuccess={onSuccess}
           close={close}
+          closeRef={closeRef}
         />
       </DialogContent>
     </Dialog>
@@ -112,6 +110,7 @@ function BulkEditFieldContent({
   selectedIds,
   onSuccess,
   close,
+  closeRef,
 }: BulkEditFieldContentProps): React.JSX.Element {
   const editableFields = React.useMemo(
     () => getBulkEditableFields(table),
@@ -181,6 +180,7 @@ function BulkEditFieldContent({
               slug={slug}
               field={selectedField}
               ids={selectedIds}
+              closeRef={closeRef}
               onDone={() => {
                 close();
                 onSuccess();
@@ -205,6 +205,7 @@ type BulkEditValueFormProps = {
   field: IField;
   ids: Array<string>;
   onDone: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 function BulkEditValueForm({
@@ -212,6 +213,7 @@ function BulkEditValueForm({
   field,
   ids,
   onDone,
+  closeRef,
 }: BulkEditValueFormProps): React.JSX.Element {
   const form = useAppForm({
     defaultValues: buildCreateRowDefaultValues([field]),
@@ -314,6 +316,7 @@ function BulkEditValueForm({
       <DialogFooter className="inline-flex w-full gap-2 justify-end">
         <DialogClose asChild>
           <Button
+            ref={closeRef}
             type="button"
             variant="outline"
           >

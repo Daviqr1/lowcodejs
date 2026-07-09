@@ -74,11 +74,12 @@ type CalendarEventContentProps = {
   onDelete?: (onDone: () => void) => void;
   onOpenRecord?: (row: IRow) => void;
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
 type CalendarEventDialogProps = Merge<
   Omit<React.ComponentProps<typeof DialogTrigger>, 'onSubmit'>,
-  Omit<CalendarEventContentProps, 'close'>
+  Omit<CalendarEventContentProps, 'close' | 'closeRef'>
 >;
 
 function getColorOptions(fields: CalendarResolvedFields): Array<IDropdown> {
@@ -195,10 +196,6 @@ export function CalendarEventDialog({
         data-test-id="calendar-event-dialog"
         className="sm:max-w-xl"
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <CalendarEventDialogBody
           mode={mode}
           fields={fields}
@@ -212,6 +209,7 @@ export function CalendarEventDialog({
           onDelete={onDelete}
           onOpenRecord={onOpenRecord}
           close={close}
+          closeRef={closeRef}
         />
       </DialogContent>
     </Dialog>
@@ -231,6 +229,7 @@ function CalendarEventDialogBody({
   onDelete,
   onOpenRecord,
   close,
+  closeRef,
 }: CalendarEventContentProps): React.JSX.Element {
   const form = useAppForm({
     defaultValues: getInitialValues({
@@ -696,6 +695,7 @@ function CalendarEventDialogBody({
         <div className="flex gap-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               type="button"
               variant="outline"
               className="cursor-pointer"

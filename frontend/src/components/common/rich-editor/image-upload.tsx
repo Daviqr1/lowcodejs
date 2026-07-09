@@ -4,11 +4,13 @@ import type * as React from 'react';
 
 import { uploadFile } from './upload';
 
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -39,10 +41,6 @@ export function ImageUpload({
         data-test-id="rich-editor-image-upload"
         className="sm:max-w-md"
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle>Inserir imagem</DialogTitle>
           <DialogDescription className="sr-only">
@@ -53,6 +51,17 @@ export function ImageUpload({
           onUpload={onUpload}
           close={close}
         />
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+            >
+              Fechar
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

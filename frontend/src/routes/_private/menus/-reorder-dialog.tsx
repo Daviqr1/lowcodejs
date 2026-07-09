@@ -396,11 +396,10 @@ export function MenuReorderDialog({
         ref={ref}
       />
       <DialogContent className="max-w-4xl">
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
+        <MenuReorderContent
+          close={close}
+          closeRef={closeRef}
         />
-        <MenuReorderContent close={close} />
       </DialogContent>
     </Dialog>
   );
@@ -408,8 +407,10 @@ export function MenuReorderDialog({
 
 function MenuReorderContent({
   close,
+  closeRef,
 }: {
   close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
 }): React.JSX.Element {
   const { data: menus, status } = useMenuReadList({ enabled: true });
   const [scope, setScope] = React.useState<ReorderScope>('root');
@@ -643,6 +644,7 @@ function MenuReorderContent({
         </Button>
         <DialogClose asChild>
           <Button
+            ref={closeRef}
             type="button"
             variant="outline"
             disabled={reorder.isPending}
