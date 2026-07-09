@@ -28,10 +28,13 @@ import {
 import { Field, FieldError } from '@/components/ui/field';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
@@ -45,6 +48,7 @@ import { useRelationshipRowsReadPaginatedInfinite } from '@/hooks/tanstack-query
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useReadTableRow } from '@/hooks/tanstack-query/use-table-row-read';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
@@ -79,12 +83,13 @@ type TableRowRelationshipFieldProps = {
   rowId?: string;
 };
 
-type RelatedRowCreateDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  table: ITable;
-  onCreated: (row: IRow) => void;
-};
+type RelatedRowCreateDialogProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  {
+    table: ITable;
+    onCreated: (row: IRow) => void;
+  }
+>;
 
 function getFormFields(table: ITable): Array<IField> {
   const order = table.fieldOrderForm;
@@ -104,8 +109,11 @@ function getFormFields(table: ITable): Array<IField> {
 function RelatedRowCreateDialogContent({
   table,
   onCreated,
-  onOpenChange,
-}: Omit<RelatedRowCreateDialogProps, 'open'>): React.JSX.Element {
+}: {
+  table: ITable;
+  onCreated: (row: IRow) => void;
+}): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
   const isUploading = useIsUploading();
   const fields = React.useMemo(() => getFormFields(table), [table]);
   const conditionalConfig = useConditionalFieldsRuntimeConfig(table.slug, true);
@@ -117,7 +125,7 @@ function RelatedRowCreateDialogContent({
       });
       onCreated(row);
       form.reset();
-      onOpenChange(false);
+      close();
     },
     onError(error: unknown): void {
       handleApiError(error, {
@@ -159,6 +167,9 @@ function RelatedRowCreateDialogContent({
     <React.Fragment>
       <SheetHeader>
         <SheetTitle>Novo registro em {table.name}</SheetTitle>
+        <SheetDescription className="sr-only">
+          Preencha os campos para criar um novo registro em {table.name}
+        </SheetDescription>
       </SheetHeader>
       <form
         className="flex-1 overflow-auto px-4"
@@ -288,34 +299,42 @@ function RelatedRowCreateDialogContent({
           {create.status === 'pending' && <Spinner />}
           Salvar
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={create.status === 'pending'}
-          onClick={() => onOpenChange(false)}
-        >
-          Cancelar
-        </Button>
+        <SheetClose asChild>
+          <Button
+            ref={closeRef}
+            type="button"
+            variant="outline"
+            disabled={create.status === 'pending'}
+          >
+            Cancelar
+          </Button>
+        </SheetClose>
       </SheetFooter>
     </React.Fragment>
   );
 }
 
-export function RelatedRowCreateDialog(
-  props: RelatedRowCreateDialogProps,
-): React.JSX.Element {
+export function RelatedRowCreateDialog({
+  ref,
+  table,
+  onCreated,
+  ...rest
+}: RelatedRowCreateDialogProps): React.JSX.Element {
   return (
-    <Sheet
-      modal={false}
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Sheet modal={false}>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
       <SheetContent
         side="right"
         className="w-full gap-0 p-0 sm:max-w-2xl [&>button]:hidden"
       >
         <UploadingProvider>
-          <RelatedRowCreateDialogContent {...props} />
+          <RelatedRowCreateDialogContent
+            table={table}
+            onCreated={onCreated}
+          />
         </UploadingProvider>
       </SheetContent>
     </Sheet>
@@ -381,7 +400,7 @@ function CascadeRelationshipField({
   const [selectedCache, setSelectedCache] = React.useState<Map<string, IRow>>(
     () => new Map(),
   );
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const createTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const previousParentValueRef = React.useRef<string | null>(null);
 
   const selectedChildId = (formField.state.value ?? [])[0]?.value ?? '';
@@ -545,12 +564,11 @@ function CascadeRelationshipField({
           onPointerDown={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setIsCreateDialogOpen(true);
+            createTriggerRef.current?.click();
           }}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setIsCreateDialogOpen(true);
           }}
         >
           <PlusIcon className="size-4" />
@@ -564,8 +582,7 @@ function CascadeRelationshipField({
   if (canCreateRelatedRecord && relatedTable.data) {
     createDialog = (
       <RelatedRowCreateDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        ref={createTriggerRef}
         table={relatedTable.data}
         onCreated={handleCreatedRelatedRow}
       />
@@ -673,7 +690,7 @@ function DefaultRelationshipField({
   const [selectedCache, setSelectedCache] = React.useState<Map<string, IRow>>(
     () => new Map(),
   );
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const createTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const relConfig = field.relationship;
   const isMultiple = field.multiple;
@@ -877,12 +894,11 @@ function DefaultRelationshipField({
           onPointerDown={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setIsCreateDialogOpen(true);
+            createTriggerRef.current?.click();
           }}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setIsCreateDialogOpen(true);
           }}
         >
           <PlusIcon className="size-4" />
@@ -896,8 +912,7 @@ function DefaultRelationshipField({
   if (canCreateRelatedRecord && relatedTable.data) {
     createDialog = (
       <RelatedRowCreateDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        ref={createTriggerRef}
         table={relatedTable.data}
         onCreated={handleCreatedRelatedRow}
       />
