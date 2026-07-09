@@ -591,10 +591,10 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
           itemsCount={1}
           isPending={groupDelete.isPending}
           onConfirm={(close) => {
-            void groupDelete
-              .mutateAsync({ _id: singleDeleteTarget.group._id })
-              .then(close)
-              .catch(() => {});
+            groupDelete.mutateAsync(
+              { _id: singleDeleteTarget.group._id },
+              { onSuccess: close },
+            );
           }}
           testId="delete-group-dialog"
         />
@@ -629,10 +629,7 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
         onConfirm={(close) => {
-          void bulkDelete
-            .mutateAsync({ ids: selectedIds })
-            .then(close)
-            .catch(() => {});
+          bulkDelete.mutateAsync({ ids: selectedIds }, { onSuccess: close });
         }}
         testId="bulk-delete-groups-dialog"
       />

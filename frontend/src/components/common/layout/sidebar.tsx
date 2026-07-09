@@ -525,10 +525,7 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
         description="Você será desconectado e voltará para a tela de login. Deseja continuar?"
         isPending={signOut.status === 'pending'}
         onConfirm={(close) => {
-          void signOut
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          signOut.mutateAsync(undefined, { onSuccess: close });
         }}
         testId="sidebar-logout-confirm-dialog"
         confirmTestId="sidebar-logout-confirm"

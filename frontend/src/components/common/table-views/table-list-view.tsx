@@ -185,10 +185,7 @@ function RowActionsCell({
         confirmLabel="Confirmar"
         isPending={trashMutation.status === 'pending'}
         onConfirm={(close) => {
-          void trashMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          trashMutation.mutateAsync(undefined, { onSuccess: close });
         }}
       />
 
@@ -199,10 +196,7 @@ function RowActionsCell({
         confirmLabel="Confirmar"
         isPending={restoreMutation.status === 'pending'}
         onConfirm={(close) => {
-          void restoreMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          restoreMutation.mutateAsync(undefined, { onSuccess: close });
         }}
       />
 
@@ -213,10 +207,7 @@ function RowActionsCell({
         itemsCount={1}
         isPending={deleteMutation.isPending}
         onConfirm={(close) => {
-          void deleteMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          deleteMutation.mutateAsync(undefined, { onSuccess: close });
         }}
         testId="delete-row-singular-dialog"
       />

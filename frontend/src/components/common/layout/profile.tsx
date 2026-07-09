@@ -320,10 +320,9 @@ export function Profile(): React.JSX.Element {
           confirmLabel={LOGOUT_COPY[logoutTarget.mode].confirmLabel}
           isPending={signOut.status === 'pending'}
           onConfirm={(close) => {
-            void signOut
-              .mutateAsync(LOGOUT_PAYLOAD[logoutTarget.mode])
-              .then(close)
-              .catch(() => {});
+            signOut.mutateAsync(LOGOUT_PAYLOAD[logoutTarget.mode], {
+              onSuccess: close,
+            });
           }}
           testId="profile-logout-confirm-dialog"
           confirmTestId="profile-logout-confirm"

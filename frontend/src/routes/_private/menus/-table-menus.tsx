@@ -822,10 +822,10 @@ export function TableMenus({
           itemsCount={1}
           isPending={singleDelete.isPending}
           onConfirm={(close) => {
-            void singleDelete
-              .mutateAsync({ ids: [singleDeleteTarget.menu._id] })
-              .then(close)
-              .catch(() => {});
+            singleDelete.mutateAsync(
+              { ids: [singleDeleteTarget.menu._id] },
+              { onSuccess: close },
+            );
           }}
           testId="delete-menu-dialog"
         />
@@ -860,10 +860,7 @@ export function TableMenus({
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
         onConfirm={(close) => {
-          void bulkDelete
-            .mutateAsync({ ids: selectedIds })
-            .then(close)
-            .catch(() => {});
+          bulkDelete.mutateAsync({ ids: selectedIds }, { onSuccess: close });
         }}
         testId="bulk-delete-menus-dialog"
       />

@@ -360,8 +360,8 @@ export function TableCalendarView({
               data: buildCalendarPayload(resolvedFields, payload),
             });
           }}
-          onDelete={async () => {
-            await deleteRow.mutateAsync(editingEvent.rowId);
+          onDelete={(onDone) => {
+            deleteRow.mutate(editingEvent.rowId, { onSuccess: onDone });
           }}
           onOpenRecord={(row) => {
             router.navigate({

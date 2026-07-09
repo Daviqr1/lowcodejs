@@ -49,10 +49,7 @@ export function RowEmptyTrashDialog({
       itemsCount={0}
       isPending={emptyTrash.isPending}
       onConfirm={(close) => {
-        void emptyTrash
-          .mutateAsync()
-          .then(close)
-          .catch(() => {});
+        emptyTrash.mutateAsync(undefined, { onSuccess: close });
       }}
       testId="empty-trash-rows-dialog"
     >

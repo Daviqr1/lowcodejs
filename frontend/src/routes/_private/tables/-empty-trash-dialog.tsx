@@ -43,10 +43,7 @@ export function TableEmptyTrashDialog(): React.JSX.Element {
       itemsCount={0}
       isPending={emptyTrash.isPending}
       onConfirm={(close) => {
-        void emptyTrash
-          .mutateAsync()
-          .then(close)
-          .catch(() => {});
+        emptyTrash.mutateAsync(undefined, { onSuccess: close });
       }}
       testId="empty-trash-tables-dialog"
     >

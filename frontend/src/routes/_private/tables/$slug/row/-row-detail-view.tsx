@@ -460,10 +460,7 @@ export function RowDetailView({
         confirmLabel="Confirmar"
         isPending={trashMutation.status === 'pending'}
         onConfirm={(close): void => {
-          void trashMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          trashMutation.mutateAsync(undefined, { onSuccess: close });
         }}
       />
 
@@ -474,10 +471,7 @@ export function RowDetailView({
         confirmLabel="Confirmar"
         isPending={restoreMutation.status === 'pending'}
         onConfirm={(close): void => {
-          void restoreMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          restoreMutation.mutateAsync(undefined, { onSuccess: close });
         }}
       />
 
@@ -488,10 +482,7 @@ export function RowDetailView({
         itemsCount={1}
         isPending={deleteMutation.isPending}
         onConfirm={(close): void => {
-          void deleteMutation
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          deleteMutation.mutateAsync(undefined, { onSuccess: close });
         }}
         testId="delete-row-dialog"
       />

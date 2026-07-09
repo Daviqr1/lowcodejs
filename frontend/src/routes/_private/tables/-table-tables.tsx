@@ -192,10 +192,7 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
         itemsCount={1}
         isPending={hardDelete.isPending}
         onConfirm={(close) => {
-          void hardDelete
-            .mutateAsync()
-            .then(close)
-            .catch(() => {});
+          hardDelete.mutateAsync(undefined, { onSuccess: close });
         }}
         testId="delete-table-dialog"
       />
@@ -539,10 +536,7 @@ export function TableTables({
                   confirmLabel="Confirmar"
                   isPending={bulkRestore.status === 'pending'}
                   onConfirm={(close) => {
-                    void bulkRestore
-                      .mutateAsync(selectedIds)
-                      .then(close)
-                      .catch(() => {});
+                    bulkRestore.mutateAsync(selectedIds, { onSuccess: close });
                   }}
                 >
                   <Button
@@ -562,10 +556,7 @@ export function TableTables({
                   itemsCount={selectedCount}
                   isPending={bulkDelete.status === 'pending'}
                   onConfirm={(close) => {
-                    void bulkDelete
-                      .mutateAsync(selectedSlugs)
-                      .then(close)
-                      .catch(() => {});
+                    bulkDelete.mutateAsync(selectedSlugs, { onSuccess: close });
                   }}
                   testId="bulk-delete-tables-dialog"
                 >
@@ -591,10 +582,7 @@ export function TableTables({
               confirmLabel="Confirmar"
               isPending={bulkTrash.status === 'pending'}
               onConfirm={(close) => {
-                void bulkTrash
-                  .mutateAsync(selectedIds)
-                  .then(close)
-                  .catch(() => {});
+                bulkTrash.mutateAsync(selectedIds, { onSuccess: close });
               }}
             >
               <Button

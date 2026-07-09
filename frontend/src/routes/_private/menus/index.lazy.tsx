@@ -134,10 +134,7 @@ function RouteComponent(): React.JSX.Element {
               itemsCount={data.meta?.total ?? 0}
               isPending={emptyTrash.isPending}
               onConfirm={(close) => {
-                void emptyTrash
-                  .mutateAsync()
-                  .then(close)
-                  .catch(() => {});
+                emptyTrash.mutateAsync(undefined, { onSuccess: close });
               }}
               testId="empty-trash-menus-dialog"
             >

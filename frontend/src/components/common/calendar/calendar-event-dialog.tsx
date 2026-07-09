@@ -71,7 +71,7 @@ type CalendarEventContentProps = {
     colorOptionId: string | null;
     extraValues: Record<string, unknown>;
   }) => Promise<void> | void;
-  onDelete?: () => Promise<void> | void;
+  onDelete?: (onDone: () => void) => void;
   onOpenRecord?: (row: IRow) => void;
   close: () => void;
 };
@@ -675,12 +675,10 @@ function CalendarEventDialogBody({
               title={event?.title}
               isPending={isPending}
               onConfirm={(closeConfirm) => {
-                Promise.resolve(onDelete())
-                  .then(() => {
-                    closeConfirm();
-                    close();
-                  })
-                  .catch(() => {});
+                onDelete(() => {
+                  closeConfirm();
+                  close();
+                });
               }}
             >
               <Button

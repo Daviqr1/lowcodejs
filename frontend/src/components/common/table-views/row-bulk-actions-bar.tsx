@@ -124,10 +124,7 @@ export function RowBulkActionsBar({
             isPending={bulkRestore.status === 'pending'}
             confirmLabel="Confirmar"
             onConfirm={(close) => {
-              void bulkRestore
-                .mutateAsync(selectedIds)
-                .then(close)
-                .catch(() => {});
+              bulkRestore.mutateAsync(selectedIds, { onSuccess: close });
             }}
           >
             <Button
@@ -146,10 +143,7 @@ export function RowBulkActionsBar({
               itemsCount={selectedCount}
               isPending={bulkDelete.status === 'pending'}
               onConfirm={(close) => {
-                void bulkDelete
-                  .mutateAsync(selectedIds)
-                  .then(close)
-                  .catch(() => {});
+                bulkDelete.mutateAsync(selectedIds, { onSuccess: close });
               }}
               testId="bulk-delete-rows-dialog"
             >
@@ -193,10 +187,7 @@ export function RowBulkActionsBar({
             isPending={bulkTrash.status === 'pending'}
             confirmLabel="Confirmar"
             onConfirm={(close) => {
-              void bulkTrash
-                .mutateAsync(selectedIds)
-                .then(close)
-                .catch(() => {});
+              bulkTrash.mutateAsync(selectedIds, { onSuccess: close });
             }}
           >
             <Button
