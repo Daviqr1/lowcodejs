@@ -24,7 +24,7 @@ import {
   PlusIcon,
   SettingsIcon,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { DocumentSidebarAddDialog } from './document-sidebar-add-dialog';
@@ -42,18 +42,10 @@ import {
 } from './document-sidebar-helpers';
 import { DocumentSidebarTree } from './document-sidebar-tree';
 
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
@@ -89,8 +81,12 @@ export function DocumentSidebar({
   );
   const labelMap = useMemo(() => buildLabelMap(treeNodes), [treeNodes]);
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const [addParentId, setAddParentId] = useState<string | null>(null);
+  const [addNonce, setAddNonce] = useState(0);
+  const [deleteNonce, setDeleteNonce] = useState(0);
+  const addTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const addDialog = useDismissableDialog();
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
   const [dragEnabledId, setDragEnabledId] = useState<string | null>(null);
@@ -177,7 +173,7 @@ export function DocumentSidebar({
         description: 'A seção foi criada com sucesso',
       });
 
-      setAddModalOpen(false);
+      addDialog.close();
     },
     onError(error) {
       handleApiError(error, {
@@ -203,15 +199,18 @@ export function DocumentSidebar({
   });
 
   useEffect(() => {
-    if (addModalOpen) return;
-    addCategoryForm.reset({ label: '' });
-  }, [addCategoryForm, addModalOpen]);
+    if (addNonce > 0) addTriggerRef.current?.click();
+  }, [addNonce]);
+
+  useEffect(() => {
+    if (deleteNonce > 0) deleteTriggerRef.current?.click();
+  }, [deleteNonce]);
 
   const handleOpenAdd = (parentId: string | null): void => {
     if (!canManageCategory) return;
     setAddParentId(parentId);
     addCategoryForm.reset({ label: '' });
-    setAddModalOpen(true);
+    setAddNonce((value) => value + 1);
   };
 
   const updateCategoryTree = useMutation({
@@ -276,9 +275,10 @@ export function DocumentSidebar({
   const handleRequestDelete = (id: string, label: string): void => {
     if (!canManageCategory) return;
     setDeleteTarget({ id, label });
+    setDeleteNonce((value) => value + 1);
   };
 
-  const handleConfirmDelete = async (): Promise<void> => {
+  const handleConfirmDelete = async (close: () => void): Promise<void> => {
     if (!deleteTarget) return;
     const targetId = deleteTarget.id;
 
@@ -287,7 +287,7 @@ export function DocumentSidebar({
     const previous = treeNodes;
     const { updated, removed } = findNodeAndRemove(treeNodes, targetId);
     if (removed) setTreeNodes(updated);
-    setDeleteTarget(null);
+    close();
 
     try {
       await deleteCategory.mutateAsync(targetId);
@@ -605,62 +605,28 @@ export function DocumentSidebar({
       </aside>
 
       <DocumentSidebarAddDialog
-        open={addModalOpen}
-        onOpenChange={(open) => {
-          setAddModalOpen(open);
-          if (!open) {
-            addCategoryForm.reset({ label: '' });
-            setAddParentId(null);
-          }
-        }}
+        key={addParentId ?? 'root'}
+        ref={addTriggerRef}
         parentLabel={parentLabel}
         form={addCategoryForm}
-        onCancel={() => setAddModalOpen(false)}
+        closeRef={addDialog.closeRef}
         isPending={addCategory.status === 'pending'}
       />
 
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <DialogContent
-          className="sm:max-w-md"
-          data-test-id="document-delete-section-dialog"
-        >
-          <DialogHeader>
-            <DialogTitle>Excluir seção</DialogTitle>
-            <DialogDescription>
-              {deleteTarget &&
-                `A seção "${deleteTarget.label}" e suas subseções serão excluídas. Os artigos vinculados não serão apagados, mas perderão a categoria.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={deleteCategory.status === 'pending'}
-              onClick={() => setDeleteTarget(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={deleteCategory.status === 'pending'}
-              onClick={() => {
-                void handleConfirmDelete();
-              }}
-            >
-              {deleteCategory.status === 'pending' && <Spinner />}
-              <span>Excluir</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        key={deleteNonce}
+        ref={deleteTriggerRef}
+        title="Excluir seção"
+        description={
+          (deleteTarget &&
+            `A seção "${deleteTarget.label}" e suas subseções serão excluídas. Os artigos vinculados não serão apagados, mas perderão a categoria.`) ||
+          ''
+        }
+        isPending={deleteCategory.status === 'pending'}
+        confirmLabel="Excluir"
+        testId="document-delete-section-dialog"
+        onConfirm={(close) => void handleConfirmDelete(close)}
+      />
     </div>
   );
 }
