@@ -64,10 +64,6 @@ export function ConfirmDialog({
         className="py-4 px-6"
         data-test-id={testId}
       >
-        <DialogClose
-          ref={closeRef}
-          className="hidden"
-        />
         <DialogHeader>
           <DialogTitle className="inline-flex items-center gap-2">
             {icon}
@@ -79,6 +75,7 @@ export function ConfirmDialog({
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               variant="outline"
               disabled={isPending}
               data-test-id={cancelTestId}
