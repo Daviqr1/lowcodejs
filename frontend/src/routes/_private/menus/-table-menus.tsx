@@ -33,6 +33,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -50,11 +51,12 @@ import { useMenuBulkRestore } from '@/hooks/tanstack-query/use-menu-bulk-restore
 import { useMenuBulkTrash } from '@/hooks/tanstack-query/use-menu-bulk-trash';
 import { useUpdateMenu } from '@/hooks/tanstack-query/use-menu-update';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { API } from '@/lib/api';
 import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { formatDate } from '@/lib/format-date';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IMenu } from '@/lib/interfaces';
+import type { IMenu, Merge } from '@/lib/interfaces';
 import { isMaster, isPrivileged } from '@/lib/permission';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authentication';
@@ -177,50 +179,67 @@ function getCheckboxState(
   return false;
 }
 
-type ConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  testId?: string;
-};
+type ConfirmDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+    testId?: string;
+  }
+>;
 
-function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element {
+function ConfirmDialog({
+  ref,
+  title,
+  description,
+  confirmLabel,
+  isPending,
+  onConfirm,
+  testId,
+  ...rest
+}: ConfirmDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="py-4 px-6"
-        data-test-id={props.testId}
+        data-test-id={testId}
       >
+        <DialogClose
+          ref={closeRef}
+          className="hidden"
+        />
         <DialogHeader>
-          <DialogTitle>{props.title}</DialogTitle>
-          <DialogDescription>{props.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
               variant="outline"
-              disabled={props.isPending}
+              disabled={isPending}
             >
               Cancelar
             </Button>
           </DialogClose>
           <Button
             type="button"
-            disabled={props.isPending}
-            onClick={props.onConfirm}
+            disabled={isPending}
+            onClick={() => {
+              if (isPending) return;
+              onConfirm(close);
+            }}
           >
-            {props.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            {!props.isPending && <span>{props.confirmLabel}</span>}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <span>{confirmLabel}</span>}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -643,8 +662,8 @@ export function TableMenus({
   const canTrash = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
-  const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
+  const bulkTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
   const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
@@ -695,7 +714,6 @@ export function TableMenus({
 
   const bulkTrash = useMenuBulkTrash({
     onSuccess(result) {
-      setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
       let message = result.modified
         .toString()
@@ -712,7 +730,6 @@ export function TableMenus({
 
   const bulkRestore = useMenuBulkRestore({
     onSuccess(result) {
-      setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
       let message = result.modified.toString().concat(' menus restaurados!');
       if (result.modified === 1) message = '1 menu restaurado!';
@@ -805,8 +822,8 @@ export function TableMenus({
           isTrashView={isTrashView}
           canDelete={master}
           onClear={() => table.resetRowSelection()}
-          onTrash={() => setBulkTrashOpen(true)}
-          onRestore={() => setBulkRestoreOpen(true)}
+          onTrash={() => bulkTrashTriggerRef.current?.click()}
+          onRestore={() => bulkRestoreTriggerRef.current?.click()}
           onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
@@ -832,24 +849,26 @@ export function TableMenus({
       )}
 
       <ConfirmDialog
-        open={bulkTrashOpen}
-        onOpenChange={setBulkTrashOpen}
+        ref={bulkTrashTriggerRef}
         title="Enviar menus para a lixeira"
         description="Os menus selecionados serão enviados para a lixeira."
         confirmLabel="Enviar para lixeira"
         isPending={bulkTrash.isPending}
-        onConfirm={() => bulkTrash.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkTrash.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-trash-menus-dialog"
       />
 
       <ConfirmDialog
-        open={bulkRestoreOpen}
-        onOpenChange={setBulkRestoreOpen}
+        ref={bulkRestoreTriggerRef}
         title="Restaurar menus da lixeira"
         description="Os menus selecionados serão restaurados da lixeira."
         confirmLabel="Restaurar"
         isPending={bulkRestore.isPending}
-        onConfirm={() => bulkRestore.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkRestore.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-restore-menus-dialog"
       />
 
