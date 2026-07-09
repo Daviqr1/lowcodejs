@@ -22,17 +22,20 @@ import {
 } from '@/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
+import type { Merge } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
 
@@ -241,7 +244,8 @@ export function ImportTableSection(): React.JSX.Element {
   // que mantém a barra avançando suavemente entre eventos.
   const jobIdRef = React.useRef<string | null>(null);
   const [activeJobId, setActiveJobId] = React.useState<string | null>(null);
-  const [progressOpen, setProgressOpen] = React.useState(false);
+  const [progressNonce, setProgressNonce] = React.useState(0);
+  const progressTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [elapsed, setElapsed] = React.useState(0);
   const ws = useTableImportSocket(baseUrl, activeJobId);
 
@@ -432,7 +436,6 @@ export function ImportTableSection(): React.JSX.Element {
   }
 
   function closeProgress(): void {
-    setProgressOpen(false);
     setActiveJobId(null);
     jobIdRef.current = null;
     setElapsed(0);
@@ -444,18 +447,22 @@ export function ImportTableSection(): React.JSX.Element {
     setConflicts(null);
     setActiveJobId(id); // conecta o socket (progresso real de registros)
     setElapsed(0);
-    setProgressOpen(true);
+    setProgressNonce((value) => value + 1);
     importTable.mutate(); // dispara já — a barra começa a encher no clique
   }
+
+  React.useEffect(() => {
+    if (progressNonce > 0) progressTriggerRef.current?.click();
+  }, [progressNonce]);
 
   // Cronômetro do progresso: alimenta o piso de tempo (`timeCreep`) enquanto a
   // importação está em andamento. Para quando ela conclui ou falha.
   React.useEffect(() => {
-    if (!progressOpen || importTable.isSuccess || importTable.isError) return;
+    if (!activeJobId || importTable.isSuccess || importTable.isError) return;
     const startedAt = Date.now();
     const interval = setInterval(() => setElapsed(Date.now() - startedAt), 200);
     return (): void => clearInterval(interval);
-  }, [progressOpen, importTable.isSuccess, importTable.isError]);
+  }, [activeJobId, importTable.isSuccess, importTable.isError]);
 
   const isPending = importTable.status === 'pending';
 
@@ -738,10 +745,9 @@ export function ImportTableSection(): React.JSX.Element {
       </Card>
 
       <ImportProgressModal
-        open={progressOpen}
-        onOpenChange={(next) => {
-          if (!next) closeProgress();
-        }}
+        key={progressNonce}
+        ref={progressTriggerRef}
+        onClose={closeProgress}
         elapsed={elapsed}
         progress={ws.progress}
         wsError={ws.error?.message ?? null}
@@ -752,36 +758,39 @@ export function ImportTableSection(): React.JSX.Element {
   );
 }
 
-type ImportProgressModalProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Tempo decorrido (ms) desde o início — alimenta o piso da barra. */
-  elapsed: number;
-  progress: {
-    phase: TableImportPhase;
-    processed: number;
-    total: number;
-    current_table: string | null;
-    failed: number;
-  } | null;
-  wsError: string | null;
-  result: {
-    importedFields: number;
-    importedRows: number;
-    importedMenus: number;
-    tables: Array<{ slug: string; name: string }>;
-  } | null;
-  hardError: boolean;
-};
+type ImportProgressModalProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    onClose: () => void;
+    /** Tempo decorrido (ms) desde o início — alimenta o piso da barra. */
+    elapsed: number;
+    progress: {
+      phase: TableImportPhase;
+      processed: number;
+      total: number;
+      current_table: string | null;
+      failed: number;
+    } | null;
+    wsError: string | null;
+    result: {
+      importedFields: number;
+      importedRows: number;
+      importedMenus: number;
+      tables: Array<{ slug: string; name: string }>;
+    } | null;
+    hardError: boolean;
+  }
+>;
 
 function ImportProgressModal({
-  open,
-  onOpenChange,
+  ref,
+  onClose,
   elapsed,
   progress,
   wsError,
   result,
   hardError,
+  ...rest
 }: ImportProgressModalProps): React.JSX.Element {
   const failed = hardError || wsError !== null;
   const done = !failed && result !== null;
@@ -805,11 +814,16 @@ function ImportProgressModal({
     !done && !failed && progress != null && progress.total > 0;
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="max-w-md">
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent
+        className="max-w-md"
+        onEscapeKeyDown={() => onClose()}
+        onPointerDownOutside={() => onClose()}
+      >
         <DialogHeader>
           <DialogTitle>
             {done && 'Importação concluída'}
@@ -885,13 +899,15 @@ function ImportProgressModal({
         )}
 
         <DialogFooter>
-          <Button
-            variant={dismissVariant}
-            onClick={() => onOpenChange(false)}
-          >
-            {(done || failed) && 'Fechar'}
-            {!(done || failed) && 'Ocultar'}
-          </Button>
+          <DialogClose asChild>
+            <Button
+              variant={dismissVariant}
+              onClick={onClose}
+            >
+              {(done || failed) && 'Fechar'}
+              {!(done || failed) && 'Ocultar'}
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
