@@ -44,11 +44,13 @@ import {
 } from '@/components/ui/input-group';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
@@ -63,13 +65,14 @@ import {
 import { extensionListOptions } from '@/hooks/tanstack-query/_query-options';
 import { useExtensionConfigureTableScope } from '@/hooks/tanstack-query/use-extension-configure-table-scope';
 import { useExtensionToggle } from '@/hooks/tanstack-query/use-extension-toggle';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import {
   EXTENSION_TYPE_LABEL,
   E_AREA_CAPABILITY,
   E_EXTENSION_TYPE,
 } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IExtension } from '@/lib/interfaces';
+import type { IExtension, Merge } from '@/lib/interfaces';
 import { hasAreaCapability } from '@/lib/menu/menu-access-permissions';
 import { useAuthStore } from '@/stores/authentication';
 
@@ -390,17 +393,19 @@ function ExtensionTableRow({
   );
 }
 
-type TableScopeSheetProps = {
-  extension: IExtension | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+type TableScopeSheetProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  {
+    extension: IExtension | null;
+  }
+>;
 
 function TableScopeSheet({
+  ref,
   extension,
-  open,
-  onOpenChange,
+  ...rest
 }: TableScopeSheetProps): React.JSX.Element | null {
+  const { closeRef, close } = useDismissableDialog();
   const [mode, setMode] = React.useState<'all' | 'specific'>('all');
   const [tableIds, setTableIds] = React.useState<Array<string>>([]);
 
@@ -415,7 +420,7 @@ function TableScopeSheet({
       toast.success('Escopo atualizado', {
         description: 'O plugin foi reconfigurado.',
       });
-      onOpenChange(false);
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao configurar escopo' });
@@ -428,10 +433,11 @@ function TableScopeSheet({
   const canSave = mode === 'all' || tableIds.length > 0;
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Sheet>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
       <SheetContent
         className="sm:max-w-md"
         onInteractOutside={(e) => {
@@ -490,14 +496,16 @@ function TableScopeSheet({
         </div>
 
         <SheetFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
-          >
-            Cancelar
-          </Button>
+          <SheetClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+          </SheetClose>
           <Button
             type="button"
             disabled={!canSave || isPending}
@@ -552,14 +560,24 @@ function RouteComponent(): React.JSX.Element {
   const [scopeExtension, setScopeExtension] = React.useState<IExtension | null>(
     null,
   );
-  const [scopeOpen, setScopeOpen] = React.useState(false);
+  const [scopeNonce, setScopeNonce] = React.useState(0);
+  const scopeTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const [rowAccessExtension, setRowAccessExtension] =
     React.useState<IExtension | null>(null);
-  const [rowAccessOpen, setRowAccessOpen] = React.useState(false);
+  const [rowAccessNonce, setRowAccessNonce] = React.useState(0);
+  const rowAccessTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [rowAccessInitialTableId, setRowAccessInitialTableId] = React.useState<
     string | undefined
   >(undefined);
+
+  React.useEffect(() => {
+    if (scopeNonce > 0) scopeTriggerRef.current?.click();
+  }, [scopeNonce]);
+
+  React.useEffect(() => {
+    if (rowAccessNonce > 0) rowAccessTriggerRef.current?.click();
+  }, [rowAccessNonce]);
 
   const [search, setSearch] = React.useState('');
   const [typeFilter, setTypeFilter] = React.useState<Array<TypeFilter>>([]);
@@ -592,7 +610,7 @@ function RouteComponent(): React.JSX.Element {
   const handleConfigureTableScope = React.useCallback(
     (extension: IExtension) => {
       setScopeExtension(extension);
-      setScopeOpen(true);
+      setScopeNonce((value) => value + 1);
     },
     [],
   );
@@ -601,7 +619,7 @@ function RouteComponent(): React.JSX.Element {
     (extension: IExtension, initialTableId?: string) => {
       setRowAccessExtension(extension);
       setRowAccessInitialTableId(initialTableId);
-      setRowAccessOpen(true);
+      setRowAccessNonce((value) => value + 1);
     },
     [],
   );
@@ -834,18 +852,15 @@ function RouteComponent(): React.JSX.Element {
       </PageShell.Content>
 
       <TableScopeSheet
+        key={scopeNonce}
+        ref={scopeTriggerRef}
         extension={scopeExtension}
-        open={scopeOpen}
-        onOpenChange={setScopeOpen}
       />
 
       <RowAccessConfigSheet
+        key={rowAccessNonce}
+        ref={rowAccessTriggerRef}
         extension={rowAccessExtension}
-        open={rowAccessOpen}
-        onOpenChange={(o) => {
-          setRowAccessOpen(o);
-          if (!o) setRowAccessInitialTableId(undefined);
-        }}
         initialTableId={rowAccessInitialTableId}
       />
     </PageShell>

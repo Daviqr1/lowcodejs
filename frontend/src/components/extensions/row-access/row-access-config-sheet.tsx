@@ -21,25 +21,29 @@ import {
 } from '@/components/ui/select';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { groupAllOptions } from '@/hooks/tanstack-query/_query-options';
 import { useExtensionBulkConfigureTableSettings } from '@/hooks/tanstack-query/use-extension-bulk-configure-table-settings';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IExtension } from '@/lib/interfaces';
+import type { IExtension, Merge } from '@/lib/interfaces';
 
-type RowAccessConfigSheetProps = {
-  extension: IExtension | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Quando definido, pré-carrega a config dessa tabela ao abrir (modo "editar"). */
-  initialTableId?: string;
-};
+type RowAccessConfigSheetProps = Merge<
+  React.ComponentProps<typeof SheetTrigger>,
+  {
+    extension: IExtension | null;
+    /** Quando definido, pré-carrega a config dessa tabela ao abrir (modo "editar"). */
+    initialTableId?: string;
+  }
+>;
 
 function getResponseStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
@@ -82,11 +86,12 @@ function deriveInitialSettings(
 }
 
 export function RowAccessConfigSheet({
+  ref,
   extension,
-  open,
-  onOpenChange,
   initialTableId,
+  ...rest
 }: RowAccessConfigSheetProps): React.JSX.Element | null {
+  const { closeRef, close } = useDismissableDialog();
   const [tableIds, setTableIds] = React.useState<Array<string>>([]);
   const [settings, setSettings] = React.useState<RowAccessSettings>(
     DEFAULT_ROW_ACCESS_SETTINGS,
@@ -106,7 +111,7 @@ export function RowAccessConfigSheet({
       setTableIds(extension.tableScope?.tableIds ?? []);
     }
     setConflictError(null);
-  }, [extension, initialTableId, open]);
+  }, [extension, initialTableId]);
 
   const mutation = useExtensionBulkConfigureTableSettings({
     onSuccess(data) {
@@ -115,7 +120,7 @@ export function RowAccessConfigSheet({
         toast.success('Configuração salva', {
           description: `Aplicada em ${data.success.length} tabela(s).`,
         });
-        onOpenChange(false);
+        close();
       } else {
         toast.error('Algumas tabelas falharam', {
           description: `${data.success.length} sucessos, ${data.failed.length} falhas. Veja detalhes no console.`,
@@ -192,10 +197,11 @@ export function RowAccessConfigSheet({
   }
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Sheet>
+      <SheetTrigger
+        {...rest}
+        ref={ref}
+      />
       <SheetContent
         className="sm:max-w-2xl overflow-y-auto"
         // Impede que o Sheet capture cliques destinados aos portals filhos
@@ -368,14 +374,16 @@ export function RowAccessConfigSheet({
         </div>
 
         <SheetFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
-          >
-            Cancelar
-          </Button>
+          <SheetClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+          </SheetClose>
           <Button
             type="button"
             onClick={handleSave}
