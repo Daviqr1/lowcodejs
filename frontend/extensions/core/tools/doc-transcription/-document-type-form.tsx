@@ -4,10 +4,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -23,14 +26,17 @@ import type {
   IDocResponseField,
   IDocumentType,
 } from '@/hooks/tanstack-query/use-doc-transcription-config';
+import type { Merge } from '@/lib/interfaces';
 
-type Props = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initial?: IDocumentType | null;
-  onSave: (docType: IDocumentType) => void;
-  isSaving?: boolean;
-};
+type Props = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    initial?: IDocumentType | null;
+    onSave: (docType: IDocumentType) => void;
+    isSaving?: boolean;
+    closeRef?: React.RefObject<HTMLButtonElement | null>;
+  }
+>;
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-_]*$/;
 
@@ -53,31 +59,23 @@ const FIELD_TYPES: Array<{ value: IDocResponseField['type']; label: string }> =
   ];
 
 export function DocumentTypeForm({
-  open,
-  onOpenChange,
+  ref,
   initial,
   onSave,
   isSaving,
+  closeRef,
+  ...rest
 }: Props): React.JSX.Element {
-  const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [fields, setFields] = React.useState<Array<IDocResponseField>>([]);
+  const [name, setName] = React.useState(() => initial?.name ?? '');
+  const [description, setDescription] = React.useState(
+    () => initial?.description ?? '',
+  );
+  const [fields, setFields] = React.useState<Array<IDocResponseField>>(
+    () => initial?.responseFields ?? [],
+  );
 
   let id = generateSlug(name);
   if (initial) id = initial.id;
-
-  React.useEffect(() => {
-    if (!open) return;
-    if (initial) {
-      setName(initial.name);
-      setDescription(initial.description ?? '');
-      setFields(initial.responseFields);
-    } else {
-      setName('');
-      setDescription('');
-      setFields([]);
-    }
-  }, [open, initial]);
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -135,16 +133,20 @@ export function DocumentTypeForm({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initial && 'Editar tipo de documento'}
             {!initial && 'Novo tipo de documento'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure o tipo de documento e seus campos
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -265,14 +267,16 @@ export function DocumentTypeForm({
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancelar
-          </Button>
+          <DialogClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+              disabled={isSaving}
+            >
+              Cancelar
+            </Button>
+          </DialogClose>
           <Button
             type="button"
             disabled={!canSave}
