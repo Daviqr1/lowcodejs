@@ -236,7 +236,7 @@ function RouteComponent(): React.JSX.Element {
       handleApiError(error, { context: 'Erro ao exportar CSV' });
     },
   });
-  const [importCsvOpen, setImportCsvOpen] = React.useState(false);
+  const importCsvTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const router = useRouter();
   const sidebar = useSidebar();
@@ -328,7 +328,7 @@ function RouteComponent(): React.JSX.Element {
               <CsvDropdown
                 testId="table-rows-csv"
                 exportPending={exportCsv.isPending}
-                onImport={() => setImportCsvOpen(true)}
+                onImport={() => importCsvTriggerRef.current?.click()}
                 onExport={() =>
                   exportCsv.mutate({
                     slug,
@@ -342,9 +342,8 @@ function RouteComponent(): React.JSX.Element {
             )}
             {canImportCsv && (
               <ImportCsvDialog
+                ref={importCsvTriggerRef}
                 slug={slug}
-                open={importCsvOpen}
-                onOpenChange={setImportCsvOpen}
               />
             )}
             <TableConfigurationDropdown tableSlug={slug} />
