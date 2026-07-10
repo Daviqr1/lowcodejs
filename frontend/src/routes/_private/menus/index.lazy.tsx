@@ -111,7 +111,7 @@ function RouteComponent(): React.JSX.Element {
             Gerencie os itens de menu e navegação
           </p>
         </div>
-        <div className="inline-flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div ref={setToolbarNode} />
           <TrashButton />
           <FilterTrigger
