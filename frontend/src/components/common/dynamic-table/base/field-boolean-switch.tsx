@@ -27,11 +27,11 @@ export function FieldBooleanSwitch({
       data-slot="field-boolean-switch"
       data-test-id="field-boolean-switch"
       className={cn(
-        'flex flex-row items-center justify-between rounded-lg border p-3',
+        'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3',
         className,
       )}
     >
-      <div className="space-y-0.5">
+      <div className="min-w-0 space-y-0.5">
         <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
         {description && (
           <p className="text-sm text-muted-foreground">{description}</p>
