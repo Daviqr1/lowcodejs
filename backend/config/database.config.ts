@@ -1,18 +1,34 @@
 import mongoose from 'mongoose';
 
+import { Evaluation } from '@application/model/evaluation.model';
+import { Field } from '@application/model/field.model';
+import { Permission } from '@application/model/permission.model';
+import { Reaction } from '@application/model/reaction.model';
+import { RelationshipDefinition } from '@application/model/relationship-definition.model';
+import { RelationshipLink } from '@application/model/relationship-link.model';
+import { Storage } from '@application/model/storage.model';
+import { Table } from '@application/model/table.model';
+import { UserGroup } from '@application/model/user-group.model';
+import { User } from '@application/model/user.model';
+import { ValidationToken } from '@application/model/validation-token.model';
 import { Env } from '@start/env';
 
-import '@application/model/evaluation.model';
-import '@application/model/field.model';
-import '@application/model/permission.model';
-import '@application/model/reaction.model';
-import '@application/model/relationship-definition.model';
-import '@application/model/relationship-link.model';
-import '@application/model/storage.model';
-import '@application/model/table.model';
-import '@application/model/user-group.model';
-import '@application/model/user.model';
-import '@application/model/validation-token.model';
+// Registra os schemas no mongoose antes de conectar. O array tambem retem os
+// imports nomeados: no build `bundle: false` o esbuild remove import nomeado
+// nao referenciado, o que descartaria o side-effect de registro do schema.
+export const REGISTERED_MODELS = [
+  Evaluation,
+  Field,
+  Permission,
+  Reaction,
+  RelationshipDefinition,
+  RelationshipLink,
+  Storage,
+  Table,
+  UserGroup,
+  User,
+  ValidationToken,
+] as const;
 
 let dataConnection: mongoose.Connection;
 

@@ -1,3 +1,4 @@
+import { fixImportsPlugin } from 'esbuild-fix-imports-plugin';
 import { glob } from 'glob';
 import { access, copyFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -17,6 +18,9 @@ export default defineConfig({
   outDir: 'build',
   target: 'es2024',
   format: ['esm'],
+  bundle: false,
+  clean: true,
+  esbuildPlugins: [fixImportsPlugin()],
   banner: {
     js: "import 'reflect-metadata';",
   },
