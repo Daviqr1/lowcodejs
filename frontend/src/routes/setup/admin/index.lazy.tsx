@@ -114,7 +114,7 @@ function SetupAdminPage(): React.JSX.Element {
           <ShieldCheckIcon className="size-5" />
           Criar Administrador
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Crie a conta do administrador principal da plataforma
         </CardDescription>
       </CardHeader>

@@ -79,7 +79,7 @@ function SetupStoragePage(): React.JSX.Element {
           <HardDriveIcon className="size-5" />
           Armazenamento
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Configure onde os arquivos serão armazenados
         </CardDescription>
       </CardHeader>

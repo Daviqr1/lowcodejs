@@ -56,7 +56,7 @@ function SetupPagingPage(): React.JSX.Element {
           <FileTextIcon className="size-5" />
           Paginação
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Configure o número padrão de itens por página nas listagens
         </CardDescription>
       </CardHeader>

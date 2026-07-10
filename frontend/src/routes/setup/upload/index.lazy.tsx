@@ -66,7 +66,7 @@ function SetupUploadPage(): React.JSX.Element {
           <UploadIcon className="size-5" />
           Configurações de Upload
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Defina os limites de upload de arquivos
         </CardDescription>
       </CardHeader>

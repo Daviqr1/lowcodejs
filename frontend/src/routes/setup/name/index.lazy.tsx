@@ -62,7 +62,7 @@ function SetupNamePage(): React.JSX.Element {
           <TypeIcon className="size-5" />
           Identidade do Sistema
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Configure o nome e idioma padrão da plataforma
         </CardDescription>
       </CardHeader>

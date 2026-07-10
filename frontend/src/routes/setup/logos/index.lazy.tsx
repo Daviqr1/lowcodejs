@@ -57,7 +57,7 @@ function SetupLogosPage(): React.JSX.Element {
           <ImageIcon className="size-5" />
           Logos
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Configure os logos da plataforma (opcional — pode ser feito depois em
           Configurações)
         </CardDescription>

@@ -72,7 +72,7 @@ function SetupEmailPage(): React.JSX.Element {
           <MailIcon className="size-5" />
           Configuração de Email
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-pretty">
           Configure o servidor SMTP (opcional — pode ser feito depois em
           Configurações)
         </CardDescription>

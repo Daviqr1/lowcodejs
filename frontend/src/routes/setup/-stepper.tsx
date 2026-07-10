@@ -38,7 +38,7 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
             <div className="flex flex-col items-center gap-1.5">
               <div
                 className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300',
+                  'flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-xs sm:text-sm font-semibold transition-all duration-300',
                   state === 'completed' &&
                     'bg-brand-blue-dark text-white shadow-sm',
                   state === 'active' &&
@@ -65,7 +65,7 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
             </div>
 
             {!isLast && (
-              <div className="mx-2 flex-1 sm:mx-3">
+              <div className="mx-1 flex-1 sm:mx-3">
                 <div
                   className={cn(
                     'h-px w-full transition-colors duration-500',
