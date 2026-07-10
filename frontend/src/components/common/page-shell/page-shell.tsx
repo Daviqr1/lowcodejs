@@ -45,7 +45,7 @@ function PageShellHeader({
     <div
       data-slot="page-shell-header"
       className={cn(
-        'shrink-0 p-2 flex flex-row justify-between gap-1',
+        'shrink-0 p-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-1',
         borderBottom && 'border-b',
         className,
       )}
