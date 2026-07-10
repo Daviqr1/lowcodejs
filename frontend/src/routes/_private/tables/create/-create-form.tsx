@@ -38,7 +38,7 @@ export const CreateTableFormFields = withForm({
     return (
       <section
         data-test-id="table-create-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Logo */}
         <form.AppField name="logoFile">

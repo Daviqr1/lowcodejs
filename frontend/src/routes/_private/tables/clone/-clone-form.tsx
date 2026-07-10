@@ -55,7 +55,7 @@ export const CloneTableFormFields = withForm({
 
     if (isLoadingSettings) {
       return (
-        <section className="space-y-4 p-2">
+        <section className="space-y-4 p-3 sm:p-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </section>
@@ -65,7 +65,7 @@ export const CloneTableFormFields = withForm({
     return (
       <section
         data-test-id="table-clone-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField

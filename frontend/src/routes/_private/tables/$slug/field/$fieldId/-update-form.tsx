@@ -330,7 +330,7 @@ export const UpdateFieldFormFields = withForm({
       return (
         <section
           data-test-id="field-update-form-fields"
-          className="space-y-4 p-2"
+          className="space-y-4 p-3 sm:p-2"
         >
           <Accordion
             type="single"
@@ -394,7 +394,7 @@ export const UpdateFieldFormFields = withForm({
     return (
       <section
         data-test-id="field-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         <form.AppField
           name="name"

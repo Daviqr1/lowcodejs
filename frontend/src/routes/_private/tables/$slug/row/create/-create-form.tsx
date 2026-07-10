@@ -243,7 +243,7 @@ export const RowFormFields = withForm({
   render: function Render({ form, fields, disabled, tableSlug, rowId }) {
     return (
       <section
-        className="flex flex-wrap gap-4 p-2"
+        className="flex flex-wrap gap-4 p-3 sm:p-2"
         data-test-id="create-row-fields"
       >
         {fields.map((field) => {
@@ -279,8 +279,10 @@ export const RowFormFields = withForm({
           return (
             <div
               key={field._id}
-              className="min-w-[200px]"
-              style={{ width: `calc(${field.widthInForm ?? 50}% - 1rem)` }}
+              className="w-full min-w-0 sm:w-[var(--field-w)] sm:min-w-[200px]"
+              style={{
+                '--field-w': `calc(${field.widthInForm ?? 50}% - 1rem)`,
+              }}
             >
               <form.AppField
                 name={field.slug}
