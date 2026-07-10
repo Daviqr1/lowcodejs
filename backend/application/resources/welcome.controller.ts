@@ -11,9 +11,10 @@ export default class {
       schema: WelcomeSchema,
     },
   })
-  async handle(_: FastifyRequest, response: FastifyReply): Promise<void> {
-    return response.redirect('/documentation').send({
-      message: 'LowCodeJs API',
-    });
+  async handle(
+    _: FastifyRequest,
+    response: FastifyReply,
+  ): Promise<FastifyReply> {
+    return response.status(302).redirect('/documentation');
   }
 }
