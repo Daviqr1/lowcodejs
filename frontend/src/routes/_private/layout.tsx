@@ -162,7 +162,7 @@ function PrivateLayout(): React.JSX.Element {
                 />
               )}
             >
-              <div className="flex flex-col h-screen overflow-hidden px-4 sm:px-2 w-full">
+              <div className="flex flex-col h-dvh overflow-hidden px-4 sm:px-2 w-full">
                 <Header routesWithoutSearchInput={routesWithoutSearchInput} />
                 <Outlet />
               </div>
@@ -177,7 +177,7 @@ function PrivateLayout(): React.JSX.Element {
     <SidebarProvider>
       <Sidebar menu={menu} />
       <SidebarInset
-        className="relative flex flex-col h-screen w-screen overflow-hidden flex-1 px-4 sm:px-2"
+        className="relative flex flex-col h-dvh w-screen overflow-hidden flex-1 px-4 sm:px-2"
         data-test-id="private-layout"
       >
         <Header routesWithoutSearchInput={routesWithoutSearchInput} />
