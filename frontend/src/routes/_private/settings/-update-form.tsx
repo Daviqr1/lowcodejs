@@ -230,7 +230,7 @@ export const UpdateSettingFormFields = withForm({
     return (
       <section
         data-test-id="settings-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Nome do Sistema */}
         <Card>

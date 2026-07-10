@@ -59,7 +59,7 @@ export const UpdateProfileFormFields = withForm({
     return (
       <section
         data-test-id="profile-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField

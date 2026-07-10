@@ -286,7 +286,7 @@ function StorageMigrationProgressBody({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div>
             <div className="text-muted-foreground">Atual</div>
             <div className="truncate">

@@ -24,7 +24,7 @@ export const CreateUserFormFields = withForm({
     return (
       <section
         data-test-id="user-create-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField name="name">
