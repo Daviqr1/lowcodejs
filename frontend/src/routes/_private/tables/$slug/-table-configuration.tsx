@@ -210,7 +210,7 @@ export function TableConfigurationDropdown({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="mr-12 max-w-xs w-full"
+          className="mr-2 sm:mr-12 w-[calc(100vw-1rem)] max-w-xs"
           data-test-id="table-config-dropdown"
         >
           {(permission.can('CREATE_FIELD') ||

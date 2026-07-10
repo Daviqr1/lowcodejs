@@ -264,11 +264,12 @@ function RouteComponent(): React.JSX.Element {
     <RowSelectionProvider resetKey={selectionResetKey}>
       <PageShell data-test-id="table-detail-page">
         <PageShell.Header>
-          <div className="inline-flex items-center space-x-2">
+          <div className="inline-flex min-w-0 items-center space-x-2">
             {isAuthenticated && (
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="shrink-0"
                 onClick={() => {
                   sidebar.setOpen(true);
                   router.navigate({
@@ -284,12 +285,14 @@ function RouteComponent(): React.JSX.Element {
             {table.status === 'pending' && <Skeleton className="h-8 w-40" />}
 
             {table.status === 'success' && (
-              <h1 className="text-2xl font-medium">{table.data.name}</h1>
+              <h1 className="truncate text-2xl font-medium">
+                {table.data.name}
+              </h1>
             )}
 
             <Button
               variant="outline"
-              className="shadow-none p-1 h-auto"
+              className="shadow-none p-1 h-auto shrink-0"
               // size="icon-sm"
               onClick={() => {
                 // Compartilha apenas a URL limpa da tabela, sem query params
@@ -307,7 +310,7 @@ function RouteComponent(): React.JSX.Element {
             </Button>
           </div>
 
-          <div className="inline-flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {table.status === 'success' && filterFields.length > 0 && (
               <FilterTrigger
                 activeFiltersCount={activeFiltersCount}
