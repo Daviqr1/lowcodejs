@@ -450,22 +450,26 @@ export function TableKanbanView({
     if (startDateEnsureAttemptedRef.current) return;
     startDateEnsureAttemptedRef.current = true;
 
-    void API.post<IField>('/tables/'.concat(tableSlug).concat('/fields'), {
-      name: 'Data de início',
-      type: E_FIELD_TYPE.DATE,
-      required: false,
-      multiple: false,
-      format: E_FIELD_FORMAT.DD_MM_YYYY,
-      showInFilter: true,
-      permissions: buildFieldPermissions(true, true, true),
-      defaultValue: null,
-      locked: true,
-      relationship: null,
-      dropdown: [],
-      category: [],
-      group: null,
-    })
-      .then((createdField) => {
+    const ensureStartDateField = async (): Promise<void> => {
+      try {
+        const createdField = await API.post<IField>(
+          '/tables/'.concat(tableSlug).concat('/fields'),
+          {
+            name: 'Data de início',
+            type: E_FIELD_TYPE.DATE,
+            required: false,
+            multiple: false,
+            format: E_FIELD_FORMAT.DD_MM_YYYY,
+            showInFilter: true,
+            permissions: buildFieldPermissions(true, true, true),
+            defaultValue: null,
+            locked: true,
+            relationship: null,
+            dropdown: [],
+            category: [],
+            group: null,
+          },
+        );
         queryClient.setQueryData<ITable>(
           queryKeys.tables.detail(tableSlug),
           (old) => {
@@ -481,12 +485,14 @@ export function TableKanbanView({
         toast.success('Campo Data de início criado', {
           description: 'Kanban atualizado com o novo campo de início',
         });
-      })
-      .catch(() => {
+      } catch {
         toast.error('Erro ao criar Data de início', {
           description: 'Nao foi possivel adicionar o campo no Kanban',
         });
-      });
+      }
+    };
+
+    void ensureStartDateField();
   }, [fields.startDate, queryClient, tableSlug]);
 
   const createForm = useAppForm({

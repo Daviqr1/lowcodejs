@@ -8,17 +8,15 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IField } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-const Editor = lazy(() =>
-  import('@/components/common/rich-editor').then((m) => ({
-    default: m.Editor,
-  })),
-);
+const Editor = lazy(async () => {
+  const m = await import('@/components/common/rich-editor');
+  return { default: m.Editor };
+});
 
-const ContentViewer = lazy(() =>
-  import('@/components/common/rich-editor').then((m) => ({
-    default: m.ContentViewer,
-  })),
-);
+const ContentViewer = lazy(async () => {
+  const m = await import('@/components/common/rich-editor');
+  return { default: m.ContentViewer };
+});
 
 function EditorSkeleton(): React.JSX.Element {
   return (

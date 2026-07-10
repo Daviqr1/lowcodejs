@@ -6,11 +6,10 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { ITable } from '@/lib/interfaces';
 
 // Lazy load do Monaco Editor (76MB de dependência)
-const CodeEditor = lazy(() =>
-  import('@/components/common/code-editor/code-editor').then((m) => ({
-    default: m.CodeEditor,
-  })),
-);
+const CodeEditor = lazy(async () => {
+  const m = await import('@/components/common/code-editor/code-editor');
+  return { default: m.CodeEditor };
+});
 
 function CodeEditorSkeleton(): React.JSX.Element {
   return (

@@ -84,79 +84,76 @@ const VIEW_MAP: Record<
 > = {
   [E_TABLE_STYLE.LIST]: {
     skeleton: TableListViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-list-view').then((m) => ({
-        default: m.TableListView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m = await import('@/components/common/table-views/table-list-view');
+      return { default: m.TableListView };
+    }),
   },
   [E_TABLE_STYLE.GALLERY]: {
     skeleton: TableGridViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-grid-view').then((m) => ({
-        default: m.TableGridView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m = await import('@/components/common/table-views/table-grid-view');
+      return { default: m.TableGridView };
+    }),
   },
   [E_TABLE_STYLE.DOCUMENT]: {
     skeleton: TableDocumentViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-document-view').then(
-        (m) => ({ default: m.TableDocumentView }),
-      ),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-document-view');
+      return { default: m.TableDocumentView };
+    }),
     extraProps: true,
   },
   [E_TABLE_STYLE.CARD]: {
     skeleton: TableCardViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-card-view').then((m) => ({
-        default: m.TableCardView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m = await import('@/components/common/table-views/table-card-view');
+      return { default: m.TableCardView };
+    }),
   },
   [E_TABLE_STYLE.MOSAIC]: {
     skeleton: TableMosaicViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-mosaic-view').then((m) => ({
-        default: m.TableMosaicView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-mosaic-view');
+      return { default: m.TableMosaicView };
+    }),
   },
   [E_TABLE_STYLE.KANBAN]: {
     skeleton: TableKanbanViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-kanban-view').then((m) => ({
-        default: m.TableKanbanView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-kanban-view');
+      return { default: m.TableKanbanView };
+    }),
     extraProps: true,
   },
   [E_TABLE_STYLE.FORUM]: {
     skeleton: TableForumViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-forum-view').then((m) => ({
-        default: m.TableForumView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-forum-view');
+      return { default: m.TableForumView };
+    }),
     extraProps: true,
   },
   [E_TABLE_STYLE.CALENDAR]: {
     skeleton: TableCalendarViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-calendar-view').then(
-        (m) => ({ default: m.TableCalendarView }),
-      ),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-calendar-view');
+      return { default: m.TableCalendarView };
+    }),
     extraProps: true,
   },
   [E_TABLE_STYLE.GANTT]: {
     skeleton: TableGanttViewSkeleton,
-    view: React.lazy(() =>
-      import('@/components/common/table-views/table-gantt-view').then((m) => ({
-        default: m.TableGanttView,
-      })),
-    ),
+    view: React.lazy(async () => {
+      const m =
+        await import('@/components/common/table-views/table-gantt-view');
+      return { default: m.TableGanttView };
+    }),
     extraProps: true,
   },
 };

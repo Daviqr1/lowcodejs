@@ -18,8 +18,14 @@ export const serverSignIn = createServerFn({ method: 'POST' })
       credentials: 'include',
     });
     if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      throw new Error(error.message || 'Falha na autenticacao');
+      let message = 'Falha na autenticacao';
+      try {
+        const error = await res.json();
+        if (error?.message) message = error.message;
+      } catch {
+        // corpo de erro invalido — mantem mensagem padrao
+      }
+      throw new Error(message);
     }
     const cookieHeader = res.headers.get('set-cookie') ?? '';
     const profileRes = await fetch(`${baseUrl}/profile`, {

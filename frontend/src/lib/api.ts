@@ -93,11 +93,15 @@ let refreshPromise: Promise<void> | null = null;
 const performRefresh = (): Promise<void> => {
   if (refreshPromise) return refreshPromise;
 
-  refreshPromise = API.post('/authentication/refresh-token')
-    .then(() => undefined)
-    .finally(() => {
+  const run = async (): Promise<void> => {
+    try {
+      await API.post('/authentication/refresh-token');
+    } finally {
       refreshPromise = null;
-    });
+    }
+  };
+
+  refreshPromise = run();
 
   return refreshPromise;
 };
