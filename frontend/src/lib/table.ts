@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import type { CSSProperties } from 'react';
+
 import { E_FIELD_FORMAT, E_FIELD_TYPE, E_FIELD_VALIDATION } from './constant';
 import type {
   ICategory,
@@ -7,6 +9,7 @@ import type {
   IRow,
   IStorage,
   IUser,
+  Merge,
   SearchableOption,
 } from './interfaces';
 import { resolveRelationshipLabel } from './relationship-label';
@@ -662,4 +665,19 @@ export function buildFieldValidator(
   if (ruleError) return ruleError;
 
   return undefined;
+}
+
+// Props responsivas do wrapper de um campo de formulário: full-width no mobile,
+// largura % configurada (widthInForm) só a partir de sm. A largura vira CSS var
+// porque o `style` inline venceria o `w-full` no mobile. O tipo Merge libera a
+// custom property sem `as`. Reaproveitado por todos os editores de campo (row,
+// relationship inline, group inline/dialog).
+export function getFieldContainerProps(widthInForm?: number | null): {
+  className: string;
+  style: Merge<CSSProperties, { '--field-w': string }>;
+} {
+  return {
+    className: 'w-full min-w-0 sm:w-[var(--field-w)] sm:min-w-[200px]',
+    style: { '--field-w': `calc(${widthInForm ?? 50}% - 1rem)` },
+  };
 }

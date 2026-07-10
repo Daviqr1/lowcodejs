@@ -72,6 +72,7 @@ import {
   buildCreateRowDefaultValues,
   buildFieldValidator,
   buildRowPayload,
+  getFieldContainerProps,
   resolveFieldLabel,
 } from '@/lib/table';
 import { cn } from '@/lib/utils';
@@ -206,10 +207,7 @@ function RelatedRowCreateDialogContent({
               return (
                 <div
                   key={rowField._id}
-                  className="min-w-[200px]"
-                  style={{
-                    width: `calc(${rowField.widthInForm ?? 50}% - 1rem)`,
-                  }}
+                  {...getFieldContainerProps(rowField.widthInForm)}
                 >
                   <form.AppField
                     name={rowField.slug}

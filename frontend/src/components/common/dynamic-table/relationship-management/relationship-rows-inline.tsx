@@ -58,6 +58,7 @@ import {
   buildFieldValidator,
   buildRowPayload,
   buildUpdateRowDefaultValues,
+  getFieldContainerProps,
   resolveFieldLabel,
 } from '@/lib/table';
 import { AutoSaveStatusIndicator } from '@/routes/_private/tables/$slug/row/-auto-save-status';
@@ -717,8 +718,7 @@ function RelationshipItemCardForm({
         {fields.map((cardField) => (
           <div
             key={cardField._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${cardField.widthInForm ?? 50}% - 1rem)` }}
+            {...getFieldContainerProps(cardField.widthInForm)}
           >
             <form.AppField
               name={cardField.slug}
@@ -892,8 +892,7 @@ function RelationshipDraftCardContent({
         {fields.map((cardField) => (
           <div
             key={cardField._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${cardField.widthInForm ?? 50}% - 1rem)` }}
+            {...getFieldContainerProps(cardField.widthInForm)}
           >
             <form.AppField
               name={cardField.slug}

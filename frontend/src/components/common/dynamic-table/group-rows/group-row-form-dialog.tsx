@@ -32,7 +32,7 @@ import { handleApiError } from '@/lib/handle-api-error';
 import type { IField, IRow, Merge } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
 import type { FieldValue } from '@/lib/table';
-import { buildFieldValidator } from '@/lib/table';
+import { buildFieldValidator, getFieldContainerProps } from '@/lib/table';
 
 type GroupRowFormDialogProps = Merge<
   React.ComponentProps<typeof SheetTrigger>,
@@ -202,8 +202,7 @@ function GroupRowFormDialogContent({
         {visibleFields.map((field) => (
           <div
             key={field._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${field.widthInForm ?? 50}% - 1rem)` }}
+            {...getFieldContainerProps(field.widthInForm)}
           >
             <form.AppField
               name={field.slug}

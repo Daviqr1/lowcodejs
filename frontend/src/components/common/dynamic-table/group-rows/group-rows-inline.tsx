@@ -30,7 +30,11 @@ import type {
   IRow,
   ITable,
 } from '@/lib/interfaces';
-import { buildFieldValidator, resolveFieldLabel } from '@/lib/table';
+import {
+  buildFieldValidator,
+  getFieldContainerProps,
+  resolveFieldLabel,
+} from '@/lib/table';
 import { AutoSaveStatusIndicator } from '@/routes/_private/tables/$slug/row/-auto-save-status';
 
 type GroupRowsInlineProps = {
@@ -385,8 +389,7 @@ function GroupItemCardContent({
         {fields.map((field) => (
           <div
             key={field._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${field.widthInForm ?? 50}% - 1rem)` }}
+            {...getFieldContainerProps(field.widthInForm)}
           >
             <form.AppField
               name={field.slug}

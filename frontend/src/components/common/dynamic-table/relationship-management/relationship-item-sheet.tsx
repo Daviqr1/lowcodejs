@@ -36,6 +36,7 @@ import {
   buildFieldValidator,
   buildRowPayload,
   buildUpdateRowDefaultValues,
+  getFieldContainerProps,
 } from '@/lib/table';
 
 type RelationshipItemContentProps = {
@@ -206,8 +207,7 @@ function RelationshipItemSheetContent({
         {fields.map((relatedField) => (
           <div
             key={relatedField._id}
-            className="min-w-[200px]"
-            style={{ width: `calc(${relatedField.widthInForm ?? 50}% - 1rem)` }}
+            {...getFieldContainerProps(relatedField.widthInForm)}
           >
             <form.AppField
               name={relatedField.slug}
