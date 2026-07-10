@@ -26,6 +26,7 @@ import { useProfileRead } from '@/hooks/tanstack-query/use-profile-read';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
 import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
 import { E_FIELD_TYPE, E_TABLE_PROFILE } from '@/lib/constant';
@@ -128,6 +129,11 @@ export function TableForumView({
       return 'bottom';
     },
   );
+  const isMobile = useIsMobile();
+  // No mobile o painel lateral de 360px não cabe — força o compositor embaixo,
+  // preservando a preferência salva para o desktop.
+  let effectiveComposerLayout = composerLayout;
+  if (isMobile) effectiveComposerLayout = 'bottom';
 
   const [composerStorages, setComposerStorages] = React.useState<
     Array<IStorage>
@@ -1441,7 +1447,7 @@ export function TableForumView({
         <ForumHeader
           title={channelTitle}
           description={channelDescription}
-          composerLayout={composerLayout}
+          composerLayout={effectiveComposerLayout}
           onChangeLayout={setComposerLayout}
         />
 
@@ -1475,8 +1481,8 @@ export function TableForumView({
               <div
                 className={cn(
                   'flex-1 min-h-0 relative',
-                  composerLayout === 'side' && 'flex',
-                  composerLayout !== 'side' && 'flex flex-col',
+                  effectiveComposerLayout === 'side' && 'flex',
+                  effectiveComposerLayout !== 'side' && 'flex flex-col',
                 )}
               >
                 <ForumMessagesList
@@ -1507,8 +1513,8 @@ export function TableForumView({
                   <div
                     className={cn(
                       'absolute z-20 right-4',
-                      composerLayout === 'bottom' && 'bottom-24',
-                      composerLayout !== 'bottom' && 'bottom-4',
+                      effectiveComposerLayout === 'bottom' && 'bottom-24',
+                      effectiveComposerLayout !== 'bottom' && 'bottom-4',
                     )}
                   >
                     <Button
@@ -1538,7 +1544,7 @@ export function TableForumView({
                 )}
 
                 <ForumComposer
-                  composerLayout={composerLayout}
+                  composerLayout={effectiveComposerLayout}
                   composerText={composerText}
                   onTextChange={(value) =>
                     composerForm.setFieldValue('text', value)
