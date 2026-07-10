@@ -1437,7 +1437,7 @@ export function TableForumView({
         }}
       />
 
-      <section className="flex-1 flex flex-col min-h-0">
+      <section className="flex-1 flex flex-col min-h-0 min-w-0">
         <ForumHeader
           title={channelTitle}
           description={channelDescription}
