@@ -100,7 +100,7 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
           <EllipsisIcon className="size-4" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="mr-10">
+        <DropdownMenuContent className="mr-2 sm:mr-10">
           <DropdownMenuLabel>Ações</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
@@ -518,7 +518,7 @@ export function TableTables({
       />
 
       {selectedCount > 0 && (
-        <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
+        <div className="sticky bottom-4 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap items-center justify-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
           <span className="text-sm font-medium">
             {selectedCount === 1 && '1 tabela selecionada'}
             {selectedCount !== 1 && `${selectedCount} tabelas selecionadas`}

@@ -102,12 +102,12 @@ function RouteComponent(): React.JSX.Element {
       {/* Header */}
       <PageShell.Header>
         <div className="space-y-1">
-          <h1 className="text-2xl font-medium">Tabelas</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-medium text-balance">Tabelas</h1>
+          <p className="text-sm text-muted-foreground text-pretty">
             Gerencie as tabelas dinâmicas da plataforma
           </p>
         </div>
-        <div className="inline-flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div ref={toolbarRef} />
           {permission.can('REMOVE_TABLE') && search.trashed && (
             <TableEmptyTrashDialog />
