@@ -106,7 +106,7 @@ function RouteComponent(): React.JSX.Element {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="heading-card">Entrar</CardTitle>
-          <CardDescription>
+          <CardDescription className="text-pretty">
             Faça login para acessar a plataforma
           </CardDescription>
         </CardHeader>

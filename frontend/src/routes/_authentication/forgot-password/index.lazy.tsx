@@ -85,7 +85,7 @@ function RouteComponent(): React.JSX.Element {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="heading-card">Recuperar senha</CardTitle>
-          <CardDescription>
+          <CardDescription className="text-pretty">
             Digite seu e-mail para receber o código de verificação
           </CardDescription>
         </CardHeader>
