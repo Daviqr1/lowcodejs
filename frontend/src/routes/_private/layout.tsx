@@ -9,6 +9,7 @@ import { RouteError } from '@/components/common/route-status/route-error';
 import { RoutePending } from '@/components/common/route-status/route-pending';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import {
+  accountsOptions,
   profileDetailOptions,
   settingOptions,
   setupStatusOptions,
@@ -29,7 +30,7 @@ export const Route = createFileRoute('/_private')({
   }),
   beforeLoad: async ({ context, location }) => {
     const setupStatus =
-      await context.queryClient.fetchQuery(setupStatusOptions());
+      await context.queryClient.ensureQueryData(setupStatusOptions());
 
     if (!setupStatus.completed) {
       throw redirect({
@@ -52,21 +53,20 @@ export const Route = createFileRoute('/_private')({
     try {
       // /authentication/accounts resolve a conta ativa pelos cookies e devolve a
       // lista; o store para de mandar id stale no GET /profile.
-      const accountsResponse = await API.get<IAuthenticationAccounts>(
-        '/authentication/accounts',
-      );
+      const accountsResponse =
+        await context.queryClient.ensureQueryData(accountsOptions());
       useAuthStore
         .getState()
         .setAccounts(
-          accountsResponse.data.accounts,
-          accountsResponse.data.activeAccountId,
+          accountsResponse.accounts,
+          accountsResponse.activeAccountId,
         );
 
       const user = await context.queryClient.ensureQueryData(
         profileDetailOptions(),
       );
 
-      if (accountsResponse.data.accounts.length === 0) {
+      if (accountsResponse.accounts.length === 0) {
         useAuthStore.getState().setUser(user);
       }
 

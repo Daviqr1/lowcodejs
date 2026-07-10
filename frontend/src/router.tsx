@@ -17,6 +17,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     defaultPreload: 'intent',
+    // 0 = delega staleness ao React Query (staleTime das queries). Padrao
+    // recomendado ao usar a integracao TanStack Query (ver _docs 035-preloading).
     defaultPreloadStaleTime: 0,
     defaultPendingMs: 0,
     scrollRestoration: true,

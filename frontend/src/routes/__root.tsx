@@ -64,6 +64,12 @@ const getSystemSettings = createServerFn({ method: 'GET' }).handler(
 );
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // O loader usa serverFns crus (baseUrl/appUrl/settings de bootstrap+meta),
+  // que nao passam pelo cache do React Query. Sem staleTime, o `intent` preload
+  // re-dispara o trio de serverFns a cada hover na sidebar. Esses dados sao
+  // estaticos na sessao, entao nunca precisam re-preloadar.
+  preloadStaleTime: Infinity,
+  staleTime: Infinity,
   loader: async () => {
     const [baseUrl, appUrl, settings] = await Promise.all([
       getApiBaseUrl(),

@@ -5,6 +5,7 @@ import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
 import type {
+  IAuthenticationAccounts,
   IExtension,
   IField,
   IGroup,
@@ -434,6 +435,20 @@ export const relationshipRowsInfiniteOptions = (params: {
     enabled: Boolean(params.tableSlug),
     initialPageParam: 1,
     getNextPageParam: nextPageOrUndefined,
+    staleTime: 30 * 1000,
+  });
+
+// ============== AUTHENTICATION ==============
+
+export const accountsOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.authentication.accounts(),
+    queryFn: async () => {
+      const { data } = await API.get<IAuthenticationAccounts>(
+        '/authentication/accounts',
+      );
+      return data;
+    },
     staleTime: 30 * 1000,
   });
 
