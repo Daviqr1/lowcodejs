@@ -1,7 +1,9 @@
+import type { CSSProperties } from 'react';
+
 import { TableRowHtmlContentField } from '@/components/common/dynamic-table/table-row/table-row-html-content-field';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IStorage } from '@/lib/interfaces';
+import type { IField, IStorage, Merge } from '@/lib/interfaces';
 import type { CreateRowDefaultValue } from '@/lib/table';
 import { buildFieldValidator, isManagedRelationship } from '@/lib/table';
 
@@ -276,13 +278,18 @@ export const RowFormFields = withForm({
             );
           }
 
+          // Largura configurável por campo vira CSS var: full-width no mobile,
+          // largura % definida só a partir de sm (ver className). O tipo Merge
+          // libera a custom property sem `as` no style inline.
+          const fieldStyle: Merge<CSSProperties, { '--field-w': string }> = {
+            '--field-w': `calc(${field.widthInForm ?? 50}% - 1rem)`,
+          };
+
           return (
             <div
               key={field._id}
               className="w-full min-w-0 sm:w-[var(--field-w)] sm:min-w-[200px]"
-              style={{
-                '--field-w': `calc(${field.widthInForm ?? 50}% - 1rem)`,
-              }}
+              style={fieldStyle}
             >
               <form.AppField
                 name={field.slug}
