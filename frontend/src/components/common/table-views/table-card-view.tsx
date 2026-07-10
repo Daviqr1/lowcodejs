@@ -231,7 +231,7 @@ export function TableCardView({
           }}
         >
           <div className="flex gap-4">
-            <div className="w-[200px] shrink-0">
+            <div className="w-32 shrink-0 sm:w-[200px]">
               <div className="w-full overflow-hidden rounded-xl bg-muted aspect-[4/3]">
                 {thumbField && (
                   <RenderCardCell

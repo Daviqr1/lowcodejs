@@ -422,7 +422,7 @@ function FieldManagementTabs(): React.JSX.Element {
         className="w-full max-w-6xl mx-auto flex flex-col flex-1 min-h-0"
       >
         <div className="px-4 pt-4 shrink-0">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="flex w-full overflow-x-auto [&>*]:flex-none sm:grid sm:grid-cols-5 mb-4">
             <TabsTrigger value="display">Lista</TabsTrigger>
             <TabsTrigger value="filter">Filtros</TabsTrigger>
             <TabsTrigger value="form">Formulários</TabsTrigger>
