@@ -134,6 +134,12 @@ export function TableForumView({
   // preservando a preferência salva para o desktop.
   let effectiveComposerLayout = composerLayout;
   if (isMobile) effectiveComposerLayout = 'bottom';
+  // No mobile a lista de canais começa colapsada (libera o chat); só não força
+  // se o usuário já alternou manualmente.
+  const sidebarUserToggledRef = React.useRef(false);
+  React.useEffect(() => {
+    if (isMobile && !sidebarUserToggledRef.current) setIsSidebarOpen(false);
+  }, [isMobile]);
 
   const [composerStorages, setComposerStorages] = React.useState<
     Array<IStorage>
@@ -1379,7 +1385,10 @@ export function TableForumView({
         channelField={channelField}
         canAddChannel={canAddChannel}
         isOpen={isSidebarOpen}
-        onToggleOpen={() => setIsSidebarOpen((value) => !value)}
+        onToggleOpen={() => {
+          sidebarUserToggledRef.current = true;
+          setIsSidebarOpen((value) => !value);
+        }}
         onAddChannel={() => {
           addChannelForm.reset({
             label: '',
