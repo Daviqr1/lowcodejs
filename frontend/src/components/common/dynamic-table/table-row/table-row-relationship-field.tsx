@@ -326,7 +326,7 @@ export function RelatedRowCreateDialog({
       />
       <SheetContent
         side="right"
-        className="w-full gap-0 p-0 sm:max-w-2xl [&>button]:hidden"
+        className="gap-0 p-0 sm:max-w-2xl [&>button]:hidden"
       >
         <UploadingProvider>
           <RelatedRowCreateDialogContent

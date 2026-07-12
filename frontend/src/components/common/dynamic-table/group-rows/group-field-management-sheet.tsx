@@ -36,7 +36,7 @@ export function GroupFieldManagementSheet({
       />
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg flex flex-col gap-0 p-0"
+        className="sm:max-w-lg flex flex-col gap-0 p-0"
       >
         <GroupFieldManagementSheetContent
           table={table}

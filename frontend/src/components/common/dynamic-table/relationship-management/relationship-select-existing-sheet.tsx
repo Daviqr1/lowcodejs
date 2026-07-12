@@ -60,7 +60,7 @@ export function RelationshipSelectExistingSheet({
       <SheetContent
         data-slot="relationship-select-existing-sheet"
         side="right"
-        className="sm:max-w-2xl w-full gap-0 p-0 flex flex-col"
+        className="sm:max-w-2xl gap-0 p-0 flex flex-col"
       >
         <RelationshipSelectExistingSheetContent
           field={field}

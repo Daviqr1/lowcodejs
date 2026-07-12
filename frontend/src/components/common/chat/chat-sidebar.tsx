@@ -33,7 +33,7 @@ export function ChatSidebar({
       >
         <SheetContent
           side="right"
-          className="flex flex-col p-0 gap-0 w-full sm:max-w-md"
+          className="flex flex-col p-0 gap-0 sm:max-w-md"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Assistente IA</SheetTitle>

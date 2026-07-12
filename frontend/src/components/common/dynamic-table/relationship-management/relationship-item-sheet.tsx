@@ -80,7 +80,7 @@ export function RelationshipItemSheet({
       <SheetContent
         data-slot="relationship-item-sheet"
         side="right"
-        className="sm:max-w-2xl w-full gap-0 p-0"
+        className="sm:max-w-2xl gap-0 p-0"
       >
         <UploadingProvider>
           <RelationshipItemSheetContent

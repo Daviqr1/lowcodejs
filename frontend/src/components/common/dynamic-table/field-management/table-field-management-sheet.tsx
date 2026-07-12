@@ -31,7 +31,7 @@ export function TableFieldManagementSheet({
       />
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg flex flex-col gap-0 p-0"
+        className="sm:max-w-lg flex flex-col gap-0 p-0"
       >
         <SheetHeader className="px-4 py-3 border-b shrink-0">
           <SheetTitle>Gerenciar campos</SheetTitle>
