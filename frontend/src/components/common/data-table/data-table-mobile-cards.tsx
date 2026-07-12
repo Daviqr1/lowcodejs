@@ -85,7 +85,7 @@ export function DataTableMobileCards<TData>({
                   key={cell.id}
                   className="flex items-start justify-between gap-3"
                 >
-                  <dt className="text-muted-foreground pointer-events-none max-w-[45%] shrink-0 truncate text-xs font-medium">
+                  <dt className="text-muted-foreground pointer-events-none max-w-[45%] shrink-0 truncate text-xs font-medium [&_button]:hidden">
                     {headerLabels.get(cell.column.id)}
                   </dt>
                   <dd className="min-w-0 break-words text-right text-sm">

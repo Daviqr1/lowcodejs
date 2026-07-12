@@ -270,7 +270,7 @@ export function TableDocumentView({
       {/* Main content */}
       <div className="h-full min-w-0 flex-1 overflow-y-auto">
         {isMobile && (
-          <div className="no-print sticky top-0 z-10 flex items-center gap-2 border-b bg-background px-3 py-2">
+          <div className="no-print sticky top-0 z-10 flex items-center gap-2 border-b bg-background py-2 pr-12 pl-3">
             <Sheet
               open={isMobileSidebarOpen}
               onOpenChange={setIsMobileSidebarOpen}
