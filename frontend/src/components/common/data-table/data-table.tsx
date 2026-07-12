@@ -17,6 +17,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import React from 'react';
 
 import { DataTableDraggableHeader } from './data-table-draggable-header';
+import { DataTableMobileCards } from './data-table-mobile-cards';
 import { DataTableResizeHandle } from './data-table-resize-handle';
 
 import {
@@ -130,7 +131,7 @@ export function DataTable<TData>({
       data-test-id="data-table"
       ref={scrollContainerRef}
       className={cn(
-        'relative w-full overflow-x-auto',
+        'relative hidden w-full overflow-x-auto sm:block',
         enableVirtualization && 'overflow-y-auto',
       )}
       {...containerProps}
@@ -332,22 +333,40 @@ export function DataTable<TData>({
     </div>
   );
 
+  const mobileCards = (
+    <div className="sm:hidden">
+      <DataTableMobileCards
+        table={table}
+        onRowClick={onRowClick}
+        emptyMessage={emptyMessage}
+      />
+    </div>
+  );
+
   if (enableColumnDragging) {
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={columnIds}
-          strategy={horizontalListSortingStrategy}
+      <>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          {tableContent}
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
+          >
+            {tableContent}
+          </SortableContext>
+        </DndContext>
+        {mobileCards}
+      </>
     );
   }
 
-  return tableContent;
+  return (
+    <>
+      {tableContent}
+      {mobileCards}
+    </>
+  );
 }
