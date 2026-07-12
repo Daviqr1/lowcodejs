@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { API } from '@/lib/api';
 import {
   normalizeCalendarEvents,
@@ -46,7 +47,18 @@ export function TableCalendarView({
   table,
 }: Props): React.JSX.Element {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = React.useState<CalendarViewMode>('week');
+  // No mobile, agenda (lista vertical) e o modo padrao; so nao sobrescreve se o
+  // usuario ja escolheu um modo manualmente.
+  const userPickedViewRef = React.useRef(false);
+  const handleChangeView = React.useCallback((mode: CalendarViewMode) => {
+    userPickedViewRef.current = true;
+    setViewMode(mode);
+  }, []);
+  React.useEffect(() => {
+    if (isMobile && !userPickedViewRef.current) setViewMode('agenda');
+  }, [isMobile]);
   const [currentDate, setCurrentDate] = React.useState<Date>(() => new Date());
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
   // alvo de edição: rowId + nonce (força reabrir/remontar o dialog uncontrolled
@@ -274,13 +286,17 @@ export function TableCalendarView({
         onPrevious={handlePrevious}
         onNext={handleNext}
         onToday={() => setCurrentDate(new Date())}
-        onChangeView={setViewMode}
+        onChangeView={handleChangeView}
         onSelectDate={setCurrentDate}
       />
 
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <div className="text-xs text-muted-foreground">
-          {table.name} • clique em um agendamento para editar
+        <div className="min-w-0 truncate text-xs text-muted-foreground">
+          {table.name}
+          <span className="hidden sm:inline">
+            {' '}
+            • clique em um agendamento para editar
+          </span>
         </div>
         {!missingRequired && (
           <CalendarEventDialog

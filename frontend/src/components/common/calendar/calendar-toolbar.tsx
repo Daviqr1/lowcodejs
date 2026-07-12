@@ -257,7 +257,7 @@ export function CalendarToolbar({
               onClick={() => onChangeView(item.mode)}
             >
               <Icon className="size-4" />
-              <span>{item.label}</span>
+              <span className="hidden sm:inline">{item.label}</span>
             </Button>
           );
         })}

@@ -180,13 +180,13 @@ export function CalendarWeekView({
     <div
       data-slot="calendar-week-view"
       data-test-id="calendar-week-view"
-      className="flex h-full min-h-0 flex-col"
+      className="flex h-full min-h-0 flex-col overflow-x-auto"
     >
       <div
         className="border-b"
         style={{ paddingRight: scrollbarWidth }}
       >
-        <div className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))]">
+        <div className="grid grid-cols-[56px_repeat(7,minmax(96px,1fr))] sm:grid-cols-[72px_repeat(7,minmax(0,1fr))]">
           <div className="border-r px-2 py-3 text-xs text-muted-foreground">
             Dia
           </div>
@@ -215,7 +215,7 @@ export function CalendarWeekView({
         className="border-b bg-muted/10"
         style={{ paddingRight: scrollbarWidth }}
       >
-        <div className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))]">
+        <div className="grid grid-cols-[56px_repeat(7,minmax(96px,1fr))] sm:grid-cols-[72px_repeat(7,minmax(0,1fr))]">
           <div className="border-r px-2 py-2 text-xs text-muted-foreground">
             Dia Inteiro
           </div>
@@ -250,7 +250,7 @@ export function CalendarWeekView({
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-auto"
+        className="min-h-0 flex-1 overflow-y-auto"
       >
         <div
           className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))]"

@@ -62,7 +62,7 @@ export function CalendarMonthView({
             <div
               key={day.toISOString()}
               className={cn(
-                'min-h-28 border-r border-b p-1 align-top',
+                'min-h-16 border-r border-b p-1 align-top sm:min-h-28',
                 !isSameMonth(day, currentDate) && 'bg-muted/20',
               )}
             >
