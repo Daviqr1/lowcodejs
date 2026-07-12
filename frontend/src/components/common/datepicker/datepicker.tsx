@@ -384,8 +384,8 @@ export function Datepicker({
             sideOffset={8}
           >
             {useRange && (
-              // Dual calendar layout
-              <div className="flex">
+              // Dual calendar layout — empilha no mobile, lado a lado no sm+
+              <div className="flex flex-col sm:flex-row">
                 {/* Left calendar */}
                 <div className="relative">
                   <DatepickerCalendar
@@ -425,8 +425,8 @@ export function Datepicker({
                   </button>
                 </div>
 
-                {/* Vertical separator */}
-                <div className="w-px bg-border my-2" />
+                {/* Separator — horizontal no mobile, vertical no sm+ */}
+                <div className="h-px w-full bg-border sm:my-2 sm:h-auto sm:w-px" />
 
                 {/* Right calendar */}
                 <div className="relative">
