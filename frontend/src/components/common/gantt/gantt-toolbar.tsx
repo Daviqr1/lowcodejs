@@ -75,7 +75,7 @@ export function GanttToolbar({
       <div
         data-slot="gantt-toolbar"
         data-test-id="gantt-toolbar"
-        className="flex items-center gap-2 border-b px-3 py-2"
+        className="flex flex-wrap items-center gap-2 border-b px-3 py-2"
       >
         <GanttChartIcon className="size-4 text-muted-foreground" />
         <span className="text-sm font-medium">Gantt</span>
@@ -164,7 +164,7 @@ export function GanttToolbar({
 
       {/* Barra de filtros */}
       {showFilters && (
-        <div className="flex items-center gap-3 border-b bg-muted/20 px-3 py-1.5">
+        <div className="flex flex-wrap items-center gap-3 border-b bg-muted/20 px-3 py-1.5">
           {/* Filtro de status */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Status:</span>

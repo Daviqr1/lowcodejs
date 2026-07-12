@@ -27,7 +27,7 @@ export function GanttLeftPanel({
     <div
       data-slot="gantt-left-panel"
       data-test-id="gantt-left-panel"
-      className="w-56 shrink-0 overflow-hidden border-r bg-background"
+      className="w-40 shrink-0 overflow-hidden border-r bg-background sm:w-56"
     >
       {/* Espaçador do header */}
       <div
