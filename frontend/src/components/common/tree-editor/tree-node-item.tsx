@@ -135,7 +135,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             {dragMode && (
               <button
                 type="button"
-                className="h-5 w-5 p-0 inline-flex items-center justify-center cursor-grab active:cursor-grabbing"
+                className="h-8 w-8 sm:h-5 sm:w-5 p-0 inline-flex items-center justify-center cursor-grab active:cursor-grabbing"
                 aria-label="Arrastar para reordenar"
                 onClick={(e) => e.stopPropagation()}
                 {...dragAttributes}
@@ -190,7 +190,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             )} */}
 
             {!dragMode && (
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 {isSelected && (
                   <>
                     <Button
@@ -202,7 +202,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                         e.stopPropagation();
                         onEdit();
                       }}
-                      className="h-6 w-6 p-0"
+                      className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                     >
                       <Edit2 className="w-3 h-3" />
                     </Button>
@@ -214,7 +214,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                         e.stopPropagation();
                         onAddChild();
                       }}
-                      className="h-6 w-6 p-0"
+                      className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                     >
                       <Plus className="w-3 h-3" />
                     </Button>
@@ -227,7 +227,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                         e.stopPropagation();
                         onDelete();
                       }}
-                      className="h-6 w-6 p-0"
+                      className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>

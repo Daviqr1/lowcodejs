@@ -538,7 +538,7 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
                 className={cn(
                   'overflow-y-auto p-1',
                   expandedView && 'max-h-none',
-                  !expandedView && 'max-h-60',
+                  !expandedView && 'max-h-[50dvh] sm:max-h-60',
                 )}
               >
                 <DndContext
