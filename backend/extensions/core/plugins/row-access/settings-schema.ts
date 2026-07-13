@@ -92,6 +92,31 @@ const creatorBypassSettingsSchema = z.object({
   enabled: z.boolean(),
 });
 
+/**
+ * Visibilidade por campo USER_GROUP: `fieldSlug` aponta para um campo do tipo
+ * USER_GROUP da tabela. A row é visível/editável apenas se algum grupo do
+ * usuário (fecho `ctx.groupIds`) estiver entre os grupos gravados no campo.
+ * Convive com `visibility` (groupMatrix) por AND. Slug de campo segue o padrão
+ * do FieldSlug (`^[a-z0-9]+(-[a-z0-9]+)*$`) — pode conter hifens.
+ */
+const FIELD_SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+const fieldVisibilitySettingsSchema = z
+  .object({
+    enabled: z.boolean(),
+    fieldSlug: z.string().default(''),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.enabled) return;
+    if (!FIELD_SLUG_REGEX.test(data.fieldSlug)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['fieldSlug'],
+        message: 'Slug do campo de grupos invalido',
+      });
+    }
+  });
+
 export const dateWindowSettingsSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('off') }),
   z.object({
@@ -112,6 +137,11 @@ export const dateWindowSettingsSchema = z.discriminatedUnion('mode', [
 
 export const rowAccessSettingsSchema = z.object({
   visibility: visibilitySettingsSchema,
+  // Retrocompat: settings persistidos antes desta feature não têm a chave.
+  // Default desabilitado mantém o comportamento anterior sem migration.
+  fieldVisibility: fieldVisibilitySettingsSchema
+    .optional()
+    .default({ enabled: false, fieldSlug: '' }),
   creatorBypass: creatorBypassSettingsSchema,
   dateWindow: dateWindowSettingsSchema,
 });
@@ -119,6 +149,9 @@ export const rowAccessSettingsSchema = z.object({
 export type RowAccessSettings = z.infer<typeof rowAccessSettingsSchema>;
 export type DateWindowSettings = z.infer<typeof dateWindowSettingsSchema>;
 export type VisibilitySettings = z.infer<typeof visibilitySettingsSchema>;
+export type FieldVisibilitySettings = z.infer<
+  typeof fieldVisibilitySettingsSchema
+>;
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 
@@ -153,6 +186,7 @@ export const DEFAULT_ROW_ACCESS_SETTINGS: RowAccessSettings = {
     groupMatrix: DEFAULT_GROUP_MATRIX,
     defaultValue: 'PUBLIC',
   },
+  fieldVisibility: { enabled: false, fieldSlug: '' },
   creatorBypass: { enabled: true },
   dateWindow: { mode: 'off' },
 };

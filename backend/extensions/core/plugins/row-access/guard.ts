@@ -236,6 +236,44 @@ function findFieldBySlug(
   return populatedFields.find((f) => f.slug === slug) ?? null;
 }
 
+// ── Helpers: visibility por campo USER_GROUP ──────────────────────────────────
+
+/**
+ * IDs de grupo gravados num campo USER_GROUP da row. O valor pode chegar como
+ * array de ids crus (antes do populate) ou de docs populados (`{ _id }`).
+ */
+function isRecordWithId(value: unknown): value is { _id: unknown } {
+  return typeof value === 'object' && value !== null && '_id' in value;
+}
+
+function readGroupIds(
+  source: Record<string, unknown> | undefined,
+  slug: string,
+): string[] {
+  if (!source) return [];
+  const value = source[slug];
+  if (!Array.isArray(value)) return [];
+  const ids: string[] = [];
+  for (const item of value) {
+    if (isRecordWithId(item)) {
+      ids.push(String(item._id));
+      continue;
+    }
+    if (item != null) ids.push(String(item));
+  }
+  return ids.filter((id) => id.length > 0);
+}
+
+/**
+ * True se algum grupo do contexto do usuário está entre os grupos do campo.
+ */
+function ctxIntersectsRowGroups(
+  rowGroupIds: string[],
+  ctx: GuardEvalContext,
+): boolean {
+  return rowGroupIds.some((gid) => ctx.groupIds.has(gid));
+}
+
 // ── Guard ─────────────────────────────────────────────────────────────────────
 
 @Service()
@@ -383,6 +421,29 @@ export class RowAccessControlGuard implements RowAccessGuard {
 
     const createdFields: IField[] = [];
 
+    // 0. Valida o campo USER_GROUP referenciado por fieldVisibility (não cria
+    //    campo — o usuário cria via "Criar Campo"; aqui só checamos o vínculo).
+    if (settings.fieldVisibility.enabled) {
+      const slug = settings.fieldVisibility.fieldSlug;
+      const field = findFieldBySlug(populatedFields, slug);
+      if (!field) {
+        return left(
+          HTTPException.Conflict(
+            `O campo '${slug}' nao existe nesta tabela.`,
+            'ROW_GUARD_FIELD_VISIBILITY_MISSING',
+          ),
+        );
+      }
+      if (field.type !== E_FIELD_TYPE.USER_GROUP) {
+        return left(
+          HTTPException.Conflict(
+            `O campo '${slug}' precisa ser do tipo Grupos de usuarios.`,
+            'ROW_GUARD_FIELD_VISIBILITY_INCOMPATIBLE',
+          ),
+        );
+      }
+    }
+
     // 1. Garante visibility field
     if (settings.visibility.enabled) {
       const result = await this.ensureVisibilityField(
@@ -473,9 +534,15 @@ export class RowAccessControlGuard implements RowAccessGuard {
     // Retornar {} seria "sem restrição", o que vazaria todas as rows para visitantes.
     // canRead já nega visitantes — aqui garantimos consistência na listagem.
     if (!ctx.userId) {
+      // Fragmento impossível de satisfazer: bloqueia a listagem inteiramente
+      // quando qualquer modo restritivo por grupo está habilitado.
       if (settings.visibility.enabled) {
-        // Fragmento impossível de satisfazer: bloqueia a listagem inteiramente.
         return { [settings.visibility.fieldSlug]: { $in: ['__BLOCKED__'] } };
+      }
+      if (settings.fieldVisibility.enabled) {
+        return {
+          [settings.fieldVisibility.fieldSlug]: { $in: ['__BLOCKED__'] },
+        };
       }
       // Sem visibility habilitada, visitante não tem restrição adicional do guard.
       return {};
@@ -495,6 +562,18 @@ export class RowAccessControlGuard implements RowAccessGuard {
         restrictiveParts.push({
           [settings.visibility.fieldSlug]: { $in: allowed },
         });
+      }
+    }
+
+    // visibility por campo USER_GROUP: row visível se algum grupo do usuário
+    // está entre os grupos gravados no campo.
+    if (settings.fieldVisibility.enabled) {
+      const slug = settings.fieldVisibility.fieldSlug;
+      const groupIds = [...ctx.groupIds];
+      if (groupIds.length === 0) {
+        restrictiveParts.push({ [slug]: { $in: ['__BLOCKED__'] } });
+      } else {
+        restrictiveParts.push({ [slug]: { $in: groupIds } });
       }
     }
 
@@ -552,6 +631,13 @@ export class RowAccessControlGuard implements RowAccessGuard {
       if (!ctxCanSeeValue(settings, vis, ctx)) return 'deny';
     }
 
+    // 2b. Visibility por campo USER_GROUP
+    if (settings.fieldVisibility.enabled) {
+      if (!ctx.userId) return 'deny'; // visitante
+      const rowGroups = readGroupIds(row, settings.fieldVisibility.fieldSlug);
+      if (!ctxIntersectsRowGroups(rowGroups, ctx)) return 'deny';
+    }
+
     // 3. Date-window
     if (!rowPassesDateWindow(row, settings.dateWindow, new Date())) {
       return 'deny';
@@ -589,6 +675,22 @@ export class RowAccessControlGuard implements RowAccessGuard {
     if (settings.visibility.enabled && payload && ctx.userId) {
       const incoming = readVisibility(payload, settings.visibility.fieldSlug);
       if (incoming && !ctxCanSeeValue(settings, incoming, ctx)) {
+        return { decision: 'deny', reason: 'ROW_WRITE_RESTRICTED' };
+      }
+    }
+
+    // 2b. Visibility por campo USER_GROUP: só edita/remove row cujos grupos
+    // intersectam os do usuário (criador e privilegiado já saíram acima).
+    if (
+      settings.fieldVisibility.enabled &&
+      operation !== 'create' &&
+      ctx.userId
+    ) {
+      const rowGroups = readGroupIds(
+        currentRow ?? undefined,
+        settings.fieldVisibility.fieldSlug,
+      );
+      if (!ctxIntersectsRowGroups(rowGroups, ctx)) {
         return { decision: 'deny', reason: 'ROW_WRITE_RESTRICTED' };
       }
     }

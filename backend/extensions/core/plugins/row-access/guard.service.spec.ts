@@ -70,6 +70,7 @@ function makeGroupSettings(
       },
       defaultValue: 'PUBLIC',
     },
+    fieldVisibility: { enabled: false, fieldSlug: '' },
     creatorBypass: { enabled: true },
     dateWindow: { mode: 'off' },
     ...overrides,
@@ -459,5 +460,153 @@ describe('guard.sanitizeWritePayload', () => {
     );
     // g-admin pode ver SIGILOSO, então normaliza
     expect(out['visibility']).toEqual(['SIGILOSO']);
+  });
+});
+
+// ── fieldVisibility (visibility por campo USER_GROUP) ────────────────────────
+
+/**
+ * Settings só com fieldVisibility apontando para o campo 'grupos-acesso'
+ * (visibility groupMatrix desabilitada). creatorBypass off por padrão para
+ * isolar a decisão por grupo.
+ */
+function makeFieldVisibilitySettings(
+  overrides?: Partial<RowAccessSettings>,
+): RowAccessSettings {
+  return {
+    ...makeGroupSettings({
+      visibility: {
+        enabled: false,
+        fieldSlug: 'visibility',
+        values: ['PUBLIC', 'INTERNO'],
+        groupMatrix: { PUBLIC: [], INTERNO: [] },
+        defaultValue: 'PUBLIC',
+      },
+      creatorBypass: { enabled: false },
+      ...overrides,
+    }),
+    fieldVisibility: { enabled: true, fieldSlug: 'grupos-acesso' },
+  };
+}
+
+describe('guard.fieldVisibility (campo USER_GROUP)', () => {
+  it('adjustListQuery: filtra rows cujo campo contém algum grupo do usuário', () => {
+    const settings = makeFieldVisibilitySettings();
+    const q = guard.adjustListQuery(
+      {},
+      makeCtx(['g-vendas', 'g-rh']),
+      baseTable,
+      settings,
+    );
+    expect(q).toEqual({ 'grupos-acesso': { $in: ['g-vendas', 'g-rh'] } });
+  });
+
+  it('adjustListQuery: usuário sem grupo é bloqueado', () => {
+    const settings = makeFieldVisibilitySettings();
+    const q = guard.adjustListQuery({}, makeCtx([]), baseTable, settings);
+    expect(q).toEqual({ 'grupos-acesso': { $in: ['__BLOCKED__'] } });
+  });
+
+  it('adjustListQuery: visitante sem userId é bloqueado', () => {
+    const settings = makeFieldVisibilitySettings();
+    const q = guard.adjustListQuery({}, makeVisitorCtx(), baseTable, settings);
+    expect(q).toEqual({ 'grupos-acesso': { $in: ['__BLOCKED__'] } });
+  });
+
+  it('canRead: allow (abstain) quando grupos intersectam', () => {
+    const settings = makeFieldVisibilitySettings();
+    const row = makeRow({ creator: 'other', 'grupos-acesso': ['g-vendas'] });
+    const decision = guard.canRead(
+      row,
+      makeCtx(['g-vendas']),
+      baseTable,
+      settings,
+    );
+    expect(decision).toBe('abstain');
+  });
+
+  it('canRead: deny quando não há interseção de grupos', () => {
+    const settings = makeFieldVisibilitySettings();
+    const row = makeRow({ creator: 'other', 'grupos-acesso': ['g-rh'] });
+    const decision = guard.canRead(
+      row,
+      makeCtx(['g-vendas']),
+      baseTable,
+      settings,
+    );
+    expect(decision).toBe('deny');
+  });
+
+  it('canRead: creator-bypass vence a restrição por grupo', () => {
+    const settings = makeFieldVisibilitySettings({
+      creatorBypass: { enabled: true },
+    });
+    const row = makeRow({ creator: 'u1', 'grupos-acesso': ['g-rh'] });
+    const decision = guard.canRead(
+      row,
+      makeCtx(['g-vendas']),
+      baseTable,
+      settings,
+    );
+    expect(decision).toBe('allow');
+  });
+
+  it('canRead: lê ids de grupo populados ({ _id })', () => {
+    const settings = makeFieldVisibilitySettings();
+    const row = makeRow({
+      creator: 'other',
+      'grupos-acesso': [{ _id: 'g-vendas', name: 'Vendas' }],
+    });
+    const decision = guard.canRead(
+      row,
+      makeCtx(['g-vendas']),
+      baseTable,
+      settings,
+    );
+    expect(decision).toBe('abstain');
+  });
+
+  it('canWrite: deny update de row cujos grupos não intersectam', () => {
+    const settings = makeFieldVisibilitySettings();
+    const current = makeRow({ creator: 'other', 'grupos-acesso': ['g-rh'] });
+    const decision = guard.canWrite(
+      current,
+      makeCtx(['g-vendas']),
+      baseTable,
+      { nome: 'x' },
+      'update',
+      settings,
+    );
+    expect(decision.decision).toBe('deny');
+  });
+
+  it('canWrite: abstain no update quando grupos intersectam', () => {
+    const settings = makeFieldVisibilitySettings();
+    const current = makeRow({
+      creator: 'other',
+      'grupos-acesso': ['g-vendas'],
+    });
+    const decision = guard.canWrite(
+      current,
+      makeCtx(['g-vendas']),
+      baseTable,
+      { nome: 'x' },
+      'update',
+      settings,
+    );
+    expect(decision.decision).toBe('abstain');
+  });
+
+  it('canWrite: create não é restringido por fieldVisibility', () => {
+    const settings = makeFieldVisibilitySettings();
+    const decision = guard.canWrite(
+      null,
+      makeCtx(['g-vendas']),
+      baseTable,
+      { nome: 'x', 'grupos-acesso': ['g-rh'] },
+      'create',
+      settings,
+    );
+    expect(decision.decision).toBe('abstain');
   });
 });
