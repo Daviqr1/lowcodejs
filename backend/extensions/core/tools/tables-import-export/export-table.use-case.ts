@@ -28,10 +28,12 @@ const REFERENCE_TYPES = new Set<string>([
   E_FIELD_TYPE.REACTION,
 ]);
 
-// Campos cujo valor é um (ou vários) ID de usuário. Viajam como string/string[]
-// de IDs: resolvem na mesma instância e ficam vazios (sem erro) em outra.
+// Campos cujo valor é um (ou vários) ID de usuário ou grupo. Viajam como
+// string/string[] de IDs: resolvem na mesma instância e ficam vazios (sem erro)
+// em outra.
 const USER_REFERENCE_TYPES = new Set<string>([
   E_FIELD_TYPE.USER,
+  E_FIELD_TYPE.USER_GROUP,
   E_FIELD_TYPE.CREATOR,
 ]);
 

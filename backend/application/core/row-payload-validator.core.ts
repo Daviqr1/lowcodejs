@@ -134,7 +134,8 @@ export class RowPayloadValidator {
 
       case E_FIELD_TYPE.FILE:
       case E_FIELD_TYPE.RELATIONSHIP:
-      case E_FIELD_TYPE.USER: {
+      case E_FIELD_TYPE.USER:
+      case E_FIELD_TYPE.USER_GROUP: {
         if (!Array.isArray(value)) {
           return 'Deve ser uma lista';
         }

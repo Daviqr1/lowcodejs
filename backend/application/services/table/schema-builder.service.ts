@@ -48,6 +48,7 @@ export default class MongooseSchemaBuilder implements SchemaBuilderContractServi
     [E_FIELD_TYPE.REACTION]: E_SCHEMA_TYPE.OBJECT_ID,
     [E_FIELD_TYPE.CATEGORY]: E_SCHEMA_TYPE.STRING,
     [E_FIELD_TYPE.USER]: E_SCHEMA_TYPE.OBJECT_ID,
+    [E_FIELD_TYPE.USER_GROUP]: E_SCHEMA_TYPE.OBJECT_ID,
 
     // NATIVE
     [E_FIELD_TYPE.IDENTIFIER]: E_SCHEMA_TYPE.OBJECT_ID,
@@ -184,6 +185,16 @@ export default class MongooseSchemaBuilder implements SchemaBuilderContractServi
             type: FieldTypeMapper[field.type] || 'String',
             required: Boolean(field.required || false),
             ref: 'User',
+          },
+        ],
+      },
+
+      [E_FIELD_TYPE.USER_GROUP]: {
+        [field.slug]: [
+          {
+            type: FieldTypeMapper[field.type] || 'String',
+            required: Boolean(field.required || false),
+            ref: 'UserGroup',
           },
         ],
       },

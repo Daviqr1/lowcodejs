@@ -112,6 +112,7 @@ function buildFieldMap(
 function isUnsupportedImportType(fieldType: IField['type']): boolean {
   return (
     fieldType === E_FIELD_TYPE.USER ||
+    fieldType === E_FIELD_TYPE.USER_GROUP ||
     fieldType === E_FIELD_TYPE.FILE ||
     fieldType === E_FIELD_TYPE.FIELD_GROUP
   );

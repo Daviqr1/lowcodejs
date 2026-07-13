@@ -104,6 +104,7 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
         (field.type === E_FIELD_TYPE.DROPDOWN ||
           field.type === E_FIELD_TYPE.CATEGORY ||
           field.type === E_FIELD_TYPE.USER ||
+          field.type === E_FIELD_TYPE.USER_GROUP ||
           field.type === E_FIELD_TYPE.CREATOR ||
           field.type === E_FIELD_TYPE.UPDATER) &&
         payload[slug]

@@ -43,6 +43,7 @@ export const E_FIELD_TYPE = {
   EVALUATION: 'EVALUATION',
   CATEGORY: 'CATEGORY',
   USER: 'USER',
+  USER_GROUP: 'USER_GROUP',
   HTML_CONTENT: 'HTML_CONTENT',
 
   // NATIVE
@@ -653,6 +654,9 @@ export type FieldCreatePayload = Pick<
 // Ref lean de usuario populado na resposta (creator/updater e campo USER).
 export type IUserRef = Pick<IUser, '_id' | 'name' | 'email'>;
 
+// Ref lean de grupo populado na resposta (campo USER_GROUP).
+export type IGroupRef = Pick<IGroup, '_id' | 'name' | 'slug'>;
+
 // Valor de UM campo no PAYLOAD de envio (create/update). Chaves da row sao
 // dinamicas, mas o formato por tipo de campo e fechado e conhecido:
 // TEXT/DATE -> string|null; DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP -> ids;
@@ -667,6 +671,7 @@ export type RowResultValue =
   | Array<string>
   | Array<IStorage>
   | Array<IUserRef>
+  | Array<IGroupRef>
   | Array<IRow>;
 
 // Payload de envio: chaves dinamicas, valores tipados (substitui
@@ -707,6 +712,7 @@ export type RowFieldValueMap = {
   [E_FIELD_TYPE.CATEGORY]: Array<string>;
   [E_FIELD_TYPE.FILE]: Array<IStorage>;
   [E_FIELD_TYPE.USER]: Array<IUserRef>;
+  [E_FIELD_TYPE.USER_GROUP]: Array<IGroupRef>;
   [E_FIELD_TYPE.RELATIONSHIP]: Array<IRow>;
   [E_FIELD_TYPE.FIELD_GROUP]: Array<IRow>;
   [E_FIELD_TYPE.REACTION]: Array<string>;

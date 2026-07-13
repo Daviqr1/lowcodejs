@@ -11,6 +11,7 @@ import { Evaluation } from '@application/model/evaluation.model';
 import { Reaction } from '@application/model/reaction.model';
 import { Storage } from '@application/model/storage.model';
 import { Table } from '@application/model/table.model';
+import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
@@ -43,6 +44,7 @@ const POPULATE_BY_FIELD_TYPE: Partial<
 > = {
   [E_FIELD_TYPE.FILE]: { model: Storage },
   [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.USER_GROUP]: { model: UserGroup, select: 'name slug _id' },
   [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
   [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
   [E_FIELD_TYPE.REACTION]: { model: Reaction, select: 'user type' },
@@ -88,6 +90,7 @@ export default class MongoosePopulateBuilder implements PopulateBuilderContractS
       E_FIELD_TYPE.REACTION,
       E_FIELD_TYPE.EVALUATION,
       E_FIELD_TYPE.USER,
+      E_FIELD_TYPE.USER_GROUP,
       E_FIELD_TYPE.CREATOR,
       E_FIELD_TYPE.UPDATER,
     ];

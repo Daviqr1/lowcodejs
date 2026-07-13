@@ -9,6 +9,7 @@ import type {
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import { Storage } from '@application/model/storage.model';
+import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
@@ -22,6 +23,7 @@ const GROUP_POPULATE_BY_FIELD_TYPE: Partial<
   >
 > = {
   [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
+  [E_FIELD_TYPE.USER_GROUP]: { model: UserGroup, select: 'name slug _id' },
   [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
   [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
   [E_FIELD_TYPE.FILE]: { model: Storage },
@@ -137,6 +139,7 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           groupField.type === E_FIELD_TYPE.DROPDOWN ||
           groupField.type === E_FIELD_TYPE.CATEGORY ||
           groupField.type === E_FIELD_TYPE.USER ||
+          groupField.type === E_FIELD_TYPE.USER_GROUP ||
           groupField.type === E_FIELD_TYPE.CREATOR ||
           groupField.type === E_FIELD_TYPE.UPDATER
         ) {
