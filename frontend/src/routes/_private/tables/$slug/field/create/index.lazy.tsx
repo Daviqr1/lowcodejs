@@ -244,6 +244,7 @@ function RouteComponent(): React.JSX.Element {
         required: value.required,
         multiple: value.multiple,
         showInFilter: value.showInFilter,
+        showInParentList: value.showInParentList,
         permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
@@ -352,6 +353,7 @@ function RouteComponent(): React.JSX.Element {
           isPending={isPending}
           tableSlug={slug}
           blockedTypes={blockedTypes}
+          isGroupField={!!groupSlug}
           defaultFieldType={defaultFieldType}
         />
       </form>

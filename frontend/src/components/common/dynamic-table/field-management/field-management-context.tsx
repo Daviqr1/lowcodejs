@@ -12,6 +12,11 @@ export type WidthKey = 'widthInForm' | 'widthInList' | 'widthInDetail';
 
 export type FieldManagementActions = {
   fields: Array<IField>;
+  // Campos-filho de grupo elegíveis (`showInParentList`) a aparecer na aba Lista
+  // do gerenciamento da tabela pai. `parentListChildIds` identifica quais campos
+  // usam `visibleInParentList` (em vez de `permissions.list`) como visibilidade.
+  parentListChildFields: Array<IField>;
+  parentListChildIds: Set<string>;
   fieldOrderList: Array<string>;
   fieldOrderForm: Array<string>;
   fieldOrderFilter: Array<string>;

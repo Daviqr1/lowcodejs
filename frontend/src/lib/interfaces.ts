@@ -303,6 +303,12 @@ export type IField = Merge<
     validations?: Array<IFieldValidation>;
     // Exibe o campo na barra de filtros (config de UX, não é permissão).
     showInFilter: boolean;
+    // Campos-filho de FIELD_GROUP: elegibilidade + visibilidade na listagem
+    // geral da tabela pai. `showInParentList` (config no form) injeta o campo em
+    // "Gerenciar campos" da lista principal; `visibleInParentList` (toggle em
+    // Gerenciar) controla se a coluna é renderizada. Não é permissão.
+    showInParentList?: boolean;
+    visibleInParentList?: boolean;
     // Visibilidade do campo por contexto (Grupo|Public|Nobody). null apenas em
     // documentos ainda não backfillados.
     permissions?: {

@@ -18,10 +18,35 @@ import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-c
 import { Badge } from '@/components/ui/badge';
 import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRow } from '@/lib/interfaces';
+import type { IField, IGroupConfiguration, IRow } from '@/lib/interfaces';
 import { resolveFieldLabel } from '@/lib/table';
 
 const ROUTE_ID = '/_private/tables/$slug/';
+
+function isRowRecord(value: unknown): value is IRow {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    '_id' in value
+  );
+}
+
+// Resolve o primeiro sub-registro de um valor de FIELD_GROUP (`row[groupSlug]` é
+// `Array<IRow>`). A listagem geral exibe apenas o primeiro sub-registro.
+function resolveFirstSubRow(value: unknown): IRow | null {
+  if (!Array.isArray(value)) return null;
+  const [first] = value;
+  if (isRowRecord(first)) return first;
+  return null;
+}
+
+// Campo-filho de grupo elegível a aparecer como coluna na listagem geral.
+function isEligibleGroupChildField(field: IField): boolean {
+  return Boolean(
+    field.showInParentList && field.visibleInParentList && !field.trashed,
+  );
+}
 
 function RenderCell({
   field,
@@ -161,11 +186,19 @@ function RenderCell({
   }
 }
 
+// Um candidato a coluna: campo normal (parentGroup ausente) ou campo-filho de
+// grupo elegível à listagem geral (parentGroup = o grupo dono).
+type ColumnCandidate = {
+  field: IField;
+  parentGroup?: IGroupConfiguration;
+};
+
 type UseFieldColumnsOptions = {
   fields: Array<IField>;
   fieldOrder: Array<string>;
   tableSlug: string;
   canEditField: boolean;
+  groups?: Array<IGroupConfiguration>;
 };
 
 export function useFieldColumns({
@@ -173,78 +206,123 @@ export function useFieldColumns({
   fieldOrder,
   tableSlug,
   canEditField,
+  groups,
 }: UseFieldColumnsOptions): Array<ColumnDef<IRow, unknown>> {
   const router = useRouter();
   const { slug } = useParams({ from: ROUTE_ID });
   const { isFieldVisible } = useFieldVisibility();
 
   return React.useMemo(() => {
-    const sorted = fields
+    const candidates: Array<ColumnCandidate> = fields
       .filter((f) => isFieldVisible(f, 'list') && !f.trashed)
-      .sort((a, b) => {
-        const idxA = fieldOrder.indexOf(a._id);
-        const idxB = fieldOrder.indexOf(b._id);
-        let rankA = idxA;
-        if (idxA === -1) rankA = Infinity;
-        let rankB = idxB;
-        if (idxB === -1) rankB = Infinity;
-        return rankA - rankB;
-      });
+      .map((field) => ({ field }));
+
+    for (const group of groups ?? []) {
+      for (const childField of group.fields ?? []) {
+        if (isEligibleGroupChildField(childField)) {
+          candidates.push({ field: childField, parentGroup: group });
+        }
+      }
+    }
+
+    const sorted = candidates.sort((a, b) => {
+      const idxA = fieldOrder.indexOf(a.field._id);
+      const idxB = fieldOrder.indexOf(b.field._id);
+      let rankA = idxA;
+      if (idxA === -1) rankA = Infinity;
+      let rankB = idxB;
+      if (idxB === -1) rankB = Infinity;
+      return rankA - rankB;
+    });
 
     return sorted.map(
-      (field, index): ColumnDef<IRow, unknown> => ({
-        id: field._id,
-        accessorFn: (row) => row[field.slug],
-        meta: { label: resolveFieldLabel(field), field },
-        size: field.widthInList ?? undefined,
-        header: (): React.JSX.Element => {
-          let orderKey: string | undefined;
-          if (field.type !== E_FIELD_TYPE.FIELD_GROUP) {
-            orderKey = 'order-'.concat(field.slug);
-          }
-          let onTitleClick: (() => void) | undefined;
-          if (canEditField) {
-            onTitleClick = (): void => {
-              router.navigate({
-                to: '/tables/$slug/field/$fieldId',
-                params: { fieldId: field._id, slug },
-              });
-            };
-          }
-          return (
-            <DataTableColumnHeader
-              title={resolveFieldLabel(field)}
-              orderKey={orderKey}
-              routeId={ROUTE_ID}
-              canNavigate={canEditField}
-              onTitleClick={onTitleClick}
-            />
-          );
-        },
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            {index === 0 && row.original.status === 'draft' && (
-              <Badge
-                variant="outline"
-                className="shrink-0 text-amber-600 border-amber-400"
-              >
-                Rascunho
-              </Badge>
-            )}
-            <RenderCell
-              field={field}
-              row={row.original}
-              tableSlug={tableSlug}
-            />
-          </div>
-        ),
-      }),
+      ({ field, parentGroup }, index): ColumnDef<IRow, unknown> => {
+        let accessorFn: (row: IRow) => unknown = (row): unknown =>
+          row[field.slug];
+        if (parentGroup) {
+          accessorFn = (row): unknown => {
+            const subRow = resolveFirstSubRow(row[parentGroup.slug]);
+            if (!subRow) return undefined;
+            return subRow[field.slug];
+          };
+        }
+
+        return {
+          id: field._id,
+          accessorFn,
+          meta: { label: resolveFieldLabel(field), field },
+          size: field.widthInList ?? undefined,
+          header: (): React.JSX.Element => {
+            let orderKey: string | undefined;
+            if (field.type !== E_FIELD_TYPE.FIELD_GROUP) {
+              orderKey = 'order-'.concat(field.slug);
+            }
+            let onTitleClick: (() => void) | undefined;
+            if (canEditField) {
+              onTitleClick = (): void => {
+                let search: { group?: string } = {};
+                if (parentGroup) search = { group: parentGroup.slug };
+                router.navigate({
+                  to: '/tables/$slug/field/$fieldId',
+                  params: { fieldId: field._id, slug },
+                  search,
+                });
+              };
+            }
+            return (
+              <DataTableColumnHeader
+                title={resolveFieldLabel(field)}
+                orderKey={orderKey}
+                routeId={ROUTE_ID}
+                canNavigate={canEditField}
+                onTitleClick={onTitleClick}
+              />
+            );
+          },
+          cell: ({ row }): React.JSX.Element => {
+            let cell: React.JSX.Element = (
+              <RenderCell
+                field={field}
+                row={row.original}
+                tableSlug={tableSlug}
+              />
+            );
+            if (parentGroup) {
+              const subRow = resolveFirstSubRow(row.original[parentGroup.slug]);
+              cell = <span className="text-muted-foreground text-sm">-</span>;
+              if (subRow) {
+                cell = (
+                  <RenderCell
+                    field={field}
+                    row={subRow}
+                    tableSlug={tableSlug}
+                  />
+                );
+              }
+            }
+            return (
+              <div className="flex items-center gap-2">
+                {index === 0 && row.original.status === 'draft' && (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-amber-600 border-amber-400"
+                  >
+                    Rascunho
+                  </Badge>
+                )}
+                {cell}
+              </div>
+            );
+          },
+        };
+      },
     );
   }, [
     fields,
     fieldOrder,
     tableSlug,
     canEditField,
+    groups,
     router,
     slug,
     isFieldVisible,

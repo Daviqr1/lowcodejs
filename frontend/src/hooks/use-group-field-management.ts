@@ -409,6 +409,10 @@ export function useGroupFieldManagement(
 
   return {
     fields,
+    // Gerenciamento DENTRO de um grupo não injeta campos-filho na listagem geral
+    // da tabela pai — isso só vale no gerenciamento da própria tabela.
+    parentListChildFields: [],
+    parentListChildIds: new Set<string>(),
     fieldOrderList: [],
     fieldOrderForm: [],
     fieldOrderFilter: [],

@@ -187,6 +187,8 @@ export type FieldConfigurationPayload = {
   format?: ValueOf<typeof E_FIELD_FORMAT> | null;
   validations?: Array<IFieldValidation>;
   showInFilter?: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
   permissions?: {
     list: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };
     form: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };
@@ -225,6 +227,8 @@ export type FieldCreatePayload = {
   format?: ValueOf<typeof E_FIELD_FORMAT> | null;
   validations?: Array<IFieldValidation>;
   showInFilter?: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
   permissions?: {
     list: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };
     form: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };
@@ -265,6 +269,8 @@ export type FieldUpdatePayload = {
   format?: ValueOf<typeof E_FIELD_FORMAT> | null;
   validations?: Array<IFieldValidation>;
   showInFilter?: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
   permissions?: {
     list: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };
     form: { kind: ValueOf<typeof E_PERMISSION_TARGET>; group: string | null };

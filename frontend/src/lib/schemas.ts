@@ -429,6 +429,7 @@ export const FieldBaseSchema = z.object({
     .nullable()
     .default(null),
   showInFilter: z.boolean().default(false),
+  showInParentList: z.boolean().default(false),
   widthInForm: z.number().nullable().default(50),
   widthInList: z.number().nullable().default(10),
   tip: z.string().nullable().default(null),

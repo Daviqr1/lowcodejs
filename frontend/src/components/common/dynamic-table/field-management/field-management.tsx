@@ -69,11 +69,16 @@ const FIELD_CONTEXT_BY_VISIBILITY_KEY: Partial<
 
 // Valor atual de visibilidade do campo para uma chave do toggle: `showInFilter`
 // é booleano; list/form/detail derivam do binding (não NOBODY = visível).
+// Campo-filho de grupo na aba Lista usa `visibleInParentList` (não o binding).
 function fieldVisibilityValue(
   field: IField,
   visibilityKey: VisibilityKey,
+  isParentListChild?: boolean,
 ): boolean {
   if (visibilityKey === 'showInFilter') return field.showInFilter;
+  if (visibilityKey === 'showInList' && isParentListChild) {
+    return Boolean(field.visibleInParentList);
+  }
   const context = FIELD_CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
   if (!context) return false;
   return isFieldShownInContext(field, context);
@@ -99,6 +104,7 @@ type SortableManagementItemProps = {
   disabled?: boolean;
   dimmed?: boolean;
   visibilityKey: VisibilityKey;
+  isParentListChild?: boolean;
   widthKey?: 'widthInForm' | 'widthInList' | 'widthInDetail';
   onEdit: () => void;
   onToggleVisibility: () => void;
@@ -112,6 +118,7 @@ function SortableManagementItem({
   disabled,
   dimmed,
   visibilityKey,
+  isParentListChild,
   widthKey,
   onEdit,
   onToggleVisibility,
@@ -139,7 +146,11 @@ function SortableManagementItem({
     opacity: opacityValue,
   };
 
-  const isVisible = fieldVisibilityValue(field, visibilityKey);
+  const isVisible = fieldVisibilityValue(
+    field,
+    visibilityKey,
+    isParentListChild,
+  );
   let currentWidth: number | null = null;
   if (widthKey) {
     currentWidth = field[widthKey] ?? 50;
@@ -489,6 +500,8 @@ function FieldManagementList({
 }: ListProps): React.JSX.Element {
   const {
     fields: allFields,
+    parentListChildFields,
+    parentListChildIds,
     fieldOrderList,
     fieldOrderForm,
     fieldOrderFilter,
@@ -501,6 +514,12 @@ function FieldManagementList({
     changingWidthFieldId,
     isSavingOrder,
   } = useFieldManagement();
+
+  // Só a aba Lista traz os campos-filho de grupo elegíveis (config
+  // `showInParentList`); esses usam `visibleInParentList` como visibilidade.
+  function isParentListChild(field: IField): boolean {
+    return visibilityKey === 'showInList' && parentListChildIds.has(field._id);
+  }
 
   const orderArray = React.useMemo(() => {
     if (visibilityKey === 'showInList') return fieldOrderList;
@@ -516,10 +535,11 @@ function FieldManagementList({
     fieldOrderDetail,
   ]);
 
-  const managedFields = React.useMemo(
-    () => allFields.filter((f) => isManageableField(f, excludeNative)),
-    [allFields, excludeNative],
-  );
+  const managedFields = React.useMemo(() => {
+    const base = allFields.filter((f) => isManageableField(f, excludeNative));
+    if (visibilityKey !== 'showInList') return base;
+    return [...base, ...parentListChildFields];
+  }, [allFields, excludeNative, visibilityKey, parentListChildFields]);
 
   const [orderedIds, setOrderedIds] = useState<Array<string>>(() => {
     if (orderArray.length === 0) return managedFields.map((f) => f._id);
@@ -551,10 +571,10 @@ function FieldManagementList({
   }, [managedFields, orderedIds]);
 
   const visibleFields = orderedFields.filter((f) =>
-    fieldVisibilityValue(f, visibilityKey),
+    fieldVisibilityValue(f, visibilityKey, isParentListChild(f)),
   );
   const hiddenFields = orderedFields.filter(
-    (f) => !fieldVisibilityValue(f, visibilityKey),
+    (f) => !fieldVisibilityValue(f, visibilityKey, isParentListChild(f)),
   );
 
   const WIDTH_KEY_BY_VISIBILITY: Partial<Record<VisibilityKey, WidthKey>> = {
@@ -581,8 +601,16 @@ function FieldManagementList({
 
     // Bloqueia mover entre as secoes (visivel/oculto); olho faz essa troca.
     if (
-      fieldVisibilityValue(activeField, visibilityKey) !==
-      fieldVisibilityValue(overField, visibilityKey)
+      fieldVisibilityValue(
+        activeField,
+        visibilityKey,
+        isParentListChild(activeField),
+      ) !==
+      fieldVisibilityValue(
+        overField,
+        visibilityKey,
+        isParentListChild(overField),
+      )
     ) {
       return;
     }
@@ -602,7 +630,11 @@ function FieldManagementList({
   }
 
   function handleToggleVisibility(field: IField): void {
-    const currentValue = fieldVisibilityValue(field, visibilityKey);
+    const currentValue = fieldVisibilityValue(
+      field,
+      visibilityKey,
+      isParentListChild(field),
+    );
     onToggleVisibility(field, visibilityKey, !currentValue);
   }
 
@@ -613,16 +645,19 @@ function FieldManagementList({
 
   // Sincroniza IDs quando campos são adicionados ou removidos (não para toggle).
   useEffect(() => {
-    const updatedIds = allFields
+    let updatedIds = allFields
       .filter((f) => isManageableField(f, excludeNative))
       .map((f) => f._id);
+    if (visibilityKey === 'showInList') {
+      updatedIds = [...updatedIds, ...parentListChildFields.map((f) => f._id)];
+    }
     setOrderedIds((prev) => {
       const kept = prev.filter((id) => updatedIds.includes(id));
       const added = updatedIds.filter((id) => !prev.includes(id));
       if (kept.length === prev.length && added.length === 0) return prev;
       return [...kept, ...added];
     });
-  }, [allFields, excludeNative]);
+  }, [allFields, excludeNative, visibilityKey, parentListChildFields]);
 
   function renderField(field: IField, dimmed: boolean): React.JSX.Element {
     let onWidthChange: ((width: number) => void) | undefined;
@@ -636,6 +671,7 @@ function FieldManagementList({
         dimmed={dimmed}
         disabled={isSavingOrder}
         visibilityKey={visibilityKey}
+        isParentListChild={isParentListChild(field)}
         widthKey={widthKey}
         onEdit={(): void => onEditField(field._id)}
         onToggleVisibility={(): void => handleToggleVisibility(field)}

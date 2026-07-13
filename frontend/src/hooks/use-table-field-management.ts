@@ -210,6 +210,35 @@ export function useTableFieldManagement(
   const tableSlug = table?.slug ?? '';
   const fields = table?.fields ?? [];
 
+  // Índice campo-filho -> slug do grupo dono, e lista de filhos elegíveis a
+  // aparecer na aba Lista (config `showInParentList`). A visibilidade da coluna
+  // na lista principal é `visibleInParentList`, alternada aqui pelo endpoint do
+  // grupo (`/tables/:slug/groups/:groupSlug/fields/:id`).
+  const parentGroupSlugByChildId = new Map<string, string>();
+  const parentListChildFields: Array<IField> = [];
+  for (const group of table?.groups ?? []) {
+    for (const childField of group.fields ?? []) {
+      parentGroupSlugByChildId.set(childField._id, group.slug);
+      if (childField.showInParentList && !childField.trashed) {
+        parentListChildFields.push(childField);
+      }
+    }
+  }
+  const parentListChildIds = new Set(parentListChildFields.map((f) => f._id));
+
+  async function putGroupChildField(
+    field: IField,
+    overrides: Partial<IField>,
+  ): Promise<IField> {
+    const groupSlug = parentGroupSlugByChildId.get(field._id) ?? '';
+    const route = `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`;
+    const response = await API.put<IField>(
+      route,
+      buildFieldPayload(field, overrides),
+    );
+    return response.data;
+  }
+
   const updateTable = useUpdateTable({
     onSuccess: () => {
       toast.success('Ordem atualizada com sucesso');
@@ -303,6 +332,62 @@ export function useTableFieldManagement(
     },
   });
 
+  // Toggle de visibilidade da coluna na lista principal para campo-filho de
+  // grupo: persiste `visibleInParentList` via endpoint do grupo.
+  const toggleParentListMutation = useMutation({
+    mutationFn: async ({
+      field,
+      newValue,
+    }: {
+      field: IField;
+      newValue: boolean;
+    }) => putGroupChildField(field, { visibleInParentList: newValue }),
+    onMutate: ({ field }) => {
+      setTogglingFieldId(field._id);
+    },
+    onSuccess: (_response, { newValue }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(tableSlug),
+      });
+      if (newValue) {
+        toast.success('Campo visível em listagem');
+      } else {
+        toast.success('Campo oculto em listagem');
+      }
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar visibilidade do campo');
+    },
+    onSettled: () => {
+      setTogglingFieldId(null);
+    },
+  });
+
+  const changeParentListWidthMutation = useMutation({
+    mutationFn: async ({
+      field,
+      newWidth,
+    }: {
+      field: IField;
+      newWidth: number;
+    }) => putGroupChildField(field, { widthInList: newWidth }),
+    onMutate: ({ field }) => {
+      setChangingWidthFieldId(field._id);
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(tableSlug),
+      });
+      toast.success(`Largura atualizada para ${response.widthInList}px`);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar largura do campo');
+    },
+    onSettled: () => {
+      setChangingWidthFieldId(null);
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (field: IField) => {
       const route = `/tables/${tableSlug}/fields/${field._id}`;
@@ -362,6 +447,10 @@ export function useTableFieldManagement(
     visibilityKey: VisibilityKey,
     newValue: boolean,
   ): void {
+    if (visibilityKey === 'showInList' && parentListChildIds.has(field._id)) {
+      toggleParentListMutation.mutate({ field, newValue });
+      return;
+    }
     toggleVisibilityMutation.mutate({ field, visibilityKey, newValue });
   }
 
@@ -370,6 +459,10 @@ export function useTableFieldManagement(
     widthKey: WidthKey,
     newWidth: number,
   ): void {
+    if (widthKey === 'widthInList' && parentListChildIds.has(field._id)) {
+      changeParentListWidthMutation.mutate({ field, newWidth });
+      return;
+    }
     changeWidthMutation.mutate({ field, widthKey, newWidth });
   }
 
@@ -441,14 +534,22 @@ export function useTableFieldManagement(
   }
 
   function onEditField(fieldId: string): void {
+    let search: { group?: string } = {};
+    const groupSlug = parentGroupSlugByChildId.get(fieldId);
+    if (groupSlug && parentListChildIds.has(fieldId)) {
+      search = { group: groupSlug };
+    }
     router.navigate({
       to: '/tables/$slug/field/$fieldId',
       params: { slug: tableSlug, fieldId },
+      search,
     });
   }
 
   return {
     fields,
+    parentListChildFields,
+    parentListChildIds,
     fieldOrderList: table?.fieldOrderList ?? [],
     fieldOrderForm: table?.fieldOrderForm ?? [],
     fieldOrderFilter: table?.fieldOrderFilter ?? [],

@@ -121,6 +121,7 @@ export const FieldCreateSchema = z.object({
   category: z.array(z.custom<TreeNode>()).default([]),
   multiple: z.boolean().default(false),
   showInFilter: z.boolean().default(true),
+  showInParentList: z.boolean().default(false),
   permissions: z
     .object({
       list: FieldPermissionBindingSchema,
@@ -173,6 +174,7 @@ export const fieldCreateFormDefaultValues: FieldCreateFormValues = {
   category: [],
   multiple: false,
   showInFilter: true,
+  showInParentList: false,
   permissions: {
     list: { kind: E_PERMISSION_TARGET.PUBLIC, group: null },
     form: { kind: E_PERMISSION_TARGET.PUBLIC, group: null },
@@ -190,6 +192,7 @@ export const CreateFieldFormFields = withForm({
     isPending: false,
     tableSlug: '',
     blockedTypes: new Array<string>(),
+    isGroupField: false,
     // withForm infere o tipo do prop pelo default; a asserção define o tipo.
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     defaultFieldType: undefined as string | undefined,
@@ -199,6 +202,7 @@ export const CreateFieldFormFields = withForm({
     isPending,
     tableSlug,
     blockedTypes,
+    isGroupField,
     defaultFieldType,
   }) {
     // useStore para valores reativos do form
@@ -992,6 +996,19 @@ export const CreateFieldFormFields = withForm({
               <field.FieldBooleanSwitch
                 label="Obrigatoriedade"
                 description="Este campo é obrigatório?"
+                disabled={isPending}
+              />
+            )}
+          </form.AppField>
+        )}
+
+        {/* Campo-filho de grupo: exibir na listagem geral da lista */}
+        {isGroupField && (
+          <form.AppField name="showInParentList">
+            {(field) => (
+              <field.FieldBooleanSwitch
+                label="Exibir na listagem geral da lista"
+                description="Tornar este campo disponível em Gerenciar da lista principal?"
                 disabled={isPending}
               />
             )}

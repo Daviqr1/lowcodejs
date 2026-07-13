@@ -437,6 +437,7 @@ function FieldUpdateContent({
       category: data.category ?? [],
       multiple: data.multiple,
       showInFilter: data.showInFilter,
+      showInParentList: data.showInParentList ?? false,
       permissions: data.permissions ?? {
         list: bindingFromBool(isFieldShownInContext(data, 'list')),
         form: bindingFromBool(isFieldShownInContext(data, 'form')),
@@ -562,6 +563,7 @@ function FieldUpdateContent({
         required,
         multiple: value.multiple,
         showInFilter: value.showInFilter,
+        showInParentList: value.showInParentList,
         permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,

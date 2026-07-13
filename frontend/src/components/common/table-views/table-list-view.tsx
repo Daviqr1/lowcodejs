@@ -242,6 +242,7 @@ export function TableListView({
     fieldOrder: order,
     tableSlug: slug,
     canEditField,
+    groups: table_.data?.groups,
   });
 
   const columns = React.useMemo(() => {

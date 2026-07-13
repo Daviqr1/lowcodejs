@@ -123,6 +123,7 @@ export const FieldUpdateSchema = z.object({
   category: z.array(z.custom<ICategory>()).default([]),
   multiple: z.boolean().default(false),
   showInFilter: z.boolean().default(false),
+  showInParentList: z.boolean().default(false),
   permissions: z
     .object({
       list: FieldPermissionBindingSchema,
@@ -193,6 +194,7 @@ export const fieldUpdateFormDefaultValues: FieldUpdateFormValues = {
   category: [],
   multiple: false,
   showInFilter: false,
+  showInParentList: false,
   permissions: {
     list: { kind: E_PERMISSION_TARGET.PUBLIC, group: null },
     form: { kind: E_PERMISSION_TARGET.PUBLIC, group: null },
@@ -1101,6 +1103,19 @@ export const UpdateFieldFormFields = withForm({
                 label="Obrigatoriedade"
                 description="Este campo é obrigatório?"
                 disabled={isDisabled || lockNonOptions || isTrashed}
+              />
+            )}
+          </form.AppField>
+        )}
+
+        {/* Campo-filho de grupo: exibir na listagem geral da lista */}
+        {isGroupField && (
+          <form.AppField name="showInParentList">
+            {(field) => (
+              <field.FieldBooleanSwitch
+                label="Exibir na listagem geral da lista"
+                description="Tornar este campo disponível em Gerenciar da lista principal?"
+                disabled={isDisabled || isTrashed}
               />
             )}
           </form.AppField>
