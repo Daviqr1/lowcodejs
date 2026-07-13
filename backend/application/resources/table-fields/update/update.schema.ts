@@ -86,6 +86,18 @@ export const TableFieldUpdateSchema: FastifySchema = {
         default: false,
         description: 'Permitir filtrar por este campo',
       },
+      showInParentList: {
+        type: 'boolean',
+        default: false,
+        description:
+          'Campo-filho de grupo: elegivel a aparecer na listagem geral da tabela pai',
+      },
+      visibleInParentList: {
+        type: 'boolean',
+        default: false,
+        description:
+          'Campo-filho de grupo: coluna visivel na listagem geral da tabela pai',
+      },
       permissions: {
         type: 'object',
         nullable: true,
@@ -402,6 +414,8 @@ export const TableFieldUpdateSchema: FastifySchema = {
           type: 'boolean',
           description: 'Permitir filtrar por este campo',
         },
+        showInParentList: { type: 'boolean' },
+        visibleInParentList: { type: 'boolean' },
         widthInForm: {
           type: 'number',
           nullable: true,

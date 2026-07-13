@@ -27,6 +27,8 @@ export const GroupFieldShowSchema: FastifySchema = {
         required: { type: 'boolean' },
         multiple: { type: 'boolean' },
         showInFilter: { type: 'boolean' },
+        showInParentList: { type: 'boolean' },
+        visibleInParentList: { type: 'boolean' },
         permissions: {
           type: 'object',
           nullable: true,

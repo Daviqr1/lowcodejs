@@ -162,6 +162,8 @@ export const TablePaginatedSchema: FastifySchema = {
                       type: 'boolean',
                       description: 'Permitir filtragem',
                     },
+                    showInParentList: { type: 'boolean' },
+                    visibleInParentList: { type: 'boolean' },
                     permissions: {
                       type: 'object',
                       nullable: true,
@@ -460,6 +462,8 @@ export const TablePaginatedSchema: FastifySchema = {
                           multiple: { type: 'boolean' },
                           format: { type: 'string', nullable: true },
                           showInFilter: { type: 'boolean' },
+                          showInParentList: { type: 'boolean' },
+                          visibleInParentList: { type: 'boolean' },
                           permissions: {
                             type: 'object',
                             nullable: true,

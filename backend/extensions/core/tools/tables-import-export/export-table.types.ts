@@ -25,6 +25,8 @@ export type ExportedField = {
   format: string | null;
   validations?: IFieldValidation[];
   showInFilter: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
   permissions?: IFieldPermissions | null;
   widthInForm: number | null;
   widthInList: number | null;

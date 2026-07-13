@@ -63,6 +63,8 @@ export const TableFieldAddCategorySchema: FastifySchema = {
             multiple: { type: 'boolean' },
             format: { type: 'string', nullable: true },
             showInFilter: { type: 'boolean' },
+            showInParentList: { type: 'boolean' },
+            visibleInParentList: { type: 'boolean' },
             permissions: {
               type: 'object',
               nullable: true,

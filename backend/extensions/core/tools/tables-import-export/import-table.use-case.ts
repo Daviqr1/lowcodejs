@@ -65,6 +65,8 @@ type ExportedField = {
   format: IField['format'];
   validations?: IFieldValidation[];
   showInFilter: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
   permissions?: IFieldPermissions | null;
   widthInForm: number | null;
   widthInList: number | null;
@@ -1294,6 +1296,8 @@ export default class ImportTableUseCase {
       permissions:
         exported.permissions ?? buildFieldPermissions(true, true, true),
       showInFilter: exported.showInFilter,
+      showInParentList: exported.showInParentList,
+      visibleInParentList: exported.visibleInParentList,
       widthInForm: exported.widthInForm,
       widthInList: exported.widthInList,
       widthInDetail: exported.widthInDetail,

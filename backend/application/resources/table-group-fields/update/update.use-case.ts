@@ -106,6 +106,8 @@ export default class GroupFieldUpdateUseCase {
         const updatedField = await this.fieldRepository.update({
           _id: field._id,
           showInFilter: payload.showInFilter,
+          showInParentList: payload.showInParentList,
+          visibleInParentList: payload.visibleInParentList,
           permissions: payload.permissions,
           widthInForm: payload.widthInForm,
           widthInList: payload.widthInList,

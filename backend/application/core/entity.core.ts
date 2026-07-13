@@ -530,6 +530,13 @@ export type IField = Merge<
     validations?: IFieldValidation[];
     // Exibe o campo na barra de filtros (config de UX, nao e permissao).
     showInFilter: boolean;
+    // Campos-filho de FIELD_GROUP: elegibilidade de aparecer na listagem geral
+    // da tabela pai. `showInParentList` (config no form) injeta o campo em
+    // "Gerenciar campos" da lista principal; `visibleInParentList` (toggle em
+    // Gerenciar) controla se a coluna e de fato renderizada. Nao e permissao —
+    // `permissions.list` do campo-filho rege apenas a sub-tabela do grupo.
+    showInParentList?: boolean;
+    visibleInParentList?: boolean;
     // Visibilidade por contexto (list/form/detail). null apenas em documentos
     // ainda nao backfillados (migration 10).
     permissions?: IFieldPermissions | null;
@@ -634,6 +641,8 @@ export type FieldCreatePayload = Pick<
   | 'format'
   | 'validations'
   | 'showInFilter'
+  | 'showInParentList'
+  | 'visibleInParentList'
   | 'permissions'
   | 'widthInForm'
   | 'widthInList'

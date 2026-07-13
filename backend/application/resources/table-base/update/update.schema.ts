@@ -236,6 +236,8 @@ export const TableUpdateSchema: FastifySchema = {
                 type: 'boolean',
                 description: 'Permitir filtragem',
               },
+              showInParentList: { type: 'boolean' },
+              visibleInParentList: { type: 'boolean' },
               widthInForm: {
                 type: 'number',
                 nullable: true,
@@ -468,6 +470,8 @@ export const TableUpdateSchema: FastifySchema = {
                     multiple: { type: 'boolean' },
                     format: { type: 'string', nullable: true },
                     showInFilter: { type: 'boolean' },
+                    showInParentList: { type: 'boolean' },
+                    visibleInParentList: { type: 'boolean' },
                     widthInForm: { type: 'number', nullable: true },
                     widthInList: { type: 'number', nullable: true },
                     widthInDetail: { type: 'number', nullable: true },

@@ -105,6 +105,8 @@ export const TableCreateSchema: FastifySchema = {
                 type: 'boolean',
                 description: 'Permitir filtragem',
               },
+              showInParentList: { type: 'boolean' },
+              visibleInParentList: { type: 'boolean' },
               widthInForm: {
                 type: 'number',
                 nullable: true,
@@ -291,6 +293,8 @@ export const TableCreateSchema: FastifySchema = {
                     multiple: { type: 'boolean' },
                     format: { type: 'string', nullable: true },
                     showInFilter: { type: 'boolean' },
+                    showInParentList: { type: 'boolean' },
+                    visibleInParentList: { type: 'boolean' },
                     permissions: {
                       type: 'object',
                       nullable: true,

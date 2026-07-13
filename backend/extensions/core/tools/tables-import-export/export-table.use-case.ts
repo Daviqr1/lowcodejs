@@ -280,6 +280,8 @@ export default class ExportTableUseCase {
       format: field.format,
       validations: field.validations ?? [],
       showInFilter: field.showInFilter,
+      showInParentList: field.showInParentList,
+      visibleInParentList: field.visibleInParentList,
       permissions: field.permissions,
       widthInForm: field.widthInForm,
       widthInList: field.widthInList,

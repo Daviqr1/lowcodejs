@@ -38,6 +38,8 @@ export const GroupFieldUpdateSchema: FastifySchema = {
       required: { type: 'boolean', default: false },
       multiple: { type: 'boolean', default: false },
       showInFilter: { type: 'boolean', default: false },
+      showInParentList: { type: 'boolean', default: false },
+      visibleInParentList: { type: 'boolean', default: false },
       widthInForm: { type: 'number', nullable: true, default: 50 },
       widthInList: { type: 'number', nullable: true, default: 10 },
       widthInDetail: { type: 'number', nullable: true, default: 50 },
@@ -113,6 +115,8 @@ export const GroupFieldUpdateSchema: FastifySchema = {
         required: { type: 'boolean' },
         multiple: { type: 'boolean' },
         showInFilter: { type: 'boolean' },
+        showInParentList: { type: 'boolean' },
+        visibleInParentList: { type: 'boolean' },
         permissions: {
           type: 'object',
           nullable: true,

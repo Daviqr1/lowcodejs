@@ -97,6 +97,8 @@ export const TableSendToTrashSchema: FastifySchema = {
                 type: 'boolean',
                 description: 'Permitir filtragem',
               },
+              showInParentList: { type: 'boolean' },
+              visibleInParentList: { type: 'boolean' },
               permissions: {
                 type: 'object',
                 nullable: true,

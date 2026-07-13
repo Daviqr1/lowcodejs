@@ -271,6 +271,16 @@ export const Schema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Campos-filho de FIELD_GROUP: elegibilidade + visibilidade na listagem
+    // geral da tabela pai (nao e permissao; ver IField em entity.core.ts).
+    showInParentList: {
+      type: Boolean,
+      default: false,
+    },
+    visibleInParentList: {
+      type: Boolean,
+      default: false,
+    },
     // Visibilidade por contexto (list/form/detail) → binding por grupo.
     permissions: {
       type: FieldPermissions,

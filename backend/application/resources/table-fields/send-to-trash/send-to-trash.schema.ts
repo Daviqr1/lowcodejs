@@ -48,6 +48,8 @@ export const TableFieldSendToTrashSchema: FastifySchema = {
         },
         format: { type: 'string', nullable: true, description: 'Formato' },
         showInFilter: { type: 'boolean', description: 'Disponível em filtros' },
+        showInParentList: { type: 'boolean' },
+        visibleInParentList: { type: 'boolean' },
         permissions: {
           type: 'object',
           nullable: true,

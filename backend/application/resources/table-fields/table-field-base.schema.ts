@@ -109,6 +109,11 @@ export const FieldFormatSchema = z
   .default(null);
 // Exibe o campo na barra de filtros (config de UX, nao e permissao).
 export const FieldShowInFilterSchema = z.boolean().default(false);
+// Campos-filho de FIELD_GROUP: elegibilidade + visibilidade na listagem geral
+// da tabela pai (nao e permissao; ver IField em entity.core.ts). Opcionais:
+// Mongoose aplica default false e o schema Fastify coage no body HTTP.
+export const FieldShowInParentListSchema = z.boolean().optional();
+export const FieldVisibleInParentListSchema = z.boolean().optional();
 export const FieldWidthInFormSchema = z.number().min(0).nullable().default(50);
 export const FieldWidthInListSchema = z.number().min(0).nullable().default(10);
 export const FieldWidthInDetailSchema = z
@@ -265,6 +270,8 @@ export const TableFieldBaseSchema = z.object({
   format: FieldFormatSchema,
   validations: FieldValidationsSchema,
   showInFilter: FieldShowInFilterSchema,
+  showInParentList: FieldShowInParentListSchema,
+  visibleInParentList: FieldVisibleInParentListSchema,
   permissions: FieldPermissionsSchema,
   widthInForm: FieldWidthInFormSchema,
   widthInList: FieldWidthInListSchema,

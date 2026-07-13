@@ -68,6 +68,8 @@ export const TableFieldShowSchema: FastifySchema = {
           type: 'boolean',
           description: 'Permitir filtrar por este campo',
         },
+        showInParentList: { type: 'boolean' },
+        visibleInParentList: { type: 'boolean' },
         permissions: {
           type: 'object',
           nullable: true,
