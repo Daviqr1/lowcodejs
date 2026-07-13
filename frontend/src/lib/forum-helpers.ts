@@ -98,6 +98,7 @@ export function normalizeGroupFieldValue(
       return values.slice(0, 1);
     }
     case E_FIELD_TYPE.USER:
+    case E_FIELD_TYPE.USER_GROUP:
     case E_FIELD_TYPE.FILE:
     case E_FIELD_TYPE.RELATIONSHIP: {
       const ids = normalizeIdList(value);

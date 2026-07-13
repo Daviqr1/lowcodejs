@@ -10,3 +10,4 @@ export { TableRowRichTextField } from '@/components/common/dynamic-table/table-r
 export { TableRowTextField } from '@/components/common/dynamic-table/table-row/table-row-text-field';
 export { TableRowTextareaField } from '@/components/common/dynamic-table/table-row/table-row-textarea-field';
 export { TableRowUserField } from '@/components/common/dynamic-table/table-row/table-row-user-field';
+export { TableRowUserGroupField } from '@/components/common/dynamic-table/table-row/table-row-user-group-field';

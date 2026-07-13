@@ -14,6 +14,7 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { Badge } from '@/components/ui/badge';
 import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
@@ -113,6 +114,13 @@ function RenderCell({
     case E_FIELD_TYPE.USER:
       return (
         <TableRowUserCell
+          field={field}
+          row={row}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
           field={field}
           row={row}
         />

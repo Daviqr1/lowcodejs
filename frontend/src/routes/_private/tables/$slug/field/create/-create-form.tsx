@@ -266,6 +266,7 @@ export const CreateFieldFormFields = withForm({
     const isReaction = fieldType === E_FIELD_TYPE.REACTION;
     const isEvaluation = fieldType === E_FIELD_TYPE.EVALUATION;
     const isUser = fieldType === E_FIELD_TYPE.USER;
+    const isUserGroup = fieldType === E_FIELD_TYPE.USER_GROUP;
     const isHtmlContent = fieldType === E_FIELD_TYPE.HTML_CONTENT;
 
     useEffect(() => {
@@ -286,7 +287,12 @@ export const CreateFieldFormFields = withForm({
     }, [isRelationship, relatedTable.data, relationshipFieldSlug, form]);
 
     const showMultiple =
-      isDropdown || isFile || isFieldGroup || isCategory || isUser;
+      isDropdown ||
+      isFile ||
+      isFieldGroup ||
+      isCategory ||
+      isUser ||
+      isUserGroup;
     const showRequired = !isReaction && !isEvaluation && !isHtmlContent;
 
     return (

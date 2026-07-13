@@ -13,6 +13,7 @@ export const FIELD_TYPE_TO_TS: Record<string, string> = {
   [E_FIELD_TYPE.RELATIONSHIP]: 'string',
   [E_FIELD_TYPE.FILE]: 'string',
   [E_FIELD_TYPE.USER]: 'string',
+  [E_FIELD_TYPE.USER_GROUP]: 'string[]',
   [E_FIELD_TYPE.FIELD_GROUP]: 'Record<string, any>[]',
   [E_FIELD_TYPE.REACTION]: 'string[]',
   [E_FIELD_TYPE.EVALUATION]: 'number[]',

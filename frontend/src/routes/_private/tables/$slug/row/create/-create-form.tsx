@@ -44,7 +44,8 @@ export function buildDefaultValues(fields: Array<IField>): RowValues {
         defaults[field.slug] = field.defaultValue ?? '';
         break;
       case E_FIELD_TYPE.DROPDOWN:
-      case E_FIELD_TYPE.CATEGORY: {
+      case E_FIELD_TYPE.CATEGORY:
+      case E_FIELD_TYPE.USER_GROUP: {
         const arr = toDefaultArray(field.defaultValue);
         if (arr.length > 0) defaults[field.slug] = arr;
         if (arr.length === 0) defaults[field.slug] = [];
@@ -139,7 +140,8 @@ export function buildPayload(
         }
         break;
       }
-      case E_FIELD_TYPE.CATEGORY: {
+      case E_FIELD_TYPE.CATEGORY:
+      case E_FIELD_TYPE.USER_GROUP: {
         let categoryValue: Array<unknown> = [];
         if (Array.isArray(value)) categoryValue = value;
         else if (value) categoryValue = [value];
@@ -361,6 +363,13 @@ export const RowFormFields = withForm({
                     case E_FIELD_TYPE.USER:
                       return (
                         <formField.TableRowUserField
+                          field={field}
+                          disabled={disabled}
+                        />
+                      );
+                    case E_FIELD_TYPE.USER_GROUP:
+                      return (
+                        <formField.TableRowUserGroupField
                           field={field}
                           disabled={disabled}
                         />

@@ -21,6 +21,7 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { TableRowHtmlContentField } from '@/components/common/dynamic-table/table-row/table-row-html-content-field';
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -123,6 +124,13 @@ function renderCell(
     case E_FIELD_TYPE.UPDATER:
       return (
         <TableRowUserCell
+          row={row}
+          field={field}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
           row={row}
           field={field}
         />

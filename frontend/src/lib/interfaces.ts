@@ -498,6 +498,7 @@ export type RowResultValue =
   | Array<string>
   | Array<IStorage>
   | Array<IUser>
+  | Array<IGroup>
   | Array<IRow>
   | IReactionSummary
   | IEvaluationSummary;
@@ -541,6 +542,7 @@ export type RowFieldValueMap = {
   [E_FIELD_TYPE.CATEGORY]: Array<string>;
   [E_FIELD_TYPE.FILE]: Array<IStorage>;
   [E_FIELD_TYPE.USER]: Array<IUser>;
+  [E_FIELD_TYPE.USER_GROUP]: Array<IGroup>;
   [E_FIELD_TYPE.RELATIONSHIP]: Array<IRow>;
   [E_FIELD_TYPE.FIELD_GROUP]: Array<IRow>;
   [E_FIELD_TYPE.REACTION]: IReactionSummary;

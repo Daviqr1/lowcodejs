@@ -277,6 +277,13 @@ function RelatedRowCreateDialogContent({
                               disabled={disabled}
                             />
                           );
+                        case E_FIELD_TYPE.USER_GROUP:
+                          return (
+                            <formRowField.TableRowUserGroupField
+                              field={rowField}
+                              disabled={disabled}
+                            />
+                          );
                         default:
                           return null;
                       }

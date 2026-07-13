@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRow, IStorage, IUser } from '@/lib/interfaces';
+import type { IField, IGroup, IRow, IStorage, IUser } from '@/lib/interfaces';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -74,6 +74,14 @@ export function transformFieldValueForEdit(
       });
     }
 
+    case E_FIELD_TYPE.USER_GROUP: {
+      const groups = toArray<IGroup>(value);
+      return groups.map((group) => {
+        if (typeof group === 'object' && group !== null) return group._id;
+        return String(group);
+      });
+    }
+
     default:
       return value ?? '';
   }
@@ -95,6 +103,7 @@ export function getFieldDefault(field: IField): unknown {
       }
       return [];
     case E_FIELD_TYPE.CATEGORY:
+    case E_FIELD_TYPE.USER_GROUP:
       if (Array.isArray(field.defaultValue) && field.defaultValue.length > 0) {
         return field.defaultValue;
       }
@@ -130,7 +139,8 @@ export function buildGroupRowPayload(
         payload[field.slug] = value || null;
         break;
       case E_FIELD_TYPE.DROPDOWN:
-      case E_FIELD_TYPE.CATEGORY: {
+      case E_FIELD_TYPE.CATEGORY:
+      case E_FIELD_TYPE.USER_GROUP: {
         let arr: Array<unknown> = [];
         if (Array.isArray(value)) {
           arr = value;
@@ -254,6 +264,13 @@ export function renderGroupFormField(
     case E_FIELD_TYPE.USER:
       return (
         <formField.TableRowUserField
+          field={field}
+          disabled={false}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <formField.TableRowUserGroupField
           field={field}
           disabled={false}
         />

@@ -307,6 +307,7 @@ export function buildPayloadFromRow(
         payload[field.slug] = normalizeRowValue(value);
         break;
       case E_FIELD_TYPE.USER:
+      case E_FIELD_TYPE.USER_GROUP:
       case E_FIELD_TYPE.RELATIONSHIP:
       case E_FIELD_TYPE.FILE:
         payload[field.slug] = normalizeIdList(value);
@@ -340,6 +341,9 @@ export function buildDefaultValuesFromRow(
         defaults[field.slug] = users.map(toUserOption);
         break;
       }
+      case E_FIELD_TYPE.USER_GROUP:
+        defaults[field.slug] = normalizeIdList(value);
+        break;
       case E_FIELD_TYPE.DROPDOWN: {
         if (field.multiple) {
           let dropdownValue: Array<unknown> = [];

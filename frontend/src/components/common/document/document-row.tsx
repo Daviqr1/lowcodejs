@@ -15,6 +15,7 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { Button } from '@/components/ui/button';
 import {
   Collapsible,
@@ -125,6 +126,13 @@ function renderFieldCell(
           row={row}
           field={field}
           tableSlug={tableSlug}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
+          row={row}
+          field={field}
         />
       );
     case E_FIELD_TYPE.USER:

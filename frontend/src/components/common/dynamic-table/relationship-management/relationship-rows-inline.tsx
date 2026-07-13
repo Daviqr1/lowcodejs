@@ -1039,6 +1039,13 @@ export function renderRelationshipCardField(
           disabled={false}
         />
       );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <formField.TableRowUserGroupField
+          field={field}
+          disabled={false}
+        />
+      );
     default:
       return null;
   }

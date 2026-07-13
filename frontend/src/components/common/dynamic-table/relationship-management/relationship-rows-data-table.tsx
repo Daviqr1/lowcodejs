@@ -11,6 +11,7 @@ import { TableRowRelationshipCell } from '../table-cells/table-row-relationship-
 import { TableRowTextLongCell } from '../table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '../table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '../table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '../table-cells/table-row-user-group-cell';
 
 import { RelationshipItemSheet } from './relationship-item-sheet';
 import { otherIdOf } from './relationship-rows-inline';
@@ -516,6 +517,13 @@ export function RenderRelationshipCell({
     case E_FIELD_TYPE.USER:
       return (
         <TableRowUserCell
+          field={field}
+          row={row}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
           field={field}
           row={row}
         />

@@ -32,6 +32,7 @@ export const E_FIELD_TYPE = {
   EVALUATION: 'EVALUATION',
   CATEGORY: 'CATEGORY',
   USER: 'USER',
+  USER_GROUP: 'USER_GROUP',
   HTML_CONTENT: 'HTML_CONTENT',
 
   // NATIVE
@@ -438,6 +439,7 @@ export const FIELD_TYPE_OPTIONS = [
   { label: 'Reação', value: E_FIELD_TYPE.REACTION },
   { label: 'Avaliação', value: E_FIELD_TYPE.EVALUATION },
   { label: 'Usuário', value: E_FIELD_TYPE.USER },
+  { label: 'Grupos de usuários', value: E_FIELD_TYPE.USER_GROUP },
   { label: 'Conteúdo HTML', value: E_FIELD_TYPE.HTML_CONTENT },
 ] as const;
 

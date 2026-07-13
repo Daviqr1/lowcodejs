@@ -60,6 +60,7 @@ import {
   TableRowTextField,
   TableRowTextareaField,
   TableRowUserField,
+  TableRowUserGroupField,
 } from './fields/table-row';
 import { fieldContext, formContext } from './form-context';
 
@@ -119,6 +120,7 @@ export const { useAppForm, withForm } = createFormHook({
     TableRowRelationshipField,
     TableRowCategoryField,
     TableRowUserField,
+    TableRowUserGroupField,
   },
   formComponents: {},
 });

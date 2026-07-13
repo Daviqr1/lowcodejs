@@ -8,6 +8,7 @@ import { ComboboxLoadMore } from '@/components/common/combobox-load-more';
 import type { DatepickerValue } from '@/components/common/datepicker';
 import { RangeDatepicker } from '@/components/common/datepicker';
 import { getDropdownContrastStyle } from '@/components/common/dynamic-table/table-cells/utils';
+import { GroupMultiSelect } from '@/components/common/selectors/group-multi-select';
 import { UserMultiSelect } from '@/components/common/selectors/user-multi-select';
 import type { TreeNode } from '@/components/common/tree-editor/tree-list';
 import { TreeList } from '@/components/common/tree-editor/tree-list';
@@ -115,6 +116,7 @@ export function useFilterState(
           field.type === E_FIELD_TYPE.DROPDOWN ||
           field.type === E_FIELD_TYPE.CATEGORY ||
           field.type === E_FIELD_TYPE.USER ||
+          field.type === E_FIELD_TYPE.USER_GROUP ||
           field.type === E_FIELD_TYPE.CREATOR ||
           field.type === E_FIELD_TYPE.UPDATER ||
           field.type === E_FIELD_TYPE.RELATIONSHIP
@@ -196,6 +198,7 @@ export function useFilterState(
 
       if (
         (field.type === E_FIELD_TYPE.USER ||
+          field.type === E_FIELD_TYPE.USER_GROUP ||
           field.type === E_FIELD_TYPE.CREATOR ||
           field.type === E_FIELD_TYPE.UPDATER ||
           field.type === E_FIELD_TYPE.RELATIONSHIP) &&
@@ -428,6 +431,14 @@ export function FilterFieldsForm({
             field.type === E_FIELD_TYPE.CREATOR ||
             field.type === E_FIELD_TYPE.UPDATER) && (
             <FilterUser
+              field={field}
+              value={filterValues[field.slug] ?? []}
+              onChange={(value) => handleMultiValueChange(field, value)}
+            />
+          )}
+
+          {field.type === E_FIELD_TYPE.USER_GROUP && (
+            <FilterUserGroup
               field={field}
               value={filterValues[field.slug] ?? []}
               onChange={(value) => handleMultiValueChange(field, value)}
@@ -720,6 +731,27 @@ export function FilterUser({
     <Field data-slot="filter-user">
       <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <UserMultiSelect
+        value={value}
+        onValueChange={onChange}
+        placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
+      />
+    </Field>
+  );
+}
+
+export function FilterUserGroup({
+  field,
+  value,
+  onChange,
+}: {
+  field: IFilterField;
+  value: Array<string>;
+  onChange: (value: Array<string>) => void;
+}): React.JSX.Element {
+  return (
+    <Field data-slot="filter-user-group">
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
+      <GroupMultiSelect
         value={value}
         onValueChange={onChange}
         placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}

@@ -371,6 +371,10 @@ export const KanbanCreateCardDialog = withForm({
                             return (
                               <formField.TableRowUserField field={field} />
                             );
+                          case E_FIELD_TYPE.USER_GROUP:
+                            return (
+                              <formField.TableRowUserGroupField field={field} />
+                            );
                           default:
                             return null;
                         }

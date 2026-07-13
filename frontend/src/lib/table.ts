@@ -6,6 +6,7 @@ import type {
   ICategory,
   IDropdown,
   IField,
+  IGroup,
   IRow,
   IStorage,
   IUser,
@@ -132,7 +133,8 @@ export function buildCreateRowDefaultValues(
         }
         break;
       case E_FIELD_TYPE.DROPDOWN:
-      case E_FIELD_TYPE.CATEGORY: {
+      case E_FIELD_TYPE.CATEGORY:
+      case E_FIELD_TYPE.USER_GROUP: {
         const arr = toDefaultArray(field.defaultValue);
         if (arr.length > 0) defaults[field.slug] = arr;
         if (arr.length === 0) defaults[field.slug] = [];
@@ -278,6 +280,14 @@ export function buildUpdateRowDefaultValues(
         });
         break;
       }
+      case E_FIELD_TYPE.USER_GROUP: {
+        const groups = toArray<IGroup>(value);
+        defaults[field.slug] = groups.map((group) => {
+          if (typeof group === 'object' && group !== null) return group._id;
+          return String(group);
+        });
+        break;
+      }
       default: {
         let fallback: UpdateRowDefaultValue = '';
         if (typeof value === 'string') fallback = value;
@@ -418,7 +428,8 @@ export function mountRowValue(value: FieldValue, field: IField): RowPayload {
 
       return [];
     }
-    case E_FIELD_TYPE.CATEGORY: {
+    case E_FIELD_TYPE.CATEGORY:
+    case E_FIELD_TYPE.USER_GROUP: {
       if (value === null) return [];
 
       // FieldValue é união ampla; em runtime este caso é sempre Array<string>.

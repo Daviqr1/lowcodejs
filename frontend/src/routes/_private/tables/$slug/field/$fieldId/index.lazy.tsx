@@ -64,6 +64,7 @@ function normalizeDefaultValue(
     E_FIELD_TYPE.DROPDOWN,
     E_FIELD_TYPE.CATEGORY,
     E_FIELD_TYPE.USER,
+    E_FIELD_TYPE.USER_GROUP,
     E_FIELD_TYPE.RELATIONSHIP,
   ];
 

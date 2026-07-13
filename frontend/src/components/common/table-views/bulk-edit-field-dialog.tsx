@@ -44,6 +44,7 @@ const BULK_EDITABLE_TYPES: Array<ValueOf<typeof E_FIELD_TYPE>> = [
   E_FIELD_TYPE.DROPDOWN,
   E_FIELD_TYPE.CATEGORY,
   E_FIELD_TYPE.USER,
+  E_FIELD_TYPE.USER_GROUP,
 ];
 
 export function getBulkEditableFields(table?: ITable): Array<IField> {
@@ -303,6 +304,13 @@ function BulkEditValueForm({
             case E_FIELD_TYPE.USER:
               return (
                 <formField.TableRowUserField
+                  field={field}
+                  disabled={isPending}
+                />
+              );
+            case E_FIELD_TYPE.USER_GROUP:
+              return (
+                <formField.TableRowUserGroupField
                   field={field}
                   disabled={isPending}
                 />

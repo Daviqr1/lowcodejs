@@ -464,6 +464,7 @@ export const FieldCreateBodySchema = z
       E_FIELD_TYPE.EVALUATION,
       E_FIELD_TYPE.CATEGORY,
       E_FIELD_TYPE.USER,
+      E_FIELD_TYPE.USER_GROUP,
     ]),
   })
   .merge(FieldBaseSchema);
@@ -487,6 +488,7 @@ export const FieldUpdateBodySchema = z
       E_FIELD_TYPE.EVALUATION,
       E_FIELD_TYPE.CATEGORY,
       E_FIELD_TYPE.USER,
+      E_FIELD_TYPE.USER_GROUP,
     ]),
     trashed: z.boolean().default(false),
     trashedAt: z.string().nullable().default(null),

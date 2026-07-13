@@ -908,6 +908,8 @@ export function KanbanRowDialog({
               );
             case E_FIELD_TYPE.USER:
               return <formField.TableRowUserField field={field} />;
+            case E_FIELD_TYPE.USER_GROUP:
+              return <formField.TableRowUserGroupField field={field} />;
             default:
               return <span className="text-muted-foreground text-sm">-</span>;
           }
