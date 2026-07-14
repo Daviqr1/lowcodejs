@@ -56,6 +56,13 @@ const EnvSchema = z.object({
     .default(5),
 
   EMAIL_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(5),
+
+  // Liga/desliga a engine de agendamentos (decorators @Cron/@Interval/@Timeout)
+  // no boot. Útil para desativar timers em ambientes de teste/manutenção.
+  SCHEDULER_ENABLED: z
+    .union([z.literal('true'), z.literal('false')])
+    .default('true')
+    .transform((v): boolean => v === 'true'),
 });
 
 const validation = EnvSchema.safeParse(process.env);

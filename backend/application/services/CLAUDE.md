@@ -39,6 +39,14 @@ no create/update/bulk-update de row, após o `RowPayloadValidator` estrutural.
 Async (regras como is-unique consultam o banco). Injeta `RowContractRepository` +
 `UserContractRepository`. Detalhes em `field-validation/CLAUDE.md`.
 
+## Scheduler (`scheduler/`)
+
+Engine de agendamentos **in-process** (port 1:1 do `@nestjs/schedule`). Decorators
+`@Cron`/`@Interval`/`@Timeout` em métodos de qualquer classe DI-gerenciada,
+descobertos no boot. Expõe `SchedulerRegistryContractService` (injetável) para
+controle em runtime. Ligado em `bin/server.ts` após `kernel.ready()` (env
+`SCHEDULER_ENABLED`). Detalhes e uso em `scheduler/CLAUDE.md`.
+
 ## Para Criar Novo Service
 
 1. Crie diretorio `services/{nome}/`

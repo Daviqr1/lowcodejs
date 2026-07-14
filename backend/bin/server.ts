@@ -11,6 +11,8 @@ import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initNotificationsSocket } from '@application/resources/notifications/notifications.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import { startEmailWorker } from '@application/services/email-queue/worker';
+import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bootstrap';
+import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
 import { EmailContractService } from '@application/services/email/email-contract.service';
 import NodemailerEmailService from '@application/services/email/email.service';
 import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
@@ -86,7 +88,21 @@ async function sweepStaleMigrations(): Promise<void> {
 async function start(): Promise<void> {
   try {
     await loadStorageConfig();
+
+    // Agendamentos: o hook de limpeza precisa ser registrado ANTES do ready()
+    // (Fastify trava addHook depois disso). O bootstrap em si roda após o ready()
+    // e preenche o orchestrator lido pelo hook no shutdown.
+    let schedulerOrchestrator: SchedulerOrchestrator | undefined = undefined;
+    kernel.addHook('onClose', async () => {
+      schedulerOrchestrator?.clearAll();
+    });
+
     await kernel.ready();
+
+    if (Env.SCHEDULER_ENABLED) {
+      schedulerOrchestrator = bootstrapSchedules();
+      console.info('Scheduler started');
+    }
 
     await kernel.listen({ port: Env.PORT, host: '0.0.0.0' });
     console.info(`HTTP Server running on http://localhost:${Env.PORT}`);

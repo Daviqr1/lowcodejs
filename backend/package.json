@@ -71,6 +71,7 @@
     "ajv-errors": "^3.0.0",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.76.5",
+    "cron": "^4.4.0",
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
