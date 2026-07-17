@@ -592,6 +592,62 @@ select:-webkit-autofill:focus {
 }
 
 @media print {
+  @page {
+    margin: 14mm;
+  }
+
+  /* Impressao nativa do documento (botao da impressora na view Document).
+     O app tem layout de altura fixa (sidebars, header, containers
+     overflow-hidden). Aqui escondemos o chrome e removemos o recorte dos
+     ancestrais para que o conteudo do documento flua e quebre entre paginas.
+     IMPORTANTE: o conteudo permanece no fluxo normal (sem position:absolute),
+     senao o navegador imprime apenas a 1a pagina e corta o resto. */
+  /* Esconde o chrome: sidebar/header da app e a barra de acoes da tabela
+     (filtro, lixeira, configuracao, etc.). Na impressao sai o titulo da tabela
+     (print-only), o sumario/indice e o conteudo do documento. */
+  [data-slot='sidebar'],
+  [data-slot='header'],
+  [data-slot='page-shell-header'] {
+    display: none !important;
+  }
+  /* Sumario/indice: visivel na impressao, em pagina propria antes do conteudo.
+     Os links do sumario (<a href="#sec-..">) viram links internos clicaveis no
+     PDF, pulando para o heading correspondente (id="sec-.."). */
+  [data-slot='document-toc'] {
+    break-after: page;
+    page-break-after: always;
+  }
+  /* Ancestrais entre a pagina e o conteudo: removem altura fixa/recorte/scroll
+     para o conteudo fluir entre paginas sem barra de rolagem. */
+  html,
+  body,
+  [data-slot='sidebar-wrapper'],
+  [data-slot='sidebar-inset'],
+  [data-test-id='private-layout'],
+  [data-slot='page-shell'],
+  [data-slot='page-shell-content'],
+  .document-print-root,
+  .document-print-content {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  body {
+    background: white !important;
+  }
+  /* O root da view e flex de altura fixa; vira bloco simples na impressao. */
+  .document-print-root {
+    display: block !important;
+    position: static !important;
+  }
+  .document-print-content {
+    display: block !important;
+    width: 100% !important;
+    flex: none !important;
+    padding: 0 !important;
+  }
+
   .print-only {
     display: block !important;
   }
