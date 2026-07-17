@@ -1,9 +1,9 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 
+import { NotificationPaginatedSchema } from './paginated.schema';
 import NotificationPaginatedUseCase from './paginated.use-case';
 import { NotificationPaginatedQueryValidator } from './paginated.validator';
 
@@ -21,6 +21,7 @@ export default class {
     url: '/paginated',
     options: {
       onRequest: [AuthenticationMiddleware({ optional: false })],
+      schema: NotificationPaginatedSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

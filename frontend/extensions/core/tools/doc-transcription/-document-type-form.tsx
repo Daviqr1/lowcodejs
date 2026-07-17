@@ -4,10 +4,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -23,14 +26,17 @@ import type {
   IDocResponseField,
   IDocumentType,
 } from '@/hooks/tanstack-query/use-doc-transcription-config';
+import type { Merge } from '@/lib/interfaces';
 
-interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initial?: IDocumentType | null;
-  onSave: (docType: IDocumentType) => void;
-  isSaving?: boolean;
-}
+type Props = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    initial?: IDocumentType | null;
+    onSave: (docType: IDocumentType) => void;
+    isSaving?: boolean;
+    closeRef?: React.RefObject<HTMLButtonElement | null>;
+  }
+>;
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-_]*$/;
 
@@ -53,30 +59,23 @@ const FIELD_TYPES: Array<{ value: IDocResponseField['type']; label: string }> =
   ];
 
 export function DocumentTypeForm({
-  open,
-  onOpenChange,
+  ref,
   initial,
   onSave,
   isSaving,
+  closeRef,
+  ...rest
 }: Props): React.JSX.Element {
-  const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [fields, setFields] = React.useState<Array<IDocResponseField>>([]);
+  const [name, setName] = React.useState(() => initial?.name ?? '');
+  const [description, setDescription] = React.useState(
+    () => initial?.description ?? '',
+  );
+  const [fields, setFields] = React.useState<Array<IDocResponseField>>(
+    () => initial?.responseFields ?? [],
+  );
 
-  const id = initial ? initial.id : generateSlug(name);
-
-  React.useEffect(() => {
-    if (!open) return;
-    if (initial) {
-      setName(initial.name);
-      setDescription(initial.description ?? '');
-      setFields(initial.responseFields);
-    } else {
-      setName('');
-      setDescription('');
-      setFields([]);
-    }
-  }, [open, initial]);
+  let id = generateSlug(name);
+  if (initial) id = initial.id;
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -88,7 +87,10 @@ export function DocumentTypeForm({
 
   function updateField(index: number, patch: Partial<IDocResponseField>): void {
     setFields((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+      prev.map((f, i) => {
+        if (i === index) return { ...f, ...patch };
+        return f;
+      }),
     );
   }
 
@@ -96,19 +98,25 @@ export function DocumentTypeForm({
     setFields((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const nameError = name.trim().length === 0 ? 'Nome obrigatório' : null;
-  const idError =
-    id.trim().length === 0 ? 'Digite um nome para gerar o ID' : null;
-  const fieldsError =
-    fields.length === 0 ? 'Adicione ao menos um campo de resposta' : null;
-  const fieldErrors = fields.map((f) => ({
-    key: !f.key.trim()
-      ? 'Obrigatório'
-      : !SLUG_REGEX.test(f.key)
-        ? 'Slug inválido'
-        : null,
-    label: !f.label.trim() ? 'Obrigatório' : null,
-  }));
+  let nameError: string | null = null;
+  if (name.trim().length === 0) nameError = 'Nome obrigatório';
+  let idError: string | null = null;
+  if (id.trim().length === 0) idError = 'Digite um nome para gerar o ID';
+  let fieldsError: string | null = null;
+  if (fields.length === 0) {
+    fieldsError = 'Adicione ao menos um campo de resposta';
+  }
+  const fieldErrors = fields.map((f) => {
+    let key: string | null = null;
+    if (!f.key.trim()) {
+      key = 'Obrigatório';
+    } else if (!SLUG_REGEX.test(f.key)) {
+      key = 'Slug inválido';
+    }
+    let label: string | null = null;
+    if (!f.label.trim()) label = 'Obrigatório';
+    return { key, label };
+  });
   const hasFieldErrors = fieldErrors.some((e) => e.key || e.label);
 
   const canSave =
@@ -125,15 +133,20 @@ export function DocumentTypeForm({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {initial ? 'Editar tipo de documento' : 'Novo tipo de documento'}
+            {initial && 'Editar tipo de documento'}
+            {!initial && 'Novo tipo de documento'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure o tipo de documento e seus campos
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -217,9 +230,10 @@ export function DocumentTypeForm({
 
                   <Select
                     value={f.type}
-                    onValueChange={(v) =>
-                      updateField(i, { type: v as IDocResponseField['type'] })
-                    }
+                    onValueChange={(v) => {
+                      const match = FIELD_TYPES.find((ft) => ft.value === v);
+                      if (match) updateField(i, { type: match.value });
+                    }}
                   >
                     <SelectTrigger className="w-[110px] h-8 text-xs">
                       <SelectValue />
@@ -253,14 +267,16 @@ export function DocumentTypeForm({
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancelar
-          </Button>
+          <DialogClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+              disabled={isSaving}
+            >
+              Cancelar
+            </Button>
+          </DialogClose>
           <Button
             type="button"
             disabled={!canSave}

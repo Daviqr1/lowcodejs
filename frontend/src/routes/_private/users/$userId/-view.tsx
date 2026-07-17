@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser } from '@/lib/interfaces';
 
-interface UserViewProps {
+type UserViewProps = {
   data: IUser;
-}
+};
 
 function getStatusBadge(status: string): React.JSX.Element {
   if (status === E_USER_STATUS.ACTIVE) {

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
@@ -11,7 +10,7 @@ import {
 } from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { ITable, IUser } from '@application/core/entity.core';
+import type { ITable } from '@application/core/entity.core';
 import { E_TABLE_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {
@@ -29,8 +28,6 @@ const FIELDS: CsvField[] = [
   { label: 'Slug', value: 'slug' },
   { label: 'Tipo', value: 'type' },
   { label: 'Estilo', value: 'style' },
-  { label: 'Visibilidade', value: 'visibility' },
-  { label: 'Colaboração', value: 'collaboration' },
   { label: 'Proprietário', value: 'owner' },
   { label: 'Lixeira', value: 'trashed' },
   { label: 'Criado em', value: 'createdAt' },
@@ -40,22 +37,26 @@ const FIELDS: CsvField[] = [
 function ownerName(owner: ITable['owner']): string {
   if (!owner) return '';
   if (typeof owner === 'string') return owner;
-  return (owner as IUser).name ?? (owner as IUser)._id ?? '';
+  return owner.name ?? owner._id ?? '';
 }
 
 function toCsvRow(table: ITable): Record<string, unknown> {
+  let trashed = 'false';
+  if (table.trashed) trashed = 'true';
+  let createdAt = '';
+  if (table.createdAt) createdAt = new Date(table.createdAt).toISOString();
+  let updatedAt = '';
+  if (table.updatedAt) updatedAt = new Date(table.updatedAt).toISOString();
   return {
     _id: table._id,
     name: table.name ?? '',
     slug: table.slug ?? '',
     type: table.type ?? '',
     style: table.style ?? '',
-    visibility: table.visibility ?? '',
-    collaboration: table.collaboration ?? '',
     owner: ownerName(table.owner),
-    trashed: table.trashed ? 'true' : 'false',
-    createdAt: table.createdAt ? new Date(table.createdAt).toISOString() : '',
-    updatedAt: table.updatedAt ? new Date(table.updatedAt).toISOString() : '',
+    trashed,
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -72,15 +73,12 @@ export default class TableExportCsvUseCase {
       if (payload['order-link']) sort.slug = payload['order-link'];
       if (payload['order-created-at'])
         sort.createdAt = payload['order-created-at'];
-      if (payload['order-visibility'])
-        sort.visibility = payload['order-visibility'];
       if (payload['order-owner']) sort['owner.name'] = payload['order-owner'];
 
       const filter: TableQueryPayload = {
         search: payload.search ?? payload.name,
         type: E_TABLE_TYPE.TABLE,
         trashed,
-        visibility: payload.visibility,
       };
       if (payload.owner) filter.owner = [payload.owner];
 

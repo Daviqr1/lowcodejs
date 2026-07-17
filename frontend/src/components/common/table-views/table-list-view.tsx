@@ -1,34 +1,26 @@
 import { useMutation } from '@tanstack/react-query';
-import { useParams, useRouter, useSearch } from '@tanstack/react-router';
+import { useParams, useRouter } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArchiveRestoreIcon,
   ArrowRightIcon,
   EllipsisIcon,
   EyeIcon,
-  LoaderCircleIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
   TrashIcon,
-  XIcon,
 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
+import { RowSelectAllCheckbox, RowSelectCheckbox } from './use-row-selection';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { InteractiveDataTable } from '@/components/common/data-table';
 import { ExtensionSlot } from '@/components/common/extension-slot';
 import { PermanentDeleteConfirmDialog } from '@/components/common/permanent-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +37,6 @@ import { useTablePermission } from '@/hooks/use-table-permission';
 import { API } from '@/lib/api';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
-import { toastSuccess } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 function RowActionsCell({
@@ -62,20 +53,19 @@ function RowActionsCell({
   canRemoveRow: boolean;
 }): React.JSX.Element {
   const router = useRouter();
-  const [dialogType, setDialogType] = React.useState<
-    'trash' | 'restore' | 'delete' | null
-  >(null);
+  const trashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const restoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const trashMutation = useMutation({
     mutationFn: async () => {
       await API.patch(`/tables/${slug}/rows/${row._id}/trash`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
-      toastSuccess('Registro enviado para lixeira!');
+      toast.success('Registro enviado para lixeira!');
     },
   });
 
@@ -84,11 +74,10 @@ function RowActionsCell({
       await API.patch(`/tables/${slug}/rows/${row._id}/restore`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
-      toastSuccess('Registro restaurado!');
+      toast.success('Registro restaurado!');
     },
   });
 
@@ -97,20 +86,12 @@ function RowActionsCell({
       await API.delete(`/tables/${slug}/rows/${row._id}`);
     },
     onSuccess() {
-      setDialogType(null);
       QueryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
-      toastSuccess('Registro excluido permanentemente!');
+      toast.success('Registro excluido permanentemente!');
     },
   });
-
-  const activeMutation =
-    dialogType === 'trash'
-      ? trashMutation
-      : dialogType === 'restore'
-        ? restoreMutation
-        : deleteMutation;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -130,7 +111,7 @@ function RowActionsCell({
             className="inline-flex space-x-1 w-full cursor-pointer"
             onClick={() =>
               router.navigate({
-                to: '/tables/$slug/row/',
+                to: '/tables/$slug/row',
                 params: { slug },
                 search: { _id: row._id },
               })
@@ -143,11 +124,11 @@ function RowActionsCell({
           <DropdownMenuItem
             className={cn(
               'inline-flex space-x-1 w-full cursor-pointer',
-              (row.trashed || !canUpdateRow) && 'hidden',
+              (row.trashedAt != null || !canUpdateRow) && 'hidden',
             )}
             onClick={() =>
               router.navigate({
-                to: '/tables/$slug/row/',
+                to: '/tables/$slug/row',
                 params: { slug },
                 search: { _id: row._id, mode: 'edit' as const },
               })
@@ -160,9 +141,9 @@ function RowActionsCell({
           <DropdownMenuItem
             className={cn(
               'inline-flex space-x-1 w-full cursor-pointer',
-              (row.trashed || !canUpdateRow) && 'hidden',
+              (row.trashedAt != null || !canUpdateRow) && 'hidden',
             )}
-            onClick={() => setDialogType('trash')}
+            onClick={() => trashTriggerRef.current?.click()}
           >
             <TrashIcon className="size-4" />
             <span>Enviar para lixeira</span>
@@ -171,9 +152,9 @@ function RowActionsCell({
           <DropdownMenuItem
             className={cn(
               'inline-flex space-x-1 w-full cursor-pointer',
-              (!row.trashed || !canUpdateRow) && 'hidden',
+              (row.trashedAt == null || !canUpdateRow) && 'hidden',
             )}
-            onClick={() => setDialogType('restore')}
+            onClick={() => restoreTriggerRef.current?.click()}
           >
             <ArchiveRestoreIcon className="size-4" />
             <span>Restaurar</span>
@@ -182,9 +163,9 @@ function RowActionsCell({
           <DropdownMenuItem
             className={cn(
               'inline-flex space-x-1 w-full cursor-pointer',
-              (!row.trashed || !canRemoveRow) && 'hidden',
+              (row.trashedAt == null || !canRemoveRow) && 'hidden',
             )}
-            onClick={() => setDialogType('delete')}
+            onClick={() => deleteTriggerRef.current?.click()}
           >
             <Trash2Icon className="size-4" />
             <span>Excluir permanentemente</span>
@@ -197,73 +178,48 @@ function RowActionsCell({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog
-        modal
-        open={dialogType === 'trash' || dialogType === 'restore'}
-        onOpenChange={(open) => {
-          if (!open) setDialogType(null);
+      <ConfirmDialog
+        ref={trashTriggerRef}
+        title="Enviar para lixeira"
+        description="Ao confirmar essa acao, o registro sera enviado para a lixeira."
+        confirmLabel="Confirmar"
+        isPending={trashMutation.status === 'pending'}
+        onConfirm={(close) => {
+          trashMutation.mutateAsync(undefined, { onSuccess: close });
         }}
-      >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogType === 'trash' && 'Enviar para lixeira'}
-              {dialogType === 'restore' && 'Restaurar da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogType === 'trash' &&
-                'Ao confirmar essa acao, o registro sera enviado para a lixeira.'}
-              {dialogType === 'restore' &&
-                'Ao confirmar essa acao, o registro sera restaurado da lixeira.'}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={activeMutation.status === 'pending'}
-                  onClick={() => activeMutation.mutateAsync()}
-                >
-                  {activeMutation.status === 'pending' && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {activeMutation.status !== 'pending' && (
-                    <span>Confirmar</span>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
+      />
+
+      <ConfirmDialog
+        ref={restoreTriggerRef}
+        title="Restaurar da lixeira"
+        description="Ao confirmar essa acao, o registro sera restaurado da lixeira."
+        confirmLabel="Confirmar"
+        isPending={restoreMutation.status === 'pending'}
+        onConfirm={(close) => {
+          restoreMutation.mutateAsync(undefined, { onSuccess: close });
+        }}
+      />
 
       <PermanentDeleteConfirmDialog
-        open={dialogType === 'delete'}
-        onOpenChange={(open) => {
-          if (!open) setDialogType(null);
-        }}
+        ref={deleteTriggerRef}
         title="Excluir registro permanentemente"
         description="Essa ação é irreversível. O registro será excluído permanentemente e não poderá ser recuperado."
         itemsCount={1}
         isPending={deleteMutation.isPending}
-        onConfirm={() => deleteMutation.mutate()}
+        onConfirm={(close) => {
+          deleteMutation.mutateAsync(undefined, { onSuccess: close });
+        }}
         testId="delete-row-singular-dialog"
       />
     </div>
   );
 }
 
-interface TableListViewProps {
+type TableListViewProps = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
-}
+};
 
 export function TableListView({
   data,
@@ -272,8 +228,6 @@ export function TableListView({
 }: TableListViewProps): React.ReactElement {
   const router = useRouter();
   const { slug } = useParams({ from: '/_private/tables/$slug/' });
-  const search = useSearch({ from: '/_private/tables/$slug/' });
-  const isTrashView = search.trashed === true;
 
   const table_ = useReadTable({ slug });
   const permission = useTablePermission(table_.data);
@@ -283,17 +237,16 @@ export function TableListView({
   const canTrashRow = permission.can('UPDATE_ROW');
   const canRemoveRow = permission.can('REMOVE_ROW');
 
-  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
-
   const fieldColumns = useFieldColumns({
     fields: headers,
     fieldOrder: order,
     tableSlug: slug,
     canEditField,
+    groups: table_.data?.groups,
   });
 
   const columns = React.useMemo(() => {
-    const cols: Array<ColumnDef<IRow, any>> = [];
+    const cols: Array<ColumnDef<IRow>> = [];
 
     if (canTrashRow) {
       cols.push({
@@ -302,26 +255,15 @@ export function TableListView({
         enableResizing: false,
         size: 40,
         header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected()
-                ? true
-                : table.getIsSomePageRowsSelected()
-                  ? 'indeterminate'
-                  : false
-            }
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
-            aria-label="Selecionar todos"
+          <RowSelectAllCheckbox
+            ids={table.getRowModel().rows.map((r) => r.id)}
           />
         ),
         cell: ({ row }) => (
           <div onClick={(e) => e.stopPropagation()}>
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label={`Selecionar registro ${row.id}`}
+            <RowSelectCheckbox
+              id={row.original._id}
+              label={`Selecionar registro ${row.id}`}
             />
           </div>
         ),
@@ -331,28 +273,30 @@ export function TableListView({
     cols.push(...fieldColumns);
 
     if (canTrashRow || canRemoveRow) {
+      let actionsHeader: (() => React.ReactElement) | undefined;
+      if (canCreateField) {
+        actionsHeader = (): React.ReactElement => (
+          <Button
+            variant="outline"
+            className="cursor-pointer size-6"
+            onClick={() => {
+              router.navigate({
+                to: '/tables/$slug/field/create',
+                replace: true,
+                params: { slug },
+              });
+            }}
+          >
+            <PlusIcon className="size-4" />
+          </Button>
+        );
+      }
       cols.push({
         id: '_actions',
         enableHiding: false,
         enableResizing: false,
         size: 80,
-        header: canCreateField
-          ? (): React.ReactElement => (
-              <Button
-                variant="outline"
-                className="cursor-pointer size-6"
-                onClick={() => {
-                  router.navigate({
-                    to: '/tables/$slug/field/create',
-                    replace: true,
-                    params: { slug },
-                  });
-                }}
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-            )
-          : undefined,
+        header: actionsHeader,
         cell: ({ row }) => (
           <RowActionsCell
             row={row.original}
@@ -416,96 +360,23 @@ export function TableListView({
     table_.data,
   ]);
 
+  let leftPinning: Array<string> = [];
+  if (canTrashRow) leftPinning = ['_select'];
+  let rightPinId = '_navigate';
+  if (canTrashRow || canRemoveRow) rightPinId = '_actions';
+  else if (canCreateField) rightPinId = '_create_field';
+
   const table = useDataTable({
     data,
     columns,
     getRowId: (row) => row._id,
-    enableRowSelection: canTrashRow,
     enableColumnResizing: true,
     persistKey: `list-view:${slug}`,
     initialColumnPinning: {
-      left: canTrashRow ? ['_select'] : [],
-      right: [
-        canTrashRow || canRemoveRow
-          ? '_actions'
-          : canCreateField
-            ? '_create_field'
-            : '_navigate',
-      ],
+      left: leftPinning,
+      right: [rightPinId],
     },
   });
-
-  const selectedRows = table.getSelectedRowModel().rows;
-  const selectedCount = selectedRows.length;
-  const selectedIds = selectedRows.map((r) => r.id);
-
-  const bulkTrash = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-trash');
-      const response = await API.patch<{ modified: number }>(route, { ids });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toastSuccess(
-        result.modified === 1
-          ? '1 registro enviado para lixeira!'
-          : `${result.modified} registros enviados para lixeira!`,
-        'Os registros foram movidos para a lixeira',
-      );
-    },
-  });
-
-  const bulkRestore = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-restore');
-      const response = await API.patch<{ modified: number }>(route, { ids });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toastSuccess(
-        result.modified === 1
-          ? '1 registro restaurado!'
-          : `${result.modified} registros restaurados!`,
-        'Os registros foram restaurados da lixeira',
-      );
-    },
-  });
-
-  const bulkDelete = useMutation({
-    mutationFn: async function (ids: Array<string>) {
-      const route = '/tables/'.concat(slug).concat('/rows/bulk-delete');
-      const response = await API.delete<{ deleted: number }>(route, {
-        data: { ids },
-      });
-      return response.data;
-    },
-    onSuccess(result) {
-      setShowConfirmDialog(false);
-      table.resetRowSelection();
-      QueryClient.invalidateQueries({
-        queryKey: queryKeys.rows.lists(slug),
-      });
-      toastSuccess(
-        result.deleted === 1
-          ? '1 registro excluído permanentemente!'
-          : `${result.deleted} registros excluídos permanentemente!`,
-      );
-    },
-  });
-
-  const [dialogAction, setDialogAction] = React.useState<
-    'trash' | 'restore' | 'delete'
-  >('trash');
 
   return (
     <div data-test-id="table-list-view">
@@ -513,139 +384,11 @@ export function TableListView({
         table={table}
         onRowClick={(row) => {
           router.navigate({
-            to: '/tables/$slug/row/',
+            to: '/tables/$slug/row',
             params: { slug },
             search: { _id: row._id },
           });
         }}
-      />
-
-      {selectedCount > 0 && (
-        <div className="sticky bottom-4 mx-auto flex w-fit items-center gap-3 rounded-lg border bg-background px-4 py-2 shadow-lg">
-          <span className="text-sm font-medium">
-            {selectedCount === 1
-              ? '1 registro selecionado'
-              : `${selectedCount} registros selecionados`}
-          </span>
-          {isTrashView ? (
-            <React.Fragment>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setDialogAction('restore');
-                  setShowConfirmDialog(true);
-                }}
-              >
-                <ArchiveRestoreIcon className="size-4" />
-                <span>Restaurar</span>
-              </Button>
-              {canRemoveRow && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setDialogAction('delete');
-                    setShowConfirmDialog(true);
-                  }}
-                >
-                  <Trash2Icon className="size-4" />
-                  <span>Excluir permanentemente</span>
-                </Button>
-              )}
-            </React.Fragment>
-          ) : (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                setDialogAction('trash');
-                setShowConfirmDialog(true);
-              }}
-            >
-              <Trash2Icon className="size-4" />
-              <span>Enviar para lixeira</span>
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => table.resetRowSelection()}
-          >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
-      )}
-
-      <Dialog
-        modal
-        open={showConfirmDialog && dialogAction !== 'delete'}
-        onOpenChange={setShowConfirmDialog}
-      >
-        <DialogContent className="py-4 px-6">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogAction === 'trash' && 'Enviar registros para a lixeira'}
-              {dialogAction === 'restore' && 'Restaurar registros da lixeira'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogAction === 'trash' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será enviado para a lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão enviados para a lixeira.`)}
-              {dialogAction === 'restore' &&
-                (selectedCount === 1
-                  ? 'Ao confirmar essa ação, 1 registro será restaurado da lixeira.'
-                  : `Ao confirmar essa ação, ${selectedCount} registros serão restaurados da lixeira.`)}
-            </DialogDescription>
-          </DialogHeader>
-          <section>
-            <form className="pt-4 pb-2">
-              <DialogFooter className="inline-flex w-full gap-2 justify-end">
-                <DialogClose asChild>
-                  <Button className="bg-destructive hover:bg-destructive">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  disabled={
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  }
-                  onClick={() => {
-                    if (dialogAction === 'trash') {
-                      bulkTrash.mutateAsync(selectedIds);
-                    }
-                    if (dialogAction === 'restore') {
-                      bulkRestore.mutateAsync(selectedIds);
-                    }
-                  }}
-                >
-                  {(bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending') && (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                  )}
-                  {!(
-                    bulkTrash.status === 'pending' ||
-                    bulkRestore.status === 'pending'
-                  ) && <span>Confirmar</span>}
-                </Button>
-              </DialogFooter>
-            </form>
-          </section>
-        </DialogContent>
-      </Dialog>
-
-      <PermanentDeleteConfirmDialog
-        open={showConfirmDialog && dialogAction === 'delete'}
-        onOpenChange={setShowConfirmDialog}
-        title="Excluir registros permanentemente"
-        description="Essa ação é irreversível. Os registros selecionados serão excluídos permanentemente."
-        itemsCount={selectedCount}
-        isPending={bulkDelete.status === 'pending'}
-        onConfirm={() => bulkDelete.mutateAsync(selectedIds)}
-        testId="bulk-delete-rows-dialog"
       />
     </div>
   );

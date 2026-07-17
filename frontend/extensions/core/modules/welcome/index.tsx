@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/card';
 import { useSettingRead } from '@/hooks/tanstack-query/use-setting-read';
 
-interface ShortcutCardProps {
+type ShortcutCardProps = {
   to: '/tables' | '/extensions' | '/tools';
   icon: typeof TableIcon;
   title: string;
   description: string;
-}
+};
 
 function ShortcutCard({
   to,
@@ -54,8 +54,8 @@ function ShortcutCard({
 
 export default function WelcomeModule(): React.JSX.Element {
   const setting = useSettingRead();
-  const systemName =
-    setting.status === 'success' ? setting.data.SYSTEM_NAME : 'LowCodeJS';
+  let systemName = 'LowCodeJS';
+  if (setting.status === 'success') systemName = setting.data.SYSTEM_NAME;
 
   return (
     <PageShell data-test-id="module-welcome">

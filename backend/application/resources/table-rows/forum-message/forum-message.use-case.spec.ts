@@ -1,23 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
   type IField,
   type IGroupConfiguration,
+  type Merge,
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import type { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailQueueService from '@application/services/email-queue/in-memory-email-queue.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
+import { groupItems } from '@test/helpers/row-data.helper';
 
 import ForumMessageUseCase from './forum-message.use-case';
 
 function makeField(
-  overrides: Partial<IField> & Pick<IField, 'name' | 'slug' | 'type'>,
+  overrides: Merge<Partial<IField>, Pick<IField, 'name' | 'slug' | 'type'>>,
 ): IField {
   return {
     _id: crypto.randomUUID(),
@@ -25,9 +27,7 @@ function makeField(
     multiple: false,
     format: null,
     showInFilter: false,
-    showInForm: false,
-    showInDetail: false,
-    showInList: false,
+    permissions: buildFieldPermissions(false, false, false),
     widthInForm: null,
     widthInList: null,
     widthInDetail: null,
@@ -87,10 +87,7 @@ const FORUM_TABLE_PAYLOAD = {
   _schema: {},
   fields: [MESSAGES_FIELD._id],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.FORUM,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
   groups: [GROUP_CONFIG],
@@ -100,9 +97,8 @@ async function createForumTable(
   repo: TableInMemoryRepository,
   overrides?: Record<string, unknown>,
 ): Promise<import('@application/core/entity.core').ITable> {
-  const payload = overrides
-    ? { ...FORUM_TABLE_PAYLOAD, ...overrides }
-    : FORUM_TABLE_PAYLOAD;
+  let payload = FORUM_TABLE_PAYLOAD;
+  if (overrides) payload = { ...FORUM_TABLE_PAYLOAD, ...overrides };
   const table = await repo.create(payload);
   table.fields = [MESSAGES_FIELD];
   return table;
@@ -117,23 +113,11 @@ let emailQueue: InMemoryEmailQueueService;
 let notificationService: InMemoryNotificationService;
 let sut: ForumMessageUseCase;
 
-function createMockUserRepo(): UserContractRepository {
-  return {
-    create: vi.fn(),
-    findById: vi.fn(),
-    findByEmail: vi.fn(),
-    findMany: vi.fn().mockResolvedValue([]),
-    update: vi.fn(),
-    delete: vi.fn(),
-    count: vi.fn(),
-  } as unknown as UserContractRepository;
-}
-
 describe('Forum Message Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
-    mockUserRepo = createMockUserRepo();
+    mockUserRepo = new UserInMemoryRepository();
     emailQueue = new InMemoryEmailQueueService();
     notificationService = new InMemoryNotificationService();
     sut = new ForumMessageUseCase(
@@ -170,9 +154,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(Array.isArray(messages)).toBe(true);
     expect(messages.length).toBe(1);
     expect(messages[0]['texto']).toBe('Ola mundo!');
@@ -315,9 +297,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(messages[0]['texto']).toBe('Texto atualizado');
   });
 
@@ -401,9 +381,7 @@ describe('Forum Message Use Case', () => {
       table,
       query: { _id: row._id },
     });
-    const messages = (updatedRow as Record<string, unknown> | null)?.[
-      'mensagens'
-    ] as Array<Record<string, unknown>>;
+    const messages = groupItems(updatedRow ?? {}, 'mensagens');
     expect(messages.length).toBe(0);
   });
 });

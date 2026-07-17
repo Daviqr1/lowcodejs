@@ -22,7 +22,7 @@ Lista registros de uma tabela com paginacao, filtros dinamicos e ordenacao.
 4. Repository: TableContractRepository.findBy, colecao dinamica via buildTable().find, buildTable().countDocuments
 
 ## Regras de Negocio
-- Auth opcional permite listagem em tabelas PUBLIC/OPEN
+- Auth opcional permite listagem quando o binding de VIEW_ROW (`table.permissions`) e PUBLIC
 - Filtros sao dinamicos: query params alem de page/perPage/search sao tratados como filtros de campos
 - buildQuery converte filtros para query MongoDB baseado nos tipos dos campos
 - buildOrder usa ordenacao padrao da tabela se nenhuma especificada

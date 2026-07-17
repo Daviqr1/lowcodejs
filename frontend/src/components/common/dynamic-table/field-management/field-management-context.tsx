@@ -10,8 +10,13 @@ export type VisibilityKey =
 
 export type WidthKey = 'widthInForm' | 'widthInList' | 'widthInDetail';
 
-export interface FieldManagementActions {
+export type FieldManagementActions = {
   fields: Array<IField>;
+  // Campos-filho de grupo elegíveis (`showInParentList`) a aparecer na aba Lista
+  // do gerenciamento da tabela pai. `parentListChildIds` identifica quais campos
+  // usam `visibleInParentList` (em vez de `permissions.list`) como visibilidade.
+  parentListChildFields: Array<IField>;
+  parentListChildIds: Set<string>;
   fieldOrderList: Array<string>;
   fieldOrderForm: Array<string>;
   fieldOrderFilter: Array<string>;
@@ -34,7 +39,7 @@ export interface FieldManagementActions {
   deletingFieldId: string | null;
   restoringFieldId: string | null;
   isSavingOrder: boolean;
-}
+};
 
 const FieldManagementContext = createContext<FieldManagementActions | null>(
   null,

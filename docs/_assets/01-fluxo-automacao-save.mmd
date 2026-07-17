@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor Cliente
+    participant API as POST/PUT /tables/:slug/rows
+    participant UC as Use-Case (create/update row)
+    participant SB as Sandbox VM (Node vm, timeout 5s)
+    participant DATA as MongoDB data
+
+    Cliente->>API: payload do registro
+    API->>UC: validateRowPayload(payload, fields)
+    alt methods.beforeSave.code != null
+        UC->>SB: executa beforeSave (context.moment = antes_salvar)
+        SB-->>UC: field.set() altera doc, logs[], ExecutionResult
+    end
+    UC->>DATA: persiste documento (collection = slug)
+    alt methods.afterSave.code != null
+        UC->>SB: executa afterSave (context.moment = depois_salvar)
+        SB-->>UC: side-effects (email.send, etc.), logs[]
+    end
+    UC-->>API: Either<HTTPException, Row>
+    API-->>Cliente: 201/200 ou erro PT-BR

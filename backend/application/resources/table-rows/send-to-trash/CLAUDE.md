@@ -14,7 +14,7 @@ Envia um registro para a lixeira (soft delete).
    - Constroi populate via buildPopulate
    - Busca registro por _id via findOne
    - Verifica se ja esta na lixeira
-   - Atualiza trashed=true e trashedAt=new Date() via row.set().save()
+   - Atualiza trashedAt=new Date() via update
    - Popula o registro
    - Retorna registro atualizado com _id como string
 4. Repository: TableContractRepository.findBy, colecao dinamica via buildTable().findOne, row.set().save()

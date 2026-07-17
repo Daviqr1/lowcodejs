@@ -4,17 +4,18 @@ import z from 'zod';
 import { DataTableSkeleton } from '@/components/common/data-table';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { userListOptions } from '@/hooks/tanstack-query/_query-options';
-import { E_ROLE } from '@/lib/constant';
+import { E_AREA_CAPABILITY, E_ROLE } from '@/lib/constant';
 import type { ISetting } from '@/lib/interfaces';
+import { hasAreaCapability } from '@/lib/menu/menu-access-permissions';
 import { createRouteHead } from '@/lib/seo';
 import { useAuthStore } from '@/stores/authentication';
 
-const defaultSearch = { page: 1, perPage: 50 };
+const defaultSearch = { page: 1 };
 
 export const Route = createFileRoute('/_private/users/')({
   beforeLoad: async ({ context, location }) => {
-    const role = useAuthStore.getState().user?.group?.slug?.toUpperCase();
-    if (!['MASTER', 'ADMINISTRATOR'].includes(role ?? '')) {
+    const capabilities = useAuthStore.getState().user?.capabilities;
+    if (!hasAreaCapability(capabilities, E_AREA_CAPABILITY.MANAGE_USERS)) {
       const { redirect } = await import('@tanstack/react-router');
       throw redirect({ to: '/tables' });
     }
@@ -57,7 +58,7 @@ export const Route = createFileRoute('/_private/users/')({
   validateSearch: z.object({
     search: z.string().optional(),
     page: z.coerce.number().default(1),
-    perPage: z.coerce.number().default(50),
+    perPage: z.coerce.number().optional(),
     trashed: z
       .preprocess(
         (v) => {

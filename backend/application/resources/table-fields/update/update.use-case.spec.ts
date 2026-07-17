@@ -1,23 +1,26 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableFieldUpdateUseCase from './update.use-case';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
 let rowInMemoryRepository: RowInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: TableFieldUpdateUseCase;
 
 describe('Table Field Update Use Case', () => {
@@ -26,13 +29,22 @@ describe('Table Field Update Use Case', () => {
     fieldInMemoryRepository = new FieldInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
 
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new TableFieldUpdateUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
       rowInMemoryRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
+      new RelationshipMaterializationService(
+        fieldInMemoryRepository,
+        tableInMemoryRepository,
+        new RelationshipDefinitionInMemoryRepository(),
+        schemaBuilder,
+        modelBuilder,
+      ),
     );
   });
 
@@ -41,9 +53,7 @@ describe('Table Field Update Use Case', () => {
       name: 'Nome',
       slug: 'nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -67,10 +77,7 @@ describe('Table Field Update Use Case', () => {
       _schema: {},
       fields: [field._id],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -80,9 +87,7 @@ describe('Table Field Update Use Case', () => {
       _id: field._id,
       name: 'Nome Atualizado',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -115,9 +120,7 @@ describe('Table Field Update Use Case', () => {
       _id: 'field-id',
       name: 'Nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -144,6 +147,49 @@ describe('Table Field Update Use Case', () => {
     expect(result.value.message).toBe('Tabela não encontrada');
   });
 
+  it('deve rejeitar RELATIONSHIP dentro de grupo (RELATIONSHIP_IN_FIELD_GROUP)', async () => {
+    await tableInMemoryRepository.create({
+      name: 'Clientes',
+      slug: 'clientes',
+      _schema: {},
+      fields: [],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    const result = await sut.execute({
+      slug: 'clientes',
+      _id: 'field-id',
+      name: 'Pedidos',
+      type: E_FIELD_TYPE.RELATIONSHIP,
+      permissions: buildFieldPermissions(true, true, true),
+      showInFilter: false,
+      locked: false,
+      allowCreateRelationshipRecords: false,
+      required: false,
+      dropdown: [],
+      category: [],
+      defaultValue: null,
+      format: null,
+      group: 'algum-grupo',
+      multiple: true,
+      relationship: null,
+      trashed: false,
+      trashedAt: null,
+      widthInForm: null,
+      widthInList: null,
+      widthInDetail: null,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+
+    expect(result.value.code).toBe(400);
+    expect(result.value.cause).toBe('RELATIONSHIP_IN_FIELD_GROUP');
+  });
+
   it('deve retornar erro FIELD_NOT_FOUND quando campo nao existir', async () => {
     await tableInMemoryRepository.create({
       name: 'Clientes',
@@ -151,10 +197,7 @@ describe('Table Field Update Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -164,9 +207,7 @@ describe('Table Field Update Use Case', () => {
       _id: 'non-existent-field',
       name: 'Nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -198,9 +239,7 @@ describe('Table Field Update Use Case', () => {
       name: 'Nome',
       slug: 'nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -224,10 +263,7 @@ describe('Table Field Update Use Case', () => {
       _schema: {},
       fields: [field._id],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -238,9 +274,7 @@ describe('Table Field Update Use Case', () => {
       name: 'Nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
       trashed: true,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -279,9 +313,7 @@ describe('Table Field Update Use Case', () => {
       _id: 'field-id',
       name: 'Nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -306,5 +338,147 @@ describe('Table Field Update Use Case', () => {
     expect(result.value.code).toBe(500);
     expect(result.value.cause).toBe('UPDATE_FIELD_TABLE_ERROR');
     expect(result.value.message).toBe('Erro interno do servidor');
+  });
+
+  it('deve aplicar label customizado em campo nativo preservando name e slug originais', async () => {
+    const field = await fieldInMemoryRepository.create({
+      name: 'Criado em',
+      slug: 'createdAt',
+      type: E_FIELD_TYPE.CREATED_AT,
+      permissions: buildFieldPermissions(true, false, true),
+      showInFilter: true,
+      locked: true,
+      allowCreateRelationshipRecords: false,
+      native: true,
+      required: false,
+      category: [],
+      dropdown: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.DD_MM_YYYY_HH_MM_SS,
+      group: null,
+      multiple: false,
+      relationship: null,
+      widthInForm: null,
+      widthInList: 10,
+      widthInDetail: null,
+    });
+
+    await tableInMemoryRepository.create({
+      name: 'Clientes',
+      slug: 'clientes',
+      _schema: {},
+      fields: [field._id],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    const result = await sut.execute({
+      slug: 'clientes',
+      _id: field._id,
+      // Tentativa de mudar name/type/slug deve ser ignorada em campo nativo.
+      name: 'Tentativa de renomear',
+      type: E_FIELD_TYPE.TEXT_SHORT,
+      permissions: buildFieldPermissions(true, false, true),
+      showInFilter: true,
+      locked: true,
+      allowCreateRelationshipRecords: false,
+      required: false,
+      dropdown: [],
+      category: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.DD_MM_YYYY_HH_MM_SS,
+      group: null,
+      multiple: false,
+      relationship: null,
+      trashed: false,
+      trashedAt: null,
+      widthInForm: null,
+      widthInList: 10,
+      widthInDetail: null,
+      label: { list: 'Data de início', filter: null, form: null, detail: null },
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+
+    // label customizado salvo; name e slug originais preservados.
+    expect(result.value.label).toEqual({
+      list: 'Data de início',
+      filter: null,
+      form: null,
+      detail: null,
+    });
+    expect(result.value.name).toBe('Criado em');
+    expect(result.value.slug).toBe('createdAt');
+    expect(result.value.type).toBe(E_FIELD_TYPE.CREATED_AT);
+  });
+
+  it('deve limpar label (volta ao name) quando enviado vazio', async () => {
+    const field = await fieldInMemoryRepository.create({
+      name: 'Criado em',
+      slug: 'createdAt',
+      type: E_FIELD_TYPE.CREATED_AT,
+      permissions: buildFieldPermissions(true, false, true),
+      showInFilter: true,
+      locked: true,
+      allowCreateRelationshipRecords: false,
+      native: true,
+      label: { list: 'Data de início', filter: null, form: null, detail: null },
+      required: false,
+      category: [],
+      dropdown: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.DD_MM_YYYY_HH_MM_SS,
+      group: null,
+      multiple: false,
+      relationship: null,
+      widthInForm: null,
+      widthInList: 10,
+      widthInDetail: null,
+    });
+
+    await tableInMemoryRepository.create({
+      name: 'Clientes',
+      slug: 'clientes',
+      _schema: {},
+      fields: [field._id],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    const result = await sut.execute({
+      slug: 'clientes',
+      _id: field._id,
+      name: 'Criado em',
+      type: E_FIELD_TYPE.CREATED_AT,
+      permissions: buildFieldPermissions(true, false, true),
+      showInFilter: true,
+      locked: true,
+      allowCreateRelationshipRecords: false,
+      required: false,
+      dropdown: [],
+      category: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.DD_MM_YYYY_HH_MM_SS,
+      group: null,
+      multiple: false,
+      relationship: null,
+      trashed: false,
+      trashedAt: null,
+      widthInForm: null,
+      widthInList: 10,
+      widthInDetail: null,
+      label: null,
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+
+    expect(result.value.label).toBeNull();
+    expect(result.value.name).toBe('Criado em');
   });
 });

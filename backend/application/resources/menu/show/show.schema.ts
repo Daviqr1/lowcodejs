@@ -76,6 +76,15 @@ export const MenuShowSchema: FastifySchema = {
           type: 'boolean',
           description: 'Se é o menu inicial do sistema',
         },
+        visibility: {
+          type: 'object',
+          nullable: true,
+          description: 'Visibilidade da opção de menu (Grupo|Public|Nobody)',
+          properties: {
+            kind: { type: 'string', enum: ['PUBLIC', 'NOBODY', 'GROUP'] },
+            group: { type: 'string', nullable: true },
+          },
+        },
         trashed: { type: 'boolean', description: 'Se está na lixeira' },
         trashedAt: {
           type: 'string',
@@ -118,7 +127,7 @@ export const MenuShowSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -131,7 +140,7 @@ export const MenuShowSchema: FastifySchema = {
       description: 'Menu não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Menu not found'] },
+        message: { type: 'string', enum: ['Menu não encontrado'] },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
         errors: {

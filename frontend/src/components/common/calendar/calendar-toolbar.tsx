@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 
 export type CalendarViewMode = 'week' | 'month' | 'agenda';
 
-interface CalendarToolbarProps {
+type CalendarToolbarProps = {
   currentDate: Date;
   viewMode: CalendarViewMode;
   onPrevious: () => void;
@@ -28,7 +28,7 @@ interface CalendarToolbarProps {
   onToday: () => void;
   onChangeView: (mode: CalendarViewMode) => void;
   onSelectDate: (date: Date) => void;
-}
+};
 
 function getTitle(currentDate: Date, viewMode: CalendarViewMode): string {
   if (viewMode === 'month') {
@@ -231,11 +231,13 @@ export function CalendarToolbar({
       </div>
 
       <div className="inline-flex items-center gap-1 rounded-md border bg-muted/30 p-1">
-        {[
-          { mode: 'agenda', label: 'Agenda', icon: LayoutListIcon },
-          { mode: 'month', label: 'Mês', icon: CalendarIcon },
-          { mode: 'week', label: 'Semana', icon: LayoutDashboardIcon },
-        ].map((item) => {
+        {(
+          [
+            { mode: 'agenda', label: 'Agenda', icon: LayoutListIcon },
+            { mode: 'month', label: 'Mês', icon: CalendarIcon },
+            { mode: 'week', label: 'Semana', icon: LayoutDashboardIcon },
+          ] as const
+        ).map((item) => {
           const Icon = item.icon;
           const isActive = viewMode === item.mode;
           let buttonVariant: 'default' | 'ghost' = 'ghost';
@@ -252,10 +254,10 @@ export function CalendarToolbar({
                 'cursor-pointer shadow-none',
                 !isActive && 'text-muted-foreground',
               )}
-              onClick={() => onChangeView(item.mode as CalendarViewMode)}
+              onClick={() => onChangeView(item.mode)}
             >
               <Icon className="size-4" />
-              <span>{item.label}</span>
+              <span className="hidden sm:inline">{item.label}</span>
             </Button>
           );
         })}

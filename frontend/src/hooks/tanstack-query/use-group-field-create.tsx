@@ -7,16 +7,16 @@ import { queryKeys } from './_query-keys';
 import { API } from '@/lib/api';
 import type { IField, ITable } from '@/lib/interfaces';
 
-interface GroupFieldCreatePayload {
+type GroupFieldCreatePayload = {
   tableSlug: string;
   groupSlug: string;
   data: Partial<IField>;
-}
+};
 
-interface UseGroupFieldCreateProps {
+type UseGroupFieldCreateProps = {
   onSuccess?: (data: IField) => void;
   onError?: (error: AxiosError | Error) => void;
-}
+};
 
 export function useGroupFieldCreate(
   props: UseGroupFieldCreateProps,
@@ -36,11 +36,10 @@ export function useGroupFieldCreate(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === variables.groupSlug
-                ? { ...g, fields: [...g.fields, response] }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== variables.groupSlug) return g;
+              return { ...g, fields: [...g.fields, response] };
+            }),
           };
         },
       );

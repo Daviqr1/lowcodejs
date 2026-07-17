@@ -1,30 +1,31 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableFieldUpdateUseCase from '../update.use-case';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
 let rowInMemoryRepository: RowInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: TableFieldUpdateUseCase;
 
 const FIELD_DEFAULTS = {
   slug: 'itens',
   type: E_FIELD_TYPE.FIELD_GROUP,
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -58,10 +59,7 @@ async function createFieldAndTable(
     _schema: {},
     fields: [field._id],
     owner: 'owner-id',
-    administrators: [],
     style: E_TABLE_STYLE.LIST,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
     fieldOrderList: [],
     fieldOrderForm: [],
     groups: [
@@ -85,13 +83,22 @@ describe('Table Field Update - FIELD_GROUP', () => {
     fieldInMemoryRepository = new FieldInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
 
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new TableFieldUpdateUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
       rowInMemoryRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
+      new RelationshipMaterializationService(
+        fieldInMemoryRepository,
+        tableInMemoryRepository,
+        new RelationshipDefinitionInMemoryRepository(),
+        schemaBuilder,
+        modelBuilder,
+      ),
     );
   });
 
@@ -118,9 +125,7 @@ describe('Table Field Update - FIELD_GROUP', () => {
       trashedAt: null,
       locked: false,
       allowCreateRelationshipRecords: false,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,
@@ -158,16 +163,14 @@ describe('Table Field Update - FIELD_GROUP', () => {
       trashedAt: null,
       locked: false,
       allowCreateRelationshipRecords: false,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,
       widthInDetail: null,
     });
 
-    expect(tableSchemaService.syncModelCallCount).toBeGreaterThanOrEqual(1);
+    expect(modelBuilder.buildCallCount).toBeGreaterThanOrEqual(1);
   });
 
   it('deve atualizar slug do grupo na tabela', async () => {
@@ -193,9 +196,7 @@ describe('Table Field Update - FIELD_GROUP', () => {
       trashedAt: null,
       locked: false,
       allowCreateRelationshipRecords: false,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,

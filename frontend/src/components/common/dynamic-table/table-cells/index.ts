@@ -10,3 +10,4 @@ export { TableRowRelationshipCell } from './table-row-relationship-cell';
 export { TableRowTextLongCell } from './table-row-text-long-cell';
 export { TableRowTextShortCell } from './table-row-text-short-cell';
 export { TableRowUserCell } from './table-row-user-cell';
+export { TableRowUserGroupCell } from './table-row-user-group-cell';

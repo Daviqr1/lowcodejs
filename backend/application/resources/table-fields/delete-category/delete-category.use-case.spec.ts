@@ -2,10 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { ICategory, IField, ITable } from '@application/core/entity.core';
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import type { RowTableContext } from '@application/repositories/row/row-contract.repository';
@@ -33,9 +32,7 @@ async function makeCategoryField(category: Array<ICategory>): Promise<IField> {
     name: 'Categorias',
     slug: 'categorias',
     type: E_FIELD_TYPE.CATEGORY,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     required: false,
     dropdown: [],
@@ -58,10 +55,7 @@ async function makeTable(fields: Array<string>): Promise<ITable> {
     _schema: {},
     fields,
     owner: 'owner-id',
-    administrators: [],
     style: E_TABLE_STYLE.DOCUMENT,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
     fieldOrderList: [],
     fieldOrderForm: [],
   });
@@ -94,7 +88,7 @@ describe('Table Field Delete Category Use Case', () => {
 
     expect(result.value.removedIds.sort()).toEqual(['a', 'a1']);
 
-    const remaining = result.value.field.category as Array<ICategory>;
+    const remaining = result.value.field.category;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe('b');
   });
@@ -103,7 +97,7 @@ describe('Table Field Delete Category Use Case', () => {
     const field = await makeCategoryField(TREE);
     const table = await makeTable([field._id]);
 
-    const context = { ...table, fields: [field] } as unknown as RowTableContext;
+    const context: RowTableContext = { ...table, fields: [field] };
 
     await rowInMemoryRepository.create({
       table: context,
@@ -153,7 +147,7 @@ describe('Table Field Delete Category Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
 
     expect(result.value.removedIds).toEqual(['a1']);
-    const tree = result.value.field.category as Array<ICategory>;
+    const tree = result.value.field.category;
     const parent = tree.find((node) => node.id === 'a');
     expect(parent?.children).toHaveLength(0);
   });
@@ -191,9 +185,7 @@ describe('Table Field Delete Category Use Case', () => {
       name: 'Nome',
       slug: 'nome',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       required: true,
       dropdown: [],

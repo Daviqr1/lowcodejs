@@ -21,9 +21,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface ChartTablesProps {
+type ChartTablesProps = {
   data: Array<{ month: string; tables: number }>;
-}
+};
 
 export function ChartTables({ data }: ChartTablesProps): React.JSX.Element {
   return (

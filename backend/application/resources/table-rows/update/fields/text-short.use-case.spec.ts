@@ -4,9 +4,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { E_FIELD_FORMAT } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import FieldValidationService from '@application/services/field-validation/field-validation.service';
+import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
 import InMemoryKanbanCommentMentionService from '@application/services/kanban-comment-mention/in-memory-kanban-comment-mention.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
-import BcryptRowPasswordService from '@application/services/row-password/bcrypt-row-password.service';
+import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
 import {
   makePasswordField,
@@ -33,10 +37,14 @@ describe('Table Row Update - TEXT_SHORT', () => {
     sut = new TableRowUpdateUseCase(
       tableRepository,
       rowRepository,
+      new UserInMemoryRepository(),
       rowPasswordService,
       scriptExecutionService,
       new InMemoryKanbanCommentMentionService(),
       new InMemoryRowMemberNotificationService(),
+      new InMemoryFieldVisibilityService(),
+      new FieldValidationService(rowRepository, new UserInMemoryRepository()),
+      new InMemoryRowAccessGuardService(),
     );
   });
 
@@ -433,13 +441,13 @@ describe('Table Row Update - TEXT_SHORT', () => {
       });
       expect(stored).toBeDefined();
       const isHashed =
-        (stored!.senha as string).startsWith('$2a$') ||
-        (stored!.senha as string).startsWith('$2b$');
+        String(stored!.senha).startsWith('$2a$') ||
+        String(stored!.senha).startsWith('$2b$');
       expect(isHashed).toBe(true);
 
       const matches = await bcrypt.compare(
         'nova-senha-123',
-        stored!.senha as string,
+        String(stored!.senha),
       );
       expect(matches).toBe(true);
     });
@@ -489,7 +497,7 @@ describe('Table Row Update - TEXT_SHORT', () => {
 
       // Valor armazenado deve continuar sendo o hash original
       const stored = await rowRepository.findOne({
-        table: { slug: 'usuarios' } as any,
+        table,
         query: { _id: row._id },
       });
 

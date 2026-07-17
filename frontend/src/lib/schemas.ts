@@ -4,9 +4,8 @@ import {
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_MENU_ITEM_TYPE,
-  E_TABLE_COLLABORATION,
+  E_PERMISSION_TARGET,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
   E_USER_STATUS,
   PASSWORD_REGEX,
   TABLE_NAME_REGEX,
@@ -53,6 +52,7 @@ export const UserBaseSchema = z.object({
   group: z
     .string({ message: 'O grupo é obrigatório' })
     .min(1, 'O grupo é obrigatório'),
+  groups: z.array(z.string().trim()).default([]),
 });
 
 export const UserCreateBodySchema = UserBaseSchema.extend({
@@ -93,6 +93,9 @@ export const UserUpdateFormSchema = UserBaseSchema.extend({
   status: z.enum([E_USER_STATUS.ACTIVE, E_USER_STATUS.INACTIVE], {
     message: 'O status deve ser ACTIVE ou INACTIVE',
   }),
+  // Form sempre provê `groups` (default []); sem `.default()` o input do schema
+  // fica `string[]` (não opcional), casando com UserUpdateFormValues no validador.
+  groups: z.array(z.string().trim()),
 });
 
 export const UserUpdateParamsSchema = z.object({
@@ -107,6 +110,7 @@ export const UserGroupCreateBodySchema = z.object({
   name: z.string().trim(),
   description: z.string().trim().nullable(),
   permissions: z.array(z.string().trim()).default([]),
+  encompasses: z.array(z.string().trim()).default([]),
 });
 
 export const UserGroupUpdateParamsSchema = z.object({
@@ -117,6 +121,7 @@ export const UserGroupUpdateBodySchema = z.object({
   name: z.string().trim().optional(),
   description: z.string().trim().nullable().optional(),
   permissions: z.array(z.string().trim()).default([]),
+  encompasses: z.array(z.string().trim()).default([]),
 });
 
 // ============== MENU ==============
@@ -134,6 +139,18 @@ const MenuExtensionRefSchema = z.object({
   extensionId: z.string(),
 });
 
+// Visibilidade da opção de menu (Grupo|Public|Nobody).
+const MenuVisibilitySchema = z
+  .object({
+    kind: z.enum([
+      E_PERMISSION_TARGET.PUBLIC,
+      E_PERMISSION_TARGET.NOBODY,
+      E_PERMISSION_TARGET.GROUP,
+    ]),
+    group: z.string().nullable().default(null),
+  })
+  .optional();
+
 export const MenuCreateBodySchema = z
   .object({
     name: z.string().trim().min(1, 'Nome é obrigatório'),
@@ -146,6 +163,7 @@ export const MenuCreateBodySchema = z
     order: z.number().default(0),
     isInitial: z.boolean().default(false),
     extension: MenuExtensionRefSchema.nullable().optional(),
+    visibility: MenuVisibilitySchema,
   })
   .superRefine((data, ctx) => {
     if (
@@ -210,6 +228,7 @@ export const MenuUpdateBodySchema = z
     order: z.number().default(0),
     isInitial: z.boolean().default(false),
     extension: MenuExtensionRefSchema.nullable().optional(),
+    visibility: MenuVisibilitySchema,
   })
   .superRefine((data, ctx) => {
     if (
@@ -272,22 +291,6 @@ export const TableStyleSchema = z
   ])
   .default(E_TABLE_STYLE.LIST);
 
-export const TableVisibilitySchema = z
-  .enum([
-    E_TABLE_VISIBILITY.PUBLIC,
-    E_TABLE_VISIBILITY.RESTRICTED,
-    E_TABLE_VISIBILITY.OPEN,
-    E_TABLE_VISIBILITY.FORM,
-    E_TABLE_VISIBILITY.PRIVATE,
-  ])
-  .default(E_TABLE_VISIBILITY.RESTRICTED);
-
-export const TableCollaborationSchema = z
-  .enum([E_TABLE_COLLABORATION.OPEN, E_TABLE_COLLABORATION.RESTRICTED])
-  .default(E_TABLE_COLLABORATION.OPEN);
-
-export const TableAdministratorsSchema = z.array(z.string()).default([]);
-
 export const TableFieldOrderListSchema = z.array(z.string().trim()).default([]);
 
 export const TableFieldOrderFormSchema = z.array(z.string().trim()).default([]);
@@ -313,9 +316,6 @@ export const TableCreateBodySchema = z.object({
   owner: z.string().trim().optional(),
   logo: z.string().trim().nullable().optional(),
   style: TableStyleSchema.optional(),
-  visibility: TableVisibilitySchema.optional(),
-  collaboration: TableCollaborationSchema.optional(),
-  administrators: TableAdministratorsSchema.optional(),
   fieldOrderList: TableFieldOrderListSchema.optional(),
   fieldOrderForm: TableFieldOrderFormSchema.optional(),
   fieldOrderFilter: TableFieldOrderFilterSchema.optional(),
@@ -347,9 +347,6 @@ export const TableUpdateBodySchema = z.object({
   description: z.string().trim().nullable(),
   logo: z.string().trim().nullable(),
   style: TableStyleSchema,
-  visibility: TableVisibilitySchema,
-  collaboration: TableCollaborationSchema,
-  administrators: TableAdministratorsSchema,
   fieldOrderList: TableFieldOrderListSchema,
   fieldOrderForm: TableFieldOrderFormSchema,
   fieldOrderFilter: TableFieldOrderFilterSchema,
@@ -386,6 +383,15 @@ const RelationshipSchema = z.object({
   customLabel: z.boolean().default(false),
   labelParts: z.array(RelationshipLabelPartSchema).default([]),
   labelSeparator: z.string().default(' - '),
+  visible: z.boolean().optional(),
+  onDelete: z.enum(['CASCADE', 'SET_NULL', 'RESTRICT']).optional(),
+  mirror: z
+    .object({
+      multiple: z.boolean().default(false),
+      visible: z.boolean().default(false),
+      label: z.string().trim().optional(),
+    })
+    .optional(),
 });
 
 const DropdownSchema = z.object({
@@ -423,9 +429,7 @@ export const FieldBaseSchema = z.object({
     .nullable()
     .default(null),
   showInFilter: z.boolean().default(false),
-  showInForm: z.boolean().default(false),
-  showInDetail: z.boolean().default(false),
-  showInList: z.boolean().default(false),
+  showInParentList: z.boolean().default(false),
   widthInForm: z.number().nullable().default(50),
   widthInList: z.number().nullable().default(10),
   tip: z.string().nullable().default(null),
@@ -435,6 +439,7 @@ export const FieldBaseSchema = z.object({
   dropdown: z.array(DropdownSchema).default([]),
   allowCustomDropdownOptions: z.boolean().default(false),
   allowCreateRelationshipRecords: z.boolean().default(false),
+  fillWithCurrentUserWhenEmpty: z.boolean().default(false),
   category: z.array(CategorySchema).default([]),
   group: z
     .object({
@@ -460,6 +465,7 @@ export const FieldCreateBodySchema = z
       E_FIELD_TYPE.EVALUATION,
       E_FIELD_TYPE.CATEGORY,
       E_FIELD_TYPE.USER,
+      E_FIELD_TYPE.USER_GROUP,
     ]),
   })
   .merge(FieldBaseSchema);
@@ -483,6 +489,7 @@ export const FieldUpdateBodySchema = z
       E_FIELD_TYPE.EVALUATION,
       E_FIELD_TYPE.CATEGORY,
       E_FIELD_TYPE.USER,
+      E_FIELD_TYPE.USER_GROUP,
     ]),
     trashed: z.boolean().default(false),
     trashedAt: z.string().nullable().default(null),
@@ -547,6 +554,8 @@ export const SettingUpdateBodySchema = z.object({
   PAGINATION_PER_PAGE: z.number().optional(),
   LOGO_SMALL_URL: z.string().optional(),
   LOGO_LARGE_URL: z.string().optional(),
+  LOGO_SMALL_DARK_URL: z.string().optional(),
+  LOGO_LARGE_DARK_URL: z.string().optional(),
   MODEL_CLONE_TABLES: z.string().optional(),
   EMAIL_PROVIDER_HOST: z.string().optional(),
   EMAIL_PROVIDER_PORT: z.number().optional(),

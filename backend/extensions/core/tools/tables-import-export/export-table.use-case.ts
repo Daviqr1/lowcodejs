@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import { left, right } from '@application/core/either.core';
@@ -29,10 +28,12 @@ const REFERENCE_TYPES = new Set<string>([
   E_FIELD_TYPE.REACTION,
 ]);
 
-// Campos cujo valor é um (ou vários) ID de usuário. Viajam como string/string[]
-// de IDs: resolvem na mesma instância e ficam vazios (sem erro) em outra.
+// Campos cujo valor é um (ou vários) ID de usuário ou grupo. Viajam como
+// string/string[] de IDs: resolvem na mesma instância e ficam vazios (sem erro)
+// em outra.
 const USER_REFERENCE_TYPES = new Set<string>([
   E_FIELD_TYPE.USER,
+  E_FIELD_TYPE.USER_GROUP,
   E_FIELD_TYPE.CREATOR,
 ]);
 
@@ -40,15 +41,16 @@ function toIdString(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'object' && value !== null) {
-    const v = value as {
+    const v: {
       _id?: unknown;
       _bsontype?: string;
       toString?: () => string;
-    };
+    } = value;
     // Mongoose/BSON ObjectId expõe um getter `_id` que retorna a si mesmo —
     // tratar ObjectId direto pelo toString evita recursão infinita.
     if (v._bsontype === 'ObjectId' || v._bsontype === 'ObjectID') {
-      return typeof v.toString === 'function' ? v.toString() : String(value);
+      if (typeof v.toString === 'function') return v.toString();
+      return String(value);
     }
     // Guard contra auto-referência (`v._id === value`) por segurança extra.
     if (v._id && v._id !== value) return toIdString(v._id);
@@ -118,15 +120,19 @@ export default class ExportTableUseCase {
 
       const exportedTables: ExportedTable[] = [];
       for (const table of tables) {
-        const exp: ExportedTable = {};
+        // Identidade sempre presente — essencial para o import "somente dados"
+        // casar com a tabela existente no destino.
+        const exp: ExportedTable = {
+          tableSlug: table.slug,
+          tableName: table.name,
+        };
         if (includeStructure) exp.structure = this.exportStructure(table);
         if (includeData) exp.data = await this.exportData(table);
         exportedTables.push(exp);
       }
 
-      const exportedMenus = includeStructure
-        ? await this.exportMenus(tables)
-        : [];
+      let exportedMenus: Awaited<ReturnType<typeof this.exportMenus>> = [];
+      if (includeStructure) exportedMenus = await this.exportMenus(tables);
 
       const first = tables[0];
 
@@ -221,17 +227,16 @@ export default class ExportTableUseCase {
       slug: table.slug,
       description: table.description,
       style: table.style,
-      visibility: table.visibility,
-      collaboration: table.collaboration,
       fields: exportedFields,
       groups: exportedGroups,
       fieldOrderList: mapOrder(table.fieldOrderList),
       fieldOrderForm: mapOrder(table.fieldOrderForm),
       fieldOrderFilter: mapOrder(table.fieldOrderFilter),
       fieldOrderDetail: mapOrder(table.fieldOrderDetail),
-      layoutFields: table.layoutFields
-        ? this.exportLayoutFields(table.layoutFields, fieldSlugMap)
-        : {},
+      layoutFields:
+        (table.layoutFields &&
+          this.exportLayoutFields(table.layoutFields, fieldSlugMap)) ||
+        {},
       methods: table.methods || {
         onLoad: { code: null },
         beforeSave: { code: null },
@@ -256,6 +261,16 @@ export default class ExportTableUseCase {
   }
 
   private exportField(field: IField): ExportedField {
+    let group: { slug: string } | null = null;
+    if (field.group) group = { slug: field.group.slug };
+    let relationship: ExportedField['relationship'] = null;
+    if (field.relationship) {
+      relationship = {
+        tableSlug: field.relationship.table.slug,
+        fieldSlug: field.relationship.field.slug,
+        order: field.relationship.order,
+      };
+    }
     return {
       name: field.name,
       slug: field.slug,
@@ -263,25 +278,20 @@ export default class ExportTableUseCase {
       required: field.required,
       multiple: field.multiple,
       format: field.format,
+      validations: field.validations ?? [],
       showInFilter: field.showInFilter,
-      showInForm: field.showInForm,
-      showInDetail: field.showInDetail,
-      showInList: field.showInList,
+      showInParentList: field.showInParentList,
+      visibleInParentList: field.visibleInParentList,
+      permissions: field.permissions,
       widthInForm: field.widthInForm,
       widthInList: field.widthInList,
       widthInDetail: field.widthInDetail ?? null,
       defaultValue: field.defaultValue,
       locked: field.locked,
-      relationship: field.relationship
-        ? {
-            tableSlug: field.relationship.table.slug,
-            fieldSlug: field.relationship.field.slug,
-            order: field.relationship.order,
-          }
-        : null,
+      relationship,
       dropdown: field.dropdown || [],
       category: field.category || [],
-      group: field.group ? { slug: field.group.slug } : null,
+      group,
     };
   }
 
@@ -398,13 +408,15 @@ export default class ExportTableUseCase {
         if (collected.has(id)) break;
         collected.set(id, current);
         const parentId = toIdString(current.parent);
-        current = parentId ? menuById.get(parentId) : undefined;
+        current = undefined;
+        if (parentId) current = menuById.get(parentId);
       }
     }
 
     return Array.from(collected.values()).map((menu) => {
       const tid = toIdString(menu.table);
-      const knownTableSlug = tid ? (tableIdToSlug.get(tid) ?? null) : null;
+      let knownTableSlug: string | null = null;
+      if (tid) knownTableSlug = tableIdToSlug.get(tid) ?? null;
 
       let type = menu.type;
       let tableSlug: string | null = knownTableSlug;

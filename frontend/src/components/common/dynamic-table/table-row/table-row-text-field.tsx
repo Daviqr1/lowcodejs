@@ -20,11 +20,12 @@ import {
   isPasswordFormat,
 } from '@/lib/field-masks';
 import type { IField } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowTextFieldProps {
+type TableRowTextFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 function getFormatIcon(format: string | null | undefined): React.JSX.Element {
   switch (format) {
@@ -105,10 +106,8 @@ function TableRowTextFieldDefault({
           id={formField.name}
           name={formField.name}
           type={inputType}
-          inputMode={
-            inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']
-          }
-          placeholder={`Digite ${field.name.toLowerCase()}`}
+          inputMode={inputMode}
+          placeholder={`Digite ${resolveFieldLabel(field, 'form').toLowerCase()}`}
           value={formField.state.value || ''}
           onBlur={formField.handleBlur}
           onChange={(e) => formField.handleChange(e.target.value)}

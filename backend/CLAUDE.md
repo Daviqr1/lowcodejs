@@ -57,11 +57,11 @@ backend/
 ├── application/
 │   ├── core/                      # Logica central (entity types, Either, exception, builders, sandbox)
 │   ├── middlewares/               # Auth JWT + Table access/permissions
-│   ├── model/                     # Mongoose schemas (11 models, todos no DB system)
-│   ├── repositories/              # Contract + Mongoose + InMemory (11 entidades)
+│   ├── model/                     # Mongoose schemas (14 models, todos no DB system)
+│   ├── repositories/              # Contract + Mongoose + InMemory (15 entidades)
 │   ├── services/                  # Email (contract + nodemailer + in-memory), Storage (flydrive)
 │   ├── utils/                     # JWT tokens, cookies
-│   └── resources/                 # 16 recursos REST (cada um com operacoes isoladas)
+│   └── resources/                 # 20 recursos REST (cada um com operacoes isoladas)
 ├── database/
 │   ├── seeders/                   # Permissions, user groups, settings (idempotente)
 │   └── migrations/                # Migracoes one-time (dual-connection)
@@ -88,13 +88,15 @@ backend/
 ### Use Case (`*.use-case.ts`)
 - Logica de negocio pura
 - Retorna `Either<HTTPException, T>` (Left = erro, Right = sucesso)
-- Recebe repositorios via constructor injection (`@Inject`)
+- Recebe repositorios/services via **constructor injection** (`@Service` resolve
+  pelos tipos dos parametros). NAO usar `@Inject`. Importar os contratos pelo
+  caminho direto do modulo, nunca por barrel `index.ts`
 - NAO conhece HTTP (request/response)
 - Trata excecoes internas e retorna Left com codigo/causa
 
-### Repository (`*-contract.repository.ts` + `*-mongoose.repository.ts`)
-- Contract: classe abstrata definindo interface
-- Mongoose: implementacao concreta
+### Repository (`*-contract.repository.ts` + `*.repository.ts`)
+- Contract: classe abstrata definindo interface (export nomeado)
+- Mongoose: implementacao concreta (`export default` em `<entidade>.repository.ts`)
 - InMemory: para testes unitarios
 - Metodos padrao: `create`, `findById`, `findByX`, `findMany`, `update`, `delete`, `count`
 - Payloads tipados (CreatePayload, UpdatePayload, QueryPayload, FindOptions)
@@ -106,7 +108,8 @@ backend/
 
 ### Middleware
 - `authentication.middleware.ts` - Extrai JWT de cookie/header, popula `request.user`
-- `table-access.middleware.ts` - Verifica permissoes RBAC + visibilidade de tabela
+- `permission.middleware.ts` - `PermissionMiddleware(capability)`: exige uma capacidade de area (`E_AREA_CAPABILITY`) resolvida pelo fecho de grupos. Substitui o RoleMiddleware nas areas; MASTER bypassa
+- `table-access.middleware.ts` - Verifica acesso a tabela: bindings por acao (`table.permissions`) + perfil de membro (`table.members`) + dono
 
 ### Model (`*.model.ts`)
 - Mongoose schemas com timestamps
@@ -152,29 +155,95 @@ Codigo de usuario (beforeSave, afterSave, onLoad) roda em Node VM isolada com ti
 | `E_ROLE` | MASTER, ADMINISTRATOR, MANAGER, REGISTERED |
 | `E_FIELD_TYPE` | TEXT_SHORT, TEXT_LONG, DROPDOWN, DATE, RELATIONSHIP, FILE, FIELD_GROUP, REACTION, EVALUATION, CATEGORY, USER + nativos |
 | `E_FIELD_FORMAT` | ALPHA_NUMERIC, INTEGER, DECIMAL, URL, EMAIL, PASSWORD, PHONE, CNPJ, CPF, RICH_TEXT, PLAIN_TEXT + date formats |
+| `E_FIELD_VALIDATION` | NOT_EMPTY, IS_EMAIL/NUMERIC/ALPHA_NUMERIC/IN_RANGE/IBAN/NOT/URL/PHONE/CPF/CNPJ, IS_UNIQUE, ARE_UNIQUE_VALUES, EMAIL_EXISTS, USER_EXISTS (15 — camada única de validação de campo; ver `core/validations/`) |
 | `E_TABLE_TYPE` | TABLE, FIELD_GROUP |
 | `E_TABLE_STYLE` | LIST, GALLERY, DOCUMENT, CARD, MOSAIC, KANBAN, FORUM, CALENDAR, GANTT |
-| `E_TABLE_VISIBILITY` | PUBLIC, RESTRICTED, OPEN, FORM, PRIVATE |
-| `E_TABLE_COLLABORATION` | OPEN, RESTRICTED |
 | `E_TABLE_PERMISSION` | CREATE/UPDATE/REMOVE/VIEW para TABLE, FIELD, ROW (12 total) |
+| `E_AREA_CAPABILITY` | MANAGE_USERS, MANAGE_MENU, MANAGE_USER_GROUPS, MANAGE_SETTINGS, MANAGE_TOOLS, MANAGE_PLUGINS, MANAGE_CHAT (7 total) |
+| `E_PERMISSION_TARGET` | PUBLIC, NOBODY, GROUP (binding `{ kind, group }`) |
+| `E_TABLE_PROFILE` | OWNER, ADMIN, EDITOR, CONTRIBUTOR, VIEWER (perfis de membro) |
+| `E_PROFILE_ACCESS` | ALLOW, DENY, OWN (celula da `TABLE_PROFILE_MATRIX`) |
 | `E_JWT_TYPE` | ACCESS, REFRESH |
 | `E_USER_STATUS` | ACTIVE, INACTIVE |
 
 ## Sistema de Permissoes (RBAC)
 
-| Role | Permissoes |
-|------|-----------|
-| MASTER | Todas (bypassa checks) |
-| ADMINISTRATOR | Todas (acesso a todas as tabelas) |
-| MANAGER | CRUD + VIEW (respeita ownership) |
-| REGISTERED | VIEW + CREATE_ROW apenas |
+O modelo de permissoes foi reescrito. Nao ha mais 4 roles fixos governando tudo
+— roles continuam existindo apenas para compat (JWT/derivacao). O controle real
+gira em torno de **grupos custom + capacidades + bindings por acao**.
 
-Visibilidade de tabela (para nao-owners):
-- **PUBLIC**: GET view liberado para visitantes
-- **FORM**: POST create liberado para visitantes
-- **OPEN**: VIEW + CREATE_ROW
-- **RESTRICTED**: VIEW only
-- **PRIVATE**: bloqueado
+### Grupos custom com hierarquia
+
+- Grupos sao configuraveis e podem englobar outros via `encompasses[]` (fecho
+  transitivo / "Engloba"): um grupo herda as permissoes de tudo que engloba.
+- Um usuario pertence a **varios grupos** (`user.groups[]`). O campo legado
+  `user.group` foi **mantido** para compat e fallback.
+- Resolver: `application/services/group-resolver/` —
+  `resolveUserGroupIds(user)` (fecho dos ids) e `resolveCapabilities(user)`
+  (uniao das permissoes do fecho).
+
+### Capacidades de area
+
+`E_AREA_CAPABILITY` (MANAGE_USERS, MANAGE_MENU, MANAGE_USER_GROUPS,
+MANAGE_SETTINGS, MANAGE_TOOLS, MANAGE_PLUGINS, MANAGE_CHAT — 7 capacidades) sao
+permissoes atribuiveis a qualquer grupo, enforcadas por
+`PermissionMiddleware(capability)` — substitui o `RoleMiddleware` nas areas do
+sistema. MASTER bypassa.
+
+### Bindings por acao (`E_PERMISSION_TARGET`)
+
+Alvo `{ kind, group }` onde `kind ∈ { PUBLIC, NOBODY, GROUP }` (PUBLIC inclui
+visitante; GROUP por **intersecao** — libera so se o grupo estiver no fecho do
+usuario **E** o fecho de capacidades contiver a permissao global da acao). Dono,
+membros e PUBLIC nao passam pela intersecao; `CREATE_TABLE` (sem tabela) usa so a
+capacidade do grupo. Reusado em:
+
+- `table.permissions`: mapa das 10 acoes de tabela (viewTable/updateTable/
+  createField/updateField/removeField/viewField/createRow/updateRow/removeRow/
+  viewRow) → binding.
+- `field.permissions: { list, form, detail }` → binding por contexto. GROUP
+  segue a mesma **intersecao** das acoes de tabela: exige o grupo no fecho E a
+  capacidade `VIEW_FIELD`. Enforcado server-side pelo `FieldVisibilityService`
+  (`services/field-visibility/`):
+  remove os valores de campos ocultos das respostas de row (`paginated`=list,
+  `show`=detail) e descarta escritas em campos ocultos (`create`/`update`/
+  `bulk-update`=form). Campos nativos e usuarios privilegiados (MASTER/ADMIN/dono)
+  nunca sao filtrados. Ausencia de binding para um contexto = campo visivel.
+- `menu.visibility` → binding.
+
+### Convidados da tabela (membros)
+
+`table.members[]` (`{ user, profile }`) com perfis fixos `E_TABLE_PROFILE`
+(owner/admin/editor/contributor/viewer) avaliados pela matriz
+`TABLE_PROFILE_MATRIX`. `contributor` edita/remove **apenas as suas** rows (OWN).
+`owner` tem acesso total e pode "trocar dono".
+
+### Modelo novo unico (sem fallback legado)
+
+Os campos antigos `visibility`/`collaboration`/`administrators` (tabela) e
+`showInList`/`showInForm`/`showInDetail` (campo) foram **removidos** do schema,
+dos tipos e dos enums. Nao ha mais fallback: o enforcement le **somente**
+`table.permissions`/`table.members`/`table.owner` e `field.permissions`. Tabelas
+novas ja nascem no modelo novo (preset `RESTRICTED` via
+`buildDefaultTablePermissions`, dono como membro `OWNER`) — nunca com
+`permissions: null`.
+
+As migrations idempotentes rodam automaticamente no boot: backfill (09
+table-permissions, 10 field-permissions, 11 menu-visibility) e em seguida 12
+`drop-legacy-permission-fields`, que `$unset` permanente dos campos legados.
+`field.showInFilter` e **mantido** (nao e permissao — controla apenas a sidebar
+de filtros).
+
+### JWT
+
+Payload **inalterado** (`{ sub, email, role, type }`); `role` ainda e derivado
+do grupo **principal** (`user.group`, singular) só para compat. **Não é usado
+para autorizar**: o privilégio (acesso total MASTER/ADMINISTRATOR) é resolvido
+pelo **fecho de grupos** via `GroupResolverContractService.isPrivileged(user)`
+(`{group} ∪ groups` seguindo `encompasses`) — assim um usuário MASTER/ADMIN por
+grupo **adicional** também é reconhecido. Substituiu as comparações espalhadas
+`role === E_ROLE.MASTER/ADMINISTRATOR` (menu/list, pages/show, permission e
+field-visibility services). Os grupos sao resolvidos server-side a cada request.
 
 ## Convencoes de Nomenclatura
 
@@ -187,12 +256,91 @@ Visibilidade de tabela (para nao-owners):
 | Unit Test | `{operacao}.use-case.spec.ts` | `create.use-case.spec.ts` |
 | E2E Test | `{operacao}.controller.spec.ts` | `create.controller.spec.ts` |
 | Repository Contract | `{entidade}-contract.repository.ts` | `user-contract.repository.ts` |
-| Repository Impl | `{entidade}-mongoose.repository.ts` | `user-mongoose.repository.ts` |
+| Repository Impl | `{entidade}.repository.ts` (`export default`) | `user.repository.ts` |
 | Repository Test | `{entidade}-in-memory.repository.ts` | `user-in-memory.repository.ts` |
 | Service Contract | `{nome}-contract.service.ts` | `email-contract.service.ts` |
-| Service Impl | `{tech}-{nome}.service.ts` | `nodemailer-email.service.ts` |
+| Service Impl | `{nome}.service.ts` (`export default`) | `email.service.ts` |
 | Model | `{entidade}.model.ts` | `user.model.ts` |
 | Validator Base | `{entidade}-base.validator.ts` | `user-base.validator.ts` |
+
+## Convenções de Código
+
+As **6 regras** do code-pattern aplicadas a **todo** `.ts` do backend (incluindo
+`extensions/`, `database/`, `hooks/`, `config/`, `test/`, `*.spec.ts`),
+**enforçadas pelo ESLint** (`eslint.config.js`, bloco `files: ['**/*.ts']`):
+regras 1–3 via regras nativas (`no-ternary`, `consistent-type-assertions:
+never`, `no-explicit-any`); regra 4 via `consistent-type-definitions: type`
+(override desliga em `**/*.d.ts` de augmentation); regras 5 e 6 via plugin local
+`lowcodejs/*` (`no-type-intersection`, `prefer-lookup-object`) em
+`eslint-local-rules/` na raiz do monorepo. `npm run lint` falha em qualquer nova
+violação.
+
+### 1. Sem ternário de atribuição/controle
+
+Não usar ternário para atribuir valor ou escolher fluxo. Preferir `if` clássico.
+Manter `??`, `?.` e `&&`/`||` short-circuit (não são ternário).
+
+```ts
+// Evitar
+const rowCreator = row._originalCreator ? String(row._originalCreator) : ownerId;
+
+// Preferir
+let rowCreator = ownerId;
+if (row._originalCreator) rowCreator = String(row._originalCreator);
+```
+
+### 2. Sem `any` desnecessário
+
+Preferir `type` próprio, inferência ou `unknown` + narrow. `any` só onde a lib
+força, sempre com comentário curto justificando.
+
+### 3. Sem `as` (preferir corrigir o tipo na origem)
+
+`as const` é permitido. Para o resto, fortalecer o tipo na origem (ex.: tipar um
+campo de payload com o enum correto elimina o cast no consumidor). Onde o cast é
+uma fronteira genuína de runtime (JSON externo em `import-table`, mock parcial em
+spec, limitação de tipagem de lib), manter o mínimo com
+`// eslint-disable-next-line @typescript-eslint/consistent-type-assertions` e uma
+justificativa curta em PT-BR — nunca introduzir `as`/`any` novo silencioso.
+
+### 4. Sempre `type`, nunca `interface`
+
+Modelar tipos com `type` (objeto, união, mapeado). `interface` só em _module
+augmentation_ (`declare module`), onde o TS exige merging — não é escolha de
+estilo, é limite da linguagem. No código da aplicação, `interface X {}` vira
+`type X = {}`; `interface A extends B {}` vira `type A = Merge<B, {}>`.
+
+### 5. Combinar tipos com `Merge`, não `&`
+
+Para juntar dois tipos-objeto, usar `Merge<A, B>` (de
+`application/core/entity.core.ts`) no lugar da interseção `A & B` — mostra o tipo
+final flat no editor. 3+ partes aninham: `Merge<Merge<A, B>, C>`.
+
+```ts
+// Evitar
+type Payload = SomePayload & { user?: string };
+// Preferir
+type Payload = Merge<SomePayload, { user?: string }>;
+```
+
+Exceção: interseção com `Array<T>` (`Array<T> & { extra }`) mantém `&` — `Merge`
+mapeia as chaves e destrói a semântica de array (ex.: `SubdocArray` em
+`row.repository.ts`). Uniões (`|`) não são interseção e seguem normais.
+
+### 6. Lookup object no lugar de if/else-if 3+
+
+Quando mapeia um discriminante (chave/`type`/enum) para um valor ou handler em
+**3+ casos**, usar um lookup object no lugar da cadeia de `if`/`else if` ou
+`switch`. 1–2 casos mantêm `if`; lógica booleana arbitrária (ranges, condições
+combinadas) fica `if`.
+
+```ts
+// Preferir
+const MOCK_BY_FORMAT: Record<string, string> = { EMAIL: '…', URL: '…', CPF: '…' };
+data[slug] = MOCK_BY_FORMAT[format] ?? fallback;
+```
+
+Commits: Conventional Commits atômicos em pt-BR (`refactor(escopo): ...`).
 
 ## Comandos CLI
 
@@ -222,14 +370,39 @@ npm start            # Producao (build/bin/server.js)
 
 ## Dependencia Injection (DI)
 
-Registrado em `application/core/di-registry.ts` usando `fastify-decorators`:
-- 11 repositorios: User, UserGroup, Permission, Table, Field, Storage, ValidationToken, Menu, Reaction, Evaluation, Setting
-- Servicos: Email (contract -> nodemailer), EmailQueue (contract -> BullMQ — use-cases injetam este, nao Email diretamente), StorageMigrationQueue (BullMQ), Password, Permission, RowPassword, ScriptExecution, RowContext, KanbanCommentMention, TableSchema, Storage
+`application/core/di-registry.ts` registra os bindings **dinamicamente** (igual
+`controllers.ts`): varre o filesystem e pareia cada `<base>-contract.<kind>.ts`
+com `<base>.<kind>.ts` por convencao — **nao ha mais lista manual**. Roots
+varridos: `application/repositories` (repository), `application/services`
+(service) e `extensions/` (ambos). `injectablesHolder.injectService(Contract,
+Impl)` e chamado para cada par encontrado.
 
-Para adicionar nova dependencia:
-1. Crie o contract (abstract class)
-2. Crie a implementacao
-3. Registre em `di-registry.ts` com `injectablesHolder.injectService(Contract, Implementation)`
+- Repositorios: User, UserGroup, Permission, Table, Field, Storage,
+  ValidationToken, Menu, Reaction, Evaluation, Setting, Logger, Notification,
+  Extension, Row
+- Servicos: Email, EmailQueue (use-cases injetam este, nao Email diretamente),
+  CsvImportQueue, StorageMigrationQueue, Password, Permission, RowPassword,
+  ScriptExecution, Notification, KanbanCommentMention, RowMemberNotification,
+  Storage, Llm, Table, FieldValidation (regras de `field.validations[]`)
+- Builders de tabela dinamica (`services/table/`): SchemaBuilder, ModelBuilder,
+  QueryBuilder, PopulateBuilder, RowContextBuilder
+
+Convencao (regra unica): contract = export nomeado `<X>Contract(Repository|
+Service)`; impl = `export default` do arquivo irmao `<base>.<kind>.ts`. Arquivos
+`in-memory-*`, `*.worker`, drivers (`local-*`/`s3-*`) sao ignorados (o impl e
+derivado do base do contract, nao adivinhado).
+
+Para adicionar nova dependencia (zero edicao no di-registry):
+1. Crie `<base>-contract.<kind>.ts` com a abstract class `<X>Contract<Kind>`
+   (export nomeado)
+2. Crie `<base>.<kind>.ts` com `@Service() export default class` da impl
+3. Consuma via **constructor injection** (`@Service` + parametro tipado com o
+   Contract). Importe o Contract pelo **caminho direto** do modulo, nunca por
+   barrel `index.ts` — o SWC elide o tipo do parametro em re-export barrel e a
+   injecao vira `undefined` silenciosamente. Nunca use `@Inject`.
+
+Para trocar a implementacao (ex.: trocar de ORM), troque o conteudo do arquivo
+`<base>.<kind>.ts` — o scanner continua registrando o mesmo contract.
 
 ## Fluxo de Inicializacao do Servidor
 
@@ -241,22 +414,21 @@ bin/server.ts:
 4. initChatSocket(httpServer, jwtDecode) - Socket.IO para chat
 ```
 
-Em container Docker, o `docker-entrypoint.sh` roda ANTES do servidor:
-1. `npm run migrate:dual-connection` (idempotente — no-op se ja migrado)
+Em container Docker, o `docker-entry-point.sh` roda ANTES do servidor:
+1. Migrations: loop sobre `scripts/migrations/*.sh` em ordem (01→27), idempotentes
 2. `npm run seed` (idempotente — upsert)
 3. Inicia o servidor
 
-kernel.ts registra 9 plugins em ordem:
+kernel.ts registra 8 plugins em ordem:
 
 1. CORS (origens dinamicas + fixas de ALLOWED_ORIGINS)
 2. Cookie (signed com COOKIE_SECRET)
 3. JWT (RS256 com chaves base64, expiry 24h)
 4. Multipart (limite 5MB)
-5. Static files (local) OU HTTP proxy (S3) - baseado em STORAGE_DRIVER
-6. Swagger/OpenAPI
-7. Scalar API reference (/documentation)
-8. WebSocket
-9. fastify-decorators bootstrap (carrega controllers)
+5. Swagger/OpenAPI
+6. Scalar API reference (/documentation)
+7. WebSocket
+8. fastify-decorators bootstrap (carrega controllers)
 
 Global error handler: HTTPException -> ZodError -> FST_ERR_VALIDATION -> fallback 500
 
@@ -432,7 +604,7 @@ o campo `location` em docs Storage existentes (idempotente via marker
 | Runner | threads | forks |
 
 Helpers (`test/helpers/auth.helper.ts`):
-- `createAuthenticatedUser(overrides?)` - cria user + grupo Master + 12 permissoes, faz sign-in, retorna cookies + user
+- `createAuthenticatedUser(overrides?)` - cria user + grupo Master + 18 permissoes (12 de tabela + 6 capacidades de area, sem MANAGE_CHAT), faz sign-in, retorna cookies + user
 - `cleanDatabase()` - deleta User e UserGroup
 
 ## Build & Deploy
@@ -464,9 +636,11 @@ Helpers (`test/helpers/auth.helper.ts`):
 
 | API | Metodos | Descricao |
 |-----|---------|-----------|
-| field | get(slug), set(slug, value), getAll() | Leitura/escrita de campos do registro |
-| context | action, moment, userId, isNew, table | Contexto de execucao (read-only, frozen) |
+| field | get(slug), set(slug, value), getAll(), getLabel(slug, value?) | Leitura/escrita de campos do registro |
+| context | action, moment, userId, isNew, appUrl, table, reentrant, previous | Contexto de execucao (read-only, frozen) |
 | email | send(to[], subject, body), sendTemplate(to[], subject, message, data?) | Envio de email |
+| users | resolve(ids), emails(ids) | Resolve ids de campos USER/CREATOR em { _id, name, email } |
+| notify | send({ userIds, title, body?, action?, source? }) | Cria notificacoes in-app + socket |
 | utils | today(), now(), formatDate(date, format?), sha256(text), uuid() | Utilitarios |
 | console | log(), warn(), error() | Logs capturados e retornados |
 
@@ -508,7 +682,7 @@ Comando: `npm run seed`
 
 | Seeder | Dados |
 |--------|-------|
-| 1720448435-permissions.seed.ts | 12 permissoes (CREATE/UPDATE/REMOVE/VIEW para TABLE, FIELD, ROW). Upsert por `slug` com `$set` |
+| 1720448435-permissions.seed.ts | 19 permissoes: 12 de tabela (CREATE/UPDATE/REMOVE/VIEW para TABLE, FIELD, ROW) + 7 capacidades de area (E_AREA_CAPABILITY, inclui MANAGE_CHAT). Upsert por `slug` com `$set` |
 | 1720448445-user-group.seed.ts | 4 grupos (MASTER, ADMINISTRATOR, MANAGER, REGISTERED). Metadados via `$set`; `permissions` via `$setOnInsert` (preserva customizacoes manuais) |
 | 1720465893-settings.seed.ts | Setting singleton. Marca SETUP_COMPLETED=true se ja existe MASTER; caso contrario, `$setOnInsert: {}` |
 | 1778025600-demo-users.seed.ts | Gated por `DEMO_MODE=true`. Cria/atualiza `admin@admin.com` (ADMINISTRATOR) e `registered@registered.com` (REGISTERED). `$set` em todos os campos, password re-hashado a cada `npm run seed`. No-op silencioso fora de demo |
@@ -533,17 +707,50 @@ no core. Documentação canônica em `backend/extensions/CLAUDE.md`.
 
 ## Migrations
 
-Execucao: `database/migrations/migrate-dual-connection.ts`. Migracao one-time
-(idempotente via marcadores no Setting singleton) que copia as collections
-dinamicas do DB system para o DB data. Roda automaticamente no
-`docker-entrypoint.sh`; no segundo boot em diante e no-op com 1 query.
+Migracoes one-time (`database/migrations/NN-migrate-*.ts`, 01→27), idempotentes
+via marcadores no Setting singleton. Rodam **automaticamente** no boot Docker: o
+`docker-entry-point.sh` loopa `scripts/migrations/*.sh` (wrappers que invocam o
+`.ts` irmao via `_lib.sh`) em ordem, antes dos seeders. No 2o boot em diante sao
+no-op. **Nao existem `npm run migrate:*`** — em dev local (`npm run dev`) elas
+nao rodam.
 
-Comandos:
-- `npm run migrate:dual-connection` — copia (skip se `MIGRATION_DUAL_CONNECTION_AT` ja setado)
-- `npm run migrate:dual-connection -- --force` — re-executa ignorando marcador
-- `npm run migrate:dual-connection -- --drop-source` — apaga collections do DB
-  system apos copia (manual, executar apenas apos validar em producao + backup)
+Tabela completa (marker + proposito de cada uma) em `database/migrations/CLAUDE.md`
+e `scripts/migrations/CLAUDE.md`. Rodar uma a mao:
 
-Marcadores persistidos no Setting:
-- `MIGRATION_DUAL_CONNECTION_AT` — timestamp da copia bem-sucedida
-- `MIGRATION_DUAL_CONNECTION_DROPPED_AT` — timestamp do drop bem-sucedido
+```bash
+sh scripts/migrations/01-migrate-dual-connection.sh --force   # via wrapper
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --force # direto no TS
+```
+
+**Dual-connection (01)** — copia as collections dinamicas do DB system para o DB
+data. Markers `MIGRATION_DUAL_CONNECTION_AT` (copia) e
+`MIGRATION_DUAL_CONNECTION_DROPPED_AT` (drop via `--drop-source`, manual, so apos
+validar prod + backup; recusa se a copia nunca completou).
+
+### Migrations de relacionamento (cardinalidade)
+
+Dependem de ordem entre si: 14 (lift-out-of-groups) → 15 (embedded-to-links) →
+16 (endpoint-flags) → 17 (links-to-fk) → 18 (mirror), com reparos posteriores 23,
+25, 26 e 27. Idempotentes via marker; as 14→17 **retem** o marker se sobrar
+campo/definition pendente e **reprocessam no proximo boot** (nao abortam o boot).
+Rodar avulsa: `sh scripts/migrations/16-migrate-backfill-relationship-endpoint-flags.sh --force`.
+
+Pos-migracao **todo** campo `RELATIONSHIP` fica top-level e materializado
+(`relationship.relationshipId` + campo-espelho); o passo 16 loga falha e **nao
+grava o marker** se sobrar campo sem `relationshipId` (reprocessa no boot). Os
+links/FK sao a fonte de verdade — nao ha fallback embedded.
+
+**Remodel manual (one-off, fora do boot, sem wrapper `.sh`):** vive em
+`database/remodels/` (isolado das migrations de boot — natureza destrutiva/manual).
+
+```bash
+node --import @swc-node/register/esm-register \
+  database/remodels/migrate-fieldgroup-to-relationship.ts \
+  --table=<slug> --group=<id|slug> --apply --i-have-backup
+```
+
+Converte um `FIELD_GROUP` usado como falso-relacionamento (subdoc embedded) numa
+tabela independente + `RelationshipDefinition` + links. Destrutivo, exige backup,
+nao idempotente-por-marker (depende de decisao humana por tabela). Ver
+`database/remodels/CLAUDE.md`.

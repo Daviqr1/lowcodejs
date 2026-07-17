@@ -12,14 +12,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import type { IMenu } from '@/lib/interfaces';
 
-interface MenuComboboxProps {
+type MenuComboboxProps = {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   excludeId?: string;
-}
+};
 
 function getParentId(menu: IMenu): string | undefined {
   if (typeof menu.parent === 'string') {
@@ -61,7 +61,8 @@ function sortMenusByHierarchy(menus: Array<IMenu>): Array<IMenu> {
 
   for (const menu of menus) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);

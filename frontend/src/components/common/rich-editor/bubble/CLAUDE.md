@@ -11,6 +11,7 @@ tipos de conteudo no editor.
 | `link-bubble.tsx`  | Bubble menu para links: exibe URL truncada, botoes de abrir, editar (popover com LinkEditBlock) e remover |
 | `table-bubble.tsx` | Bubble menu para tabelas: adicionar/remover colunas e linhas, mesclar/dividir celulas, remover tabela     |
 | `image-bubble.tsx` | Bubble menu para imagens: alinhamento (esquerda, centro, direita) e remover                               |
+| `mention-list.tsx` | Lista flutuante de sugestoes de mencao (`@`) com avatares, navegacao por teclado e carregamento paginado  |
 
 ## Dependencias principais
 

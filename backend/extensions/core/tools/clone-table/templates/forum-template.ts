@@ -2,19 +2,19 @@ import slugify from 'slugify';
 
 import { right } from '@application/core/either.core';
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   FIELD_NATIVE_LIST,
   type IField,
+  type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
-import type { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type {
   CloneTableDeps,
@@ -35,11 +35,11 @@ export async function createForumTemplate(
   });
 
   const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
-    await buildForumFields(deps.fieldRepository, deps.tableSchemaService);
+    await buildForumFields(deps.fieldRepository, deps.schemaBuilder);
   const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
   const nativeFieldIds = nativeFields.map((field) => field._id);
 
-  const _schema = deps.tableSchemaService.computeSchema(
+  const _schema = deps.schemaBuilder.build(
     [...nativeFields, ...fields],
     groups,
   );
@@ -53,9 +53,6 @@ export async function createForumTemplate(
     logo: null,
     fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
     style: E_TABLE_STYLE.FORUM,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
-    administrators: [],
     owner: payload.ownerId,
     fieldOrderList: [...nativeFieldIds, ...orderList],
     fieldOrderForm: [...nativeFieldIds, ...orderForm],
@@ -148,7 +145,7 @@ export async function createForumTemplate(
 
 export async function buildForumFields(
   fieldRepository: FieldContractRepository,
-  tableSchemaService: TableSchemaContractService,
+  schemaBuilder: SchemaBuilderContractService,
 ): Promise<{
   fields: IField[];
   groups: IGroupConfiguration[];
@@ -166,9 +163,7 @@ export async function buildForumFields(
     required: boolean;
     multiple: boolean;
     format: IField['format'];
-    showInList: boolean;
-    showInForm: boolean;
-    showInDetail: boolean;
+    permissions: IFieldPermissions;
     showInFilter: boolean;
     defaultValue: IField['defaultValue'];
     locked: boolean;
@@ -194,9 +189,7 @@ export async function buildForumFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: true,
@@ -216,9 +209,7 @@ export async function buildForumFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -238,9 +229,7 @@ export async function buildForumFields(
     required: true,
     multiple: false,
     format: null,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: true,
@@ -263,9 +252,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: true,
@@ -285,9 +272,7 @@ export async function buildForumFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -309,9 +294,7 @@ export async function buildForumFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -331,9 +314,7 @@ export async function buildForumFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.RICH_TEXT,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -353,9 +334,7 @@ export async function buildForumFields(
     required: true,
     multiple: false,
     format: null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -375,9 +354,7 @@ export async function buildForumFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.DD_MM_YYYY_HH_MM_SS,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -397,9 +374,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -419,9 +394,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -441,9 +414,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -463,9 +434,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -485,9 +454,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -507,9 +474,7 @@ export async function buildForumFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-    showInList: false,
-    showInForm: false,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, false, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -529,9 +494,7 @@ export async function buildForumFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -568,7 +531,7 @@ export async function buildForumFields(
     slug: messagesGroupSlug,
     name: 'Mensagens',
     fields: messagesGroupFields,
-    _schema: tableSchemaService.computeSchema(messagesGroupFields),
+    _schema: schemaBuilder.build(messagesGroupFields),
   };
 
   const messagesGroupField = await createField({
@@ -578,9 +541,7 @@ export async function buildForumFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: false,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, false, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,

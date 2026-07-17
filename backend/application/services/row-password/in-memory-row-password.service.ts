@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { IField } from '@application/core/entity.core';
 
 import { RowPasswordContractService } from './row-password-contract.service';
@@ -10,7 +9,10 @@ export default class InMemoryRowPasswordService implements RowPasswordContractSe
     this._forcedErrors.set(method, error);
   }
 
-  async hash(_payload: Record<string, any>, _fields: IField[]): Promise<void> {
+  async hash(
+    _payload: Record<string, unknown>,
+    _fields: IField[],
+  ): Promise<void> {
     const err = this._forcedErrors.get('hash');
     if (err) {
       this._forcedErrors.delete('hash');
@@ -18,7 +20,7 @@ export default class InMemoryRowPasswordService implements RowPasswordContractSe
     }
   }
 
-  mask(_row: Record<string, any>, _fields: IField[]): void {
+  mask(_row: Record<string, unknown>, _fields: IField[]): void {
     const err = this._forcedErrors.get('mask');
     if (err) {
       this._forcedErrors.delete('mask');
@@ -26,7 +28,7 @@ export default class InMemoryRowPasswordService implements RowPasswordContractSe
     }
   }
 
-  stripMasked(_payload: Record<string, any>, _fields: IField[]): void {
+  stripMasked(_payload: Record<string, unknown>, _fields: IField[]): void {
     const err = this._forcedErrors.get('stripMasked');
     if (err) {
       this._forcedErrors.delete('stripMasked');

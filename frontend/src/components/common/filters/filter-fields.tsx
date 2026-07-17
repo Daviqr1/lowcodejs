@@ -8,6 +8,7 @@ import { ComboboxLoadMore } from '@/components/common/combobox-load-more';
 import type { DatepickerValue } from '@/components/common/datepicker';
 import { RangeDatepicker } from '@/components/common/datepicker';
 import { getDropdownContrastStyle } from '@/components/common/dynamic-table/table-cells/utils';
+import { GroupMultiSelect } from '@/components/common/selectors/group-multi-select';
 import { UserMultiSelect } from '@/components/common/selectors/user-multi-select';
 import type { TreeNode } from '@/components/common/tree-editor/tree-list';
 import { TreeList } from '@/components/common/tree-editor/tree-list';
@@ -47,6 +48,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRelationshipRowsReadPaginatedInfinite } from '@/hooks/tanstack-query/use-relationship-rows-read-paginated-infinite';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { ICategory, IFilterField, IRow } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
 export function convertCategoriesToTreeNodes(
@@ -79,15 +81,20 @@ export function findCategoryLabel(
   return null;
 }
 
-interface UseFilterStateReturn {
-  filterValues: Record<string, any>;
-  setFilterValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+// Valores de filtro são dinâmicos por slug de campo (shape só conhecido em
+// runtime) — `any` isolado neste alias, único ponto sancionado no arquivo.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FilterValues = Record<string, any>;
+
+type UseFilterStateReturn = {
+  filterValues: FilterValues;
+  setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   handleSubmit: () => void;
   handleClear: () => void;
   removeFilter: (key: string) => void;
   handleMultiValueChange: (field: IFilterField, value: Array<string>) => void;
   activeFiltersCount: number;
-}
+};
 
 export function useFilterState(
   fields: Array<IFilterField>,
@@ -96,9 +103,7 @@ export function useFilterState(
   const navigate = useNavigate();
   const search = useSearch({ strict: false });
 
-  const [filterValues, setFilterValues] = React.useState<Record<string, any>>(
-    {},
-  );
+  const [filterValues, setFilterValues] = React.useState<FilterValues>({});
 
   const fieldsKey = fields.map((f) => f.slug).join(',');
 
@@ -111,7 +116,9 @@ export function useFilterState(
           field.type === E_FIELD_TYPE.DROPDOWN ||
           field.type === E_FIELD_TYPE.CATEGORY ||
           field.type === E_FIELD_TYPE.USER ||
+          field.type === E_FIELD_TYPE.USER_GROUP ||
           field.type === E_FIELD_TYPE.CREATOR ||
+          field.type === E_FIELD_TYPE.UPDATER ||
           field.type === E_FIELD_TYPE.RELATIONSHIP
         ) {
           initialValues[field.slug] = fieldValue.split(',');
@@ -122,7 +129,8 @@ export function useFilterState(
 
       if (
         field.type === E_FIELD_TYPE.DATE ||
-        field.type === E_FIELD_TYPE.CREATED_AT
+        field.type === E_FIELD_TYPE.CREATED_AT ||
+        field.type === E_FIELD_TYPE.UPDATED_AT
       ) {
         const initialDateStr = search[`${field.slug}-initial`];
         const finalDateStr = search[`${field.slug}-final`];
@@ -154,7 +162,8 @@ export function useFilterState(
       filters[field.slug] = undefined;
       if (
         field.type === E_FIELD_TYPE.DATE ||
-        field.type === E_FIELD_TYPE.CREATED_AT
+        field.type === E_FIELD_TYPE.CREATED_AT ||
+        field.type === E_FIELD_TYPE.UPDATED_AT
       ) {
         filters[`${field.slug}-initial`] = undefined;
         filters[`${field.slug}-final`] = undefined;
@@ -175,7 +184,7 @@ export function useFilterState(
       }
 
       if (field.type === E_FIELD_TYPE.DROPDOWN && Array.isArray(value)) {
-        const values = (value as Array<string>).filter(Boolean);
+        const values = value.filter(Boolean);
         if (values.length > 0) {
           filters[field.slug] = values.join(',');
         }
@@ -189,11 +198,13 @@ export function useFilterState(
 
       if (
         (field.type === E_FIELD_TYPE.USER ||
+          field.type === E_FIELD_TYPE.USER_GROUP ||
           field.type === E_FIELD_TYPE.CREATOR ||
+          field.type === E_FIELD_TYPE.UPDATER ||
           field.type === E_FIELD_TYPE.RELATIONSHIP) &&
         Array.isArray(value)
       ) {
-        const values = (value as Array<string>).filter(Boolean);
+        const values = value.filter(Boolean);
         if (values.length > 0) {
           filters[field.slug] = values.join(',');
         }
@@ -201,9 +212,10 @@ export function useFilterState(
 
       if (
         field.type === E_FIELD_TYPE.DATE ||
-        field.type === E_FIELD_TYPE.CREATED_AT
+        field.type === E_FIELD_TYPE.CREATED_AT ||
+        field.type === E_FIELD_TYPE.UPDATED_AT
       ) {
-        const dateValue = filterValues[field.slug] as DatepickerValue | null;
+        const dateValue: DatepickerValue | null = filterValues[field.slug];
 
         if (dateValue?.startDate) {
           filters[`${field.slug}-initial`] = format(
@@ -269,10 +281,10 @@ export function useFilterState(
     value: Array<string>,
   ): void => {
     const applied = search[field.slug];
-    const appliedTokens =
-      typeof applied === 'string' && applied.length > 0
-        ? applied.split(',')
-        : [];
+    let appliedTokens: Array<string> = [];
+    if (typeof applied === 'string' && applied.length > 0) {
+      appliedTokens = applied.split(',');
+    }
     const isRemoval = value.length < appliedTokens.length;
 
     setFilterValues((prev) => ({ ...prev, [field.slug]: value }));
@@ -281,11 +293,11 @@ export function useFilterState(
 
     navigate({
       // @ts-ignore
-      search: (state) => ({
-        ...state,
-        [field.slug]: value.length > 0 ? value.join(',') : undefined,
-        page: 1,
-      }),
+      search: (state) => {
+        let slugValue: string | undefined;
+        if (value.length > 0) slugValue = value.join(',');
+        return { ...state, [field.slug]: slugValue, page: 1 };
+      },
     });
   };
 
@@ -321,14 +333,14 @@ export function getActiveFiltersCount(
   return fieldsCount + Number(Boolean(search.search));
 }
 
-interface FilterFieldsFormProps {
+type FilterFieldsFormProps = {
   fields: Array<IFilterField>;
-  filterValues: Record<string, any>;
-  setFilterValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  filterValues: FilterValues;
+  setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>;
   removeFilter: (key: string) => void;
   handleMultiValueChange: (field: IFilterField, value: Array<string>) => void;
   search: Record<string, unknown>;
-}
+};
 
 export function FilterFieldsForm({
   fields,
@@ -401,7 +413,8 @@ export function FilterFieldsForm({
             />
           )}
 
-          {field.type === E_FIELD_TYPE.CREATED_AT && (
+          {(field.type === E_FIELD_TYPE.CREATED_AT ||
+            field.type === E_FIELD_TYPE.UPDATED_AT) && (
             <FilterDate
               field={field}
               value={filterValues[field.slug] ?? null}
@@ -415,8 +428,17 @@ export function FilterFieldsForm({
           )}
 
           {(field.type === E_FIELD_TYPE.USER ||
-            field.type === E_FIELD_TYPE.CREATOR) && (
+            field.type === E_FIELD_TYPE.CREATOR ||
+            field.type === E_FIELD_TYPE.UPDATER) && (
             <FilterUser
+              field={field}
+              value={filterValues[field.slug] ?? []}
+              onChange={(value) => handleMultiValueChange(field, value)}
+            />
+          )}
+
+          {field.type === E_FIELD_TYPE.USER_GROUP && (
+            <FilterUserGroup
               field={field}
               value={filterValues[field.slug] ?? []}
               onChange={(value) => handleMultiValueChange(field, value)}
@@ -459,12 +481,12 @@ export function FilterTextShort({
 }): React.JSX.Element {
   return (
     <Field data-slot="filter-text-short">
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <InputGroup>
         <InputGroupInput
           data-test-id={`filter-input-${field.slug}`}
           type="text"
-          placeholder={`Filtrar por ${field.name.toLowerCase()}`}
+          placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
           value={value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             onChange(e.target.value)
@@ -477,7 +499,7 @@ export function FilterTextShort({
               onClick={onRemove}
               variant="ghost"
               size="icon-xs"
-              aria-label={`Limpar ${field.name}`}
+              aria-label={`Limpar ${resolveFieldLabel(field, 'filter')}`}
             >
               <XIcon className="size-4" />
             </InputGroupButton>
@@ -489,11 +511,11 @@ export function FilterTextShort({
   );
 }
 
-interface DropdownOption {
+type DropdownOption = {
   value: string;
   label: string;
   color?: string | null;
-}
+};
 
 export function FilterDropdown({
   field,
@@ -523,7 +545,7 @@ export function FilterDropdown({
   if (field.multiple) {
     return (
       <Field>
-        <FieldLabel>{field.name}</FieldLabel>
+        <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
         <Combobox
           items={options}
           multiple
@@ -539,7 +561,7 @@ export function FilterDropdown({
           >
             <ComboboxValue>
               {(values: Array<DropdownOption>): React.ReactNode => {
-                let chipsPlaceholder = `Filtrar por ${field.name.toLowerCase()}`;
+                let chipsPlaceholder = `Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`;
                 if (values.length > 0) {
                   chipsPlaceholder = '';
                 }
@@ -582,7 +604,7 @@ export function FilterDropdown({
 
   return (
     <Field>
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <Select
         data-test-id={`filter-select-${field.slug}`}
         value={singleValue}
@@ -596,7 +618,7 @@ export function FilterDropdown({
       >
         <SelectTrigger className="w-full">
           <SelectValue
-            placeholder={`Filtrar por ${field.name.toLowerCase()}`}
+            placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
           />
         </SelectTrigger>
         <SelectContent>
@@ -627,7 +649,7 @@ export function FilterDate({
 }): React.JSX.Element {
   return (
     <Field data-slot="filter-date">
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <RangeDatepicker
         data-test-id={`filter-date-${field.slug}`}
         value={value}
@@ -664,7 +686,7 @@ export function FilterCategory({
 
   return (
     <Field>
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -675,7 +697,8 @@ export function FilterCategory({
               !selectedLabel && 'text-muted-foreground',
             )}
           >
-            {selectedLabel || `Filtrar por ${field.name.toLowerCase()}`}
+            {selectedLabel ||
+              `Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -706,11 +729,32 @@ export function FilterUser({
 }): React.JSX.Element {
   return (
     <Field data-slot="filter-user">
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <UserMultiSelect
         value={value}
         onValueChange={onChange}
-        placeholder={`Filtrar por ${field.name.toLowerCase()}`}
+        placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
+      />
+    </Field>
+  );
+}
+
+export function FilterUserGroup({
+  field,
+  value,
+  onChange,
+}: {
+  field: IFilterField;
+  value: Array<string>;
+  onChange: (value: Array<string>) => void;
+}): React.JSX.Element {
+  return (
+    <Field data-slot="filter-user-group">
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
+      <GroupMultiSelect
+        value={value}
+        onValueChange={onChange}
+        placeholder={`Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`}
       />
     </Field>
   );
@@ -783,6 +827,9 @@ export function FilterRelationship({
         if (cached) return cached;
         const fromList = allItems.find((row) => row._id === id);
         if (fromList) return fromList;
+        // placeholder mínimo para id ainda não resolvido no cache/lista;
+        // IRow exige `creator` e demais campos, por isso o cast e inevitavel aqui.
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         return { _id: id } as IRow;
       })
       .filter((row): row is IRow => row !== null);
@@ -800,7 +847,7 @@ export function FilterRelationship({
   if (!relConfig || !relConfig.field || !relConfig.table) {
     return (
       <Field data-slot="filter-relationship">
-        <FieldLabel>{field.name}</FieldLabel>
+        <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
         <p className="text-muted-foreground text-sm">
           Relacionamento não configurado
         </p>
@@ -826,7 +873,7 @@ export function FilterRelationship({
 
   return (
     <Field data-slot="filter-relationship">
-      <FieldLabel>{field.name}</FieldLabel>
+      <FieldLabel>{resolveFieldLabel(field, 'filter')}</FieldLabel>
       <div className="relative">
         <Combobox
           data-test-id={`filter-relationship-${field.slug}`}
@@ -844,7 +891,7 @@ export function FilterRelationship({
           >
             <ComboboxValue>
               {(values: Array<IRow>): React.ReactNode => {
-                let chipsPlaceholder = `Filtrar por ${field.name.toLowerCase()}`;
+                let chipsPlaceholder = `Filtrar por ${resolveFieldLabel(field, 'filter').toLowerCase()}`;
                 if (values.length > 0) {
                   chipsPlaceholder = '';
                 }

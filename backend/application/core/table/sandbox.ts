@@ -1,6 +1,10 @@
 import crypto from 'node:crypto';
 
-import NodemailerEmailService from '@application/services/email/nodemailer-email.service';
+import { E_NOTIFICATION_TYPE } from '@application/core/entity.core';
+import { User } from '@application/model/user.model';
+import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
+import NodemailerEmailService from '@application/services/email/email.service';
+import NotificationService from '@application/services/notification/notification.service';
 import { Env } from '@start/env';
 
 import {
@@ -15,17 +19,62 @@ import type {
   ExecutionContext,
   FieldApi,
   FieldDefinition,
+  NotifyApi,
   SandboxGlobals,
+  SandboxUser,
+  UsersApi,
   UtilsApi,
 } from './types';
 
-export interface BuildSandboxParams {
-  doc: Record<string, any>;
+/**
+ * Normaliza ids de usuário em qualquer formato aceito pelos campos USER:
+ * string, ObjectId, objeto populado ({ _id }), arrays e arrays aninhados.
+ * Retorna ids únicos como string.
+ */
+function normalizeUserIds(input: unknown): string[] {
+  const out: string[] = [];
+
+  const push = (value: unknown): void => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      for (const item of value) push(item);
+      return;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed) out.push(trimmed);
+      return;
+    }
+    if (typeof value === 'object') {
+      let nested: unknown;
+      if ('_id' in value) nested = value._id;
+      if (!nested && 'id' in value) nested = value.id;
+      if (nested) {
+        const asString = String(nested);
+        if (asString && asString !== '[object Object]') out.push(asString);
+        return;
+      }
+      // ObjectId e similares: String() devolve o hex.
+      const asString = String(value);
+      if (asString && asString !== '[object Object]') out.push(asString);
+      return;
+    }
+    const asString = String(value);
+    if (asString) out.push(asString);
+  };
+
+  push(input);
+
+  return Array.from(new Set(out));
+}
+
+export type BuildSandboxParams = {
+  doc: Record<string, unknown>;
   tableSlug: string;
   fields: FieldDefinition[];
   context: ExecutionContext;
   logs: string[];
-}
+};
 
 /**
  * Builds the sandbox environment for script execution
@@ -49,19 +98,19 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
 
   // Build field API
   const field: FieldApi = {
-    get(slug: string): any {
+    get(slug: string): unknown {
       return resolveFieldValue(doc, slug);
     },
 
-    set(slug: string, value: any): void {
+    set(slug: string, value: unknown): void {
       const converted = convertValue(value);
       const fieldDef = findFieldDef(slug);
       const originalSlug = fieldDef?.slug ?? slug;
       doc[originalSlug] = converted;
     },
 
-    getAll(): Record<string, any> {
-      const result: Record<string, any> = {};
+    getAll(): Record<string, unknown> {
+      const result: Record<string, unknown> = {};
       for (const f of fields) {
         result[f.slug] = doc[f.slug];
       }
@@ -73,7 +122,7 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
       const val = value ?? String(resolveFieldValue(doc, slug) ?? '');
       if (!fieldDef?.dropdown || !Array.isArray(fieldDef.dropdown)) return val;
       const option = fieldDef.dropdown.find(
-        (opt: any) => opt.id === val || opt.label === val,
+        (opt) => opt.id === val || opt.label === val,
       );
       return option?.label ?? val;
     },
@@ -86,6 +135,8 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
     userId: context.userId ?? '',
     isNew: context.isNew ?? false,
     appUrl: Env.APP_CLIENT_URL,
+    reentrant: context.viaSaveHook ?? false,
+    previous: context.previous ?? null,
     table: Object.freeze(
       context.tableInfo ?? {
         _id: '',
@@ -124,7 +175,7 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
           message: 'Email enviado com sucesso',
           recipients: to.length,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Erro na função email.send:', error);
         return { success: false, message: 'Erro interno ao enviar email' };
       }
@@ -134,7 +185,7 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
       to: string[],
       subject: string,
       message: string,
-      data?: Record<string, any>,
+      data?: Record<string, unknown>,
     ): Promise<EmailResult> {
       try {
         if (!Array.isArray(to) || to.length === 0) {
@@ -167,9 +218,80 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
           message: 'Email enviado com sucesso',
           recipients: to.length,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Erro na função email.sendTemplate:', error);
         return { success: false, message: 'Erro interno ao enviar email' };
+      }
+    },
+  };
+
+  // Build users API — resolve ids de campos USER/CREATOR em { _id, name, email }.
+  // Roda no host (fora da VM), com acesso ao model User (conexão system).
+  const users: UsersApi = {
+    async resolve(ids: unknown): Promise<SandboxUser[]> {
+      const list = normalizeUserIds(ids);
+      if (list.length === 0) return [];
+      try {
+        const docs = await User.find({
+          _id: { $in: list },
+          trashed: { $ne: true },
+        })
+          .select('name email _id')
+          .lean();
+
+        return docs.map((doc) => ({
+          _id: String(doc._id),
+          name: String(doc.name ?? ''),
+          email: String(doc.email ?? ''),
+        }));
+      } catch (error: unknown) {
+        console.error('Erro na função users.resolve:', error);
+        return [];
+      }
+    },
+
+    async emails(ids: unknown): Promise<string[]> {
+      const resolved = await users.resolve(ids);
+      return Array.from(
+        new Set(
+          resolved
+            .map((user) => user.email.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      );
+    },
+  };
+
+  // Build notify API — cria notificações in-app (uma por usuário) + socket.
+  const notify: NotifyApi = {
+    async send(input): Promise<{ success: boolean; recipients: number }> {
+      try {
+        const userIds = normalizeUserIds(input?.userIds);
+        if (userIds.length === 0) return { success: true, recipients: 0 };
+        if (!input?.title) {
+          return { success: false, recipients: 0 };
+        }
+
+        const service = new NotificationService(
+          new NotificationMongooseRepository(),
+        );
+
+        const records = await service.notify({
+          userIds,
+          type:
+            Object.values(E_NOTIFICATION_TYPE).find((t) => t === input.type) ??
+            E_NOTIFICATION_TYPE.GENERIC,
+          title: String(input.title),
+          body: input.body ?? null,
+          action: input.action ?? null,
+          source: input.source ?? null,
+          actorUserId: input.actorUserId ?? context.userId ?? null,
+        });
+
+        return { success: true, recipients: records.length };
+      } catch (error: unknown) {
+        console.error('Erro na função notify.send:', error);
+        return { success: false, recipients: 0 };
       }
     },
   };
@@ -218,29 +340,19 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
   };
 
   // Build console with log interception
+  const stringifyArg = (a: unknown): string => {
+    if (typeof a === 'object') return JSON.stringify(a);
+    return String(a);
+  };
   const interceptedConsole = {
-    log: (...args: any[]): void => {
-      logs.push(
-        args
-          .map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a)))
-          .join(' '),
-      );
+    log: (...args: unknown[]): void => {
+      logs.push(args.map(stringifyArg).join(' '));
     },
-    warn: (...args: any[]): void => {
-      logs.push(
-        '[WARN] ' +
-          args
-            .map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a)))
-            .join(' '),
-      );
+    warn: (...args: unknown[]): void => {
+      logs.push('[WARN] ' + args.map(stringifyArg).join(' '));
     },
-    error: (...args: any[]): void => {
-      logs.push(
-        '[ERROR] ' +
-          args
-            .map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a)))
-            .join(' '),
-      );
+    error: (...args: unknown[]): void => {
+      logs.push('[ERROR] ' + args.map(stringifyArg).join(' '));
     },
   };
 
@@ -250,6 +362,8 @@ export function buildSandbox(params: BuildSandboxParams): SandboxGlobals {
     field,
     context: contextApi,
     email,
+    users,
+    notify,
     utils,
 
     // Console (intercepted)

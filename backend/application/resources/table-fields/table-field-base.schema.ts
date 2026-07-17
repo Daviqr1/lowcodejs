@@ -1,12 +1,42 @@
 import z from 'zod';
 
-import { E_FIELD_FORMAT } from '@application/core/entity.core';
+import {
+  E_FIELD_FORMAT,
+  E_FIELD_VALIDATION,
+  E_PERMISSION_TARGET,
+  E_RELATIONSHIP_ON_DELETE,
+  type ICategory,
+} from '@application/core/entity.core';
 
-const Category = z.object({
-  id: z.string().trim(),
-  label: z.string().trim(),
-  children: z.array(z.unknown()).default([]), // aceita qualquer coisa
+// Binding de visibilidade do campo num contexto (Grupo|Public|Nobody).
+const FieldPermissionBindingSchema = z.object({
+  kind: z.enum([
+    E_PERMISSION_TARGET.PUBLIC,
+    E_PERMISSION_TARGET.NOBODY,
+    E_PERMISSION_TARGET.GROUP,
+  ]),
+  group: z.string().trim().nullable().default(null),
 });
+
+// Visibilidade do campo por contexto (lista/formulario/detalhe).
+export const FieldPermissionsSchema = z
+  .object({
+    list: FieldPermissionBindingSchema,
+    form: FieldPermissionBindingSchema,
+    detail: FieldPermissionBindingSchema,
+  })
+  .nullable()
+  .optional();
+
+// Arvore recursiva de categorias (ICategory). `z.lazy` + anotacao explicita
+// permitem que `children` seja tipado como ICategory[] em vez de unknown[].
+const Category: z.ZodType<ICategory> = z.lazy(() =>
+  z.object({
+    id: z.string().trim(),
+    label: z.string().trim(),
+    children: z.array(Category).default([]),
+  }),
+);
 
 const RelationshipLabelPart = z.object({
   path: z.string().trim().min(1),
@@ -26,13 +56,49 @@ const Relationship = z.object({
   customLabel: z.boolean().optional(),
   labelParts: z.array(RelationshipLabelPart).optional(),
   labelSeparator: z.string().optional(),
+  // Config por lado (pivô): onDelete + visibilidade do source + lado espelho.
+  visible: z.boolean().optional(),
+  onDelete: z.enum(E_RELATIONSHIP_ON_DELETE).optional(),
+  mirror: z
+    .object({
+      multiple: z.boolean().default(false),
+      visible: z.boolean().default(false),
+      label: z.string().trim().optional(),
+    })
+    .optional(),
+  // Back-pointer para a RelationshipDefinition (pivô) e lado deste endpoint.
+  // Materializados no backend (born-pivot); expostos para a UI saber gerir o vínculo.
+  relationshipId: z.string().trim().nullable().optional(),
+  side: z.enum(['source', 'target']).nullable().optional(),
+  // Modo no formulário: select (multi-select) | manage (tabelas internas).
+  formMode: z.enum(['select', 'manage']).optional(),
+  // Limite numerico de vinculos neste lado (null = ilimitado, so para multiple).
+  max: z.number().int().positive().nullable().optional(),
 });
 
 const Dropdown = z.object({
   id: z.string().trim(),
   label: z.string().trim(),
   color: z.string().nullable().optional(),
+  sortField: z.string().nullable().optional(),
+  sortDirection: z.enum(['asc', 'desc']).nullable().optional(),
 });
+
+// Regra de validacao configurada no campo: { rule, config }. `config` carrega os
+// parametros da regra (range → { min, max }; is-not → { values }); vazio para
+// regras sem parametro.
+const Validation = z.object({
+  rule: z.enum(E_FIELD_VALIDATION),
+  config: z
+    .record(z.string(), z.unknown())
+    .nullish()
+    .transform((value) => value ?? {}),
+});
+// Aceita null/undefined (clientes que reenviam o campo cru do GET) → [].
+export const FieldValidationsSchema = z
+  .array(Validation)
+  .nullish()
+  .transform((value) => value ?? []);
 
 // Propriedades flat do campo (não aninhadas em configuration)
 export const FieldRequiredSchema = z.boolean().default(false);
@@ -41,10 +107,13 @@ export const FieldFormatSchema = z
   .enum(E_FIELD_FORMAT)
   .nullable()
   .default(null);
+// Exibe o campo na barra de filtros (config de UX, nao e permissao).
 export const FieldShowInFilterSchema = z.boolean().default(false);
-export const FieldShowInFormSchema = z.boolean().default(false);
-export const FieldShowInDetailSchema = z.boolean().default(false);
-export const FieldShowInListSchema = z.boolean().default(false);
+// Campos-filho de FIELD_GROUP: elegibilidade + visibilidade na listagem geral
+// da tabela pai (nao e permissao; ver IField em entity.core.ts). Opcionais:
+// Mongoose aplica default false e o schema Fastify coage no body HTTP.
+export const FieldShowInParentListSchema = z.boolean().optional();
+export const FieldVisibleInParentListSchema = z.boolean().optional();
 export const FieldWidthInFormSchema = z.number().min(0).nullable().default(50);
 export const FieldWidthInListSchema = z.number().min(0).nullable().default(10);
 export const FieldWidthInDetailSchema = z
@@ -58,19 +127,61 @@ export const FieldTipSchema = z
   .max(500)
   .nullable()
   .default(null)
-  .transform((value) => (value && value.length > 0 ? value : null));
+  .transform((value) => {
+    if (value && value.length > 0) return value;
+    return null;
+  });
+export const FieldHtmlContentSchema = z
+  .string()
+  .trim()
+  .nullable()
+  .default(null);
 export const FieldLockedSchema = z.boolean().default(false);
+// Rotulo customizado por contexto. SEM default no objeto: ausente permanece
+// `undefined` para que callers que omitem `label` (ex.: toggle de visibilidade)
+// nunca apaguem os rotulos existentes. Contexto vazio → null (usa o name).
+const FieldLabelContextSchema = z
+  .string()
+  .trim()
+  .max(120)
+  .nullable()
+  .optional()
+  .transform((v) => {
+    if (v && v.length > 0) return v;
+    return null;
+  });
+
+export const FieldLabelSchema = z
+  .object({
+    list: FieldLabelContextSchema,
+    filter: FieldLabelContextSchema,
+    form: FieldLabelContextSchema,
+    detail: FieldLabelContextSchema,
+  })
+  .nullable()
+  .optional();
 export const FieldDefaultValueSchema = z
   .union([z.string(), z.array(z.string())])
   .nullable()
   .default(null);
 export const FieldRelationshipSchema = Relationship.nullable().default(null);
-export const FieldDropdownSchema = z.array(Dropdown).default([]);
+// Aceita null além de undefined: alguns clientes (ex.: Kanban) reenviam o campo
+// cru do GET, onde dropdown/category vêm como null, e normaliza para [].
+export const FieldDropdownSchema = z
+  .array(Dropdown)
+  .nullish()
+  .transform((value) => value ?? []);
 export const FieldAllowCustomDropdownOptionsSchema = z.boolean().default(false);
 export const FieldAllowCreateRelationshipRecordsSchema = z
   .boolean()
   .default(false);
-export const FieldCategorySchema = z.array(Category).default([]);
+export const FieldFillWithCurrentUserWhenEmptySchema = z
+  .boolean()
+  .default(false);
+export const FieldCategorySchema = z
+  .array(Category)
+  .nullish()
+  .transform((value) => value ?? []);
 // For API input: can be just a slug string or the full object
 export const FieldGroupSchema = z
   .union([
@@ -114,7 +225,8 @@ export function normalizeDefaultValue(
 
   if (ARRAY_DEFAULT_VALUE_TYPES.has(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (typeof defaultValue === 'string' && defaultValue) {
       return [defaultValue];
@@ -156,20 +268,24 @@ export const TableFieldBaseSchema = z.object({
   required: FieldRequiredSchema,
   multiple: FieldMultipleSchema,
   format: FieldFormatSchema,
+  validations: FieldValidationsSchema,
   showInFilter: FieldShowInFilterSchema,
-  showInForm: FieldShowInFormSchema,
-  showInDetail: FieldShowInDetailSchema,
-  showInList: FieldShowInListSchema,
+  showInParentList: FieldShowInParentListSchema,
+  visibleInParentList: FieldVisibleInParentListSchema,
+  permissions: FieldPermissionsSchema,
   widthInForm: FieldWidthInFormSchema,
   widthInList: FieldWidthInListSchema,
   widthInDetail: FieldWidthInDetailSchema,
   tip: FieldTipSchema,
+  htmlContent: FieldHtmlContentSchema,
   locked: FieldLockedSchema,
+  label: FieldLabelSchema,
   defaultValue: FieldDefaultValueSchema,
   relationship: FieldRelationshipSchema,
   dropdown: FieldDropdownSchema,
   allowCustomDropdownOptions: FieldAllowCustomDropdownOptionsSchema,
   allowCreateRelationshipRecords: FieldAllowCreateRelationshipRecordsSchema,
+  fillWithCurrentUserWhenEmpty: FieldFillWithCurrentUserWhenEmptySchema,
   category: FieldCategorySchema,
   group: FieldGroupSchema,
 });

@@ -10,17 +10,24 @@ Exibe uma pagina HTML pelo slug.
 2. Validator: PageShowParamsValidator - campos: slug (string, required, min 1)
 3. UseCase:
    - Busca menu pelo slug com trashed=false (exact match)
-   - Retorna o documento menu completo (incluindo html)
-4. Repository: MenuContractRepository (findBy)
+   - Aplica o enforcement de visibilidade do menu (mesmo do `menu/list`)
+   - Retorna o documento menu completo (incluindo html) se visivel
+4. Repository: MenuContractRepository (findBySlug + findMany), UserContractRepository, GroupResolverContractService
 
 ## Regras de Negocio
 - Somente menus nao-trashed sao retornados
 - Retorna o documento IMenu completo (nome, slug, html, type, etc.)
+- **Visibilidade**: aplica o binding `visibility` do menu (Grupo|Public|Nobody)
+  de forma ancestor-aware ("pai oculto esconde a subarvore"), reaproveitando
+  `MenuVisibility` (`core/menu-visibility.core.ts`) — o mesmo helper usado pelo
+  feed da sidebar (`menu/list`). MASTER e ADMINISTRATOR fazem bypass. Sem acesso,
+  responde 404 PAGE_NOT_FOUND (mesma resposta de inexistente, nao vaza a
+  existencia da pagina)
 
 ## Erros Possiveis
 | Code | Cause | Quando |
 |------|-------|--------|
-| 404 | PAGE_NOT_FOUND | Menu com o slug nao existe ou esta na lixeira |
+| 404 | PAGE_NOT_FOUND | Menu com o slug nao existe, esta na lixeira ou o usuario nao tem visibilidade |
 | 500 | GET_MENU_ERROR | Erro interno |
 
 ## Testes

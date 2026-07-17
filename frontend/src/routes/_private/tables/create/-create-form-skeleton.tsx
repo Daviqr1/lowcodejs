@@ -35,14 +35,6 @@ export function CreateTableFormSkeleton(): React.JSX.Element {
         </FieldLabel>
         <Skeleton className="h-10 w-full rounded-md" />
       </Field>
-
-      {/* Campo Visibilidade */}
-      <Field>
-        <FieldLabel>
-          <Skeleton className="h-4 w-24" />
-        </FieldLabel>
-        <Skeleton className="h-10 w-full rounded-md" />
-      </Field>
     </section>
   );
 }

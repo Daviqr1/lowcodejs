@@ -1,23 +1,25 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField } from '@application/core/entity.core';
-import { E_FIELD_TYPE } from '@application/core/entity.core';
+import type { IField, Merge } from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { validateRowPayload } from '@application/core/row-payload-validator.core';
+import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
-type Payload = Record<string, unknown> & {
-  slug: string;
-  rowId: string;
-  groupSlug: string;
-  creator?: string | null;
-};
+type Payload = Merge<
+  Record<string, unknown>,
+  {
+    slug: string;
+    rowId: string;
+    groupSlug: string;
+    creator?: string | null;
+  }
+>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -64,7 +66,11 @@ export default class GroupRowCreateUseCase {
       // Valida os campos do item contra os campos do grupo
       const groupFields: IField[] = group.fields || [];
 
-      const errors = validateRowPayload(payload, groupFields, table.groups);
+      const errors = RowPayloadValidator.validate(
+        payload,
+        groupFields,
+        table.groups,
+      );
 
       if (errors) {
         return left(
@@ -80,6 +86,7 @@ export default class GroupRowCreateUseCase {
       await this.rowPasswordService.hash(payload, groupFields);
 
       // Remove campos de controle do payload para que o Mongoose gere um novo _id
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- desestrutura para omitir chaves do rest
       const { _id, slug, rowId, groupSlug, ...itemData } = payload;
 
       const row = await this.rowRepository.addGroupItem({
@@ -89,6 +96,10 @@ export default class GroupRowCreateUseCase {
         data: {
           ...itemData,
           creator: itemData.creator || null,
+          // Salvar via create publica o item de grupo.
+          status: E_ROW_STATUS.PUBLISHED,
+          draftAt: null,
+          trashedAt: null,
         },
       });
 

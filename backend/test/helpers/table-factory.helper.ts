@@ -1,21 +1,23 @@
 import {
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
   type IField,
   type IGroupConfiguration,
   type ITable,
+  type Merge,
 } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
 import { makeFieldGroupField } from './field-factory.helper';
 
 type TableOverrides = Partial<
-  Record<string, unknown> & {
-    name: string;
-    slug: string;
-    owner: string;
-  }
+  Merge<
+    Record<string, unknown>,
+    {
+      name: string;
+      slug: string;
+      owner: string;
+    }
+  >
 >;
 
 export async function makeTable(
@@ -29,10 +31,7 @@ export async function makeTable(
     _schema: {},
     fields: fields.map((f) => f._id),
     owner: overrides?.owner ?? 'owner-id',
-    administrators: [],
     style: E_TABLE_STYLE.LIST,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
     fieldOrderList: [],
     fieldOrderForm: [],
   });
@@ -67,10 +66,7 @@ export async function makeTableWithGroup(
     _schema: {},
     fields: allTableFields.map((f) => f._id),
     owner: overrides?.owner ?? 'owner-id',
-    administrators: [],
     style: E_TABLE_STYLE.LIST,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
     fieldOrderList: [],
     fieldOrderForm: [],
   });

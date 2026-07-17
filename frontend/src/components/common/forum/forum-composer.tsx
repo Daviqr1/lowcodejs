@@ -11,7 +11,7 @@ import { useUserMentionSearch } from '@/hooks/use-user-mention-search';
 import type { IStorage, IUser } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface ForumComposerProps {
+type ForumComposerProps = {
   composerLayout: 'side' | 'bottom';
   composerText: string;
   onTextChange: (value: string) => void;
@@ -31,7 +31,7 @@ interface ForumComposerProps {
   onCancelEdit: () => void;
   onUploadingChange?: (isUploading: boolean) => void;
   onEditorReady?: (editor: TiptapEditor) => void;
-}
+};
 
 export function ForumComposer({
   composerLayout,

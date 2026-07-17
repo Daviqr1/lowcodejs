@@ -13,12 +13,20 @@ import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { USER_GROUP_MAPPER } from '@/lib/constant';
 import type { IGroup } from '@/lib/interfaces';
 
-interface GroupComboboxProps {
+type GroupComboboxProps = {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+};
+
+// Usa o nome amigavel para grupos de sistema (Master/Administrador/...).
+function resolveGroupName(group: IGroup): string {
+  for (const [slug, label] of Object.entries(USER_GROUP_MAPPER)) {
+    if (slug === group.slug) return label;
+  }
+  return group.name;
 }
 
 export function GroupCombobox({
@@ -32,12 +40,7 @@ export function GroupCombobox({
 
   const items =
     groups?.map((g) => {
-      let displayName = g.name;
-      if (g.slug in USER_GROUP_MAPPER) {
-        displayName =
-          USER_GROUP_MAPPER[g.slug as keyof typeof USER_GROUP_MAPPER];
-      }
-      return { ...g, name: displayName };
+      return { ...g, name: resolveGroupName(g) };
     }) ?? [];
 
   // Find selected group

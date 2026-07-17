@@ -11,15 +11,16 @@ import ajv from 'ajv-errors';
 import fastify from 'fastify';
 import { bootstrap } from 'fastify-decorators';
 import type { Server } from 'node:http';
-import z, { ZodError } from 'zod';
 
 import { loadControllers } from '@application/core/controllers';
 import { registerDependencies } from '@application/core/di-registry';
-import HTTPException from '@application/core/exception.core';
+import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
 import { StorageContentDispositionHook } from '@hooks/content-disposition.hook';
+import { ErrorLogHook } from '@hooks/error-log.hook';
 import { LoadExtensionHook } from '@hooks/load-extensions.hook';
 import { LoggerUserActionHook } from '@hooks/logger.hook';
 import { Env } from '@start/env';
+import { GlobalErrorHandler } from '@start/error-handler';
 
 function matchOrigin(origin: string, pattern: string): boolean {
   if (pattern.startsWith('*.')) {
@@ -32,29 +33,6 @@ function matchOrigin(origin: string, pattern: string): boolean {
     }
   }
   return origin === pattern;
-}
-
-interface ValidationErrorDetail {
-  instancePath: string;
-  schemaPath: string;
-  keyword: string;
-  params: {
-    limit?: number;
-    missingProperty?: string;
-    [key: string]: unknown;
-  };
-  message: string;
-  emUsed?: boolean;
-}
-
-interface ValidationError {
-  instancePath: string;
-  schemaPath: string;
-  keyword: string;
-  params: {
-    errors: ValidationErrorDetail[];
-  };
-  message: string;
 }
 
 function registerAjvErrors(
@@ -107,6 +85,7 @@ kernel.register(cors, {
     'Access-Control-Request-Headers',
     'X-Timezone',
     'X-Skip-Log',
+    'X-Auth-Account-Id',
   ],
   exposedHeaders: ['Set-Cookie'],
   optionsSuccessStatus: 200,
@@ -129,7 +108,7 @@ kernel.register(jwt, {
   verify: { algorithms: ['RS256'] },
   cookie: {
     signed: false,
-    cookieName: 'accessToken',
+    cookieName: ACCESS_TOKEN_COOKIE,
   },
 });
 
@@ -141,72 +120,11 @@ kernel.register(multipart, {
 
 kernel.addHook('onResponse', LoggerUserActionHook);
 kernel.addHook('onRequest', StorageContentDispositionHook);
+// Registra no "Histórico de erros" respostas de erro (>= 400, exceto 401) de
+// usuários autenticados (best-effort).
+kernel.addHook('onSend', ErrorLogHook);
 
-kernel.setErrorHandler((error: Record<string, unknown>, request, response) => {
-  if (error instanceof HTTPException) {
-    return response.status(error.code).send({
-      message: error.message,
-      code: error.code,
-      cause: error.cause,
-      ...(error.errors && { errors: error.errors }),
-    });
-  }
-
-  if (error instanceof ZodError) {
-    const fieldErrors = z.flattenError(error).fieldErrors as Record<
-      string,
-      string[]
-    >;
-
-    const errors = Object.entries(fieldErrors).reduce(
-      (acc, [key, [value]]) => {
-        acc[key] = value;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-
-    return response.status(400).send({
-      message: 'Requisição inválida',
-      code: 400,
-      cause: 'INVALID_PAYLOAD_FORMAT',
-      errors,
-    });
-  }
-
-  if (error.code === 'FST_ERR_VALIDATION') {
-    const validation = error.validation as ValidationError[];
-
-    const errors = validation.reduce(
-      (acc: Record<string, string>, err: ValidationError) => {
-        const field = err.instancePath
-          ? err.instancePath.slice(1)
-          : err.params?.errors?.[0]?.params?.missingProperty || 'unknown';
-
-        if (err.message && field) {
-          acc[field] = err.message;
-        }
-        return acc;
-      },
-      {},
-    );
-
-    return response.status(Number(error.statusCode)).send({
-      message: 'Requisição inválida',
-      code: error.statusCode,
-      cause: 'INVALID_PAYLOAD_FORMAT',
-      ...(Object.keys(errors).length > 0 && { errors }),
-    });
-  }
-
-  console.error(error);
-
-  return response.status(500).send({
-    message: 'Erro interno do servidor',
-    cause: 'SERVER_ERROR',
-    code: 500,
-  });
-});
+kernel.setErrorHandler(GlobalErrorHandler);
 
 kernel.register(swagger, {
   openapi: {
@@ -243,7 +161,7 @@ kernel.register(scalar, {
 
 kernel.register(websocket);
 
-registerDependencies();
+await registerDependencies();
 
 kernel.register(bootstrap, {
   controllers: [...(await loadControllers())],

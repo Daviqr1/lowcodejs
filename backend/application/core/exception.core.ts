@@ -1,9 +1,9 @@
-export interface Exception {
+export type Exception = {
   message: string;
   code: number;
   cause: string;
   errors?: Record<string, string>;
-}
+};
 
 export default class HTTPException extends Error {
   public readonly code: number;

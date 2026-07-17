@@ -24,6 +24,9 @@ const Schema = new mongoose.Schema(
     ],
     LOGO_SMALL_URL: { type: String, default: null },
     LOGO_LARGE_URL: { type: String, default: null },
+    LOGO_SMALL_DARK_URL: { type: String, default: null },
+    LOGO_LARGE_DARK_URL: { type: String, default: null },
+    LOGIN_BACKGROUND_URL: { type: String, default: null },
     EMAIL_PROVIDER_HOST: { type: String, default: null },
     EMAIL_PROVIDER_PORT: { type: Number, default: null },
     EMAIL_PROVIDER_USER: { type: String, default: null },
@@ -34,7 +37,16 @@ const Schema = new mongoose.Schema(
     CHAT_HISTORY_ENABLED: { type: Boolean, default: false },
     MCP_SERVER_URL: { type: String, default: null },
     MCP_SERVER_TOKEN: { type: String, default: null },
+    MCP_LOWCODE_API_URL: { type: String, default: null },
     OPENAI_MODEL: { type: String, default: 'gpt-4.1-nano' },
+    AI_LLM_PROVIDER: {
+      type: String,
+      enum: ['openai', 'gemini', 'claude', 'openrouter', 'ollama'],
+      default: 'openai',
+    },
+    LLM_API_KEY: { type: String, default: null },
+    LLM_MODEL: { type: String, default: null },
+    LLM_BASE_URL: { type: String, default: null },
     SETUP_COMPLETED: { type: Boolean, default: false },
     SETUP_CURRENT_STEP: {
       type: String,
@@ -54,15 +66,15 @@ const Schema = new mongoose.Schema(
     MIGRATION_DUAL_CONNECTION_DROPPED_AT: { type: Date, default: null },
     MIGRATION_STORAGE_LOCATION_AT: { type: Date, default: null },
     STORAGE_MIGRATION_LAST_RUN_AT: { type: Date, default: null },
+    MIGRATION_RELATIONSHIP_LIFT_OUT_AT: { type: Date, default: null },
+    MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT: { type: Date, default: null },
+    MIGRATION_RELATIONSHIP_ENDPOINT_FLAGS_AT: { type: Date, default: null },
     trashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },
   },
   { timestamps: true, id: false },
 );
 
-export const Setting = (mongoose?.models?.Setting ||
-  mongoose.model<Entity>(
-    'Setting',
-    Schema,
-    'settings',
-  )) as mongoose.Model<Entity>;
+export const Setting: mongoose.Model<Entity> =
+  mongoose?.models?.Setting ||
+  mongoose.model<Entity>('Setting', Schema, 'settings');

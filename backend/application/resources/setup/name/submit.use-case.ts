@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -14,12 +13,12 @@ type Input = {
   LOCALE: 'pt-br' | 'en-us';
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
-}
+};
 
 type Response = Either<HTTPException, SetupStepOutput>;
 

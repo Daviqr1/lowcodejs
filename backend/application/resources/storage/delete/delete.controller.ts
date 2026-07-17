@@ -12,7 +12,6 @@ import { StorageDeleteParamsValidator } from './delete.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: StorageDeleteUseCase = getInstanceByToken(
       StorageDeleteUseCase,
     ),
@@ -46,7 +45,7 @@ export default class {
     }
 
     return response.status(200).send({
-      message: 'File deleted successfully',
+      message: 'Arquivo deletado com sucesso',
       deletedAt: new Date().toISOString(),
     });
   }

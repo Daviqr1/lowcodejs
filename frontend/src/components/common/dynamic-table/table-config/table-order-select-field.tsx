@@ -9,19 +9,19 @@ import {
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface OrderOption {
+type OrderOption = {
   label: string;
   value: string;
-}
+};
 
-interface TableOrderSelectFieldProps {
+type TableOrderSelectFieldProps = {
   label: string;
   description?: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
   options: Array<OrderOption>;
-}
+};
 
 export function TableOrderSelectField({
   label,

@@ -5,10 +5,13 @@ import {
   EllipsisIcon,
   EyeIcon,
   LoaderCircleIcon,
+  PencilIcon,
+  PowerIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 
 import { BulkActionBar } from '@/components/common/bulk-action-bar';
 import {
@@ -28,6 +31,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -38,27 +42,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useUserBulkDelete } from '@/hooks/tanstack-query/use-user-bulk-delete';
 import { useUserBulkRestore } from '@/hooks/tanstack-query/use-user-bulk-restore';
 import { useUserBulkTrash } from '@/hooks/tanstack-query/use-user-bulk-trash';
+import { useUserBulkUpdate } from '@/hooks/tanstack-query/use-user-bulk-update';
 import { useUserDelete } from '@/hooks/tanstack-query/use-user-delete';
 import { useUserRemoveFromTrash } from '@/hooks/tanstack-query/use-user-remove-from-trash';
 import { useUserSendToTrash } from '@/hooks/tanstack-query/use-user-send-to-trash';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import {
-  E_ROLE,
   E_USER_STATUS,
   USER_GROUP_MAPPER,
   USER_STATUS_MAPPER,
 } from '@/lib/constant';
 import { formatDate } from '@/lib/format-date';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IUser } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import type { IUser, Merge } from '@/lib/interfaces';
+import { isMaster, isPrivileged } from '@/lib/permission';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/users/';
+
+// Aliases com index de string: consultam os mappers (as const) por slug/status
+// dinamico sem assertion `keyof`.
+const GROUP_LABELS: Record<string, string> = USER_GROUP_MAPPER;
+const STATUS_LABELS: Record<string, string> = USER_STATUS_MAPPER;
 
 function getCheckboxState(
   allSelected: boolean,
@@ -77,6 +88,7 @@ type ActionsCellProps = {
   onRemoveFromTrash: (user: IUser) => void;
   onPermanentDelete: (user: IUser) => void;
   onView: (user: IUser) => void;
+  onEdit: (user: IUser) => void;
 };
 
 function ActionsCell(props: ActionsCellProps): React.JSX.Element {
@@ -101,6 +113,16 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <EyeIcon className="size-4" />
             <span>Visualizar</span>
           </DropdownMenuItem>
+
+          {!props.user.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => props.onEdit(props.user)}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
 
           {!props.user.trashed && (
             <DropdownMenuItem
@@ -139,50 +161,64 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
   );
 }
 
-type ConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  testId?: string;
-};
+type ConfirmDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+    testId?: string;
+  }
+>;
 
-function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element {
+function ConfirmDialog({
+  ref,
+  title,
+  description,
+  confirmLabel,
+  isPending,
+  onConfirm,
+  testId,
+  ...rest
+}: ConfirmDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="py-4 px-6"
-        data-test-id={props.testId}
+        data-test-id={testId}
       >
         <DialogHeader>
-          <DialogTitle>{props.title}</DialogTitle>
-          <DialogDescription>{props.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               variant="outline"
-              disabled={props.isPending}
+              disabled={isPending}
             >
               Cancelar
             </Button>
           </DialogClose>
           <Button
             type="button"
-            disabled={props.isPending}
-            onClick={props.onConfirm}
+            disabled={isPending}
+            onClick={() => {
+              if (isPending) return;
+              onConfirm(close);
+            }}
           >
-            {props.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            {!props.isPending && <span>{props.confirmLabel}</span>}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <span>{confirmLabel}</span>}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -198,6 +234,7 @@ function buildColumns(params: {
   onRemoveFromTrash: (user: IUser) => void;
   onPermanentDelete: (user: IUser) => void;
   onView: (user: IUser) => void;
+  onEdit: (user: IUser) => void;
 }): Array<ColumnDef<IUser, unknown>> {
   const cols: Array<ColumnDef<IUser, unknown>> = [];
 
@@ -267,12 +304,7 @@ function buildColumns(params: {
       ),
       cell: ({ row }) => {
         const group = row.original.group;
-        if (group.slug in USER_GROUP_MAPPER) {
-          return USER_GROUP_MAPPER[
-            group.slug as keyof typeof USER_GROUP_MAPPER
-          ];
-        }
-        return group.slug;
+        return GROUP_LABELS[group.slug] || group.slug;
       },
     },
     {
@@ -298,9 +330,7 @@ function buildColumns(params: {
                 'bg-destructive/10 text-destructive',
             )}
           >
-            {status in USER_STATUS_MAPPER &&
-              USER_STATUS_MAPPER[status as keyof typeof USER_STATUS_MAPPER]}
-            {!(status in USER_STATUS_MAPPER) && status}
+            {STATUS_LABELS[status] || status}
           </Badge>
         );
       },
@@ -342,6 +372,7 @@ function buildColumns(params: {
           onRemoveFromTrash={params.onRemoveFromTrash}
           onPermanentDelete={params.onPermanentDelete}
           onView={params.onView}
+          onEdit={params.onEdit}
         />
       ),
     });
@@ -350,10 +381,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface Props {
+type Props = {
   data: Array<IUser>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
   const sidebar = useSidebar();
@@ -361,22 +392,64 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
   const auth = useAuthStore();
   const search = useSearch({ from: '/_private/users/' });
 
-  const role = auth.user?.group?.slug;
-  const isMaster = role === E_ROLE.MASTER;
-  const canTrash = role === E_ROLE.MASTER || role === E_ROLE.ADMINISTRATOR;
+  // Hard-delete é MASTER-only; trash/restore libera para privilegiados. Ambos
+  // resolvidos pelo fecho de grupos (não apenas o grupo principal).
+  const groups = useGroupReadList();
+  const master = isMaster(auth.user, groups.data ?? []);
+  const canTrash = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [singleTrashUser, setSingleTrashUser] = React.useState<IUser | null>(
-    null,
+  // Confirms singular (trash/restore) e hard delete: alvo dinâmico via ref+nonce.
+  const [singleTrashTarget, setSingleTrashTarget] = React.useState<{
+    user: IUser;
+    nonce: number;
+  } | null>(null);
+  const [singleRestoreTarget, setSingleRestoreTarget] = React.useState<{
+    user: IUser;
+    nonce: number;
+  } | null>(null);
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    user: IUser;
+    nonce: number;
+  } | null>(null);
+  const singleTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const singleRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleTrash() {
+      if (singleTrashTarget) singleTrashTriggerRef.current?.click();
+    },
+    [singleTrashTarget],
   );
-  const [singleRestoreUser, setSingleRestoreUser] =
-    React.useState<IUser | null>(null);
-  const [singleDeleteUser, setSingleDeleteUser] = React.useState<IUser | null>(
-    null,
+  React.useEffect(
+    function openSingleRestore() {
+      if (singleRestoreTarget) singleRestoreTriggerRef.current?.click();
+    },
+    [singleRestoreTarget],
   );
-  const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
-  const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
+  );
+
+  const requestSingleTrash = React.useCallback((user: IUser) => {
+    setSingleTrashTarget((previous) => ({
+      user,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+  }, []);
+  const requestSingleRestore = React.useCallback((user: IUser) => {
+    setSingleRestoreTarget((previous) => ({
+      user,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+  }, []);
 
   const tableRef = React.useRef<Table<IUser> | null>(null);
 
@@ -391,13 +464,23 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     [sidebar, router],
   );
 
+  const navigateToEditUser = React.useCallback(
+    (userId: string) => {
+      sidebar.setOpen(false);
+      router.navigate({
+        to: '/users/$userId',
+        params: { userId },
+        search: { mode: 'edit' },
+      });
+    },
+    [sidebar, router],
+  );
+
   const sendToTrash = useUserSendToTrash({
     onSuccess() {
-      setSingleTrashUser(null);
-      toastSuccess(
-        'Usuário enviado para lixeira!',
-        'O usuário foi movido para a lixeira',
-      );
+      toast.success('Usuário enviado para lixeira!', {
+        description: 'O usuário foi movido para a lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao enviar usuário para lixeira' });
@@ -406,11 +489,9 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const removeFromTrash = useUserRemoveFromTrash({
     onSuccess() {
-      setSingleRestoreUser(null);
-      toastSuccess(
-        'Usuário restaurado!',
-        'O usuário foi restaurado da lixeira',
-      );
+      toast.success('Usuário restaurado!', {
+        description: 'O usuário foi restaurado da lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao restaurar usuário' });
@@ -419,11 +500,9 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const userDelete = useUserDelete({
     onSuccess() {
-      setSingleDeleteUser(null);
-      toastSuccess(
-        'Usuário excluído permanentemente!',
-        'O usuário foi excluído permanentemente',
-      );
+      toast.success('Usuário excluído permanentemente!', {
+        description: 'O usuário foi excluído permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -434,15 +513,14 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkTrash = useUserBulkTrash({
     onSuccess(result) {
-      setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 usuário enviado para lixeira!'
-          : result.modified
-              .toString()
-              .concat(' usuários enviados para lixeira!');
-      toastSuccess(message, 'Os usuários foram movidos para a lixeira');
+      let message = result.modified
+        .toString()
+        .concat(' usuários enviados para lixeira!');
+      if (result.modified === 1) message = '1 usuário enviado para lixeira!';
+      toast.success(message, {
+        description: 'Os usuários foram movidos para a lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -453,13 +531,12 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkRestore = useUserBulkRestore({
     onSuccess(result) {
-      setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 usuário restaurado!'
-          : result.modified.toString().concat(' usuários restaurados!');
-      toastSuccess(message, 'Os usuários foram restaurados da lixeira');
+      let message = result.modified.toString().concat(' usuários restaurados!');
+      if (result.modified === 1) message = '1 usuário restaurado!';
+      toast.success(message, {
+        description: 'Os usuários foram restaurados da lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao restaurar usuários' });
@@ -468,19 +545,34 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkDelete = useUserBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 usuário excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' usuários excluídos permanentemente!');
-      toastSuccess(message, 'Os usuários foram excluídos permanentemente');
+      let message = result.deleted
+        .toString()
+        .concat(' usuários excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 usuário excluído permanentemente!';
+      toast.success(message, {
+        description: 'Os usuários foram excluídos permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
         context: 'Erro ao excluir usuários permanentemente',
+      });
+    },
+  });
+
+  const bulkUpdateStatus = useUserBulkUpdate({
+    onSuccess(result) {
+      tableRef.current?.resetRowSelection();
+      let message = result.modified.toString().concat(' usuários atualizados!');
+      if (result.modified === 1) message = '1 usuário atualizado!';
+      toast.success(message, {
+        description: 'O status dos usuários foi alterado',
+      });
+    },
+    onError(error) {
+      handleApiError(error, {
+        context: 'Erro ao alterar o status dos usuários',
       });
     },
   });
@@ -492,14 +584,19 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
     () =>
       buildColumns({
         canTrash,
-        isMaster,
+        isMaster: master,
         isPending: isAnySinglePending,
-        onSendToTrash: (user) => setSingleTrashUser(user),
-        onRemoveFromTrash: (user) => setSingleRestoreUser(user),
-        onPermanentDelete: (user) => setSingleDeleteUser(user),
+        onSendToTrash: (user) => requestSingleTrash(user),
+        onRemoveFromTrash: (user) => requestSingleRestore(user),
+        onPermanentDelete: (user) =>
+          setSingleDeleteTarget((previous) => ({
+            user,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
         onView: (user) => navigateToUser(user._id),
+        onEdit: (user) => navigateToEditUser(user._id),
       }),
-    [canTrash, isMaster, isAnySinglePending, navigateToUser],
+    [canTrash, master, isAnySinglePending, navigateToUser, navigateToEditUser],
   );
 
   const leftPinning: Array<string> = [];
@@ -544,94 +641,152 @@ export function TableUsers({ data, toolbarPortal }: Props): React.JSX.Element {
         <BulkActionBar
           selectedCount={selectedCount}
           isTrashView={isTrashView}
-          canDelete={isMaster}
+          canDelete={master}
           onClear={() => table.resetRowSelection()}
-          onTrash={() => setBulkTrashOpen(true)}
-          onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onTrash={() => bulkTrashTriggerRef.current?.click()}
+          onRestore={() => bulkRestoreTriggerRef.current?.click()}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
+          extraActions={
+            <DropdownMenu
+              dir="ltr"
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-test-id="bulk-user-status-btn"
+                  disabled={bulkUpdateStatus.isPending}
+                >
+                  {bulkUpdateStatus.isPending && (
+                    <LoaderCircleIcon className="size-4 animate-spin" />
+                  )}
+                  {!bulkUpdateStatus.isPending && (
+                    <PowerIcon className="size-4" />
+                  )}
+                  <span>Alterar status</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Definir status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() =>
+                    bulkUpdateStatus.mutate({
+                      ids: selectedIds,
+                      status: E_USER_STATUS.ACTIVE,
+                    })
+                  }
+                >
+                  <span>Ativar</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() =>
+                    bulkUpdateStatus.mutate({
+                      ids: selectedIds,
+                      status: E_USER_STATUS.INACTIVE,
+                    })
+                  }
+                >
+                  <span>Desativar</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
+        />
+      )}
+
+      {singleTrashTarget && (
+        <ConfirmDialog
+          key={singleTrashTarget.nonce}
+          ref={singleTrashTriggerRef}
+          title="Enviar usuário para a lixeira"
+          description="Ao confirmar essa ação, o usuário será enviado para a lixeira."
+          confirmLabel="Enviar para lixeira"
+          isPending={sendToTrash.isPending}
+          onConfirm={(close) => {
+            sendToTrash.mutateAsync(
+              { _id: singleTrashTarget.user._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="trash-user-dialog"
+        />
+      )}
+
+      {singleRestoreTarget && (
+        <ConfirmDialog
+          key={singleRestoreTarget.nonce}
+          ref={singleRestoreTriggerRef}
+          title="Restaurar usuário da lixeira"
+          description="Ao confirmar essa ação, o usuário será restaurado da lixeira."
+          confirmLabel="Restaurar"
+          isPending={removeFromTrash.isPending}
+          onConfirm={(close) => {
+            removeFromTrash.mutateAsync(
+              { _id: singleRestoreTarget.user._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="restore-user-dialog"
+        />
+      )}
+
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          title="Excluir usuário permanentemente"
+          description="Essa ação é irreversível. O usuário será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={userDelete.isPending}
+          onConfirm={(close) => {
+            userDelete.mutateAsync(
+              { _id: singleDeleteTarget.user._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="delete-user-dialog"
         />
       )}
 
       <ConfirmDialog
-        open={singleTrashUser !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleTrashUser(null);
-        }}
-        title="Enviar usuário para a lixeira"
-        description="Ao confirmar essa ação, o usuário será enviado para a lixeira."
-        confirmLabel="Enviar para lixeira"
-        isPending={sendToTrash.isPending}
-        onConfirm={() => {
-          if (!singleTrashUser) return;
-          sendToTrash.mutate({ _id: singleTrashUser._id });
-        }}
-        testId="trash-user-dialog"
-      />
-
-      <ConfirmDialog
-        open={singleRestoreUser !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleRestoreUser(null);
-        }}
-        title="Restaurar usuário da lixeira"
-        description="Ao confirmar essa ação, o usuário será restaurado da lixeira."
-        confirmLabel="Restaurar"
-        isPending={removeFromTrash.isPending}
-        onConfirm={() => {
-          if (!singleRestoreUser) return;
-          removeFromTrash.mutate({ _id: singleRestoreUser._id });
-        }}
-        testId="restore-user-dialog"
-      />
-
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteUser !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteUser(null);
-        }}
-        title="Excluir usuário permanentemente"
-        description="Essa ação é irreversível. O usuário será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={userDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteUser) return;
-          userDelete.mutate({ _id: singleDeleteUser._id });
-        }}
-        testId="delete-user-dialog"
-      />
-
-      <ConfirmDialog
-        open={bulkTrashOpen}
-        onOpenChange={setBulkTrashOpen}
+        ref={bulkTrashTriggerRef}
         title="Enviar usuários para a lixeira"
         description="Os usuários selecionados serão enviados para a lixeira."
         confirmLabel="Enviar para lixeira"
         isPending={bulkTrash.isPending}
-        onConfirm={() => bulkTrash.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkTrash.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-trash-users-dialog"
       />
 
       <ConfirmDialog
-        open={bulkRestoreOpen}
-        onOpenChange={setBulkRestoreOpen}
+        ref={bulkRestoreTriggerRef}
         title="Restaurar usuários da lixeira"
         description="Os usuários selecionados serão restaurados da lixeira."
         confirmLabel="Restaurar"
         isPending={bulkRestore.isPending}
-        onConfirm={() => bulkRestore.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkRestore.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-restore-users-dialog"
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
         title="Excluir usuários permanentemente"
         description="Essa ação é irreversível. Os usuários selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkDelete.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-delete-users-dialog"
       />
     </>

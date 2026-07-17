@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserExportCsvSchema: FastifySchema = {
-  tags: ['Users'],
+  tags: ['Usuários'],
   summary: 'Exporta usuários em CSV',
   description:
     'Gera um arquivo CSV com todos os usuários que casam com os filtros aplicados. Restrito a MASTER e ADMINISTRATOR. Cap de 500.000 linhas por export.',
@@ -31,22 +31,22 @@ export const UserExportCsvSchema: FastifySchema = {
       format: 'binary',
     },
     401: {
-      description: 'Unauthorized',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     403: {
-      description: 'Forbidden',
+      description: 'Proibido - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },

@@ -9,7 +9,7 @@ Envia múltiplos usuários para a lixeira.
 ## Middleware
 
 1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR])`
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 
 ## Body
 
@@ -27,6 +27,6 @@ Envia múltiplos usuários para a lixeira.
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Role insuficiente |
+| 403 | FORBIDDEN | Sem capability MANAGE_USERS |
 | 409 | CANNOT_TRASH_SELF | Auto-trash |
 | 500 | BULK_TRASH_USERS_ERROR | Erro interno |

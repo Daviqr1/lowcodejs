@@ -3,14 +3,14 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface TableFieldRelationshipFieldSelectProps {
+type TableFieldRelationshipFieldSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
   tableSlug: string;
   onFieldChange?: (fieldSlug: string) => void;
-}
+};
 
 export function TableFieldRelationshipFieldSelect({
   label,

@@ -1,22 +1,18 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import { Either, left, right } from '@application/core/either.core';
-import { E_FIELD_TYPE, IField, IRow } from '@application/core/entity.core';
+import { E_ROW_STATUS, IRow } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { validateRowPayload } from '@application/core/row-payload-validator.core';
+import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 import { TableRowAutoSavePayload } from './auto-save.validator';
+import { DraftTable } from './draft-table';
+
 type Response = Either<HTTPException, IRow>;
 
 type Payload = TableRowAutoSavePayload;
-
-type Draft = {
-  payload: Omit<Payload, 'slug'>;
-  fields: IField[];
-};
 
 @Service()
 export default class TableRowAutoSaveUseCase {
@@ -34,17 +30,10 @@ export default class TableRowAutoSaveUseCase {
           HTTPException.NotFound('Tabela não encontrada', 'TABLE_NOT_FOUND'),
         );
 
-      const isIncomplete = this.isIncomplete({ fields: table.fields, payload });
-
-      const draft = this.drafting({
-        payload,
-        fields: table.fields,
-      });
-
-      // Valida apenas formato/tipo dos campos que possuem valor real.
-      // A ausencia de obrigatorios NAO rejeita a requisicao: vira sinal de
-      // rascunho (trashed=true). Validar campos vazios faria o auto-save
-      // falhar em vez de salvar o rascunho na lixeira.
+      // Valida apenas formato/tipo dos campos que possuem valor real. O
+      // auto-save NUNCA bloqueia por obrigatorio ausente: o registro e
+      // persistido como rascunho (status='draft') com os dados parciais
+      // reais e so vira 'published' quando o usuario clica em Salvar.
       const fields = table.fields.filter((field) => {
         return (
           !field.native &&
@@ -54,7 +43,11 @@ export default class TableRowAutoSaveUseCase {
         );
       });
 
-      const errors = validateRowPayload(draft, fields, table.groups);
+      const errors = RowPayloadValidator.validate(
+        payload,
+        fields,
+        table.groups,
+      );
 
       if (errors) {
         return left(
@@ -66,24 +59,24 @@ export default class TableRowAutoSaveUseCase {
         );
       }
 
-      let trashed: { trashed: boolean; trashedAt: string | null } = {
-        trashed: true,
-        trashedAt: new Date().toISOString(),
+      const draftState = {
+        status: E_ROW_STATUS.DRAFT,
+        draftAt: new Date(),
       };
 
-      if (!isIncomplete)
-        trashed = {
-          trashed: false,
-          trashedAt: null,
-        };
+      // Schema dedicado com todos os campos opcionais: o auto-save persiste
+      // rascunhos parciais sem disparar os validators de obrigatoriedade do
+      // Mongoose. O core nao e tocado; a tabela original segue exigindo
+      // required no create/update normal.
+      const draftTable = DraftTable.from(table);
 
       if (!rowId) {
         const created = await this.rowRepository.create({
           data: {
-            ...draft,
-            ...trashed,
+            ...payload,
+            ...draftState,
           },
-          table,
+          table: draftTable,
         });
 
         return right(created);
@@ -102,11 +95,16 @@ export default class TableRowAutoSaveUseCase {
       const updated = await this.rowRepository.update({
         _id: rowId.toString(),
         data: {
-          ...draft,
-          ...trashed,
+          ...payload,
+          ...draftState,
         },
-        table,
+        table: draftTable,
       });
+
+      if (!updated)
+        return left(
+          HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
 
       return right(updated);
     } catch (error) {
@@ -120,66 +118,10 @@ export default class TableRowAutoSaveUseCase {
     }
   }
 
-  private drafting(data: Draft): Draft['payload'] {
-    const FIELD_DEFAULT_MAPPER: Record<string, string | string[]> = {
-      [E_FIELD_TYPE.TEXT_SHORT]: '-',
-      [E_FIELD_TYPE.TEXT_LONG]: '-',
-      [E_FIELD_TYPE.DROPDOWN]: [],
-      [E_FIELD_TYPE.DATE]: new Date().toISOString(),
-      [E_FIELD_TYPE.RELATIONSHIP]: [],
-      [E_FIELD_TYPE.FILE]: [],
-      // [E_FIELD_TYPE.REACTION]: [],
-      // [E_FIELD_TYPE.EVALUATION]: [],
-      [E_FIELD_TYPE.CATEGORY]: [],
-      [E_FIELD_TYPE.USER]: [],
-    };
-
-    return data.fields.reduce(
-      (accumulator, field) => {
-        if (field.native) return accumulator;
-        if (field.trashed) return accumulator;
-
-        const fallback = FIELD_DEFAULT_MAPPER[field.type];
-        if (fallback === undefined) return accumulator;
-
-        // Campo AUSENTE do payload: preenche com o default do tipo.
-        if (!(field.slug in accumulator)) {
-          accumulator[field.slug] = fallback;
-          return accumulator;
-        }
-
-        // Campo presente-porem-vazio E obrigatorio: preenche placeholder para
-        // passar no `required` do schema Mongoose (senao o save do rascunho
-        // falha). A deteccao de rascunho (isIncomplete) independe deste valor,
-        // entao o registro continua trashed:true. Campos opcionais vazios sao
-        // mantidos como estao para nao mascarar o vazio.
-        if (field.required && !this.hasValue(accumulator[field.slug])) {
-          accumulator[field.slug] = fallback;
-        }
-
-        return accumulator;
-      },
-      { ...data.payload },
-    );
-  }
-
   private hasValue(value: unknown): boolean {
     if (value === null || value === undefined) return false;
     if (typeof value === 'string') return value.trim().length > 0;
     if (Array.isArray(value)) return value.length > 0;
     return true;
-  }
-
-  private isIncomplete(data: Draft): boolean {
-    return data.fields.some((field) => {
-      if (field.native) return false;
-      if (field.trashed) return false;
-      if (!field.required) return false;
-
-      // Incompleto quando o obrigatorio nao tem VALOR real (nao basta a
-      // chave existir no payload — frontend envia todos os campos, inclusive
-      // vazios como null/[]).
-      return !this.hasValue(data.payload[field.slug]);
-    });
   }
 }

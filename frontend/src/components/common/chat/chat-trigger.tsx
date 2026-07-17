@@ -3,10 +3,10 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-interface ChatTriggerProps {
+type ChatTriggerProps = {
   onClick: () => void;
   isOpen: boolean;
-}
+};
 
 export function ChatTrigger({
   onClick,

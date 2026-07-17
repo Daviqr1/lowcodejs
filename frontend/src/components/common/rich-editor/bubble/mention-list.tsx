@@ -10,33 +10,33 @@ import React, {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
-export interface MentionItem {
+export type MentionItem = {
   id: string;
   label: string;
   email?: string;
-}
+};
 
-export interface MentionPage {
+export type MentionPage = {
   items: Array<MentionItem>;
   hasMore: boolean;
-}
+};
 
 export type ResolveMentionPage = (
   query: string,
   page: number,
 ) => Promise<MentionPage>;
 
-export interface MentionListHandle {
+export type MentionListHandle = {
   onKeyDown: (event: KeyboardEvent) => boolean;
-}
+};
 
-interface MentionListProps {
+type MentionListProps = {
   items: Array<MentionItem>;
   query: string;
   hasMore: boolean;
   resolvePage: ResolveMentionPage;
   command: (item: MentionItem) => void;
-}
+};
 
 function getInitials(label: string): string {
   const trimmed = label.trim();

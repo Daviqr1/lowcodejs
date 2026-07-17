@@ -1,7 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { UserGroupUpdateSchema } from './update.schema';
 import UserGroupUpdateUseCase from './update.use-case';
@@ -15,7 +17,6 @@ import {
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserGroupUpdateUseCase = getInstanceByToken(
       UserGroupUpdateUseCase,
     ),
@@ -28,6 +29,7 @@ export default class {
         AuthenticationMiddleware({
           optional: false,
         }),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS),
       ],
       schema: UserGroupUpdateSchema,
     },

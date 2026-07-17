@@ -2,6 +2,7 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { IField } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
 export function KanbanRowExtraFieldsSection({
   extraFields,
@@ -41,7 +42,9 @@ export function KanbanRowExtraFieldsSection({
           {!(
             editingFieldSlug === field.slug && isExtraFieldEditable(field)
           ) && (
-            <div className="text-xs text-muted-foreground">{field.name}</div>
+            <div className="text-xs text-muted-foreground">
+              {resolveFieldLabel(field, 'detail')}
+            </div>
           )}
           {((): React.ReactNode => {
             if (

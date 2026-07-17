@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE, E_TABLE_TYPE } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
 import TablePaginatedUseCase from './paginated.use-case';
@@ -44,10 +39,7 @@ describe('Table Paginated Use Case', () => {
       fields: [],
       type: E_TABLE_TYPE.TABLE,
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -59,10 +51,7 @@ describe('Table Paginated Use Case', () => {
       fields: [],
       type: E_TABLE_TYPE.TABLE,
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -92,10 +81,7 @@ describe('Table Paginated Use Case', () => {
         fields: [],
         type: E_TABLE_TYPE.TABLE,
         owner: 'owner-id',
-        administrators: [],
         style: E_TABLE_STYLE.LIST,
-        visibility: E_TABLE_VISIBILITY.RESTRICTED,
-        collaboration: E_TABLE_COLLABORATION.RESTRICTED,
         fieldOrderList: [],
         fieldOrderForm: [],
       });
@@ -127,10 +113,7 @@ describe('Table Paginated Use Case', () => {
       fields: [],
       type: E_TABLE_TYPE.TABLE,
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -142,10 +125,7 @@ describe('Table Paginated Use Case', () => {
       fields: [],
       type: E_TABLE_TYPE.TABLE,
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

@@ -1,0 +1,15 @@
+{
+  "id": "conditional-fields",
+  "type": "PLUGIN",
+  "name": "Campos condicionais",
+  "description": "Permite configurar regras por tabela para mostrar ou ocultar campos e grupos de campos nos formulários.",
+  "version": "1.0.0",
+  "author": "LowcodeJS",
+  "icon": "ListFilterIcon",
+  "placement": {
+    "slots": ["table.fields.manage"]
+  },
+  "requires": {
+    "lowcodejs": ">=1.0.0"
+  }
+}

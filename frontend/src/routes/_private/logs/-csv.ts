@@ -9,6 +9,10 @@ export function entriesToCsv(entries: Array<ILogger>): string {
     'object',
     'object_id',
     'url',
+    'creator',
+    'objectCreatedAt',
+    'updater',
+    'objectUpdatedAt',
     'content',
   ];
   const rows = entries.map((entry) => [
@@ -19,6 +23,10 @@ export function entriesToCsv(entries: Array<ILogger>): string {
     entry.object ?? '',
     entry.object_id ?? '',
     entry.url,
+    entry.creator?.email ?? '',
+    entry.objectCreatedAt ?? '',
+    entry.updater?.email ?? '',
+    entry.objectUpdatedAt ?? '',
     JSON.stringify(entry.content ?? {}),
   ]);
   const escape = (cell: string): string => {

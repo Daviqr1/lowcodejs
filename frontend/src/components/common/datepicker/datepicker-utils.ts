@@ -117,11 +117,11 @@ export function generateYearRange(centerYear: number): Array<number> {
   return years;
 }
 
-export interface CalendarDays {
+export type CalendarDays = {
   previous: Array<Date>;
   current: Array<Date>;
   next: Array<Date>;
-}
+};
 
 export function getCalendarDays(date: Date): CalendarDays {
   const monthStart = startOfMonth(date);
@@ -171,14 +171,16 @@ export function isDateDisabled(
 }
 
 export function navigateMonth(date: Date, direction: 'prev' | 'next'): Date {
-  return addMonths(date, direction === 'next' ? 1 : -1);
+  let amount = -1;
+  if (direction === 'next') amount = 1;
+  return addMonths(date, amount);
 }
 
 // Range utilities
-export interface DateRange {
+export type DateRange = {
   startDate: Date | null;
   endDate: Date | null;
-}
+};
 
 export function isDateInRange(
   date: Date,
@@ -209,9 +211,12 @@ export function isDateBetween(
   const endDay = startOfDay(end);
 
   // Ensure start is before end
-  const [actualStart, actualEnd] = isBefore(startDay, endDay)
-    ? [startDay, endDay]
-    : [endDay, startDay];
+  let actualStart = endDay;
+  let actualEnd = startDay;
+  if (isBefore(startDay, endDay)) {
+    actualStart = startDay;
+    actualEnd = endDay;
+  }
 
   return isAfter(day, actualStart) && isBefore(day, actualEnd);
 }
@@ -224,8 +229,10 @@ export function formatDateRange(
 ): string {
   if (!start && !end) return '';
 
-  const startStr = start ? format(start, formatStr, { locale: ptBR }) : '';
-  const endStr = end ? format(end, formatStr, { locale: ptBR }) : '';
+  let startStr = '';
+  if (start) startStr = format(start, formatStr, { locale: ptBR });
+  let endStr = '';
+  if (end) endStr = format(end, formatStr, { locale: ptBR });
 
   if (startStr && endStr) {
     return `${startStr} ${separator} ${endStr}`;

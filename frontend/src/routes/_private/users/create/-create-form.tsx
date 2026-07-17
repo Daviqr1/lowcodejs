@@ -12,6 +12,7 @@ export const userFormDefaultValues: UserFormType = {
   email: '',
   password: '',
   group: '',
+  groups: [],
 };
 
 export const CreateUserFormFields = withForm({
@@ -23,7 +24,7 @@ export const CreateUserFormFields = withForm({
     return (
       <section
         data-test-id="user-create-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField name="name">
@@ -59,7 +60,7 @@ export const CreateUserFormFields = withForm({
           )}
         </form.AppField>
 
-        {/* Campo Grupo */}
+        {/* Campo Grupo principal */}
         <form.AppField name="group">
           {(field) => (
             <field.FieldGroupCombobox
@@ -67,6 +68,17 @@ export const CreateUserFormFields = withForm({
               placeholder="Selecione um grupo..."
               disabled={isPending}
               required
+            />
+          )}
+        </form.AppField>
+
+        {/* Campo Grupos adicionais (multi-grupo) */}
+        <form.AppField name="groups">
+          {(field) => (
+            <field.FieldGroupMultiSelect
+              label="Grupos adicionais (opcional)"
+              placeholder="Selecione grupos adicionais..."
+              disabled={isPending}
             />
           )}
         </form.AppField>

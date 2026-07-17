@@ -7,13 +7,13 @@ Atualiza um campo existente de uma tabela, incluindo nome, tipo, visibilidade e 
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (required), TableAccessMiddleware (UPDATE_FIELD)
-2. Validator: TableFieldUpdateBodyValidator - campos: name (string, trim), type (E_FIELD_TYPE enum), trashed (boolean default false), trashedAt (string nullable, transformado em Date) + TableFieldBaseSchema. TableFieldUpdateParamsValidator - campos: slug (string, trim), _id (string, trim)
+2. Validator: TableFieldUpdateBodyValidator - campos: name (string, trim), type (E_FIELD_TYPE enum), trashed (boolean default false), trashedAt (string nullable, transformado em Date) + TableFieldBaseSchema (inclui `permissions` { list, form, detail } e `showInFilter`). TableFieldUpdateParamsValidator - campos: slug (string, trim), _id (string, trim)
 3. UseCase:
    - Busca tabela por slug exato
    - Busca campo por _id exato
    - Se nativo e trashed=true: retorna NATIVE_FIELD_CANNOT_BE_TRASHED
-   - Se nativo: aplica **apenas** showIn* e widthIn* do payload (demais campos sao ignorados silenciosamente) e retorna o campo atualizado sem reconstruir schema dinamico
-   - Se locked e nao-nativo: valida que somente showIn*/widthIn* mudaram, senao FIELD_LOCKED
+   - Se nativo: aplica **apenas** visibilidade (showIn* + `permissions`) e widthIn* do payload (demais campos sao ignorados silenciosamente) e retorna o campo atualizado sem reconstruir schema dinamico
+   - Se locked e nao-nativo: valida que somente visibilidade (showIn*/`permissions`)/widthIn* mudaram, senao FIELD_LOCKED
    - Verifica se e o ultimo campo ativo (nao pode enviar pra lixeira)
    - Gera novo slug via slugify(payload.name)
    - Normaliza group (string -> objeto {slug})
@@ -27,7 +27,7 @@ Atualiza um campo existente de uma tabela, incluindo nome, tipo, visibilidade e 
 4. Repository: TableContractRepository.findBy, TableContractRepository.update, FieldContractRepository.findBy, FieldContractRepository.update
 
 ## Regras de Negocio
-- Campos nativos: apenas visibilidade (showIn*) e largura (width*) sao aplicados; tentativas de mudar outros campos sao ignoradas (name, type, format, etc. preservam os valores armazenados)
+- Campos nativos: apenas visibilidade (showIn* + `permissions` por contexto) e largura (width*) sao aplicados; tentativas de mudar outros campos sao ignoradas (name, type, format, etc. preservam os valores armazenados)
 - Campos locked (nao-nativos): mesma restricao de nativos, mas implementada como validacao que retorna FIELD_LOCKED se houver mudanca nao permitida
 - Campos nativos nao podem ser enviados pra lixeira (retorna NATIVE_FIELD_CANNOT_BE_TRASHED)
 - Ultimo campo ativo nao pode ser enviado pra lixeira

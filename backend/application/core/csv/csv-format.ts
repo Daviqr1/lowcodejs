@@ -3,6 +3,10 @@ import { E_FIELD_TYPE, type IField } from '@application/core/entity.core';
 const HTML_TAG_REGEX = /<[^>]*>/g;
 const WHITESPACE_REGEX = /\s+/g;
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
 const stripHtml = (value: string): string => {
   return value
     .replace(HTML_TAG_REGEX, ' ')
@@ -47,7 +51,10 @@ export function formatCellValue(
 
   if (value instanceof Date) return value.toISOString();
 
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'boolean') {
+    if (value) return 'true';
+    return 'false';
+  }
 
   if (typeof value === 'number' || typeof value === 'bigint') {
     return String(value);
@@ -65,13 +72,14 @@ export function formatCellValue(
       .join('; ');
   }
 
-  if (typeof value === 'object') {
-    const obj = value as Record<string, unknown>;
+  if (isRecord(value)) {
+    const obj = value;
 
     if (context.fieldType === E_FIELD_TYPE.FILE) {
-      const filename =
-        typeof obj.originalName === 'string' ? obj.originalName : null;
-      const url = typeof obj.url === 'string' ? obj.url : null;
+      let filename: string | null = null;
+      if (typeof obj.originalName === 'string') filename = obj.originalName;
+      let url: string | null = null;
+      if (typeof obj.url === 'string') url = obj.url;
       if (context.preferUrlForFiles && url) return url;
       return filename ?? url ?? '';
     }

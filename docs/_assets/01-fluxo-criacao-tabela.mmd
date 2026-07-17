@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User as Usuario (MANAGER+)
+    participant API as POST /tables
+    participant TUC as create.use-case (table-base)
+    participant SYS as MongoDB system
+    participant FUC as POST /tables/:slug/fields
+    participant BUILD as buildTable()
+    participant DATA as MongoDB data
+    participant ROW as POST /tables/:slug/rows
+
+    User->>API: cria definicao da tabela (name, style, visibility...)
+    API->>TUC: TableAccessMiddleware CREATE_TABLE
+    TUC->>SYS: salva Table (_schema Mixed) + 5 campos nativos
+    Note over TUC,SYS: _id, creator, createdAt, trashed, trashedAt (FIELD_NATIVE_LIST)
+
+    User->>FUC: adiciona campo (type E_FIELD_TYPE, format, multiple...)
+    FUC->>SYS: salva Field + atualiza Table.fields/_schema
+
+    User->>ROW: cria registro (CREATE_ROW)
+    ROW->>BUILD: buildTable(table) gera model Mongoose runtime
+    BUILD->>DATA: cria/abre collection = table.slug
+    ROW->>DATA: validateRowPayload + insere documento

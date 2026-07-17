@@ -47,7 +47,8 @@ function getGroupFieldSlugs(group?: IGroupConfiguration): Set<string> {
 export function isForumTemplate(table?: ITable | null): boolean {
   if (!table) return false;
   const fields = asFields(table.fields);
-  const groups = Array.isArray(table.groups) ? table.groups : [];
+  let groups: NonNullable<typeof table.groups> = [];
+  if (Array.isArray(table.groups)) groups = table.groups;
   const messagesGroup = getGroupBySlug(groups, 'mensagens');
   const groupFieldSlugs = getGroupFieldSlugs(messagesGroup);
   const requiredGroupFields = ['mensagem-id', 'texto', 'autor', 'data'];
@@ -65,7 +66,8 @@ export function isForumTemplate(table?: ITable | null): boolean {
 export function isKanbanTemplate(table?: ITable | null): boolean {
   if (!table) return false;
   const fields = asFields(table.fields);
-  const groups = Array.isArray(table.groups) ? table.groups : [];
+  let groups: NonNullable<typeof table.groups> = [];
+  if (Array.isArray(table.groups)) groups = table.groups;
   const tasksGroup = getGroupBySlug(groups, 'tarefas');
   const commentsGroup = getGroupBySlug(groups, 'comentarios');
   const taskGroupSlugs = getGroupFieldSlugs(tasksGroup);

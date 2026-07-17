@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import slugify from 'slugify';
 
@@ -241,7 +240,7 @@ export default class MenuUpdateUseCase {
       }
 
       // If parent changed, recalculate order
-      const updatePayload: Record<string, unknown> = {
+      const updatePayload: RepositoryMenuUpdatePayload = {
         ...payload,
         slug: finalSlug,
       };
@@ -251,8 +250,8 @@ export default class MenuUpdateUseCase {
       }
 
       const currentParentId = getMenuId(existingMenu.parent);
-      const nextParentId =
-        payload.parent !== undefined ? payload.parent : currentParentId;
+      let nextParentId = currentParentId;
+      if (payload.parent !== undefined) nextParentId = payload.parent;
       const parentChanged =
         payload.parent !== undefined && payload.parent !== currentParentId;
 
@@ -276,10 +275,10 @@ export default class MenuUpdateUseCase {
         const siblingsWithoutCurrent = siblings.filter(
           (menu) => menu._id !== payload._id,
         );
-        const requestedOrder =
-          typeof updatePayload.order === 'number'
-            ? updatePayload.order
-            : siblingsWithoutCurrent.length;
+        let requestedOrder = siblingsWithoutCurrent.length;
+        if (typeof updatePayload.order === 'number') {
+          requestedOrder = updatePayload.order;
+        }
         const nextOrder = Math.min(
           Math.max(requestedOrder, 0),
           siblingsWithoutCurrent.length,
@@ -292,9 +291,7 @@ export default class MenuUpdateUseCase {
 
         updatePayload.order = nextOrder;
 
-        const updated = await this.menuRepository.update(
-          updatePayload as RepositoryMenuUpdatePayload,
-        );
+        const updated = await this.menuRepository.update(updatePayload);
 
         for (let index = 0; index < reorderedIds.length; index += 1) {
           const menuId = reorderedIds[index];
@@ -312,9 +309,7 @@ export default class MenuUpdateUseCase {
         return right(updated);
       }
 
-      const updated = await this.menuRepository.update(
-        updatePayload as RepositoryMenuUpdatePayload,
-      );
+      const updated = await this.menuRepository.update(updatePayload);
 
       if (payload.isInitial) {
         await this.menuRepository.setOnlyInitial(updated._id);

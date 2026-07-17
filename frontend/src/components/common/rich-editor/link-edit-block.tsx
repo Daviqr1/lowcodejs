@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-interface LinkEditBlockProps {
+type LinkEditBlockProps = {
   defaultUrl?: string;
   defaultText?: string;
   defaultTarget?: string;
   onSubmit: (url: string, text?: string, openInNewTab?: boolean) => void;
-}
+};
 
 export function LinkEditBlock({
   defaultUrl = '',

@@ -1,11 +1,12 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { ISetting } from '@application/core/entity.core';
+import { E_AI_LLM_PROVIDER } from '@application/core/entity.core';
+import type { ISetting, ITable } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
+import { projectAiSettingsFields } from '@application/services/llm/ai-setting-fields';
 
 type Response = Either<HTTPException, ISetting | Record<string, unknown>>;
 
@@ -17,7 +18,7 @@ const FORUM_TEMPLATE_ID = 'FORUM_TEMPLATE';
 const CALENDAR_TEMPLATE_ID = 'CALENDAR_TEMPLATE';
 
 function getKanbanTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -29,7 +30,7 @@ function getKanbanTemplateEntry(): Pick<
 }
 
 function getCardsTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -41,7 +42,7 @@ function getCardsTemplateEntry(): Pick<
 }
 
 function getMosaicTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -53,7 +54,7 @@ function getMosaicTemplateEntry(): Pick<
 }
 
 function getDocumentTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -65,7 +66,7 @@ function getDocumentTemplateEntry(): Pick<
 }
 
 function getForumTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -77,7 +78,7 @@ function getForumTemplateEntry(): Pick<
 }
 
 function getCalendarTemplateEntry(): Pick<
-  ISetting['MODEL_CLONE_TABLES'][number],
+  ITable,
   '_id' | 'name' | 'slug' | 'description'
 > {
   return {
@@ -108,6 +109,9 @@ export default class SettingShowUseCase {
           PAGINATION_PER_PAGE: 20,
           LOGO_SMALL_URL: null,
           LOGO_LARGE_URL: null,
+          LOGO_SMALL_DARK_URL: null,
+          LOGO_LARGE_DARK_URL: null,
+          LOGIN_BACKGROUND_URL: null,
           EMAIL_PROVIDER_HOST: null,
           EMAIL_PROVIDER_PORT: null,
           EMAIL_PROVIDER_USER: null,
@@ -118,7 +122,12 @@ export default class SettingShowUseCase {
           CHAT_HISTORY_ENABLED: false,
           MCP_SERVER_URL: null,
           MCP_SERVER_TOKEN: null,
+          MCP_LOWCODE_API_URL: null,
           OPENAI_MODEL: 'gpt-4.1-nano',
+          AI_LLM_PROVIDER: E_AI_LLM_PROVIDER.OPENAI,
+          LLM_API_KEY: null,
+          LLM_MODEL: 'gpt-4.1-nano',
+          LLM_BASE_URL: null,
           SETUP_COMPLETED: false,
           SETUP_CURRENT_STEP: 'admin',
           MODEL_CLONE_TABLES: [
@@ -132,8 +141,14 @@ export default class SettingShowUseCase {
         });
       }
 
+      let existingCloneTables: Array<string | ITable> = [];
+      if (Array.isArray(setting.MODEL_CLONE_TABLES)) {
+        existingCloneTables = setting.MODEL_CLONE_TABLES;
+      }
+
       return right({
         ...setting,
+        ...projectAiSettingsFields(setting),
         FILE_UPLOAD_ACCEPTED: setting.FILE_UPLOAD_ACCEPTED?.split(';') ?? [],
         MODEL_CLONE_TABLES: [
           getKanbanTemplateEntry(),
@@ -142,9 +157,7 @@ export default class SettingShowUseCase {
           getDocumentTemplateEntry(),
           getForumTemplateEntry(),
           getCalendarTemplateEntry(),
-          ...(Array.isArray(setting.MODEL_CLONE_TABLES)
-            ? setting.MODEL_CLONE_TABLES
-            : []),
+          ...existingCloneTables,
         ],
       });
     } catch (error) {

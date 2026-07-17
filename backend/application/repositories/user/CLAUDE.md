@@ -7,7 +7,7 @@ Repositorio da entidade User (usuarios do sistema).
 | Arquivo | Descricao |
 |---------|-----------|
 | `user-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `user-mongoose.repository.ts` | Implementacao com Mongoose |
+| `user.repository.ts` | Implementacao com Mongoose |
 | `user-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

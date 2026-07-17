@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/popover';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { ICategory, IField } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowCategoryFieldProps {
+type TableRowCategoryFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 function convertCategoriesToTreeNodes(
   categories: Array<ICategory>,
@@ -59,18 +60,18 @@ export function TableRowCategoryField({
     formField.state.meta.isTouched && !formField.state.meta.isValid;
   const errorId = `${formField.name}-error`;
 
-  const categories = field.category;
+  const categories = field.category ?? [];
   const treeData = convertCategoriesToTreeNodes(categories);
 
   const selectedIds = React.useMemo(() => {
-    const value = formField.state.value as unknown;
+    const value: unknown = formField.state.value;
     if (Array.isArray(value)) return value;
     if (value) return [String(value)];
     return [];
   }, [formField.state.value]);
 
   const selectedLabel = React.useMemo(() => {
-    const value = formField.state.value as unknown;
+    const value: unknown = formField.state.value;
     let values: Array<string> = [];
     if (Array.isArray(value)) {
       values = value;
@@ -107,7 +108,8 @@ export function TableRowCategoryField({
               !selectedLabel && 'text-muted-foreground',
             )}
           >
-            {selectedLabel || `Selecione ${field.name.toLowerCase()}`}
+            {selectedLabel ||
+              `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`}
           </Button>
         </PopoverTrigger>
         <PopoverContent

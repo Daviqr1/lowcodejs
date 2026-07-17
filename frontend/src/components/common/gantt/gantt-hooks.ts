@@ -15,7 +15,7 @@ import type { FieldMap } from '@/lib/kanban-types';
 
 // ─── Hook: drag de barras (mover, resize, troca de grupo) ───
 
-interface UseBarDragOptions {
+type UseBarDragOptions = {
   dayWidth: number;
   fields: FieldMap;
   tableSlug: string;
@@ -29,9 +29,9 @@ interface UseBarDragOptions {
     updateData: Record<string, unknown>,
     optimistic: (prev: Array<IRow>) => Array<IRow>,
   ) => void;
-}
+};
 
-interface UseBarDragReturn {
+type UseBarDragReturn = {
   dragState: DragState | null;
   dragDelta: number;
   dragDeltaY: number;
@@ -40,7 +40,7 @@ interface UseBarDragReturn {
     ganttRow: GanttRow,
     mode: DragMode,
   ) => void;
-}
+};
 
 export function useBarDrag({
   dayWidth,
@@ -141,9 +141,10 @@ export function useBarDrag({
           updateData[fields.startDate.slug] = newStart!.toISOString();
         if (fields.dueDate)
           updateData[fields.dueDate.slug] = newEnd!.toISOString();
-        if (hasGroupChange && fields.list)
-          updateData[fields.list.slug] =
-            newGroupId === '__none__' ? [] : [newGroupId];
+        if (hasGroupChange && fields.list) {
+          if (newGroupId === '__none__') updateData[fields.list.slug] = [];
+          else updateData[fields.list.slug] = [newGroupId];
+        }
 
         const optimistic = (prev: Array<IRow>): Array<IRow> =>
           prev.map((r) => {
@@ -153,9 +154,13 @@ export function useBarDrag({
               updated[fields.startDate.slug] = newStart!.toISOString();
             if (fields.dueDate)
               updated[fields.dueDate.slug] = newEnd!.toISOString();
-            if (hasGroupChange && fields.list)
-              updated[fields.list.slug] =
-                newGroupId === '__none__' ? [] : [newGroupId];
+            if (hasGroupChange && fields.list) {
+              let listValue: Array<string> = [];
+              if (newGroupId !== '__none__' && typeof newGroupId === 'string') {
+                listValue = [newGroupId];
+              }
+              updated[fields.list.slug] = listValue;
+            }
             return updated;
           });
 
@@ -190,19 +195,19 @@ export function useBarDrag({
 
 // ─── Hook: criar tarefa arrastando no timeline ───
 
-interface UseCreateDragOptions {
+type UseCreateDragOptions = {
   dayWidth: number;
   viewStart: Date;
   fields: FieldMap;
   tableSlug: string;
   timelineRef: React.RefObject<HTMLDivElement | null>;
   onCreate: (payload: Record<string, unknown>) => void;
-}
+};
 
-interface UseCreateDragReturn {
+type UseCreateDragReturn = {
   createDrag: CreateDragState | null;
   handleTimelineMouseDown: (e: React.MouseEvent, groupOptionId: string) => void;
-}
+};
 
 export function useCreateDrag({
   dayWidth,
@@ -220,18 +225,22 @@ export function useCreateDrag({
     e: React.MouseEvent,
     groupOptionId: string,
   ): void => {
-    if ((e.target as HTMLElement).closest('[data-gantt-bar]')) return;
+    if (e.target instanceof HTMLElement && e.target.closest('[data-gantt-bar]'))
+      return;
     if (!fields.startDate || !fields.dueDate) return;
+    if (!(e.currentTarget instanceof HTMLElement)) return;
 
-    const rowEl = e.currentTarget as HTMLElement;
+    const rowEl = e.currentTarget;
     const rect = rowEl.getBoundingClientRect();
     const x = e.clientX - rect.left + (timelineRef.current?.scrollLeft ?? 0);
 
     const rowsContainer = rowEl.closest('[data-gantt-rows]');
-    const rowTop = rowsContainer
-      ? rowEl.getBoundingClientRect().top -
-        rowsContainer.getBoundingClientRect().top
-      : rowEl.offsetTop;
+    let rowTop = rowEl.offsetTop;
+    if (rowsContainer) {
+      rowTop =
+        rowEl.getBoundingClientRect().top -
+        rowsContainer.getBoundingClientRect().top;
+    }
 
     setCreateDrag({
       groupOptionId,
@@ -251,7 +260,10 @@ export function useCreateDrag({
       const rect = timelineRef.current?.getBoundingClientRect();
       if (!rect) return;
       const x = e.clientX - rect.left + scrollLeft;
-      setCreateDrag((prev) => (prev ? { ...prev, currentX: x } : null));
+      setCreateDrag((prev) => {
+        if (prev) return { ...prev, currentX: x };
+        return null;
+      });
     };
 
     const handleMouseUp = (): void => {

@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupEmailSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Configurar provedor de email SMTP no setup wizard',
   description:
     'Define as credenciais SMTP para envio de emails. Etapa 6 (final) do setup wizard. Todos os campos são opcionais.',
@@ -67,7 +67,7 @@ export const SetupEmailSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -80,7 +80,7 @@ export const SetupEmailSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -119,7 +119,10 @@ export const SetupEmailSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SETUP_EMAIL_ERROR'] },
+        cause: {
+          type: 'string',
+          enum: ['SETUP_EMAIL_ERROR', 'SETUP_COMPLETE_FAILED'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

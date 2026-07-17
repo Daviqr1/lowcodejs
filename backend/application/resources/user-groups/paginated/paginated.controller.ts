@@ -1,7 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { UserGroupPaginatedSchema } from './paginated.schema';
 import UserGroupPaginatedUseCase from './paginated.use-case';
@@ -12,7 +14,6 @@ import { UserGroupPaginatedQueryValidator } from './paginated.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserGroupPaginatedUseCase = getInstanceByToken(
       UserGroupPaginatedUseCase,
     ),
@@ -25,6 +26,7 @@ export default class {
         AuthenticationMiddleware({
           optional: false,
         }),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS),
       ],
       schema: UserGroupPaginatedSchema,
     },

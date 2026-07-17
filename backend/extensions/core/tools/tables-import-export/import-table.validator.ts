@@ -40,6 +40,13 @@ export const ImportTableValidator = z.object({
       }),
     )
     .optional(),
+  /**
+   * Correlaciona a importação com o feed de progresso via WebSocket
+   * (`/table-import`). Gerado pelo cliente (UUID) e devolvido nos eventos
+   * `progress`/`completed`/`error`. Opcional — sem ele a importação roda
+   * normalmente, apenas sem emitir progresso.
+   */
+  jobId: z.string().trim().min(1).max(100).optional(),
   fileContent: z.object({}).loose(),
 });
 

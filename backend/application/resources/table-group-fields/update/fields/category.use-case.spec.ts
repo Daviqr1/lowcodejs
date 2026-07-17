@@ -1,30 +1,28 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import GroupFieldUpdateUseCase from '../update.use-case';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: GroupFieldUpdateUseCase;
 
 const TABLE_DEFAULTS = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -33,9 +31,7 @@ const FIELD_CREATE_PAYLOAD = {
   name: 'Categoria Item',
   slug: 'categoria-item',
   type: E_FIELD_TYPE.CATEGORY,
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -83,12 +79,14 @@ describe('Group Field Update - CATEGORY', () => {
   beforeEach(async () => {
     tableInMemoryRepository = new TableInMemoryRepository();
     fieldInMemoryRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new GroupFieldUpdateUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
     );
   });
 
@@ -115,9 +113,7 @@ describe('Group Field Update - CATEGORY', () => {
       name: 'Categoria Item',
       type: E_FIELD_TYPE.CATEGORY,
       required: false,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,
@@ -175,9 +171,7 @@ describe('Group Field Update - CATEGORY', () => {
       name: 'Categoria Item',
       type: E_FIELD_TYPE.CATEGORY,
       required: true,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,

@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircleIcon, DownloadIcon, LoaderCircleIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ITable } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 type ExportResponse = {
   header: { exportType: string; tablesCount: number; menusCount: number };
@@ -64,8 +64,8 @@ export function ExportTableSection(): React.JSX.Element {
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      const baseName =
-        slugs.length === 1 ? slugs[0] : `lowcodejs-${slugs.length}-tabelas`;
+      let baseName = `lowcodejs-${slugs.length}-tabelas`;
+      if (slugs.length === 1) baseName = slugs[0];
       link.href = url;
       link.download = `${baseName}-${exportType}-${new Date()
         .toISOString()
@@ -77,12 +77,11 @@ export function ExportTableSection(): React.JSX.Element {
 
       setMissingTables([]);
 
-      toastSuccess(
-        'Tabela(s) exportada(s) com sucesso!',
-        data.menus.length > 0
-          ? `${data.tables.length} tabela(s) e ${data.menus.length} item(ns) de menu incluídos`
-          : `${data.tables.length} tabela(s) baixada(s)`,
-      );
+      let description = `${data.tables.length} tabela(s) baixada(s)`;
+      if (data.menus.length > 0) {
+        description = `${data.tables.length} tabela(s) e ${data.menus.length} item(ns) de menu incluídos`;
+      }
+      toast.success('Tabela(s) exportada(s) com sucesso!', { description });
     },
     onError(error) {
       handleApiError(error, {
@@ -234,11 +233,8 @@ export function ExportTableSection(): React.JSX.Element {
               exportTable.mutate({ acknowledge: false });
             }}
           >
-            {isPending ? (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            ) : (
-              <DownloadIcon className="size-4" />
-            )}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <DownloadIcon className="size-4" />}
             <span>Exportar</span>
           </Button>
         </div>

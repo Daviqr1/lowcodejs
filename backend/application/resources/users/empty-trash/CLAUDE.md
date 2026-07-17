@@ -10,12 +10,12 @@ com `trashed=true` que não sejam donos de tabelas.
 ## Middleware
 
 1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER])`
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 
 ## Erros
 
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Não é MASTER |
+| 403 | FORBIDDEN | Sem capability MANAGE_USERS |
 | 500 | EMPTY_TRASH_USERS_ERROR | Erro interno |

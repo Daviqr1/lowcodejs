@@ -1,4 +1,6 @@
 import { CopyIcon, InfoIcon } from 'lucide-react';
+import type * as React from 'react';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,26 +10,26 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
-import { toastInfo } from '@/lib/toast';
+import type { Merge } from '@/lib/interfaces';
 
-interface ApiEndpoint {
+type ApiEndpoint = {
   method: string;
   path: string;
   description: string;
   params?: string;
-}
+};
 
-interface ApiEndpointsModalProps {
-  tableSlug: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+type ApiEndpointsModalProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  { tableSlug: string }
+>;
 
 export function ApiEndpointsModal({
+  ref,
   tableSlug,
-  open,
-  onOpenChange,
+  ...rest
 }: ApiEndpointsModalProps): React.JSX.Element {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -96,17 +98,17 @@ export function ApiEndpointsModal({
     const fullUrl = `${baseUrl}${endpoint.path}${endpoint.params || ''}`;
     navigator.clipboard.writeText(fullUrl);
 
-    toastInfo(
-      'Endpoint copiado',
-      'URL do endpoint foi copiada para a área de transferência',
-    );
+    toast.info('Endpoint copiado', {
+      description: 'URL do endpoint foi copiada para a área de transferência',
+    });
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="w-full sm:max-w-[85vw] max-h-[85vh] overflow-y-auto"
         data-test-id="api-endpoints-modal"

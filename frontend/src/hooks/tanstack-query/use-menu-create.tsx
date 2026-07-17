@@ -8,18 +8,21 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IMenu } from '@/lib/interfaces';
+import type { IMenu, Merge } from '@/lib/interfaces';
 import type { MenuCreatePayload } from '@/lib/payloads';
 
-type UseMenuCreateProps = Pick<
-  Omit<
-    UseMutationOptions<IMenu, AxiosError | Error, MenuCreatePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseMenuCreateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<IMenu, AxiosError | Error, MenuCreatePayload, unknown>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IMenu, variables: MenuCreatePayload) => void;
-};
+  {
+    onSuccess?: (data: IMenu, variables: MenuCreatePayload) => void;
+  }
+>;
 
 export function useCreateMenu(
   props: UseMenuCreateProps,

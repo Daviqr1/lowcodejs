@@ -12,7 +12,7 @@ Restaura um campo da lixeira, reabilitando visibilidade.
    - Busca tabela por slug exato
    - Busca campo por _id exato
    - Valida que campo esta na lixeira (trashed=true)
-   - Atualiza campo: showInList=true, showInForm=true, showInDetail=true, showInFilter=true, required=false, trashed=false, trashedAt=null
+   - Atualiza campo: `permissions=buildFieldPermissions(true,true,true)` (visivel em list/form/detail), showInFilter=true, required=false, trashed=false, trashedAt=null
    - Reconstroi lista de fields e _schema da tabela
    - Atualiza tabela
    - Retorna campo atualizado

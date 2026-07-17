@@ -86,6 +86,20 @@ export const CloneTableSchema: FastifySchema = {
         },
       },
     },
+    409: {
+      description: 'Conflict - Table with same slug already exists',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [409] },
+        cause: { type: 'string', enum: ['TABLE_ALREADY_EXISTS'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Field-specific validation errors',
+        },
+      },
+    },
     400: {
       description: 'Bad request - Zod validation failed',
       type: 'object',

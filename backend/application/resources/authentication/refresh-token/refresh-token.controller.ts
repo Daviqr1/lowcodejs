@@ -1,10 +1,14 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { setCookieTokens } from '@application/utils/cookies.util';
+import {
+  getActiveAccountId,
+  getRequestCookie,
+  REFRESH_TOKEN_COOKIE,
+  setActiveSession,
+} from '@application/utils/cookies.util';
 import { createTokens } from '@application/utils/jwt.util';
 
 import { RefreshTokenSchema } from './refresh-token.schema';
@@ -33,7 +37,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     try {
-      const refreshToken = request.cookies.refreshToken;
+      const refreshToken = getRequestCookie(request, REFRESH_TOKEN_COOKIE);
 
       if (!refreshToken) {
         return response.status(401).send({
@@ -46,9 +50,12 @@ export default class {
       const refreshTokenDecoded: IJWTPayload | null =
         await request.server.jwt.decode(refreshToken);
 
+      const activeAccountId = getActiveAccountId(request);
+
       if (
         !refreshTokenDecoded ||
-        refreshTokenDecoded.type !== E_JWT_TYPE.REFRESH
+        refreshTokenDecoded.type !== E_JWT_TYPE.REFRESH ||
+        (activeAccountId && refreshTokenDecoded.sub !== activeAccountId)
       ) {
         return response.status(401).send({
           message: 'Invalid or expired refresh token',
@@ -74,10 +81,10 @@ export default class {
 
       const tokens = await createTokens(result.value, response);
 
-      setCookieTokens(response, { ...tokens });
+      setActiveSession(response, refreshTokenDecoded.sub, { ...tokens });
 
       return response.status(200).send();
-    } catch (error) {
+    } catch (_error) {
       return response.status(401).send({
         message: 'Invalid or expired refresh token',
         code: 401,

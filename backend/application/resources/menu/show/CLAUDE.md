@@ -3,7 +3,7 @@
 Exibe um menu pelo ID, incluindo seus filhos diretos.
 
 ## Endpoint
-`GET /menu/:_id` | Auth: Yes | Permission: nenhuma especifica
+`GET /menu/:_id` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

@@ -10,20 +10,33 @@ CRUD completo de itens de menu com suporte a hierarquia (parent/children), send-
 
 | Operacao | Metodo | Rota | Permissao |
 |----------|--------|------|-----------|
-| create | POST | `/menu` | Auth only |
-| list | GET | `/menu` | Auth only |
-| paginated | GET | `/menu/paginated` | Auth only |
-| export-csv | GET | `/menu/exports/csv` | MASTER/ADMINISTRATOR (cap 500.000 linhas) |
-| show | GET | `/menu/:_id` | Auth only |
-| update | PATCH | `/menu/:_id` | Auth only |
-| send-to-trash | PATCH | `/menu/:_id/trash` | Auth only (soft delete) |
-| delete | DELETE | `/menu/:_id` | Auth only (exclusao permanente) |
-| remove-from-trash | PATCH | `/menu/:_id/restore` | Auth only |
-| reorder | PATCH | `/menu/reorder` | Auth only |
+| create | POST | `/menu` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| list | GET | `/menu` | Auth only (feed da sidebar; filtragem por visibilidade no use-case) |
+| paginated | GET | `/menu/paginated` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| export-csv | GET | `/menu/exports/csv` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` (cap 500.000 linhas) |
+| show | GET | `/menu/:_id` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| update | PATCH | `/menu/:_id` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| send-to-trash | PATCH | `/menu/:_id/trash` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` (soft delete) |
+| delete | DELETE | `/menu/:_id` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` (exclusao permanente) |
+| remove-from-trash | PATCH | `/menu/:_id/restore` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| reorder | PATCH | `/menu/reorder` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| bulk-trash | PATCH | `/menu/bulk-trash` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| bulk-restore | PATCH | `/menu/bulk-restore` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| bulk-delete | DELETE | `/menu/bulk-delete` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
+| empty-trash | DELETE | `/menu/empty-trash` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` |
 
 ## Middlewares Comuns
 
-1. `AuthenticationMiddleware({ optional: false })`
+1. `AuthenticationMiddleware({ optional: false })` — sempre roda primeiro
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)` — em todas as operacoes
+   **exceto** `list`
+
+`list` e a unica operacao AUTH-ONLY (sem `PermissionMiddleware`): e o feed de
+navegacao da sidebar consumido por qualquer usuario autenticado. A restricao de
+acesso acontece no proprio `list.use-case.ts`, que FILTRA os menus retornados
+pelo binding de `visibility` de cada item (Grupo|Public|Nobody), de forma
+ancestor-aware ("pai oculto esconde a subarvore"), com bypass para MASTER e
+ADMINISTRATOR — espelhando o `isMenuVisible` do frontend.
 
 Nao usa TableAccessMiddleware (nao e recurso de tabela).
 

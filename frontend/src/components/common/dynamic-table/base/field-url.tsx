@@ -8,12 +8,12 @@ import {
 } from '@/components/ui/input-group';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldUrlProps {
+type FieldUrlProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function FieldUrl({
   label,

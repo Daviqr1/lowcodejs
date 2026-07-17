@@ -1,7 +1,7 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
+import type { RowPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 
@@ -33,11 +33,16 @@ export default class {
       schema: GroupRowUpdateSchema,
     },
   })
-  async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
+  async handle(
+    request: FastifyRequest<{ Body: RowPayload }>,
+    response: FastifyReply,
+  ): Promise<void> {
     const params = GroupRowUpdateParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
-      ...(request.body as Record<string, any>),
+      ...request.body,
       ...params,
+      ...(request?.user?.sub && { __actorUserId: request.user.sub }),
+      ...(request.ownership?.ownOnly && { __ownOnly: true }),
     });
 
     if (result.isLeft()) {

@@ -16,7 +16,7 @@ import type { IDropdown, IUser } from '@/lib/interfaces';
 import { getUserInitials } from '@/lib/kanban-helpers';
 import { cn } from '@/lib/utils';
 
-interface GanttToolbarProps {
+type GanttToolbarProps = {
   zoom: ZoomLevel;
   onZoomChange: (level: ZoomLevel) => void;
   onPrev: () => void;
@@ -28,7 +28,7 @@ interface GanttToolbarProps {
   onFilterMemberChange: (id: string | null) => void;
   listOptions: Array<IDropdown>;
   allMembers: Array<IUser>;
-}
+};
 
 export function GanttToolbar({
   zoom,
@@ -75,7 +75,7 @@ export function GanttToolbar({
       <div
         data-slot="gantt-toolbar"
         data-test-id="gantt-toolbar"
-        className="flex items-center gap-2 border-b px-3 py-2"
+        className="flex flex-wrap items-center gap-2 border-b px-3 py-2"
       >
         <GanttChartIcon className="size-4 text-muted-foreground" />
         <span className="text-sm font-medium">Gantt</span>
@@ -147,7 +147,7 @@ export function GanttToolbar({
         )}
 
         <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
-          {(['day', 'week', 'month'] as Array<ZoomLevel>).map((level) => (
+          {(['day', 'week', 'month'] as const).map((level) => (
             <Button
               key={level}
               type="button"
@@ -164,7 +164,7 @@ export function GanttToolbar({
 
       {/* Barra de filtros */}
       {showFilters && (
-        <div className="flex items-center gap-3 border-b bg-muted/20 px-3 py-1.5">
+        <div className="flex flex-wrap items-center gap-3 border-b bg-muted/20 px-3 py-1.5">
           {/* Filtro de status */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Status:</span>

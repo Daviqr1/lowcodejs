@@ -1,8 +1,7 @@
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router';
 import { ImageIcon } from 'lucide-react';
 import React, { useState } from 'react';
-
-import { Stepper } from '../-stepper';
+import { toast } from 'sonner';
 
 import { FileUploadWithStorage } from '@/components/common/file-upload';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,6 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { useSetupSubmitLogos } from '@/hooks/tanstack-query/use-setup-submit-logos';
 import type { IStorage } from '@/lib/interfaces';
-import { toastError, toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/setup/logos/')({
   component: SetupLogosPage,
@@ -32,7 +30,7 @@ function SetupLogosPage(): React.JSX.Element {
 
   const mutation = useSetupSubmitLogos({
     onSuccess: (data) => {
-      toastSuccess('Etapa concluída');
+      toast.success('Etapa concluída');
       if (data.completed) {
         router.navigate({ to: '/' });
       } else if (data.currentStep) {
@@ -40,7 +38,7 @@ function SetupLogosPage(): React.JSX.Element {
       }
     },
     onError: () => {
-      toastError('Erro ao salvar');
+      toast.error('Erro ao salvar');
     },
   });
 
@@ -53,75 +51,74 @@ function SetupLogosPage(): React.JSX.Element {
   }
 
   return (
-    <>
-      <Stepper currentStep="logos" />
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="size-5" />
-            Logos
-          </CardTitle>
-          <CardDescription>
-            Configure os logos da plataforma (opcional — pode ser feito depois
-            em Configurações)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
+    <Card className="border-0 shadow-none">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ImageIcon className="size-5" />
+          Logos
+        </CardTitle>
+        <CardDescription className="text-pretty">
+          Configure os logos da plataforma (opcional — pode ser feito depois em
+          Configurações)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 stagger-children"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field>
+              <FieldLabel>Logo Pequeno</FieldLabel>
+              <FileUploadWithStorage
+                value={logoSmallFiles}
+                onValueChange={setLogoSmallFiles}
+                onStorageChange={(storages: Array<IStorage>) => {
+                  if (storages[0]?.url) {
+                    setLogoSmallUrl(storages[0].url);
+                  }
+                }}
+                accept="image/*"
+                maxFiles={1}
+                maxSize={4 * 1024 * 1024}
+                placeholder="Arraste ou selecione o logo pequeno"
+                shouldDeleteFromStorage={false}
+                staticName="logo-small"
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel>Logo Grande</FieldLabel>
+              <FileUploadWithStorage
+                value={logoLargeFiles}
+                onValueChange={setLogoLargeFiles}
+                onStorageChange={(storages: Array<IStorage>) => {
+                  if (storages[0]?.url) {
+                    setLogoLargeUrl(storages[0].url);
+                  }
+                }}
+                accept="image/*"
+                maxFiles={1}
+                maxSize={4 * 1024 * 1024}
+                placeholder="Arraste ou selecione o logo grande"
+                shouldDeleteFromStorage={false}
+                staticName="logo-large"
+              />
+            </Field>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full transition-transform hover:-translate-y-px hover:shadow-soft active:translate-y-0"
+            disabled={mutation.status === 'pending'}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel>Logo Pequeno</FieldLabel>
-                <FileUploadWithStorage
-                  value={logoSmallFiles}
-                  onValueChange={setLogoSmallFiles}
-                  onStorageChange={(storages: Array<IStorage>) => {
-                    if (storages[0]?.url) {
-                      setLogoSmallUrl(storages[0].url);
-                    }
-                  }}
-                  accept="image/*"
-                  maxFiles={1}
-                  maxSize={4 * 1024 * 1024}
-                  placeholder="Arraste ou selecione o logo pequeno"
-                  shouldDeleteFromStorage={false}
-                  staticName="logo-small"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>Logo Grande</FieldLabel>
-                <FileUploadWithStorage
-                  value={logoLargeFiles}
-                  onValueChange={setLogoLargeFiles}
-                  onStorageChange={(storages: Array<IStorage>) => {
-                    if (storages[0]?.url) {
-                      setLogoLargeUrl(storages[0].url);
-                    }
-                  }}
-                  accept="image/*"
-                  maxFiles={1}
-                  maxSize={4 * 1024 * 1024}
-                  placeholder="Arraste ou selecione o logo grande"
-                  shouldDeleteFromStorage={false}
-                  staticName="logo-large"
-                />
-              </Field>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={mutation.status === 'pending'}
-            >
-              {mutation.status === 'pending' && <Spinner />}
-              Salvar e continuar
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </>
+            {mutation.status === 'pending' && <Spinner />}
+            {!(mutation.status === 'pending') && (
+              <span>Salvar e continuar</span>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

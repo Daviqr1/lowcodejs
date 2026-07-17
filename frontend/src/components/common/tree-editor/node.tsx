@@ -7,7 +7,7 @@ import type { TreeNode as TreeNodeType } from './use-tree';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface TreeNodeProps {
+type TreeNodeProps = {
   node: TreeNodeType;
   level: number;
   isSelected: boolean;
@@ -20,7 +20,7 @@ interface TreeNodeProps {
   allowAdd: boolean;
   isMulti: boolean;
   creationMode?: boolean;
-}
+};
 
 export function TreeNodeComponent({
   node,

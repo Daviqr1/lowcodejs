@@ -1,22 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
   E_USER_STATUS,
   type IField,
   type IGroupConfiguration,
-  type IRow,
   type ITable,
-  type IUser,
+  type Merge,
 } from '@application/core/entity.core';
+import { makeRow, makeUser } from '@application/repositories/entity-fixtures';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailService from '@application/services/email/in-memory-email.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
+import { groupItems } from '@test/helpers/row-data.helper';
 
 import KanbanCommentMentionService from './kanban-comment-mention.service';
 
 function makeField(
-  partial: Partial<IField> & Pick<IField, 'slug' | 'type'>,
+  partial: Merge<Partial<IField>, Pick<IField, 'slug' | 'type'>>,
 ): IField {
   return {
     _id: partial._id ?? `field-${partial.slug}`,
@@ -26,9 +28,7 @@ function makeField(
     required: partial.required ?? false,
     multiple: partial.multiple ?? false,
     format: partial.format ?? null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -44,7 +44,7 @@ function makeField(
     updatedAt: new Date(),
     trashed: false,
     trashedAt: null,
-  } as unknown as IField;
+  };
 }
 
 function makeKanbanTable(): ITable {
@@ -80,10 +80,9 @@ function makeKanbanTable(): ITable {
     logo: null,
     type: 'TABLE',
     style: 'KANBAN',
-    visibility: 'RESTRICTED',
-    collaboration: 'RESTRICTED',
-    administrators: [],
-    owner: { _id: 'owner-1' } as IUser,
+    permissions: null,
+    members: [],
+    owner: makeUser('owner-1'),
     fields: [titulo],
     groups: [commentsGroup],
     fieldOrderList: [],
@@ -97,6 +96,7 @@ function makeKanbanTable(): ITable {
     },
     order: null,
     _schema: {},
+    rowSlugFieldId: null,
     layoutFields: {
       title: null,
       description: null,
@@ -112,7 +112,7 @@ function makeKanbanTable(): ITable {
     updatedAt: new Date(),
     trashed: false,
     trashedAt: null,
-  } as unknown as ITable;
+  };
 }
 
 let userRepository: UserInMemoryRepository;
@@ -136,8 +136,8 @@ describe('KanbanCommentMentionService', () => {
     const table = {
       ...makeKanbanTable(),
       groups: [],
-    } as unknown as ITable;
-    const row = { _id: 'row-1' } as unknown as IRow;
+    };
+    const row = makeRow({ _id: 'row-1' });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -149,7 +149,7 @@ describe('KanbanCommentMentionService', () => {
 
   it('retorna changed=false quando comentários vazios', async () => {
     const table = makeKanbanTable();
-    const row = { _id: 'row-1', comentarios: [] } as unknown as IRow;
+    const row = makeRow({ _id: 'row-1', comentarios: [] });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -167,7 +167,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [user1] = userRepository.items;
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -176,7 +176,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': JSON.stringify([user1._id]),
         },
       ],
-    } as unknown as IRow;
+    });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -195,7 +195,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [author] = userRepository.items;
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -204,7 +204,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': '[]',
         },
       ],
-    } as unknown as IRow;
+    });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -229,7 +229,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [maria, joao] = userRepository.items;
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       titulo: 'Card de teste',
       comentarios: [
@@ -239,7 +239,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': '[]',
         },
       ],
-    } as unknown as IRow;
+    });
 
     const result = await sut.notifyNewMentions({
       table,
@@ -249,10 +249,8 @@ describe('KanbanCommentMentionService', () => {
 
     expect(result.changed).toBe(true);
     expect(result.data?.comentarios).toBeDefined();
-    const updatedItem = (
-      result.data!.comentarios as Array<Record<string, any>>
-    )[0];
-    const notifiedIds = JSON.parse(updatedItem['mencoes-notificadas']);
+    const updatedItem = groupItems(result.data!, 'comentarios')[0];
+    const notifiedIds = JSON.parse(String(updatedItem['mencoes-notificadas']));
     expect(new Set(notifiedIds)).toEqual(new Set([maria._id, joao._id]));
 
     const sentEmail = emailService.getLastEmail();
@@ -278,7 +276,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [maria, joao] = userRepository.items;
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       titulo: 'Card',
       comentarios: [
@@ -288,7 +286,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': JSON.stringify([maria._id]),
         },
       ],
-    } as unknown as IRow;
+    });
 
     await sut.notifyNewMentions({ table, row, actorUserId: 'actor' });
 
@@ -308,7 +306,7 @@ describe('KanbanCommentMentionService', () => {
     inactive.status = E_USER_STATUS.INACTIVE;
 
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -317,7 +315,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': '[]',
         },
       ],
-    } as unknown as IRow;
+    });
 
     const result = await sut.notifyNewMentions({
       table,
@@ -340,7 +338,7 @@ describe('KanbanCommentMentionService', () => {
     emailService.simulateError('sendEmail', new Error('SMTP off'));
 
     const table = makeKanbanTable();
-    const row = {
+    const row = makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -349,7 +347,7 @@ describe('KanbanCommentMentionService', () => {
           'mencoes-notificadas': '[]',
         },
       ],
-    } as unknown as IRow;
+    });
 
     await expect(
       sut.notifyNewMentions({ table, row, actorUserId: 'actor' }),

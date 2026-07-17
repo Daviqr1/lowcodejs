@@ -1,9 +1,9 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import slugify from 'slugify';
 
 import { left, right } from '@application/core/either.core';
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
   FIELD_NATIVE_LIST,
   type IField,
@@ -18,7 +18,7 @@ import {
   TableContractRepository,
   TableCreatePayload,
 } from '@application/repositories/table/table-contract.repository';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import {
   CALENDAR_TEMPLATE_ID,
@@ -58,7 +58,7 @@ export default class CloneTableUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
     private readonly rowRepository: RowContractRepository,
-    private readonly tableSchemaService: TableSchemaContractService,
+    private readonly schemaBuilder: SchemaBuilderContractService,
   ) {}
 
   private getTemplateDeps(): CloneTableDeps {
@@ -66,7 +66,7 @@ export default class CloneTableUseCase {
       tableRepository: this.tableRepository,
       fieldRepository: this.fieldRepository,
       rowRepository: this.rowRepository,
-      tableSchemaService: this.tableSchemaService,
+      schemaBuilder: this.schemaBuilder,
     };
   }
 
@@ -79,6 +79,24 @@ export default class CloneTableUseCase {
             'OWNER_ID_REQUIRED',
           ),
         );
+      }
+
+      if (!payload.baseTableIds?.length) {
+        const slug = slugify(payload.name, {
+          lower: true,
+          strict: true,
+          trim: true,
+        });
+        const existingTable = await this.tableRepository.findBySlug(slug);
+        if (existingTable) {
+          return left(
+            HTTPException.Conflict(
+              'Já existe uma tabela com este nome',
+              'TABLE_ALREADY_EXISTS',
+              { name: 'Já existe uma tabela com este nome' },
+            ),
+          );
+        }
       }
 
       const templateDeps = this.getTemplateDeps();
@@ -107,11 +125,13 @@ export default class CloneTableUseCase {
         return await createCalendarTemplate(payload, templateDeps);
       }
 
-      const requestedBaseTableIds = payload.baseTableIds?.length
-        ? [...new Set(payload.baseTableIds)]
-        : payload.baseTableId
-          ? [payload.baseTableId]
-          : [];
+      let requestedBaseTableIds: string[] = [];
+      if (payload.baseTableIds?.length) {
+        requestedBaseTableIds = [...new Set(payload.baseTableIds)];
+      }
+      if (!payload.baseTableIds?.length && payload.baseTableId) {
+        requestedBaseTableIds = [payload.baseTableId];
+      }
       const baseTables = await this.expandTablesWithRelationships(
         requestedBaseTableIds,
       );
@@ -158,13 +178,12 @@ export default class CloneTableUseCase {
         table: firstContext.table,
         tables: remappedContexts.map((context) => context.table),
         fieldIdMap: firstContext.fieldIdMap,
-        fieldIdMaps: remappedContexts.reduce(
-          (acc, context) => {
-            acc[context.baseTable._id] = context.fieldIdMap;
-            return acc;
-          },
-          {} as Record<string, Record<string, string>>,
-        ),
+        fieldIdMaps: remappedContexts.reduce<
+          Record<string, Record<string, string>>
+        >((acc, context) => {
+          acc[context.baseTable._id] = context.fieldIdMap;
+          return acc;
+        }, {}),
       });
     } catch (error) {
       if (error instanceof HTTPException) {
@@ -222,7 +241,7 @@ export default class CloneTableUseCase {
       combinedFieldIdMap,
     );
 
-    const _schema = this.tableSchemaService.computeSchema(
+    const _schema = this.schemaBuilder.build(
       [...nativeFields, ...clonedFields],
       clonedGroups,
     );
@@ -256,9 +275,8 @@ export default class CloneTableUseCase {
       logo: baseTable.logo?._id ?? null,
       fields: [...nativeFieldIds, ...newFieldIds],
       style: baseTable.style,
-      visibility: baseTable.visibility,
-      collaboration: baseTable.collaboration,
-      administrators: baseTable.administrators.flatMap((a) => a._id),
+      permissions: baseTable.permissions,
+      members: baseTable.members,
       owner: ownerId,
       fieldOrderList: orderList,
       fieldOrderForm: orderForm,
@@ -356,9 +374,9 @@ export default class CloneTableUseCase {
         required: field.required,
         multiple: field.multiple,
         format: field.format,
-        showInList: field.showInList,
-        showInForm: field.showInForm,
-        showInDetail: field.showInDetail,
+        validations: field.validations,
+        permissions:
+          field.permissions ?? buildFieldPermissions(true, true, true),
         showInFilter: field.showInFilter,
         defaultValue: field.defaultValue,
         locked: field.locked,
@@ -416,10 +434,22 @@ export default class CloneTableUseCase {
   ): ILayoutFields | undefined {
     if (!layoutFields) return undefined;
 
-    return Object.entries(layoutFields).reduce((acc, [key, value]) => {
-      acc[key as keyof ILayoutFields] = value ? (map[value] ?? null) : null;
-      return acc;
-    }, {} as ILayoutFields);
+    const remap = (value: string | null): string | null => {
+      if (!value) return null;
+      return map[value] ?? null;
+    };
+
+    return {
+      title: remap(layoutFields.title),
+      description: remap(layoutFields.description),
+      cover: remap(layoutFields.cover),
+      category: remap(layoutFields.category),
+      startDate: remap(layoutFields.startDate),
+      endDate: remap(layoutFields.endDate),
+      color: remap(layoutFields.color),
+      participants: remap(layoutFields.participants),
+      reminder: remap(layoutFields.reminder),
+    };
   }
 
   private async buildCloneName({
@@ -432,11 +462,9 @@ export default class CloneTableUseCase {
     usePrefix: boolean;
   }): Promise<string> {
     const trimmedName = name.trim();
-    const candidate = usePrefix
-      ? trimmedName
-        ? `${trimmedName}${baseName}`
-        : `Clone de ${baseName}`
-      : trimmedName || `Clone de ${baseName}`;
+    let candidate = trimmedName || `Clone de ${baseName}`;
+    if (usePrefix && trimmedName) candidate = `${trimmedName}${baseName}`;
+    if (usePrefix && !trimmedName) candidate = `Clone de ${baseName}`;
 
     return this.ensureUniqueTableName(candidate);
   }
@@ -470,9 +498,9 @@ export default class CloneTableUseCase {
       contexts.map((context) => [context.baseTable._id, context.table]),
     );
 
-    const fieldIdMap = contexts.reduce(
+    const fieldIdMap = contexts.reduce<Record<string, string>>(
       (acc, context) => ({ ...acc, ...context.fieldIdMap }),
-      {} as Record<string, string>,
+      {},
     );
 
     const refreshedContexts: CloneContext[] = [];
@@ -539,16 +567,16 @@ export default class CloneTableUseCase {
       const refreshedGroups = context.groups.map((group) => {
         const fields = group.fields
           .map((field) => refreshedFieldsById.get(field._id) ?? field)
-          .filter(Boolean) as IField[];
+          .filter((field): field is IField => Boolean(field));
 
         return {
           ...group,
           fields,
-          _schema: this.tableSchemaService.computeSchema(fields),
+          _schema: this.schemaBuilder.build(fields),
         };
       });
 
-      const updatedSchema = this.tableSchemaService.computeSchema(
+      const updatedSchema = this.schemaBuilder.build(
         refreshedFields,
         refreshedGroups,
       );
@@ -784,9 +812,9 @@ export default class CloneTableUseCase {
           required: field.required,
           multiple: field.multiple,
           format: field.format,
-          showInList: field.showInList,
-          showInForm: field.showInForm,
-          showInDetail: field.showInDetail,
+          validations: field.validations,
+          permissions:
+            field.permissions ?? buildFieldPermissions(true, true, true),
           showInFilter: field.showInFilter,
           defaultValue: field.defaultValue,
           locked: field.locked,
@@ -809,7 +837,7 @@ export default class CloneTableUseCase {
         slug: group.slug,
         name: group.name,
         fields: groupFields,
-        _schema: this.tableSchemaService.computeSchema(groupFields),
+        _schema: this.schemaBuilder.build(groupFields),
       });
     }
 

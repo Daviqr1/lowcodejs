@@ -13,7 +13,6 @@ import { TableCreateBodyValidator } from './create.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TableCreateUseCase = getInstanceByToken(
       TableCreateUseCase,
     ),

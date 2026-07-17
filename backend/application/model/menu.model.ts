@@ -2,11 +2,29 @@ import mongoose from 'mongoose';
 
 import {
   E_MENU_ITEM_TYPE,
+  E_PERMISSION_TARGET,
   Merge,
   type IMenu as Core,
 } from '@application/core/entity.core';
 
 type Entity = Merge<Omit<Core, '_id'>, mongoose.Document>;
+
+// Visibilidade da opção de menu (Grupo|Public|Nobody).
+const MenuVisibility = new mongoose.Schema(
+  {
+    kind: {
+      type: String,
+      enum: Object.values(E_PERMISSION_TARGET),
+      default: E_PERMISSION_TARGET.PUBLIC,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserGroup',
+      default: null,
+    },
+  },
+  { _id: false },
+);
 
 export const Schema = new mongoose.Schema(
   {
@@ -72,6 +90,9 @@ export const Schema = new mongoose.Schema(
     order: { type: Number, default: 0 },
     isInitial: { type: Boolean, default: false },
 
+    /** Visibilidade da opção (Grupo|Public|Nobody). null = legado (visível). */
+    visibility: { type: MenuVisibility, default: null },
+
     trashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },
   },
@@ -87,5 +108,5 @@ Schema.index({ isInitial: 1 });
 // Schema.index({ slug: 1 }, { unique: true });
 // Schema.index({ trashed: 1 });
 
-export const Menu = (mongoose?.models?.Menu ||
-  mongoose.model<Entity>('Menu', Schema, 'menus')) as mongoose.Model<Entity>;
+export const Menu: mongoose.Model<Entity> =
+  mongoose?.models?.Menu || mongoose.model<Entity>('Menu', Schema, 'menus');

@@ -12,14 +12,14 @@ import {
 import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-tables-read-paginated-infinite';
 import type { ITable } from '@/lib/interfaces';
 
-interface TableComboboxProps {
+type TableComboboxProps = {
   value?: string;
   onValueChange?: (value: string, slug?: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   excludeSlug?: string;
-}
+};
 
 export function TableCombobox({
   value = '',

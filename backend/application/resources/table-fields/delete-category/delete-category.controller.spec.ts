@@ -2,21 +2,22 @@ import supertest from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
-import { buildSchema } from '@application/core/util.core';
 import { Field } from '@application/model/field.model';
 import { Table } from '@application/model/table.model';
 import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { FieldCreatePayload } from '@application/repositories/field/field-contract.repository';
 import { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
+import MongooseSchemaBuilder from '@application/services/table/schema-builder.service';
 import { kernel } from '@start/kernel';
 import { createAuthenticatedUser } from '@test/helpers/auth.helper';
+
+const schemaBuilder = new MongooseSchemaBuilder();
 
 async function makeDocumentTableWithCategory(ownerId: string): Promise<{
   field: InstanceType<typeof Field>;
@@ -34,11 +35,9 @@ async function makeDocumentTableWithCategory(ownerId: string): Promise<{
     dropdown: [],
     defaultValue: null,
     showInFilter: true,
-    showInForm: true,
-    showInDetail: true,
     format: null,
     group: null,
-    showInList: true,
+    permissions: buildFieldPermissions(true, true, true),
     locked: false,
     allowCreateRelationshipRecords: false,
     multiple: true,
@@ -56,16 +55,15 @@ async function makeDocumentTableWithCategory(ownerId: string): Promise<{
 
   const tablePayload: TableCreatePayload = {
     owner: ownerId,
-    administrators: [],
-    collaboration: E_TABLE_COLLABORATION.OPEN,
     fieldOrderForm: [],
     fieldOrderList: [],
     style: E_TABLE_STYLE.DOCUMENT,
-    visibility: E_TABLE_VISIBILITY.PUBLIC,
     name: 'Artigos',
     slug: 'artigos',
     fields: [field._id.toString()],
-    _schema: buildSchema([{ ...field.toJSON(), _id: field._id.toString() }]),
+    _schema: schemaBuilder.build([
+      { ...field.toJSON(), _id: field._id.toString() },
+    ]),
     description: 'Artigos',
     logo: null,
     methods: {

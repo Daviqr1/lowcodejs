@@ -12,11 +12,21 @@ export const ManifestRequiresSchema = z
   .strict()
   .optional();
 
+/**
+ * Placement para PLUGIN.
+ *
+ * Pode ser:
+ * - `{ slots: string[] }` — plugin de UI injetado em placeholders do core
+ * - `{ kind: 'row-access-guard' }` — plugin que intercepta comportamento do core
+ *
+ * Plugins com `kind` não aparecem em slots de UI mas registram um contrato
+ * de guard no RowAccessGuardService.
+ */
 export const ManifestPlacementSchema = z
-  .object({
-    slots: z.array(z.string().min(1)).min(1),
-  })
-  .strict()
+  .union([
+    z.object({ slots: z.array(z.string().min(1)).min(1) }).strict(),
+    z.object({ kind: z.literal('row-access-guard') }).strict(),
+  ])
   .optional();
 
 export const ManifestPermissionsSchema = z

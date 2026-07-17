@@ -9,16 +9,16 @@ const iconMap = {
   user_created: Users,
 } as const;
 
-interface ActivityItem {
+type ActivityItem = {
   id: string;
   type: 'table_created' | 'user_created';
   description: string;
   time: string;
-}
+};
 
-interface RecentActivityProps {
+type RecentActivityProps = {
   data: Array<ActivityItem>;
-}
+};
 
 export function RecentActivity({
   data,

@@ -33,7 +33,7 @@ describe('Group Row Create - DROPDOWN', () => {
   });
 
   it('deve criar item no grupo com array de strings valido', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -51,12 +51,12 @@ describe('Group Row Create - DROPDOWN', () => {
       slug: 'pedidos',
       rowId: row._id,
       groupSlug: 'itens',
-      status: ['Ativo'],
+      situacao: ['Ativo'],
     });
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.status).toEqual(['Ativo']);
+    expect(result.value.situacao).toEqual(['Ativo']);
   });
 
   it('deve criar item com multiplas opcoes selecionadas', async () => {
@@ -90,7 +90,7 @@ describe('Group Row Create - DROPDOWN', () => {
   });
 
   it('deve rejeitar quando valor nao e array', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -108,7 +108,7 @@ describe('Group Row Create - DROPDOWN', () => {
       slug: 'pedidos',
       rowId: row._id,
       groupSlug: 'itens',
-      status: 'Ativo',
+      situacao: 'Ativo',
     });
 
     expect(result.isLeft()).toBe(true);
@@ -117,7 +117,7 @@ describe('Group Row Create - DROPDOWN', () => {
   });
 
   it('deve rejeitar quando itens nao sao strings', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -135,7 +135,7 @@ describe('Group Row Create - DROPDOWN', () => {
       slug: 'pedidos',
       rowId: row._id,
       groupSlug: 'itens',
-      status: [123, 456],
+      situacao: [123, 456],
     });
 
     expect(result.isLeft()).toBe(true);
@@ -145,7 +145,7 @@ describe('Group Row Create - DROPDOWN', () => {
 
   it('deve rejeitar quando required e valor ausente', async () => {
     const field = makeDropdownField(DROPDOWN_OPTIONS, {
-      slug: 'status',
+      slug: 'situacao',
       required: true,
     });
     const table = await makeTableWithGroup(
@@ -170,12 +170,12 @@ describe('Group Row Create - DROPDOWN', () => {
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');
     expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-    expect(result.value.errors).toHaveProperty('status');
+    expect(result.value.errors).toHaveProperty('situacao');
   });
 
   it('deve aceitar array vazio quando nao required', async () => {
     const field = makeDropdownField(DROPDOWN_OPTIONS, {
-      slug: 'status',
+      slug: 'situacao',
       required: false,
     });
     const table = await makeTableWithGroup(
@@ -195,7 +195,7 @@ describe('Group Row Create - DROPDOWN', () => {
       slug: 'pedidos',
       rowId: row._id,
       groupSlug: 'itens',
-      status: [],
+      situacao: [],
     });
 
     expect(result.isRight()).toBe(true);

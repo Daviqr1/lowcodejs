@@ -8,13 +8,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { IRow } from '@/lib/interfaces';
 import { getUserInitials } from '@/lib/kanban-helpers';
 
-interface GanttLeftPanelProps {
+type GanttLeftPanelProps = {
   groupedRows: Array<GanttGroup>;
   collapsedGroups: Set<string>;
   onToggleGroup: (groupId: string) => void;
   onRowClick: (row: IRow) => void;
   headerHeight: number;
-}
+};
 
 export function GanttLeftPanel({
   groupedRows,
@@ -27,7 +27,7 @@ export function GanttLeftPanel({
     <div
       data-slot="gantt-left-panel"
       data-test-id="gantt-left-panel"
-      className="w-56 shrink-0 overflow-hidden border-r bg-background"
+      className="w-40 shrink-0 overflow-hidden border-r bg-background sm:w-56"
     >
       {/* Espaçador do header */}
       <div

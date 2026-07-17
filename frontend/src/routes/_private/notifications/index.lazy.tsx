@@ -1,6 +1,7 @@
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { BellOff, Check, CheckCheck, Trash2 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { PageHeader, PageShell } from '@/components/common/page-shell';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import { useNotificationMarkAsRead } from '@/hooks/tanstack-query/use-notificati
 import { useNotificationPaginated } from '@/hooks/tanstack-query/use-notification-paginated';
 import { formatDate } from '@/lib/format-date';
 import type { INotification } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 export const Route = createLazyFileRoute('/_private/notifications/')({
@@ -34,10 +34,9 @@ function NotificationsPage(): React.JSX.Element {
   const markAsRead = useNotificationMarkAsRead();
   const markAllAsRead = useNotificationMarkAllAsRead({
     onSuccess(data) {
-      toastSuccess(
-        'Notificações marcadas',
-        `${data.updated} notificações foram marcadas como lidas.`,
-      );
+      toast.success('Notificações marcadas', {
+        description: `${data.updated} notificações foram marcadas como lidas.`,
+      });
     },
   });
   const deleteNotification = useNotificationDelete();
@@ -79,7 +78,7 @@ function NotificationsPage(): React.JSX.Element {
           <Tabs
             value={tab}
             onValueChange={(value) => {
-              setTab(value as Tab);
+              if (value === 'all' || value === 'unread') setTab(value);
               setPage(1);
             }}
           >
@@ -112,12 +111,13 @@ function NotificationsPage(): React.JSX.Element {
                     !notification.read && 'bg-accent/30 border-primary/30',
                   )}
                 >
-                  {!notification.read ? (
+                  {!notification.read && (
                     <span
                       aria-label="Não lida"
                       className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0"
                     />
-                  ) : (
+                  )}
+                  {notification.read && (
                     <Check
                       aria-label="Lida"
                       className="mt-1 h-4 w-4 text-muted-foreground shrink-0"
@@ -131,9 +131,9 @@ function NotificationsPage(): React.JSX.Element {
                     <p
                       className={cn(
                         'text-sm',
-                        notification.read
-                          ? 'font-normal text-muted-foreground'
-                          : 'font-medium',
+                        notification.read &&
+                          'font-normal text-muted-foreground',
+                        !notification.read && 'font-medium',
                       )}
                     >
                       {notification.title}

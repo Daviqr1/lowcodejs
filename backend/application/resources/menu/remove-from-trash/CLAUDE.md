@@ -3,7 +3,7 @@
 Restaura um menu que esta na lixeira.
 
 ## Endpoint
-`PATCH /menu/:_id/restore` | Auth: Yes | Permission: nenhuma especifica
+`PATCH /menu/:_id/restore` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

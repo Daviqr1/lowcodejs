@@ -32,7 +32,7 @@ export const StorageDeleteSchema: FastifySchema = {
       description: 'Arquivo deletado com sucesso',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Arquivo deletado com sucesso'] },
+        message: { type: 'string', description: 'Mensagem de confirmação' },
         deletedAt: {
           type: 'string',
           format: 'date-time',
@@ -44,7 +44,7 @@ export const StorageDeleteSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -57,7 +57,7 @@ export const StorageDeleteSchema: FastifySchema = {
       description: 'Arquivo não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Arquivo não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['STORAGE_NOT_FOUND'] },
         errors: {
@@ -65,19 +65,12 @@ export const StorageDeleteSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Arquivo não encontrado',
-          code: 404,
-          cause: 'STORAGE_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['STORAGE_DELETE_ERROR'] },
         errors: {

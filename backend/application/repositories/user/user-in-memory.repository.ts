@@ -4,6 +4,8 @@ import {
   type IUser,
 } from '@application/core/entity.core';
 
+import { makeGroup } from '../entity-fixtures';
+
 import type {
   UserContractRepository,
   UserCreatePayload,
@@ -33,7 +35,9 @@ export default class UserInMemoryRepository implements UserContractRepository {
       ...payload,
       _id: crypto.randomUUID(),
       status: E_USER_STATUS.ACTIVE,
-      group: { _id: payload.group } as IUser['group'],
+      // Double de teste: refs populadas de grupo com defaults inertes.
+      group: makeGroup(payload.group),
+      groups: (payload.groups ?? []).map((id) => makeGroup(id)),
       notificationsEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -91,8 +95,9 @@ export default class UserInMemoryRepository implements UserContractRepository {
     // Filtro por grupo
     if (payload?.group) {
       filtered = filtered.filter((user) => {
-        const groupId =
-          typeof user.group === 'string' ? user.group : user.group?._id;
+        let groupId: string | undefined;
+        if (typeof user.group === 'string') groupId = user.group;
+        if (typeof user.group !== 'string') groupId = user.group?._id;
         return groupId === payload.group;
       });
     }
@@ -137,6 +142,7 @@ export default class UserInMemoryRepository implements UserContractRepository {
     for (const user of filtered) {
       if (data.trashed !== undefined) user.trashed = data.trashed;
       if (data.trashedAt !== undefined) user.trashedAt = data.trashedAt;
+      if (data.status !== undefined) user.status = data.status;
       user.updatedAt = new Date();
     }
 

@@ -4,6 +4,7 @@ import type * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -12,9 +13,9 @@ import {
 } from '@/components/ui/dialog';
 import { SETUP_STEP_LABELS } from '@/lib/constant';
 
-interface BlockedDialogProps {
+type BlockedDialogProps = {
   blocked?: string;
-}
+};
 
 export function BlockedDialog({
   blocked,
@@ -27,15 +28,15 @@ export function BlockedDialog({
   const label = stepLabels[blocked] ?? blocked;
 
   function handleClose(): void {
-    navigate({ search: {} });
+    navigate({ to: '.', search: {} });
   }
 
   return (
-    <Dialog
-      open
-      onOpenChange={handleClose}
-    >
-      <DialogContent>
+    <Dialog defaultOpen>
+      <DialogContent
+        onEscapeKeyDown={handleClose}
+        onPointerDownOutside={handleClose}
+      >
         <DialogHeader>
           <DialogTitle>Etapa não disponível</DialogTitle>
           <DialogDescription>
@@ -44,7 +45,9 @@ export function BlockedDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleClose}>Entendi</Button>
+          <DialogClose asChild>
+            <Button onClick={handleClose}>Entendi</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

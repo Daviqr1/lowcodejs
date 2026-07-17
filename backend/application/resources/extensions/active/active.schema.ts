@@ -1,11 +1,23 @@
 import type { FastifySchema } from 'fastify';
 
-const errorBlock = {
+const unauthorizedBlock = {
+  description: 'Não autorizado - Autenticação necessária',
   type: 'object',
   properties: {
     message: { type: 'string' },
-    code: { type: 'number' },
-    cause: { type: 'string' },
+    code: { type: 'number', enum: [401] },
+    cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+    errors: { type: 'object', additionalProperties: { type: 'string' } },
+  },
+} as const;
+
+const serverErrorBlock = {
+  description: 'Erro interno do servidor',
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    code: { type: 'number', enum: [500] },
+    cause: { type: 'string', enum: ['LIST_ACTIVE_EXTENSIONS_ERROR'] },
     errors: { type: 'object', additionalProperties: { type: 'string' } },
   },
 } as const;
@@ -51,7 +63,7 @@ export const ExtensionActiveListSchema: FastifySchema = {
         },
       },
     },
-    401: errorBlock,
-    500: errorBlock,
+    401: unauthorizedBlock,
+    500: serverErrorBlock,
   },
 };

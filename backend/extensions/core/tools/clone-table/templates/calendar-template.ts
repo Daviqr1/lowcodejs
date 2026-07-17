@@ -2,19 +2,19 @@ import slugify from 'slugify';
 
 import { right } from '@application/core/either.core';
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   FIELD_NATIVE_LIST,
   type IField,
+  type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
-import type { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type {
   CloneTableDeps,
@@ -35,11 +35,11 @@ export async function createCalendarTemplate(
   });
 
   const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
-    await buildCalendarFields(deps.fieldRepository, deps.tableSchemaService);
+    await buildCalendarFields(deps.fieldRepository, deps.schemaBuilder);
   const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
   const nativeFieldIds = nativeFields.map((field) => field._id);
 
-  const _schema = deps.tableSchemaService.computeSchema(
+  const _schema = deps.schemaBuilder.build(
     [...nativeFields, ...fields],
     groups,
   );
@@ -53,9 +53,6 @@ export async function createCalendarTemplate(
     logo: null,
     fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
     style: E_TABLE_STYLE.CALENDAR,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
-    administrators: [],
     owner: payload.ownerId,
     fieldOrderList: [...nativeFieldIds, ...orderList],
     fieldOrderForm: [...nativeFieldIds, ...orderForm],
@@ -166,7 +163,7 @@ export async function createCalendarTemplate(
 
 export async function buildCalendarFields(
   fieldRepository: FieldContractRepository,
-  tableSchemaService: TableSchemaContractService,
+  schemaBuilder: SchemaBuilderContractService,
 ): Promise<{
   fields: IField[];
   groups: IGroupConfiguration[];
@@ -184,9 +181,7 @@ export async function buildCalendarFields(
     required: boolean;
     multiple: boolean;
     format: IField['format'];
-    showInList: boolean;
-    showInForm: boolean;
-    showInDetail: boolean;
+    permissions: IFieldPermissions;
     showInFilter: boolean;
     defaultValue: IField['defaultValue'];
     locked: boolean;
@@ -212,9 +207,7 @@ export async function buildCalendarFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -234,9 +227,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,
@@ -256,9 +247,7 @@ export async function buildCalendarFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.YYYY_MM_DD_HH_MM_SS_DASH,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -278,9 +267,7 @@ export async function buildCalendarFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.YYYY_MM_DD_HH_MM_SS_DASH,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -300,9 +287,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: null,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -329,9 +314,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -351,9 +334,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -373,9 +354,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: false,
-    showInDetail: false,
+    permissions: buildFieldPermissions(false, false, false),
     showInFilter: false,
     defaultValue: null,
     locked: true,
@@ -398,9 +377,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: null,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,
@@ -424,9 +401,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.INTEGER,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,
@@ -454,7 +429,7 @@ export async function buildCalendarFields(
     slug: reminderGroupSlug,
     name: 'Lembrete',
     fields: reminderGroupFields,
-    _schema: tableSchemaService.computeSchema(reminderGroupFields),
+    _schema: schemaBuilder.build(reminderGroupFields),
   };
 
   const reminderGroupField = await createField({
@@ -464,9 +439,7 @@ export async function buildCalendarFields(
     required: false,
     multiple: true,
     format: null,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,

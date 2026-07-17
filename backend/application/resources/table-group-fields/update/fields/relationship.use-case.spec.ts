@@ -1,31 +1,29 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import type { FieldCreatePayload } from '@application/repositories/field/field-contract.repository';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import GroupFieldUpdateUseCase from '../update.use-case';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: GroupFieldUpdateUseCase;
 
 const TABLE_DEFAULTS = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -34,9 +32,7 @@ const FIELD_CREATE_PAYLOAD = {
   name: 'Produto',
   slug: 'produto',
   type: E_FIELD_TYPE.RELATIONSHIP,
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -76,16 +72,21 @@ describe('Group Field Update - RELATIONSHIP', () => {
   beforeEach(async () => {
     tableInMemoryRepository = new TableInMemoryRepository();
     fieldInMemoryRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new GroupFieldUpdateUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
     );
   });
 
-  it('deve mudar tabela destino do relacionamento', async () => {
+  // RELATIONSHIP é sempre top-level (§2): não pode existir nem virar campo de
+  // grupo. Atualizar um campo de grupo para type RELATIONSHIP é rejeitado com
+  // FIELD_TYPE_NOT_ALLOWED_IN_GROUP, antes de qualquer mutação.
+  it('deve rejeitar atualizar campo de grupo para RELATIONSHIP (mudar tabela destino)', async () => {
     const field = await fieldInMemoryRepository.create(FIELD_CREATE_PAYLOAD);
 
     await tableInMemoryRepository.create({
@@ -109,9 +110,7 @@ describe('Group Field Update - RELATIONSHIP', () => {
       type: E_FIELD_TYPE.RELATIONSHIP,
       required: false,
       multiple: false,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,
@@ -123,14 +122,13 @@ describe('Group Field Update - RELATIONSHIP', () => {
       },
     });
 
-    expect(result.isRight()).toBe(true);
-    if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.relationship).not.toBeNull();
-    expect(result.value.relationship!.table.slug).toBe('servicos');
-    expect(result.value.relationship!.field.slug).toBe('titulo');
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.cause).toBe('FIELD_TYPE_NOT_ALLOWED_IN_GROUP');
+    expect(result.value.code).toBe(400);
   });
 
-  it('deve mudar multiple de false para true', async () => {
+  it('deve rejeitar atualizar campo de grupo para RELATIONSHIP multiple', async () => {
     const field = await fieldInMemoryRepository.create(FIELD_CREATE_PAYLOAD);
 
     await tableInMemoryRepository.create({
@@ -154,9 +152,7 @@ describe('Group Field Update - RELATIONSHIP', () => {
       type: E_FIELD_TYPE.RELATIONSHIP,
       required: false,
       multiple: true,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: false,
       widthInForm: 50,
       widthInList: 10,
@@ -168,9 +164,8 @@ describe('Group Field Update - RELATIONSHIP', () => {
       },
     });
 
-    expect(result.isRight()).toBe(true);
-    if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.multiple).toBe(true);
-    expect(result.value.type).toBe(E_FIELD_TYPE.RELATIONSHIP);
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.cause).toBe('FIELD_TYPE_NOT_ALLOWED_IN_GROUP');
   });
 });

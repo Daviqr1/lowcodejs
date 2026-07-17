@@ -10,8 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "prettier --write . && eslint --fix \"**/*.{ts,tsx}\"",
-    "format": "prettier",
-    "prepare": "husky"
+    "format": "prettier"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.136",
@@ -133,7 +132,6 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "eslint-plugin-prettier": "^5.5.4",
-    "husky": "^9.1.7",
     "jsdom": "^27.0.0",
     "prettier": "^3.5.3",
     "typescript": "^5.7.2",

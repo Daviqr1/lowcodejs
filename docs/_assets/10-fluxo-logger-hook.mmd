@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant C as Cliente HTTP
+    participant K as Fastify kernel
+    participant H as Handlers (controllers)
+    participant L as LoggerUserActionHook (onResponse)
+    participant R as LoggerMongooseRepository
+    participant DB as MongoDB (system / logs)
+
+    C->>K: Requisicao (GET/POST/PUT/PATCH/DELETE)
+    K->>H: Roteia para o controller
+    H-->>K: Resposta (status + body)
+    K->>L: Hook onResponse (request, reply)
+    Note over L: resolveObject(routePattern)<br/>resolveAction(method)<br/>resolveObjectId(params) / fallbackIdFromUrl(url)<br/>monta content {body, query, params}
+    alt object == null
+        L-->>K: return (rota nao mapeada)
+    else user_id == null
+        L-->>K: return (sem usuario autenticado)
+    else action == VIEW
+        L-->>K: return (GET nao e auditado)
+    else header X-Skip-Log presente
+        L-->>K: return (kanban reorder)
+    else
+        L->>R: repo.create(payload)
+        R->>DB: Logger.create + populate('user')
+        DB-->>R: documento Logger
+    end
+    Note over L: try/catch envolve tudo:<br/>falha do hook NUNCA derruba a requisicao

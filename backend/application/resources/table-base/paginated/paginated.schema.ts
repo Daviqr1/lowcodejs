@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TablePaginatedSchema: FastifySchema = {
-  tags: ['Tables'],
-  summary: 'List tables paginated',
+  tags: ['Tabelas'],
+  summary: 'Listar tabelas com paginação',
   description:
-    'Get a paginated list of Tables with optional search and filtering',
+    'Retorna uma lista paginada de tabelas com busca, filtros e ordenação opcionais. Apenas tabelas do tipo TABLE são retornadas.',
   security: [{ cookieAuth: [] }],
   querystring: {
     type: 'object',
@@ -13,7 +13,7 @@ export const TablePaginatedSchema: FastifySchema = {
         type: 'number',
         minimum: 1,
         default: 1,
-        description: 'Page number (starts from 1)',
+        description: 'Número da página (começa em 1)',
         examples: [1, 2, 5],
       },
       perPage: {
@@ -21,79 +21,55 @@ export const TablePaginatedSchema: FastifySchema = {
         minimum: 1,
         maximum: 100,
         default: 50,
-        description: 'Number of items per page (max 100)',
+        description: 'Quantidade de itens por página (máx. 100)',
         examples: [10, 25, 50, 100],
       },
       search: {
         type: 'string',
         minLength: 1,
         description:
-          'Search term for filtering Tables by name or slug (optional)',
+          'Termo de busca para filtrar tabelas por nome ou slug (opcional)',
         examples: ['user', 'product', 'blog'],
       },
       'order-name': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Order by name (optional)',
+        description: 'Ordenar por nome (opcional)',
         examples: ['asc', 'desc'],
       },
       'order-link': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Order by link (optional)',
+        description: 'Ordenar por link (opcional)',
         examples: ['asc', 'desc'],
       },
       'order-created-at': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Order by created at (optional)',
-        examples: ['asc', 'desc'],
-      },
-      'order-visibility': {
-        type: 'string',
-        enum: ['asc', 'desc'],
-        description: 'Order by visibility (optional)',
+        description: 'Ordenar por data de criação (opcional)',
         examples: ['asc', 'desc'],
       },
       'order-owner': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Order by owner name (optional)',
+        description: 'Ordenar por nome do proprietário (opcional)',
         examples: ['asc', 'desc'],
       },
       trashed: {
         type: 'string',
         enum: ['true', 'false'],
         default: 'false',
-        description: 'Include trashed items (optional)',
+        description: 'Incluir itens na lixeira (opcional)',
         examples: ['true', 'false'],
-      },
-      public: {
-        type: 'string',
-        enum: ['true', 'false'],
-        default: 'false',
-        description: 'Filter by public visibility (optional)',
-        examples: ['true', 'false'],
-      },
-      type: {
-        type: 'string',
-        enum: ['TABLE', 'FIELD_GROUP'],
-        description: 'Filter by table type (optional)',
-        examples: ['TABLE', 'FIELD_GROUP'],
       },
       name: {
         type: 'string',
-        description: 'Filter by exact table name (optional)',
+        description: 'Filtrar por nome exato da tabela (opcional)',
         examples: ['Users', 'Products'],
-      },
-      visibility: {
-        type: 'string',
-        description: 'Filter by visibility (optional)',
-        examples: ['PUBLIC', 'PRIVATE', 'RESTRICTED', 'OPEN', 'FORM'],
       },
       owner: {
         type: 'string',
-        description: 'Filter by owner name (optional)',
+        description: 'Filtrar por nome do proprietário (opcional)',
         examples: ['John'],
       },
     },
@@ -101,7 +77,7 @@ export const TablePaginatedSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'Paginated list of Tables',
+      description: 'Lista paginada de tabelas',
       type: 'object',
       properties: {
         data: {
@@ -109,40 +85,41 @@ export const TablePaginatedSchema: FastifySchema = {
           items: {
             type: 'object',
             properties: {
-              _id: { type: 'string', description: 'Table ID' },
-              name: { type: 'string', description: 'Table name' },
+              _id: { type: 'string', description: 'ID da tabela' },
+              name: { type: 'string', description: 'Nome da tabela' },
               description: {
                 type: 'string',
                 nullable: true,
-                description: 'Table description',
+                description: 'Descrição da tabela',
               },
               slug: {
                 type: 'string',
-                description: 'Table URL slug',
+                description: 'Slug de URL da tabela',
               },
               logo: {
                 type: 'object',
                 nullable: true,
-                description: 'Table logo storage details (populated)',
+                description:
+                  'Detalhes de armazenamento do logo da tabela (populado)',
                 properties: {
-                  _id: { type: 'string', description: 'Storage ID' },
-                  url: { type: 'string', description: 'File URL' },
+                  _id: { type: 'string', description: 'ID de armazenamento' },
+                  url: { type: 'string', description: 'URL do arquivo' },
                   filename: {
                     type: 'string',
-                    description: 'Original filename',
+                    description: 'Nome original do arquivo',
                   },
-                  type: { type: 'string', description: 'MIME type' },
+                  type: { type: 'string', description: 'Tipo MIME' },
                 },
               },
               fields: {
                 type: 'array',
-                description: 'Table fields',
+                description: 'Campos da tabela',
                 items: {
                   type: 'object',
                   properties: {
-                    _id: { type: 'string', description: 'Field ID' },
-                    name: { type: 'string', description: 'Field name' },
-                    slug: { type: 'string', description: 'Field slug' },
+                    _id: { type: 'string', description: 'ID do campo' },
+                    name: { type: 'string', description: 'Nome do campo' },
+                    slug: { type: 'string', description: 'Slug do campo' },
                     type: {
                       type: 'string',
                       enum: [
@@ -156,67 +133,117 @@ export const TablePaginatedSchema: FastifySchema = {
                         'REACTION',
                         'EVALUATION',
                         'CATEGORY',
+                        'USER',
+                        'HTML_CONTENT',
+                        'CREATOR',
+                        'IDENTIFIER',
+                        'CREATED_AT',
+                        'UPDATED_AT',
+                        'UPDATER',
+                        'STATUS',
+                        'TRASHED_AT',
                       ],
-                      description: 'Field type',
+                      description: 'Tipo do campo',
                     },
                     required: {
                       type: 'boolean',
-                      description: 'Is field required',
+                      description: 'Se o campo é obrigatório',
                     },
                     multiple: {
                       type: 'boolean',
-                      description: 'Allows multiple values',
+                      description: 'Permite múltiplos valores',
                     },
                     format: {
                       type: 'string',
                       nullable: true,
-                      description: 'Field format validation',
-                    },
-                    showInList: {
-                      type: 'boolean',
-                      description: 'Show in listings',
-                    },
-                    showInForm: {
-                      type: 'boolean',
-                      description: 'Show in form view',
-                    },
-                    showInDetail: {
-                      type: 'boolean',
-                      description: 'Show in detail view',
+                      description: 'Validação de formato do campo',
                     },
                     showInFilter: {
                       type: 'boolean',
-                      description: 'Allow filtering',
+                      description: 'Permitir filtragem',
+                    },
+                    showInParentList: { type: 'boolean' },
+                    visibleInParentList: { type: 'boolean' },
+                    permissions: {
+                      type: 'object',
+                      nullable: true,
+                      properties: {
+                        list: {
+                          type: 'object',
+                          properties: {
+                            kind: {
+                              type: 'string',
+                              enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                            },
+                            group: { type: 'string', nullable: true },
+                          },
+                        },
+                        form: {
+                          type: 'object',
+                          properties: {
+                            kind: {
+                              type: 'string',
+                              enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                            },
+                            group: { type: 'string', nullable: true },
+                          },
+                        },
+                        detail: {
+                          type: 'object',
+                          properties: {
+                            kind: {
+                              type: 'string',
+                              enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                            },
+                            group: { type: 'string', nullable: true },
+                          },
+                        },
+                      },
                     },
                     widthInForm: {
                       type: 'number',
                       nullable: true,
-                      description: 'Field width in forms, integer 0-100 (%)',
+                      description:
+                        'Largura do campo em formulários, inteiro 0-100 (%)',
                     },
                     widthInList: {
                       type: 'number',
                       nullable: true,
                       description:
-                        'Field width in list/grid views, integer 0-100 (px)',
+                        'Largura do campo em visualizações de lista/grade, inteiro 0-100 (px)',
                     },
                     widthInDetail: {
                       type: 'number',
                       nullable: true,
                       description:
-                        'Field width in detail views, integer 0-100 (%)',
+                        'Largura do campo em visualizações de detalhe, inteiro 0-100 (%)',
                     },
                     tip: {
                       type: 'string',
                       nullable: true,
-                      description: 'Optional help text shown in row forms',
+                      description:
+                        'Texto de ajuda opcional exibido nos formulários de registro',
                     },
                     locked: {
                       type: 'boolean',
-                      description: 'Field is locked and cannot be modified',
+                      description:
+                        'O campo está bloqueado e não pode ser modificado',
                     },
                     native: {
                       type: 'boolean',
-                      description: 'Field is native',
+                      description: 'O campo é nativo',
+                    },
+                    label: {
+                      type: 'object',
+                      nullable: true,
+                      description:
+                        'Rótulo customizado por contexto de exibição do campo',
+                      properties: {
+                        list: { type: 'string', nullable: true },
+                        filter: { type: 'string', nullable: true },
+                        form: { type: 'string', nullable: true },
+                        detail: { type: 'string', nullable: true },
+                      },
                     },
                     defaultValue: {
                       anyOf: [
@@ -224,47 +251,109 @@ export const TablePaginatedSchema: FastifySchema = {
                         { type: 'array', items: { type: 'string' } },
                         { type: 'null' },
                       ],
-                      description: 'Default field value',
+                      description: 'Valor padrão do campo',
                     },
                     relationship: {
                       type: 'object',
                       nullable: true,
-                      description: 'Relationship configuration',
+                      additionalProperties: true,
+                      description: 'Configuração de relacionamento',
+                      properties: {
+                        table: {
+                          type: 'object',
+                          properties: {
+                            _id: { type: 'string' },
+                            slug: { type: 'string' },
+                          },
+                        },
+                        field: {
+                          type: 'object',
+                          properties: {
+                            _id: { type: 'string' },
+                            slug: { type: 'string' },
+                          },
+                        },
+                        order: { type: 'string', enum: ['asc', 'desc'] },
+                        customLabel: { type: 'boolean' },
+                        labelParts: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              path: { type: 'string' },
+                              label: { type: 'string' },
+                            },
+                          },
+                        },
+                        labelSeparator: { type: 'string' },
+                        visible: { type: 'boolean' },
+                        onDelete: {
+                          type: 'string',
+                          enum: ['CASCADE', 'SET_NULL', 'RESTRICT'],
+                        },
+                        mirror: {
+                          type: 'object',
+                          additionalProperties: true,
+                          properties: {
+                            multiple: { type: 'boolean' },
+                            visible: { type: 'boolean' },
+                            label: { type: 'string' },
+                          },
+                        },
+                        relationshipId: { type: 'string', nullable: true },
+                        formMode: {
+                          type: 'string',
+                          enum: ['select', 'manage'],
+                          nullable: true,
+                        },
+                        side: {
+                          type: 'string',
+                          enum: ['source', 'target'],
+                          nullable: true,
+                        },
+                        max: { type: 'number', nullable: true },
+                      },
                     },
                     dropdown: {
                       type: 'array',
                       nullable: true,
-                      description: 'Dropdown options',
+                      description: 'Opções de seleção',
                     },
                     allowCustomDropdownOptions: {
                       type: 'boolean',
                       description:
-                        'Allow users to create new dropdown options from row input',
+                        'Permite que usuários criem novas opções de seleção a partir do registro',
                     },
                     allowCreateRelationshipRecords: {
                       type: 'boolean',
                       description:
-                        'Allow users to create records in the related table from row input',
+                        'Permite que usuários criem registros na tabela relacionada a partir do registro',
+                    },
+                    fillWithCurrentUserWhenEmpty: {
+                      type: 'boolean',
+                      description:
+                        'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
                     },
                     category: {
                       type: 'array',
                       nullable: true,
-                      description: 'Category options',
+                      description: 'Opções de categoria',
                     },
                     group: {
                       type: 'object',
                       nullable: true,
-                      description: 'Field group configuration',
+                      description: 'Configuração de grupo de campos',
                     },
+                    htmlContent: { type: 'string', nullable: true },
                     trashed: {
                       type: 'boolean',
-                      description: 'Is field in trash',
+                      description: 'Se o campo está na lixeira',
                     },
                     trashedAt: {
                       type: 'string',
                       format: 'date-time',
                       nullable: true,
-                      description: 'When field was trashed',
+                      description: 'Quando o campo foi enviado para a lixeira',
                     },
                     createdAt: { type: 'string', format: 'date-time' },
                     updatedAt: { type: 'string', format: 'date-time' },
@@ -282,49 +371,25 @@ export const TablePaginatedSchema: FastifySchema = {
                   'KANBAN',
                   'FORUM',
                 ],
-                description: 'Display style',
-              },
-              visibility: {
-                type: 'string',
-                enum: ['PUBLIC', 'RESTRICTED', 'OPEN', 'FORM', 'PRIVATE'],
-                description: 'Visibility setting',
-              },
-              collaboration: {
-                type: 'string',
-                enum: ['OPEN', 'RESTRICTED'],
-                description: 'Collaboration setting',
-              },
-              administrators: {
-                type: 'array',
-                description: 'Administrator users (populated)',
-                items: {
-                  type: 'object',
-                  properties: {
-                    _id: { type: 'string', description: 'User ID' },
-                    name: {
-                      type: 'string',
-                      description: 'User name',
-                    },
-                  },
-                },
+                description: 'Estilo de exibição',
               },
               owner: {
                 type: 'object',
-                description: 'Table owner (populated)',
+                description: 'Proprietário da tabela (populado)',
                 properties: {
-                  _id: { type: 'string', description: 'User ID' },
-                  name: { type: 'string', description: 'User name' },
+                  _id: { type: 'string', description: 'ID do usuário' },
+                  name: { type: 'string', description: 'Nome do usuário' },
                 },
               },
               fieldOrderList: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Field order for list view',
+                description: 'Ordem dos campos na visualização em lista',
               },
               fieldOrderForm: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Field order for form view',
+                description: 'Ordem dos campos na visualização em formulário',
               },
               fieldOrderFilter: {
                 type: 'array',
@@ -337,7 +402,7 @@ export const TablePaginatedSchema: FastifySchema = {
               type: {
                 type: 'string',
                 enum: ['TABLE', 'FIELD_GROUP'],
-                description: 'Table type',
+                description: 'Tipo da tabela',
               },
               methods: {
                 type: 'object',
@@ -348,7 +413,7 @@ export const TablePaginatedSchema: FastifySchema = {
                       code: {
                         type: 'string',
                         nullable: true,
-                        description: 'Code to execute before saving',
+                        description: 'Código a executar antes de salvar',
                       },
                     },
                   },
@@ -358,7 +423,7 @@ export const TablePaginatedSchema: FastifySchema = {
                       code: {
                         type: 'string',
                         nullable: true,
-                        description: 'Code to execute after saving',
+                        description: 'Código a executar depois de salvar',
                       },
                     },
                   },
@@ -368,24 +433,24 @@ export const TablePaginatedSchema: FastifySchema = {
                       code: {
                         type: 'string',
                         nullable: true,
-                        description: 'Code to execute before saving',
+                        description: 'Código a executar antes de salvar',
                       },
                     },
                   },
                 },
-                description: 'Table methods configuration',
+                description: 'Configuração de métodos da tabela',
               },
               groups: {
                 type: 'array',
-                description: 'Field groups configuration',
+                description: 'Configuração de grupos de campos',
                 items: {
                   type: 'object',
                   properties: {
-                    slug: { type: 'string', description: 'Group slug' },
-                    name: { type: 'string', description: 'Group name' },
+                    slug: { type: 'string', description: 'Slug do grupo' },
+                    name: { type: 'string', description: 'Nome do grupo' },
                     fields: {
                       type: 'array',
-                      description: 'Fields within the group',
+                      description: 'Campos dentro do grupo',
                       items: {
                         type: 'object',
                         properties: {
@@ -396,16 +461,61 @@ export const TablePaginatedSchema: FastifySchema = {
                           required: { type: 'boolean' },
                           multiple: { type: 'boolean' },
                           format: { type: 'string', nullable: true },
-                          showInList: { type: 'boolean' },
-                          showInForm: { type: 'boolean' },
-                          showInDetail: { type: 'boolean' },
                           showInFilter: { type: 'boolean' },
+                          showInParentList: { type: 'boolean' },
+                          visibleInParentList: { type: 'boolean' },
+                          permissions: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                              list: {
+                                type: 'object',
+                                properties: {
+                                  kind: {
+                                    type: 'string',
+                                    enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                                  },
+                                  group: { type: 'string', nullable: true },
+                                },
+                              },
+                              form: {
+                                type: 'object',
+                                properties: {
+                                  kind: {
+                                    type: 'string',
+                                    enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                                  },
+                                  group: { type: 'string', nullable: true },
+                                },
+                              },
+                              detail: {
+                                type: 'object',
+                                properties: {
+                                  kind: {
+                                    type: 'string',
+                                    enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                                  },
+                                  group: { type: 'string', nullable: true },
+                                },
+                              },
+                            },
+                          },
                           widthInForm: { type: 'number', nullable: true },
                           widthInList: { type: 'number', nullable: true },
                           widthInDetail: { type: 'number', nullable: true },
                           tip: { type: 'string', nullable: true },
                           locked: { type: 'boolean' },
                           native: { type: 'boolean' },
+                          label: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                              list: { type: 'string', nullable: true },
+                              filter: { type: 'string', nullable: true },
+                              form: { type: 'string', nullable: true },
+                              detail: { type: 'string', nullable: true },
+                            },
+                          },
                           defaultValue: {
                             anyOf: [
                               { type: 'string' },
@@ -428,6 +538,7 @@ export const TablePaginatedSchema: FastifySchema = {
                           },
                           allowCustomDropdownOptions: { type: 'boolean' },
                           allowCreateRelationshipRecords: { type: 'boolean' },
+                          fillWithCurrentUserWhenEmpty: { type: 'boolean' },
                           category: {
                             type: 'array',
                             nullable: true,
@@ -441,6 +552,7 @@ export const TablePaginatedSchema: FastifySchema = {
                             nullable: true,
                             additionalProperties: true,
                           },
+                          htmlContent: { type: 'string', nullable: true },
                           trashed: { type: 'boolean' },
                           trashedAt: {
                             type: 'string',
@@ -455,7 +567,7 @@ export const TablePaginatedSchema: FastifySchema = {
                     },
                     _schema: {
                       type: 'object',
-                      description: 'Group schema',
+                      description: 'Schema do grupo',
                       additionalProperties: true,
                     },
                   },
@@ -463,7 +575,7 @@ export const TablePaginatedSchema: FastifySchema = {
               },
               order: {
                 type: 'object',
-                description: 'Default sort order for table records',
+                description: 'Ordenação padrão dos registros da tabela',
                 properties: {
                   field: { type: 'string', nullable: true },
                   direction: {
@@ -475,18 +587,18 @@ export const TablePaginatedSchema: FastifySchema = {
               },
               _schema: {
                 type: 'object',
-                description: 'Generated MongoDB schema based on fields',
+                description: 'Schema MongoDB gerado a partir dos campos',
                 additionalProperties: true,
               },
               trashed: {
                 type: 'boolean',
-                description: 'Is table in trash',
+                description: 'Se a tabela está na lixeira',
               },
               trashedAt: {
                 type: 'string',
                 format: 'date-time',
                 nullable: true,
-                description: 'When table was trashed',
+                description: 'Quando a tabela foi enviada para a lixeira',
               },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
@@ -498,27 +610,30 @@ export const TablePaginatedSchema: FastifySchema = {
           properties: {
             total: {
               type: 'number',
-              description: 'Total number of Tables',
+              description: 'Total de tabelas',
             },
             perPage: {
               type: 'number',
-              description: 'Number of items per page',
+              description: 'Quantidade de itens por página',
             },
-            page: { type: 'number', description: 'Current page number' },
-            lastPage: { type: 'number', description: 'Last page number' },
+            page: { type: 'number', description: 'Número da página atual' },
+            lastPage: {
+              type: 'number',
+              description: 'Número da última página',
+            },
             firstPage: {
               type: 'number',
-              description: 'First page number',
+              description: 'Número da primeira página',
             },
           },
         },
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autenticado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -526,19 +641,12 @@ export const TablePaginatedSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Unauthorized',
-          code: 401,
-          cause: 'AUTHENTICATION_REQUIRED',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: {
           type: 'string',

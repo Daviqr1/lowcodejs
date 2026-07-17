@@ -1,18 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_VISIBILITY,
+  E_TABLE_STYLE,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
 import SchemaImportUseCase from './schema-import.use-case';
 
 let fieldInMemoryRepository: FieldInMemoryRepository;
 let tableInMemoryRepository: TableInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let userGroupInMemoryRepository: UserGroupInMemoryRepository;
+let schemaBuilder: InMemorySchemaBuilder;
 let sut: SchemaImportUseCase;
 
 const VALID_YAML = `tables:
@@ -40,12 +44,14 @@ describe('Schema Import Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     fieldInMemoryRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    userGroupInMemoryRepository = new UserGroupInMemoryRepository();
+    schemaBuilder = new InMemorySchemaBuilder();
 
     sut = new SchemaImportUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
-      tableSchemaService,
+      userGroupInMemoryRepository,
+      schemaBuilder,
     );
   });
 
@@ -104,10 +110,7 @@ describe('Schema Import Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'other-owner',
-      administrators: [],
-      style: 'LIST' as never,
-      visibility: 'RESTRICTED' as never,
-      collaboration: 'RESTRICTED' as never,
+      style: E_TABLE_STYLE.LIST,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -136,10 +139,8 @@ describe('Schema Import Use Case', () => {
       required: false,
       multiple: false,
       format: null,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
       showInFilter: false,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: 50,
       widthInList: 10,
       widthInDetail: 50,
@@ -156,43 +157,20 @@ describe('Schema Import Use Case', () => {
       trashedAt: null,
     });
 
-    tableInMemoryRepository.items.push({
-      _id: existingTableId,
+    const cidades = await tableInMemoryRepository.create({
       name: 'Cidades',
       slug: 'cidades',
       _schema: {},
-      // simula fields populados (mongoose)
-      fields: [
-        {
-          _id: existingFieldId,
-          slug: 'codigo',
-        } as never,
-      ],
-      type: 'TABLE' as never,
-      style: 'LIST' as never,
-      visibility: 'RESTRICTED' as never,
-      collaboration: 'RESTRICTED' as never,
-      administrators: [],
-      owner: { _id: 'other-owner' } as never,
+      owner: 'other-owner',
+      style: E_TABLE_STYLE.LIST,
       fieldOrderList: [],
       fieldOrderForm: [],
-      fieldOrderFilter: [],
-      fieldOrderDetail: [],
-      methods: {
-        onLoad: { code: null },
-        beforeSave: { code: null },
-        afterSave: { code: null },
-      } as never,
-      groups: [],
-      order: null,
-      layoutFields: {} as never,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashed: false,
-      trashedAt: null,
-      description: null,
-      logo: null,
-    } as never);
+    });
+    cidades._id = existingTableId;
+    // simula fields populados (mongoose)
+    cidades.fields = [
+      { ...makeTextShortField(), _id: existingFieldId, slug: 'codigo' },
+    ];
 
     const yaml = `tables:
   - name: Enderecos
@@ -270,10 +248,9 @@ describe('Schema Import Use Case', () => {
     expect(fim?.format).toBe('dd/MM/yyyy');
   });
 
-  it('deve aceitar visibility e style customizados', async () => {
+  it('deve aceitar style customizado', async () => {
     const yaml = `tables:
   - name: PublicTable
-    visibility: PUBLIC
     style: GALLERY
     fields:
       - name: Titulo
@@ -286,7 +263,6 @@ describe('Schema Import Use Case', () => {
     const table = tableInMemoryRepository.items.find(
       (t) => t.slug === 'publictable',
     );
-    expect(table?.visibility).toBe(E_TABLE_VISIBILITY.PUBLIC);
     expect(table?.style).toBe('GALLERY');
   });
 
@@ -294,7 +270,7 @@ describe('Schema Import Use Case', () => {
     const yaml = `tables:
   - name: Tarefas
     fields:
-      - name: Status
+      - name: Situacao
         type: DROPDOWN
         options:
           - label: Pendente
@@ -307,7 +283,7 @@ describe('Schema Import Use Case', () => {
 
     expect(result.isRight()).toBe(true);
     const statusField = fieldInMemoryRepository.items.find(
-      (f) => f.slug === 'status',
+      (f) => f.slug === 'situacao',
     );
     expect(statusField?.dropdown).toHaveLength(2);
     expect(statusField?.dropdown[0]!.label).toBe('Pendente');

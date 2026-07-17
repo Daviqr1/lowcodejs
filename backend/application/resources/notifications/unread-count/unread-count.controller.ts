@@ -1,10 +1,11 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
-import NotificationMongooseRepository from '@application/repositories/notification/notification-mongoose.repository';
+import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
+
+import { NotificationUnreadCountSchema } from './unread-count.schema';
 
 @Controller({
   route: '/notifications',
@@ -20,6 +21,7 @@ export default class {
     url: '/unread-count',
     options: {
       onRequest: [AuthenticationMiddleware({ optional: false })],
+      schema: NotificationUnreadCountSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

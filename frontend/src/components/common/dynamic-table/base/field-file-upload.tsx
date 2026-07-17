@@ -5,7 +5,7 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IStorage } from '@/lib/interfaces';
 import { fileExtensionsToAccept } from '@/lib/utils';
 
-interface FieldFileUploadProps {
+type FieldFileUploadProps = {
   label: string;
   accept?: string;
   maxFiles?: number;
@@ -16,7 +16,7 @@ interface FieldFileUploadProps {
   showPreview?: boolean;
   previewUrl?: string;
   previewAlt?: string;
-}
+};
 
 export function FieldFileUpload({
   label,
@@ -40,11 +40,14 @@ export function FieldFileUpload({
     maxSize ?? settings?.FILE_UPLOAD_MAX_SIZE ?? 4 * 1024 * 1024;
   const resolvedMaxFiles =
     maxFiles ?? settings?.FILE_UPLOAD_MAX_FILES_PER_UPLOAD ?? 1;
-  const resolvedAccept: string | undefined =
-    accept ??
-    (settings?.FILE_UPLOAD_ACCEPTED && settings.FILE_UPLOAD_ACCEPTED.length > 0
-      ? fileExtensionsToAccept(settings.FILE_UPLOAD_ACCEPTED)
-      : undefined);
+  let acceptFromSettings: string | undefined;
+  if (
+    settings?.FILE_UPLOAD_ACCEPTED &&
+    settings.FILE_UPLOAD_ACCEPTED.length > 0
+  ) {
+    acceptFromSettings = fileExtensionsToAccept(settings.FILE_UPLOAD_ACCEPTED);
+  }
+  const resolvedAccept: string | undefined = accept ?? acceptFromSettings;
 
   return (
     <Field

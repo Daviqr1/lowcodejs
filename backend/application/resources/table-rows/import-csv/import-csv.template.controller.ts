@@ -6,11 +6,11 @@ import {
   type CsvField,
   buildCsvStream,
 } from '@application/core/csv/csv-stream';
-import { E_ROLE } from '@application/core/entity.core';
+import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
+import TableMongooseRepository from '@application/repositories/table/table.repository';
 
 import { TableRowImportCsvTemplateSchema } from './import-csv.schema';
 import { ImportCsvParamsValidator } from './import-csv.validator';
@@ -24,7 +24,9 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
+        TableAccessMiddleware({
+          requiredPermission: E_TABLE_PERMISSION.VIEW_TABLE,
+        }),
       ],
       schema: TableRowImportCsvTemplateSchema,
     },

@@ -16,7 +16,6 @@ import {
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TableRowPaginatedUseCase = getInstanceByToken(
       TableRowPaginatedUseCase,
     ),
@@ -44,6 +43,8 @@ export default class {
       ...query,
       ...params,
       user: request.user?.sub,
+      isOwner: request.ownership?.isOwner,
+      isAdministrator: request.ownership?.isAdministrator,
     });
 
     if (result.isLeft()) {

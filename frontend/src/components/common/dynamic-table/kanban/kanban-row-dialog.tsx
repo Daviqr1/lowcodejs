@@ -9,6 +9,7 @@ import {
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { KanbanFieldGroupEditor } from './kanban-field-group-editor';
 import { KanbanRowCommentsSection } from './kanban-row-comments';
@@ -29,26 +30,30 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { FileUploadWithStorage } from '@/components/common/file-upload/file-upload-with-storage';
 import { extractMentionIds } from '@/components/common/rich-editor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useProfileRead } from '@/hooks/tanstack-query/use-profile-read';
 import { useRowUpdateTrash } from '@/hooks/tanstack-query/use-row-update-trash';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useUserMentionSearch } from '@/hooks/use-user-mention-search';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
-import type { IField, IRow, IStorage, ITable } from '@/lib/interfaces';
+import type { IField, IRow, IStorage, ITable, Merge } from '@/lib/interfaces';
 import {
   ORDER_FIELD_SLUG,
   TEMPLATE_FIELD_SLUGS,
@@ -64,12 +69,26 @@ import {
 import type { FieldMap } from '@/lib/kanban-types';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { buildRowPayload, buildUpdateRowDefaultValues } from '@/lib/table';
-import { toastError, toastSuccess, toastWarning } from '@/lib/toast';
+import type { UpdateRowDefaultValue } from '@/lib/table';
 import { useAuthStore } from '@/stores/authentication';
+
+type KanbanRowDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    row: IRow | null;
+    onRowUpdated?: (row: IRow) => void;
+    onRowDuplicated?: (row: IRow) => void;
+    onRowDeleted?: (rowId: string) => void;
+    tableSlug: string;
+    table: ITable;
+    fields: FieldMap;
+    initialEditTarget?: 'members' | 'start' | 'due' | 'list' | null;
+  }
+>;
 
 export function KanbanRowDialog({
   row,
-  onClose,
+  ref,
   onRowUpdated,
   onRowDuplicated,
   onRowDeleted,
@@ -77,17 +96,9 @@ export function KanbanRowDialog({
   table,
   fields,
   initialEditTarget,
-}: {
-  row: IRow | null;
-  onClose: () => void;
-  onRowUpdated?: (row: IRow) => void;
-  onRowDuplicated?: (row: IRow) => void;
-  onRowDeleted?: (rowId: string) => void;
-  tableSlug: string;
-  table: ITable;
-  fields: FieldMap;
-  initialEditTarget?: 'members' | 'start' | 'due' | 'list' | null;
-}): React.JSX.Element | null {
+  ...rest
+}: KanbanRowDialogProps): React.JSX.Element | null {
+  const { closeRef, close } = useDismissableDialog();
   const auth = useAuthStore((s) => s.user);
   const { data: profile } = useProfileRead();
   const permission = useTablePermission(table);
@@ -149,47 +160,57 @@ export function KanbanRowDialog({
     descriptionField,
     fields.attachments,
     ...extraFields,
-  ].filter(Boolean) as Array<IField>;
+  ].filter((field): field is IField => Boolean(field));
 
   const quickFields = [
     fields.members,
     fields.startDate,
     fields.dueDate,
     fields.list,
-  ].filter(Boolean) as Array<IField>;
+  ].filter((field): field is IField => Boolean(field));
 
   const updateRow = useUpdateTableRow({
     onSuccess(data) {
-      toastSuccess('Registro atualizado', 'O card foi atualizado com sucesso');
+      toast.success('Registro atualizado', {
+        description: 'O card foi atualizado com sucesso',
+      });
       onRowUpdated?.(data);
-      setTaskTitle('');
-      setCommentText('');
       setEditingTaskIndex(null);
       setEditingTaskTitle('');
     },
     onError() {
-      toastError('Erro ao atualizar', 'Nao foi possivel atualizar o card');
+      toast.error('Erro ao atualizar', {
+        description: 'Nao foi possivel atualizar o card',
+      });
     },
   });
 
   const createRow = useCreateTableRow({
     onSuccess(data) {
-      toastSuccess('Card duplicado', 'O card foi duplicado com sucesso');
+      toast.success('Card duplicado', {
+        description: 'O card foi duplicado com sucesso',
+      });
       onRowDuplicated?.(data);
     },
     onError() {
-      toastError('Erro ao duplicar', 'Nao foi possivel duplicar o card');
+      toast.error('Erro ao duplicar', {
+        description: 'Nao foi possivel duplicar o card',
+      });
     },
   });
 
   const trashRow = useRowUpdateTrash({
     onSuccess() {
-      toastWarning('Card excluido', 'O card foi enviado para a lixeira');
+      toast.warning('Card excluido', {
+        description: 'O card foi enviado para a lixeira',
+      });
       if (row) onRowDeleted?.(row._id);
-      onClose();
+      close();
     },
     onError() {
-      toastError('Erro ao excluir', 'Nao foi possivel excluir o card');
+      toast.error('Erro ao excluir', {
+        description: 'Nao foi possivel excluir o card',
+      });
     },
   });
 
@@ -212,10 +233,10 @@ export function KanbanRowDialog({
               .map((opt: unknown) => {
                 if (typeof opt === 'string') return opt;
                 if (opt && typeof opt === 'object') {
-                  const candidate = opt as { value?: unknown; _id?: unknown };
-                  if (typeof candidate.value === 'string')
-                    return candidate.value;
-                  if (typeof candidate._id === 'string') return candidate._id;
+                  if ('value' in opt && typeof opt.value === 'string')
+                    return opt.value;
+                  if ('_id' in opt && typeof opt._id === 'string')
+                    return opt._id;
                 }
                 return '';
               })
@@ -232,10 +253,10 @@ export function KanbanRowDialog({
               .map((item: unknown) => {
                 if (typeof item === 'string') return item;
                 if (item && typeof item === 'object') {
-                  const candidate = item as { value?: unknown; id?: unknown };
-                  if (typeof candidate.value === 'string')
-                    return candidate.value;
-                  if (typeof candidate.id === 'string') return candidate.id;
+                  if ('value' in item && typeof item.value === 'string')
+                    return item.value;
+                  if ('id' in item && typeof item.id === 'string')
+                    return item.id;
                 }
                 return '';
               })
@@ -268,7 +289,8 @@ export function KanbanRowDialog({
   }, [rowId, quickFields.length]);
 
   const extraForm = useAppForm({
-    defaultValues: ((): Record<string, any> => {
+    // valores default do form são dinâmicos (payload low-code por slug).
+    defaultValues: ((): Record<string, UpdateRowDefaultValue> => {
       if (row) {
         return buildUpdateRowDefaultValues(row, editableFields);
       }
@@ -307,16 +329,26 @@ export function KanbanRowDialog({
     setIsAttachmentUploading(false);
   }, [rowId]);
 
+  React.useEffect(() => {
+    setCommentText('');
+    setEditingCommentIndex(null);
+    setEditingCommentText('');
+  }, [rowId]);
+
   const normalizeCommentPayload = React.useCallback(
-    (comment: Record<string, any>) => ({
-      ...comment,
-      autor: normalizeIdList(comment.autor),
-      mencoes: normalizeIdList(comment.mencoes),
-      'mencoes-notificadas':
-        typeof comment['mencoes-notificadas'] === 'string'
-          ? comment['mencoes-notificadas']
-          : '[]',
-    }),
+    (comment: Record<string, unknown>) => {
+      let mencoesNotificadas = '[]';
+      const rawNotificadas = comment['mencoes-notificadas'];
+      if (typeof rawNotificadas === 'string') {
+        mencoesNotificadas = rawNotificadas;
+      }
+      return {
+        ...comment,
+        autor: normalizeIdList(comment.autor),
+        mencoes: normalizeIdList(comment.mencoes),
+        'mencoes-notificadas': mencoesNotificadas,
+      };
+    },
     [],
   );
 
@@ -334,20 +366,71 @@ export function KanbanRowDialog({
   const title = getTitleValue(row, fields.title);
   const members = getMembersFromRow(row, fields.members);
   const progress = getProgressValue(row, fields.progress);
-  const creatorName =
-    (typeof row.creator === 'object' && row.creator !== null
-      ? (row.creator as any).name || (row.creator as any).email
-      : null) || 'Sem criador';
-  const tasks = Array.isArray(row[fields.tasks?.slug ?? ''])
-    ? (row[fields.tasks?.slug ?? ''] as Array<Record<string, any>>)
-    : [];
-  const comments = Array.isArray(row[fields.comments?.slug ?? ''])
-    ? (row[fields.comments?.slug ?? ''] as Array<Record<string, any>>)
-    : [];
-  const attachmentStorages =
+  let creatorName = 'Sem criador';
+  if (typeof row.creator === 'object' && row.creator !== null) {
+    creatorName = row.creator.name || row.creator.email || 'Sem criador';
+  }
+
+  const toRecords = (value: unknown): Array<Record<string, unknown>> => {
+    const out: Array<Record<string, unknown>> = [];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) out.push(item);
+      }
+    }
+    return out;
+  };
+
+  const tasks = toRecords(row[fields.tasks?.slug ?? '']);
+  const comments = toRecords(row[fields.comments?.slug ?? '']);
+
+  const rawAttachments = row[fields.attachments?.slug ?? ''];
+
+  let attachmentStorages: Array<IStorage> = [];
+  if (
     fields.attachments?.type === E_FIELD_TYPE.FILE &&
-    Array.isArray(row[fields.attachments.slug])
-      ? (row[fields.attachments.slug] as Array<unknown>).filter(
+    Array.isArray(rawAttachments)
+  ) {
+    attachmentStorages = rawAttachments.filter(
+      (value): value is IStorage =>
+        typeof value === 'object' &&
+        value !== null &&
+        '_id' in value &&
+        'url' in value &&
+        'originalName' in value,
+    );
+  }
+
+  let attachmentGroupRows: Array<Record<string, unknown>> = [];
+  if (
+    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
+    Array.isArray(rawAttachments)
+  ) {
+    attachmentGroupRows = toRecords(rawAttachments);
+  }
+
+  let attachmentGroupFileFieldSlug: string | undefined;
+  if (fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP) {
+    attachmentGroupFileFieldSlug = (
+      fields.attachments.group?.fields ?? []
+    ).find((groupField: IField) => groupField.type === E_FIELD_TYPE.FILE)?.slug;
+  }
+
+  let attachmentItems: Array<{ storage: IStorage }> = [];
+  if (fields.attachments?.type === E_FIELD_TYPE.FILE) {
+    attachmentItems = attachmentStorages.map((storage) => ({ storage }));
+  } else if (
+    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
+    attachmentGroupFileFieldSlug
+  ) {
+    const fileSlug = attachmentGroupFileFieldSlug;
+    attachmentItems = attachmentGroupRows.flatMap((groupRow) => {
+      const rawFiles = groupRow[fileSlug];
+      let files: Array<unknown> = [];
+      if (Array.isArray(rawFiles)) files = rawFiles;
+      else if (rawFiles) files = [rawFiles];
+      return files
+        .filter(
           (value): value is IStorage =>
             typeof value === 'object' &&
             value !== null &&
@@ -355,42 +438,9 @@ export function KanbanRowDialog({
             'url' in value &&
             'originalName' in value,
         )
-      : [];
-  const attachmentGroupRows =
-    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
-    Array.isArray(row[fields.attachments.slug])
-      ? (row[fields.attachments.slug] as Array<Record<string, any>>)
-      : [];
-  const attachmentGroupFileFieldSlug =
-    fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP
-      ? (fields.attachments.group?.fields ?? []).find(
-          (groupField: IField) => groupField.type === E_FIELD_TYPE.FILE,
-        )?.slug
-      : null;
-  const attachmentItems =
-    fields.attachments?.type === E_FIELD_TYPE.FILE
-      ? attachmentStorages.map((storage) => ({ storage }))
-      : fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
-          attachmentGroupFileFieldSlug
-        ? attachmentGroupRows.flatMap((groupRow) => {
-            const rawFiles = groupRow[attachmentGroupFileFieldSlug];
-            const files = Array.isArray(rawFiles)
-              ? rawFiles
-              : rawFiles
-                ? [rawFiles]
-                : [];
-            return files
-              .filter(
-                (value): value is IStorage =>
-                  typeof value === 'object' &&
-                  value !== null &&
-                  '_id' in value &&
-                  'url' in value &&
-                  'originalName' in value,
-              )
-              .map((storage) => ({ storage }));
-          })
-        : [];
+        .map((storage) => ({ storage }));
+    });
+  }
   const supportsInlineAttachmentManager =
     fields.attachments?.type === E_FIELD_TYPE.FILE ||
     (fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
@@ -418,7 +468,8 @@ export function KanbanRowDialog({
       };
     });
     const nextProgress = getTaskCompletionPercent(updated);
-    const progressData: Record<string, any> = {};
+    // dados de update são dinâmicos (payload low-code por slug).
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -442,7 +493,8 @@ export function KanbanRowDialog({
       },
     ];
     const nextProgress = getTaskCompletionPercent(updated);
-    const progressData: Record<string, any> = {};
+    // dados de update são dinâmicos (payload low-code por slug).
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -482,7 +534,8 @@ export function KanbanRowDialog({
       };
     });
     const nextProgress = getTaskCompletionPercent(updated);
-    const progressData: Record<string, any> = {};
+    // dados de update são dinâmicos (payload low-code por slug).
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -501,7 +554,8 @@ export function KanbanRowDialog({
     if (!fields.tasks) return;
     const updated = tasks.filter((_, i) => i !== index);
     const nextProgress = getTaskCompletionPercent(updated);
-    const progressData: Record<string, any> = {};
+    // dados de update são dinâmicos (payload low-code por slug).
+    const progressData: Record<string, unknown> = {};
     if (fields.progress) {
       progressData[fields.progress.slug] = String(nextProgress);
     }
@@ -542,15 +596,16 @@ export function KanbanRowDialog({
   const handleCommentSave = async (): Promise<void> => {
     if (editingCommentIndex === null || !fields.comments) return;
     const editMentionIds = extractMentionIds(editCommentEditorRef.current);
-    const updated = comments.map((comment, index) =>
-      index === editingCommentIndex
-        ? {
-            ...normalizeCommentPayload(comment),
-            comentario: editingCommentText.trim(),
-            mencoes: editMentionIds,
-          }
-        : normalizeCommentPayload(comment),
-    );
+    const updated = comments.map((comment, index) => {
+      if (index !== editingCommentIndex) {
+        return normalizeCommentPayload(comment);
+      }
+      return {
+        ...normalizeCommentPayload(comment),
+        comentario: editingCommentText.trim(),
+        mencoes: editMentionIds,
+      };
+    });
     await updateRow.mutateAsync({
       slug: tableSlug,
       rowId: row._id,
@@ -813,7 +868,7 @@ export function KanbanRowDialog({
   const renderExtraFieldEditor = (field: IField): React.JSX.Element => {
     return (
       <extraForm.AppField name={field.slug}>
-        {(formField: any) => {
+        {(formField) => {
           switch (field.type) {
             case E_FIELD_TYPE.TEXT_SHORT:
               return <formField.TableRowTextField field={field} />;
@@ -834,7 +889,12 @@ export function KanbanRowDialog({
             case E_FIELD_TYPE.FILE:
               return <formField.TableRowFileField field={field} />;
             case E_FIELD_TYPE.RELATIONSHIP:
-              return <formField.TableRowRelationshipField field={field} />;
+              return (
+                <formField.TableRowRelationshipField
+                  field={field}
+                  tableSlug={tableSlug}
+                />
+              );
             case E_FIELD_TYPE.CATEGORY:
               return <formField.TableRowCategoryField field={field} />;
             case E_FIELD_TYPE.FIELD_GROUP:
@@ -848,6 +908,8 @@ export function KanbanRowDialog({
               );
             case E_FIELD_TYPE.USER:
               return <formField.TableRowUserField field={field} />;
+            case E_FIELD_TYPE.USER_GROUP:
+              return <formField.TableRowUserGroupField field={field} />;
             default:
               return <span className="text-muted-foreground text-sm">-</span>;
           }
@@ -856,13 +918,11 @@ export function KanbanRowDialog({
     );
   };
   return (
-    <Dialog
-      modal={false}
-      open={!!row}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog modal={false}>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         data-slot="kanban-row-dialog"
         data-test-id="kanban-row-dialog"
@@ -951,7 +1011,7 @@ export function KanbanRowDialog({
               }}
               editTarget={editTarget}
               setEditTarget={setEditTarget}
-              quickForm={quickForm}
+              form={quickForm}
               tableSlug={tableSlug}
             />
 
@@ -1067,34 +1127,42 @@ export function KanbanRowDialog({
                                         attachment.mimetype?.includes('image')
                                       ) {
                                         attachmentThumbnail = (
-                                          <a
-                                            href={attachment.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="shrink-0"
+                                          <AttachmentContextMenu
+                                            storage={attachment}
                                           >
-                                            <img
-                                              src={attachment.url}
-                                              alt={attachment.originalName}
-                                              className="size-9 rounded object-cover border"
-                                            />
-                                          </a>
+                                            <a
+                                              href={attachment.url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="shrink-0"
+                                            >
+                                              <img
+                                                src={attachment.url}
+                                                alt={attachment.originalName}
+                                                className="size-9 rounded object-cover border"
+                                              />
+                                            </a>
+                                          </AttachmentContextMenu>
                                         );
                                       } else if (
                                         attachment.mimetype ===
                                         'application/pdf'
                                       ) {
                                         attachmentThumbnail = (
-                                          <a
-                                            href={attachment.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="shrink-0"
+                                          <AttachmentContextMenu
+                                            storage={attachment}
                                           >
-                                            <div className="size-9 rounded border bg-muted flex items-center justify-center">
-                                              <FileTextIcon className="size-4 text-muted-foreground" />
-                                            </div>
-                                          </a>
+                                            <a
+                                              href={attachment.url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="shrink-0"
+                                            >
+                                              <div className="size-9 rounded border bg-muted flex items-center justify-center">
+                                                <FileTextIcon className="size-4 text-muted-foreground" />
+                                              </div>
+                                            </a>
+                                          </AttachmentContextMenu>
                                         );
                                       }
                                       return (
@@ -1104,14 +1172,18 @@ export function KanbanRowDialog({
                                         >
                                           <div className="flex min-w-0 items-center gap-2">
                                             {attachmentThumbnail}
-                                            <a
-                                              href={attachment.url}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="text-sm text-primary underline underline-offset-2 truncate"
+                                            <AttachmentContextMenu
+                                              storage={attachment}
                                             >
-                                              {attachment.originalName}
-                                            </a>
+                                              <a
+                                                href={attachment.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-sm text-primary underline underline-offset-2 truncate"
+                                              >
+                                                {attachment.originalName}
+                                              </a>
+                                            </AttachmentContextMenu>
                                           </div>
                                           <div className="flex items-center gap-1">
                                             <a
@@ -1353,7 +1425,7 @@ export function KanbanRowDialog({
                 data-test-id="kanban-view-btn"
                 onClick={(): void => {
                   void router.navigate({
-                    to: '/tables/$slug/row/',
+                    to: '/tables/$slug/row',
                     params: { slug: tableSlug },
                     search: { _id: row._id },
                   });
@@ -1370,7 +1442,7 @@ export function KanbanRowDialog({
                   data-test-id="kanban-edit-btn"
                   onClick={(): void => {
                     void router.navigate({
-                      to: '/tables/$slug/row/',
+                      to: '/tables/$slug/row',
                       params: { slug: tableSlug },
                       search: { _id: row._id, mode: 'edit' as const },
                     });
@@ -1446,6 +1518,17 @@ export function KanbanRowDialog({
               <p className="text-xs uppercase text-muted-foreground">Criador</p>
               <Badge variant="outline">{creatorName}</Badge>
             </div>
+
+            <DialogClose asChild>
+              <Button
+                ref={closeRef}
+                type="button"
+                variant="outline"
+                className="mt-auto w-full cursor-pointer"
+              >
+                Fechar
+              </Button>
+            </DialogClose>
           </aside>
         </div>
       </DialogContent>

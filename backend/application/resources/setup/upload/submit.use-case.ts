@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -15,12 +14,12 @@ type Input = {
   FILE_UPLOAD_MAX_FILES_PER_UPLOAD: number;
 };
 
-interface SetupStepOutput {
+type SetupStepOutput = {
   completed: boolean;
   currentStep: SetupStep | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
-}
+};
 
 type Response = Either<HTTPException, SetupStepOutput>;
 

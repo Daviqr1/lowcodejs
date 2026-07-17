@@ -6,10 +6,11 @@ drag-drop.
 
 ## Arquivos
 
-| Arquivo                        | Componente                                      | Descricao                                                                                                                                                                                 |
-| ------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `field-management-context.tsx` | `FieldManagementProvider`, `useFieldManagement` | Context com `FieldManagementActions`: fields, onToggleVisibility, onChangeWidth, onSaveOrder, onDeleteField, onEditField + estados de loading. Define tipos `VisibilityKey` e `WidthKey`. |
-| `field-management.tsx`         | `FieldManagement` (compound)                    | Componente composto com `Root`, `Header`, `Tabs`, `List`, `TrashedList`.                                                                                                                  |
+| Arquivo                            | Componente                                      | Descricao                                                                                                                                                                                 |
+| ---------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `field-management-context.tsx`     | `FieldManagementProvider`, `useFieldManagement` | Context com `FieldManagementActions`: fields, onToggleVisibility, onChangeWidth, onSaveOrder, onDeleteField, onEditField + estados de loading. Define tipos `VisibilityKey` e `WidthKey`. |
+| `field-management.tsx`             | `FieldManagement` (compound)                    | Componente composto com `Root`, `Header`, `Tabs`, `List`, `TrashedList`.                                                                                                                  |
+| `table-field-management-sheet.tsx` | `TableFieldManagementSheet`                     | Sheet lateral que embrulha `FieldManagement` para gerenciar campos em um drawer.                                                                                                          |
 
 ## Compound components
 
@@ -23,12 +24,18 @@ drag-drop.
 
 ## Visibilidade e largura
 
-| VisibilityKey  | WidthKey        | Aba         |
-| -------------- | --------------- | ----------- |
-| `showInList`   | `widthInList`   | Lista       |
-| `showInFilter` | -               | Filtros     |
-| `showInForm`   | `widthInForm`   | Formularios |
-| `showInDetail` | `widthInDetail` | Detalhes    |
+`VisibilityKey` e apenas a chave do toggle na UI. Exceto `showInFilter` (que
+mapeia para o campo real `field.showInFilter` — sidebar de filtros, nao e
+permissao), as demais chaves mapeiam para o contexto de `field.permissions`
+(`list`/`form`/`detail`) via `FIELD_CONTEXT_BY_VISIBILITY_KEY`: ligar grava
+binding PUBLIC, desligar grava NOBODY.
+
+| VisibilityKey  | WidthKey        | Aba         | Destino              |
+| -------------- | --------------- | ----------- | -------------------- |
+| `showInList`   | `widthInList`   | Lista       | `permissions.list`   |
+| `showInFilter` | -               | Filtros     | `field.showInFilter` |
+| `showInForm`   | `widthInForm`   | Formularios | `permissions.form`   |
+| `showInDetail` | `widthInDetail` | Detalhes    | `permissions.detail` |
 
 ## Drag-drop
 

@@ -4,9 +4,9 @@ import { AlignCenter, AlignLeft, AlignRight, Trash2 } from 'lucide-react';
 
 import { ToolbarButton } from '../toolbar-button';
 
-interface ImageBubbleProps {
+type ImageBubbleProps = {
   editor: Editor;
-}
+};
 
 export function ImageBubble({ editor }: ImageBubbleProps): React.JSX.Element {
   return (

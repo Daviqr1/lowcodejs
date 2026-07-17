@@ -13,7 +13,6 @@ import { BulkRestoreBodyValidator } from './bulk-restore.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: BulkRestoreUseCase = getInstanceByToken(
       BulkRestoreUseCase,
     ),

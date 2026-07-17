@@ -27,8 +27,12 @@ export default class UpdateDocTranscriptionConfigUseCase {
 
       const config = await saveConfig({
         ...(input.apiUrl !== undefined && { apiUrl: input.apiUrl }),
-        ...(input.apiKey !== undefined && { apiKey: input.apiKey }),
-        ...(input.model !== undefined && { model: input.model }),
+        ...(input.apiKey !== undefined &&
+          input.apiKey !== null &&
+          input.apiKey.trim() !== '' && { apiKey: input.apiKey.trim() }),
+        ...(input.model !== undefined &&
+          input.model !== null &&
+          input.model.trim() !== '' && { model: input.model.trim() }),
         ...(input.documentTypes !== undefined && {
           documentTypes: input.documentTypes.map((dt) => ({
             id: dt.id,

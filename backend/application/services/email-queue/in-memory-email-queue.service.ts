@@ -1,12 +1,11 @@
+import type { Merge } from '@application/core/entity.core';
+
 import {
   EmailQueueContractService,
   type EmailJobPayload,
 } from './email-queue-contract.service';
 
-interface StoredJob extends EmailJobPayload {
-  id: string;
-  enqueuedAt: Date;
-}
+type StoredJob = Merge<EmailJobPayload, { id: string; enqueuedAt: Date }>;
 
 export default class InMemoryEmailQueueService implements EmailQueueContractService {
   private jobs: StoredJob[] = [];

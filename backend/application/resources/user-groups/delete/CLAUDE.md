@@ -9,7 +9,7 @@ Exclui permanentemente um grupo na lixeira.
 ## Middleware
 
 1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER])`
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS)`
 
 ## Regras
 
@@ -22,7 +22,7 @@ Exclui permanentemente um grupo na lixeira.
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Não é MASTER |
+| 403 | FORBIDDEN | Sem capability MANAGE_USER_GROUPS |
 | 403 | SYSTEM_GROUP_PROTECTED | Grupo do sistema |
 | 404 | USER_GROUP_NOT_FOUND | Não encontrado |
 | 409 | NOT_TRASHED | Não está na lixeira |

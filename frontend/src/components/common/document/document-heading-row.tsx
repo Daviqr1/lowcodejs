@@ -25,8 +25,8 @@ export function DocumentHeadingRow({
     6: 'text-sm font-semibold mt-2',
   };
 
-  const Tag =
-    `h${level}` as keyof React.JSX.IntrinsicElements as React.ElementType;
+  const tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const;
+  const Tag: React.ElementType = tags[level - 1] ?? 'h2';
 
   return (
     <div data-slot="document-heading-row">

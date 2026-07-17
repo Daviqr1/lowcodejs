@@ -11,6 +11,7 @@ type Params = {
   search?: string;
   page?: number;
   perPage?: number;
+  excludeSelfId?: string;
   enabled?: boolean;
 };
 

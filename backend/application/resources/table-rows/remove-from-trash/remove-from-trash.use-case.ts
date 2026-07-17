@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -43,7 +42,7 @@ export default class TableRowRemoveFromTrashUseCase {
         );
       }
 
-      if (!row.trashed) {
+      if (!row.trashedAt) {
         return left(
           HTTPException.Conflict('Registro não está na lixeira', 'NOT_TRASHED'),
         );
@@ -52,7 +51,7 @@ export default class TableRowRemoveFromTrashUseCase {
       const updated = await this.rowRepository.update({
         table,
         _id: payload._id,
-        data: { trashed: false, trashedAt: null },
+        data: { trashedAt: null },
       });
 
       if (!updated) {

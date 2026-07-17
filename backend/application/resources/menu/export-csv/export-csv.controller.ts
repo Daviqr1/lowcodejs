@@ -1,11 +1,10 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { buildCsvFilename } from '@application/core/csv/csv-filename';
-import { E_ROLE } from '@application/core/entity.core';
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { MenuExportCsvSchema } from './export-csv.schema';
 import MenuExportCsvUseCase from './export-csv.use-case';
@@ -26,7 +25,7 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU),
       ],
       schema: MenuExportCsvSchema,
     },

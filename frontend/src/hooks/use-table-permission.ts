@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 
+import { useGroupReadList } from './tanstack-query/use-group-read-list';
 import { useProfileRead } from './tanstack-query/use-profile-read';
 
-import { E_ROLE, E_TABLE_VISIBILITY } from '@/lib/constant';
+import { E_PERMISSION_TARGET, E_TABLE_PROFILE } from '@/lib/constant';
 import type { ITable } from '@/lib/interfaces';
+import {
+  isPrivileged,
+  resolveUserCapabilities,
+  resolveUserGroupIds,
+  userSatisfiesBinding,
+} from '@/lib/permission';
 import { useAuthStore } from '@/stores/authentication';
 
 export type TableAction =
@@ -20,146 +27,99 @@ export type TableAction =
   | 'UPDATE_ROW'
   | 'REMOVE_ROW';
 
-const PERMISSION_SLUG_MAP: Record<TableAction, string> = {
-  CREATE_TABLE: 'create-table',
-  UPDATE_TABLE: 'update-table',
-  REMOVE_TABLE: 'remove-table',
-  VIEW_TABLE: 'view-table',
-  CREATE_FIELD: 'create-field',
-  UPDATE_FIELD: 'update-field',
-  REMOVE_FIELD: 'remove-field',
-  VIEW_FIELD: 'view-field',
-  CREATE_ROW: 'create-row',
-  UPDATE_ROW: 'update-row',
-  REMOVE_ROW: 'remove-row',
-  VIEW_ROW: 'view-row',
-};
-
-interface UseTablePermissionResult {
+type UseTablePermissionResult = {
   isOwner: boolean;
   isAdmin: boolean;
   isOwnerOrAdmin: boolean;
   can: (action: TableAction) => boolean;
   isLoading: boolean;
-}
+};
 
 /**
- * Hook para verificar permissões de tabela
+ * Hook para verificar permissões de tabela (gating de UX no client).
  *
- * Lógica:
- * 1. Se usuário é dono ou admin da tabela -> acesso total
- * 2. Se não -> verifica permissão do grupo do usuário
+ * O backend é a fonte de verdade e enforça tudo (inclusive "apenas as próprias
+ * rows" para contributor). Aqui fazemos um gating coarse:
+ * 1. Privilegiado (MASTER/ADMINISTRATOR, dono, ou membro ADMIN/OWNER) -> tudo.
+ * 2. Caso contrário -> avalia o binding da ação contra o fecho de grupos do
+ *    usuário (`table.permissions[action]`: PUBLIC libera, GROUP exige o grupo no
+ *    fecho, NOBODY/ausente nega).
  */
 export function useTablePermission(
   table: ITable | undefined,
 ): UseTablePermissionResult {
   const auth = useAuthStore();
   const profile = useProfileRead();
+  const groups = useGroupReadList();
 
   const userId = auth.user?._id;
 
   const isOwner = useMemo(() => {
     if (!table || !userId) return false;
-    const ownerId =
-      typeof table.owner === 'string' ? table.owner : table.owner._id;
-    return ownerId === userId;
+    // owner pode vir ausente/null (tabela recém-criada ou resposta sem populate)
+    // — nunca desreferenciar direto, senão estoura em render.
+    if (table.owner) {
+      let ownerId: string | null = null;
+      if (typeof table.owner === 'string') ownerId = table.owner;
+      if (typeof table.owner === 'object') ownerId = table.owner._id;
+      if (ownerId === userId) return true;
+    }
+    return Boolean(
+      table.members?.some(
+        (member) =>
+          member.user === userId && member.profile === E_TABLE_PROFILE.OWNER,
+      ),
+    );
   }, [table, userId]);
 
   const isAdmin = useMemo(() => {
     if (!table || !userId) return false;
-    return table.administrators.some((admin) => {
-      const adminId = typeof admin === 'string' ? admin : admin._id;
-      return adminId === userId;
-    });
+    return Boolean(
+      table.members?.some(
+        (member) =>
+          member.user === userId && member.profile === E_TABLE_PROFILE.ADMIN,
+      ),
+    );
   }, [table, userId]);
 
   const isOwnerOrAdmin = isOwner || isAdmin;
 
-  const permissions = useMemo(() => {
-    if (!profile.data) return [];
-    return profile.data.group.permissions.map((p) => p.slug.toLowerCase());
-  }, [profile.data]);
+  const userGroupIds = useMemo(() => {
+    return resolveUserGroupIds(profile.data ?? null, groups.data ?? []);
+  }, [profile.data, groups.data]);
 
-  const isMaster = profile.data?.group.slug === E_ROLE.MASTER;
-  const isAdministrator = profile.data?.group.slug === E_ROLE.ADMINISTRATOR;
+  const capabilities = useMemo(
+    () => resolveUserCapabilities(profile.data ?? null, groups.data ?? []),
+    [profile.data, groups.data],
+  );
+
+  const privileged = useMemo(
+    () => isPrivileged(profile.data ?? null, groups.data ?? []),
+    [profile.data, groups.data],
+  );
 
   const can = useMemo(() => {
     return (action: TableAction): boolean => {
-      // MASTER tem acesso total a tudo
-      if (isMaster) return true;
+      // Privilegiados têm acesso total no client (backend reconfirma).
+      if (privileged || isOwnerOrAdmin) return true;
 
-      // ADMINISTRATOR tem acesso total a TODAS as tabelas
-      if (isAdministrator) return true;
+      // Sem o mapa de permissões (tabela ainda não backfillada): só privilegiado.
+      if (!table?.permissions) return false;
 
-      // Dono ou admin da tabela pode fazer tudo
-      if (isOwnerOrAdmin) return true;
+      const binding = table.permissions[action];
+      // Ausente => negado (espelha o backend, que nega ação sem binding).
+      if (!binding) return false;
 
-      // Usuário não logado
-      if (!userId) {
-        const visibility = table?.visibility || E_TABLE_VISIBILITY.RESTRICTED;
-        // Visitante pode ver tabelas públicas
-        if (
-          visibility === E_TABLE_VISIBILITY.PUBLIC &&
-          ['VIEW_TABLE', 'VIEW_FIELD', 'VIEW_ROW'].includes(action)
-        ) {
-          return true;
-        }
-        // Visitante pode criar registro em tabelas de formulário
-        if (visibility === E_TABLE_VISIBILITY.FORM && action === 'CREATE_ROW') {
-          return true;
-        }
-        return false;
-      }
+      // PUBLIC libera todos (inclui visitante), sem exigir capacidade.
+      if (binding.kind === E_PERMISSION_TARGET.PUBLIC) return true;
 
-      // Ações que SEMPRE requerem dono/admin (independente da visibilidade)
-      const ownerOnlyActions: Array<TableAction> = [
-        'CREATE_FIELD',
-        'UPDATE_FIELD',
-        'REMOVE_FIELD',
-        'UPDATE_TABLE',
-        'REMOVE_TABLE',
-        'UPDATE_ROW',
-        'REMOVE_ROW',
-      ];
+      // Interseção (espelha o backend): GROUP exige a capacidade global da ação
+      // no fecho de grupos E o grupo do binding no fecho.
+      if (!capabilities.has(action)) return false;
 
-      if (ownerOnlyActions.includes(action)) {
-        return false; // Só dono/admin pode fazer isso
-      }
-
-      // Aplicar regras de visibilidade
-      const visibility = table?.visibility || E_TABLE_VISIBILITY.RESTRICTED;
-
-      switch (visibility) {
-        case E_TABLE_VISIBILITY.PRIVATE:
-          // PRIVADA: Apenas dono/admin pode fazer tudo
-          return false;
-
-        case E_TABLE_VISIBILITY.RESTRICTED:
-          // RESTRITA: Usuário logado pode ver, mas não criar
-          if (action === 'CREATE_ROW') return false;
-          break;
-
-        case E_TABLE_VISIBILITY.OPEN:
-          // ABERTA: Usuário logado pode ver e criar
-          break;
-
-        case E_TABLE_VISIBILITY.PUBLIC:
-          // PÚBLICA: Usuário logado pode ver e criar
-          break;
-
-        case E_TABLE_VISIBILITY.FORM:
-          // FORMULÁRIO: Usuário logado NÃO pode ver (só criar via visitante)
-          if (['VIEW_TABLE', 'VIEW_FIELD', 'VIEW_ROW'].includes(action)) {
-            return false;
-          }
-          break;
-      }
-
-      // Verifica permissões do grupo do usuário
-      const requiredSlug = PERMISSION_SLUG_MAP[action].toLowerCase();
-      return permissions.includes(requiredSlug);
+      return userSatisfiesBinding(binding, userGroupIds);
     };
-  }, [isMaster, isAdministrator, isOwnerOrAdmin, permissions, table, userId]);
+  }, [privileged, isOwnerOrAdmin, table, userGroupIds, capabilities]);
 
   return {
     isOwner,
@@ -179,27 +139,31 @@ export function usePermission(): {
   isLoading: boolean;
 } {
   const profile = useProfileRead();
+  const groups = useGroupReadList();
 
-  const isMaster = profile.data?.group.slug === E_ROLE.MASTER;
-  const isAdministrator = profile.data?.group.slug === E_ROLE.ADMINISTRATOR;
+  const privileged = useMemo(
+    () => isPrivileged(profile.data ?? null, groups.data ?? []),
+    [profile.data, groups.data],
+  );
 
-  const permissions = useMemo(() => {
-    if (!profile.data) return [];
-    return profile.data.group.permissions.map((p) => p.slug.toLowerCase());
-  }, [profile.data]);
+  // Capacidades do fecho de grupos (grupo principal + adicionais + englobados),
+  // espelhando o `resolveCapabilities` do backend. Antes só o grupo principal
+  // era considerado e o slug era comparado em kebab-case (nunca casava com o
+  // slug UPPER_SNAKE do backend) — por isso o botão "Nova Tabela" não aparecia.
+  const capabilities = useMemo(
+    () => resolveUserCapabilities(profile.data ?? null, groups.data ?? []),
+    [profile.data, groups.data],
+  );
 
   const can = useMemo(() => {
     return (action: TableAction): boolean => {
-      // MASTER tem acesso total a tudo
-      if (isMaster) return true;
+      // Privilegiado (MASTER/ADMINISTRATOR no fecho) tem acesso total.
+      if (privileged) return true;
 
-      // ADMINISTRATOR tem acesso total a tabelas
-      if (isAdministrator) return true;
-
-      const requiredSlug = PERMISSION_SLUG_MAP[action].toLowerCase();
-      return permissions.includes(requiredSlug);
+      // TableAction == slug da permissão (UPPER_SNAKE), igual ao backend.
+      return capabilities.has(action);
     };
-  }, [isMaster, isAdministrator, permissions]);
+  }, [privileged, capabilities]);
 
   return {
     can,

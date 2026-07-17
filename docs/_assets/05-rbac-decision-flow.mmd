@@ -1,0 +1,42 @@
+flowchart TD
+    A[Request com requiredPermission] --> B{accessToken presente?}
+    B -- nao + optional=false --> Z1[401 AUTHENTICATION_REQUIRED]
+    B -- nao + optional=true --> C[request.user indefinido]
+    B -- sim --> D[request.user populado]
+
+    C --> E{isPublicAccess?}
+    D --> E
+
+    E -- "PUBLIC + GET + VIEW_*" --> OK1[Acesso liberado - visitante]
+    E -- "FORM + POST + CREATE_ROW" --> OK1
+    E -- nao --> F[checkTableAccess]
+
+    F --> G{userId e userRole presentes?}
+    G -- nao --> Z2[401 USER_NOT_AUTHENTICATED]
+    G -- sim --> H{role == MASTER?}
+
+    H -- sim --> OK2[allowed=true - bypassa tudo]
+    H -- nao --> I{role == ADMINISTRATOR?}
+
+    I -- sim --> J[checkUserIsActive] --> OK3[allowed=true - acesso total]
+    I -- nao --> K{requiredPermission == CREATE_TABLE?}
+
+    K -- sim --> L[checkUserHasPermission no grupo] --> OK4[allowed=true]
+    K -- nao --> M{table existe?}
+
+    M -- nao --> Z3[400 TABLE_REQUIRED]
+    M -- sim --> N{isOwner OU isTableAdmin?}
+
+    N -- sim --> O[checkUserIsActive] --> OK5[allowed=true + ownership]
+    N -- nao --> P{requiredPermission em OWNER_ONLY_ACTIONS?}
+
+    P -- sim --> Z4[403 OWNER_OR_ADMIN_REQUIRED]
+    P -- nao --> Q[checkVisibilityRules visibility x permission]
+
+    Q -- PRIVATE --> Z5[403 TABLE_PRIVATE]
+    Q -- "RESTRICTED + CREATE_ROW" --> Z6[403 RESTRICTED_CREATE]
+    Q -- "FORM + VIEW_*" --> Z7[403 FORM_VIEW_RESTRICTED]
+    Q -- "OPEN / PUBLIC / demais" --> R[checkUserHasPermission no grupo]
+
+    R -- tem permissao --> OK6[allowed=true + ownership]
+    R -- nao tem --> Z8[403 INSUFFICIENT_PERMISSIONS]

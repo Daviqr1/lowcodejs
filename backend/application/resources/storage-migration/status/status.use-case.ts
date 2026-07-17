@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -64,16 +63,16 @@ export default class StorageMigrationStatusUseCase {
       this.settingRepository.get(),
     ]);
 
-    const current = (setting?.STORAGE_DRIVER ??
-      E_STORAGE_LOCATION.LOCAL) as TStorageLocation;
-    const previous: TStorageLocation =
-      current === E_STORAGE_LOCATION.LOCAL
-        ? E_STORAGE_LOCATION.S3
-        : E_STORAGE_LOCATION.LOCAL;
+    let current: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+    if (setting?.STORAGE_DRIVER === E_STORAGE_LOCATION.S3) {
+      current = E_STORAGE_LOCATION.S3;
+    }
+    let previous: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+    if (current === E_STORAGE_LOCATION.LOCAL) previous = E_STORAGE_LOCATION.S3;
 
     const totalFiles = countLocal + countS3;
-    const filesOnPrevious =
-      previous === E_STORAGE_LOCATION.LOCAL ? countLocal : countS3;
+    let filesOnPrevious = countS3;
+    if (previous === E_STORAGE_LOCATION.LOCAL) filesOnPrevious = countLocal;
 
     const migrationInProgress = activeJob !== null;
     const canCleanup =

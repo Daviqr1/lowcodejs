@@ -1,10 +1,9 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
-import { suggestUniqueFieldSlug } from '@application/core/field-slug.core';
+import { FieldSlug } from '@application/core/field-slug.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 import type { TableFieldSuggestSlugPayload } from './suggest-slug.validator';
@@ -30,7 +29,7 @@ export default class TableFieldSuggestSlugUseCase {
         .map((field) => field.slug);
 
       return right({
-        slug: suggestUniqueFieldSlug(payload.name, existingSlugs),
+        slug: FieldSlug.suggestUnique(payload.name, existingSlugs),
       });
     } catch (error) {
       console.error('[table-fields > suggest-slug][error]:', error);

@@ -2,16 +2,68 @@ import { FileTextIcon } from 'lucide-react';
 import React from 'react';
 import { z } from 'zod';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import {
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
+  E_PERMISSION_TARGET,
+  E_TABLE_PROFILE,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
+  PERMISSION_DESCRIPTION_MAPPER,
+  PERMISSION_LABEL_MAPPER,
   TABLE_NAME_REGEX,
+  TABLE_PERMISSION_ACTIONS,
 } from '@/lib/constant';
-import type { IField, ILayoutFields, ITable } from '@/lib/interfaces';
+import type {
+  IField,
+  ILayoutFields,
+  IPermissionBinding,
+  ITable,
+} from '@/lib/interfaces';
+import {
+  COLLABORATION_PRESET_LABEL,
+  COLLABORATION_PRESET_OPTIONS,
+  E_COLLABORATION_PRESET,
+  applyCollaborationPreset,
+  detectCollaborationPreset,
+} from '@/lib/table-permission-presets';
 import { getAllowedTableStyles } from '@/lib/table-style';
+
+const PermissionBindingSchema = z.object({
+  kind: z.enum([
+    E_PERMISSION_TARGET.PUBLIC,
+    E_PERMISSION_TARGET.NOBODY,
+    E_PERMISSION_TARGET.GROUP,
+  ]),
+  group: z.string().nullable().default(null),
+});
+
+const TableMemberSchema = z.object({
+  user: z.string(),
+  profile: z.enum([
+    E_TABLE_PROFILE.OWNER,
+    E_TABLE_PROFILE.ADMIN,
+    E_TABLE_PROFILE.EDITOR,
+    E_TABLE_PROFILE.CONTRIBUTOR,
+    E_TABLE_PROFILE.VIEWER,
+  ]),
+});
+
+// Mapa default (tudo "Ninguém"): tabelas legadas sem permissions começam assim.
+export function buildDefaultPermissions(): Record<string, IPermissionBinding> {
+  const permissions: Record<string, IPermissionBinding> = {};
+  for (const action of TABLE_PERMISSION_ACTIONS) {
+    permissions[action] = { kind: E_PERMISSION_TARGET.NOBODY, group: null };
+  }
+  return permissions;
+}
 
 const LayoutFieldsSchema = z.object({
   title: z.string().default(''),
@@ -44,21 +96,13 @@ export const TableUpdateSchema = z.object({
     E_TABLE_STYLE.CALENDAR,
     E_TABLE_STYLE.GANTT,
   ]),
-  visibility: z.enum([
-    E_TABLE_VISIBILITY.PUBLIC,
-    E_TABLE_VISIBILITY.RESTRICTED,
-    E_TABLE_VISIBILITY.OPEN,
-    E_TABLE_VISIBILITY.FORM,
-    E_TABLE_VISIBILITY.PRIVATE,
-  ]),
-  collaboration: z.enum([
-    E_TABLE_COLLABORATION.OPEN,
-    E_TABLE_COLLABORATION.RESTRICTED,
-  ]),
   logo: z.string().nullable().default(null),
   logoFile: z.array(z.custom<File>()).default([]),
-  administrators: z.array(z.string()).default([]),
+  permissions: z.record(z.string(), PermissionBindingSchema).default({}),
+  members: z.array(TableMemberSchema).default([]),
+  owner: z.string().default(''),
   order: z.string().default('none'),
+  rowSlugFieldId: z.string().nullable().default(null),
   layoutFields: LayoutFieldsSchema.default({
     title: '',
     description: '',
@@ -79,12 +123,13 @@ export const tableUpdateFormDefaultValues: TableUpdateFormValues = {
   slug: '',
   description: '',
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   logo: null,
   logoFile: [],
-  administrators: [],
+  permissions: buildDefaultPermissions(),
+  members: [],
+  owner: '',
   order: 'none',
+  rowSlugFieldId: null,
   layoutFields: {
     title: '',
     description: '',
@@ -102,11 +147,34 @@ export const UpdateTableFormFields = withForm({
   defaultValues: tableUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     tableData: null as ITable | null,
   },
   render: function Render({ form, isPending, mode, tableData }) {
     const isDisabled = mode === 'show' || isPending;
+
+    // Grupo Registered: alvo dos presets que liberam "usuário logado".
+    const { data: groups } = useGroupReadList();
+    const registeredGroupId = React.useMemo(() => {
+      const match = (groups ?? []).find(
+        (group) => group.slug?.toUpperCase() === 'REGISTERED',
+      );
+      return match?._id ?? null;
+    }, [groups]);
+
+    function applyPreset(value: string): void {
+      const preset = COLLABORATION_PRESET_OPTIONS.find(
+        (item) => item === value,
+      );
+      if (!preset) return;
+      form.setFieldValue(
+        'permissions',
+        applyCollaborationPreset(preset, registeredGroupId),
+      );
+    }
 
     const orderOptions = React.useMemo(() => {
       const fields = tableData?.fields?.filter((f) => !f.trashed) ?? [];
@@ -209,7 +277,7 @@ export const UpdateTableFormFields = withForm({
     return (
       <section
         data-test-id="table-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Logo */}
         <form.AppField name="logoFile">
@@ -343,68 +411,91 @@ export const UpdateTableFormFields = withForm({
           }}
         </form.Subscribe>
 
-        {/* Campo Visibility */}
-        <form.AppField
-          name="visibility"
-          validators={{
-            onChange: ({ value }) => {
-              if (value.trim() === '') {
-                return 'Visibilidade é obrigatória';
-              }
-              return undefined;
-            },
-            onBlur: ({ value }) => {
-              if (value.trim() === '') {
-                return 'Visibilidade é obrigatória';
-              }
-              return undefined;
-            },
-          }}
-        >
+        {/* Permissões por ação (Grupo | Público | Ninguém) */}
+        <div className="space-y-3 rounded-lg border p-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Permissões da tabela
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Liberar uma ação para um grupo só tem efeito se o grupo também tiver
+            a permissão correspondente (regra de interseção). "Todos (Público)"
+            libera para qualquer pessoa; "Ninguém" bloqueia.
+          </p>
+
+          {/* Preset de colaboração: preenche os 10 bindings de uma vez. */}
+          <form.Subscribe selector={(state) => state.values.permissions}>
+            {(permissions) => (
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">
+                  Modelo de colaboração
+                </p>
+                <Select
+                  value={detectCollaborationPreset(
+                    permissions,
+                    registeredGroupId,
+                  )}
+                  onValueChange={applyPreset}
+                  disabled={isDisabled}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Personalizado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COLLABORATION_PRESET_OPTIONS.map((preset) => (
+                      <SelectItem
+                        key={preset}
+                        value={preset}
+                      >
+                        {COLLABORATION_PRESET_LABEL[preset]}
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value={E_COLLABORATION_PRESET.CUSTOM}
+                      disabled
+                    >
+                      {
+                        COLLABORATION_PRESET_LABEL[
+                          E_COLLABORATION_PRESET.CUSTOM
+                        ]
+                      }
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </form.Subscribe>
+
+          {TABLE_PERMISSION_ACTIONS.map((action) => (
+            <form.AppField
+              key={action}
+              name={`permissions.${action}`}
+            >
+              {(field) => (
+                <field.FieldPermissionBinding
+                  label={PERMISSION_LABEL_MAPPER[action] ?? action}
+                  description={PERMISSION_DESCRIPTION_MAPPER[action]}
+                  disabled={isDisabled}
+                />
+              )}
+            </form.AppField>
+          ))}
+        </div>
+
+        {/* Dono da tabela (troca de dono) */}
+        <form.AppField name="owner">
           {(field) => (
-            <field.TableVisibilitySelectField
-              label="Visibilidade"
-              placeholder="Selecione a visibilidade"
+            <field.FieldOwnerSelect
+              label="Dono"
               disabled={isDisabled}
-              required
             />
           )}
         </form.AppField>
 
-        {/* Campo Collaboration */}
-        <form.AppField
-          name="collaboration"
-          validators={{
-            onChange: ({ value }) => {
-              if (value.trim() === '') {
-                return 'Colaboração é obrigatória';
-              }
-              return undefined;
-            },
-            onBlur: ({ value }) => {
-              if (value.trim() === '') {
-                return 'Colaboração é obrigatória';
-              }
-              return undefined;
-            },
-          }}
-        >
+        {/* Convidados (perfis de colaboração) */}
+        <form.AppField name="members">
           {(field) => (
-            <field.TableCollaborationSelectField
-              label="Colaboração"
-              placeholder="Selecione o modo de colaboração"
-              disabled={isDisabled}
-              required
-            />
-          )}
-        </form.AppField>
-
-        {/* Campo Administradores */}
-        <form.AppField name="administrators">
-          {(field) => (
-            <field.FieldUserMultiSelect
-              label="Administradores"
-              placeholder="Selecione administradores"
+            <field.FieldTableMembers
+              label="Convidados"
               disabled={isDisabled}
             />
           )}
@@ -421,6 +512,27 @@ export const UpdateTableFormFields = withForm({
               options={orderOptions}
             />
           )}
+        </form.AppField>
+
+        {/* Campo para gerar slug da URL de registro */}
+        <form.AppField name="rowSlugFieldId">
+          {(field) => {
+            const textShortFields = activeFields.filter(
+              (f: IField) => f.type === E_FIELD_TYPE.TEXT_SHORT,
+            );
+            return (
+              <field.TableLayoutFieldSelect
+                label="Campo para slug da URL de registro"
+                placeholder="Nenhum"
+                emptyLabel="Nenhum"
+                disabled={isDisabled || textShortFields.length === 0}
+                options={textShortFields.map((f: IField) => ({
+                  label: f.name,
+                  value: f._id,
+                }))}
+              />
+            );
+          }}
         </form.AppField>
       </section>
     );

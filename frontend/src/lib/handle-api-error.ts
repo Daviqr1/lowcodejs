@@ -1,26 +1,31 @@
 import { AxiosError } from 'axios';
+import { toast } from 'sonner';
 
 import type { IHTTPExeptionError } from '@/lib/interfaces';
-import { toastError } from '@/lib/toast';
 
-interface HandleApiErrorOptions {
+type HandleApiErrorOptions = {
   context: string;
   onFieldErrors?: (errors: Record<string, string>) => void;
   causeHandlers?: Record<
     string,
     (errorData: IHTTPExeptionError<Record<string, string>>) => void
   >;
-}
+  // Mensagem de toast por `cause` (atalho para o caso comum de só trocar o texto,
+  // sem precisar de um handler completo em `causeHandlers`).
+  causes?: Record<string, string>;
+};
 
 export function handleApiError(
   error: unknown,
   options: HandleApiErrorOptions,
 ): void {
   if (!(error instanceof AxiosError) || !error.response?.data) {
-    toastError(options.context, 'Erro inesperado');
+    toast.error(options.context, { description: 'Erro inesperado' });
     return;
   }
 
+  // error.response.data é `any` do Axios; assumimos o contrato de erro do backend.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const errorData = error.response.data as IHTTPExeptionError<
     Record<string, string>
   >;
@@ -36,6 +41,11 @@ export function handleApiError(
     return;
   }
 
+  if (options.causes?.[cause]) {
+    toast.error(options.context, { description: options.causes[cause] });
+    return;
+  }
+
   const titleMap: Record<string, string> = {
     TABLE_PRIVATE: 'Tabela privada',
     ACCESS_DENIED: 'Acesso negado',
@@ -44,5 +54,5 @@ export function handleApiError(
   };
 
   const title = titleMap[cause] ?? options.context;
-  toastError(title, errorData.message ?? options.context);
+  toast.error(title, { description: errorData.message ?? options.context });
 }

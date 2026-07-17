@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -63,8 +62,9 @@ export default class GroupRowListUseCase {
 
       if (Array.isArray(rawItems)) {
         for (const item of rawItems) {
-          // Ignora rascunhos (itens incompletos do auto-save, trashed=true).
-          if (isRecord(item) && item.trashed !== true) {
+          // Mostra rascunhos (status='draft') junto dos publicados; o
+          // frontend exibe badge. Oculta apenas itens na lixeira (trashedAt).
+          if (isRecord(item) && item.trashedAt == null) {
             items.push(item);
           }
         }

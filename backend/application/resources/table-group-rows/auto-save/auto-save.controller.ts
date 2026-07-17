@@ -1,10 +1,10 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 
+import { GroupRowAutoSaveSchema } from './auto-save.schema';
 import GroupRowAutoSaveUseCase from './auto-save.use-case';
 import {
   GroupRowAutoSaveBodyValidator,
@@ -33,6 +33,7 @@ export default class {
           requiredPermission: 'UPDATE_ROW',
         }),
       ],
+      schema: GroupRowAutoSaveSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

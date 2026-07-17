@@ -1,12 +1,20 @@
 import type { Either } from '@application/core/either.core';
+import type {
+  IFieldPermissions,
+  IFieldValidation,
+  Merge,
+} from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
 import type { ExportTablePayload } from './export-table.validator';
 
-export type ExportTableUseCasePayload = ExportTablePayload & {
-  userId: string;
-  userName: string;
-};
+export type ExportTableUseCasePayload = Merge<
+  ExportTablePayload,
+  {
+    userId: string;
+    userName: string;
+  }
+>;
 
 export type ExportedField = {
   name: string;
@@ -15,10 +23,11 @@ export type ExportedField = {
   required: boolean;
   multiple: boolean;
   format: string | null;
+  validations?: IFieldValidation[];
   showInFilter: boolean;
-  showInForm: boolean;
-  showInDetail: boolean;
-  showInList: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
+  permissions?: IFieldPermissions | null;
   widthInForm: number | null;
   widthInList: number | null;
   widthInDetail: number | null;
@@ -45,8 +54,6 @@ export type ExportedStructure = {
   slug: string;
   description: string | null;
   style: string;
-  visibility: string;
-  collaboration: string;
   fields: ExportedField[];
   groups: ExportedGroup[];
   fieldOrderList: string[];
@@ -61,13 +68,23 @@ export type ExportedStructure = {
   };
 };
 
-export type ExportedRow = Record<string, unknown> & {
-  _originalId: string;
-  /** ID original do usuário criador da row (campo nativo CREATOR). */
-  _originalCreator?: string;
-};
+export type ExportedRow = Merge<
+  Record<string, unknown>,
+  {
+    _originalId: string;
+    /** ID original do usuário criador da row (campo nativo CREATOR). */
+    _originalCreator?: string;
+  }
+>;
 
 export type ExportedTable = {
+  /**
+   * Identidade da tabela. Sempre presente — é o que permite a importação
+   * "somente dados" casar com a tabela existente no destino (no export de
+   * estrutura/completo o slug também vem em `structure.slug`).
+   */
+  tableSlug?: string;
+  tableName?: string;
   structure?: ExportedStructure;
   data?: {
     totalRows: number;

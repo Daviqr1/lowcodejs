@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowDownIcon, AtSignIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import {
   ForumAddChannelDialog,
@@ -24,9 +25,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfileRead } from '@/hooks/tanstack-query/use-profile-read';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
 import { useUpdateTableRow } from '@/hooks/tanstack-query/use-table-row-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
-import { E_FIELD_TYPE } from '@/lib/constant';
+import { E_FIELD_TYPE, E_TABLE_PROFILE } from '@/lib/constant';
 import {
   normalizeGroupFieldValue,
   normalizeId,
@@ -42,15 +45,19 @@ import type {
   IRow,
   IStorage,
   ITable,
+  ITableMember,
   Paginated,
 } from '@/lib/interfaces';
 import { getFieldBySlug, getFirstFieldByType } from '@/lib/kanban-helpers';
-import { toastError, toastSuccess, toastWarning } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authentication';
 
 const FORUM_SYNC_INTERVAL_MS = 5000;
 const FORUM_MENTIONS_STORAGE_KEY_PREFIX = 'forum-mentions-unseen';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 type ForumRealtimeSubscriptionArgs = {
   enabled: boolean;
@@ -86,12 +93,12 @@ const forumPollingStrategy: ForumRealtimeStrategy = {
   },
 };
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableForumView({
   data,
@@ -118,27 +125,47 @@ export function TableForumView({
     () => {
       if (typeof window === 'undefined') return 'bottom';
       const stored = window.localStorage.getItem('forum-composer-layout');
-      return stored === 'side' ? 'side' : 'bottom';
+      if (stored === 'side') return 'side';
+      return 'bottom';
     },
   );
+  const isMobile = useIsMobile();
+  // No mobile o painel lateral de 360px não cabe — força o compositor embaixo,
+  // preservando a preferência salva para o desktop.
+  let effectiveComposerLayout = composerLayout;
+  if (isMobile) effectiveComposerLayout = 'bottom';
+  // No mobile a lista de canais começa colapsada (libera o chat); só não força
+  // se o usuário já alternou manualmente.
+  const sidebarUserToggledRef = React.useRef(false);
+  React.useEffect(() => {
+    if (isMobile && !sidebarUserToggledRef.current) setIsSidebarOpen(false);
+  }, [isMobile]);
 
   const [composerStorages, setComposerStorages] = React.useState<
     Array<IStorage>
   >([]);
   const [replyToId, setReplyToId] = React.useState<string | null>(null);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
-  const [isAddChannelOpen, setIsAddChannelOpen] = React.useState(false);
-  const [isEditChannelOpen, setIsEditChannelOpen] = React.useState(false);
   const [editingChannelId, setEditingChannelId] = React.useState<string | null>(
     null,
   );
   const [editingChannelRow, setEditingChannelRow] = React.useState<IRow | null>(
     null,
   );
-  const [deleteIndex, setDeleteIndex] = React.useState<number | null>(null);
-  const [deleteChannelId, setDeleteChannelId] = React.useState<string | null>(
-    null,
-  );
+  const [deleteChannelTarget, setDeleteChannelTarget] = React.useState<{
+    id: string;
+    nonce: number;
+  } | null>(null);
+  const [deleteMessageTarget, setDeleteMessageTarget] = React.useState<{
+    index: number;
+    nonce: number;
+  } | null>(null);
+  const addChannelDialog = useDismissableDialog();
+  const editChannelDialog = useDismissableDialog();
+  const addChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const editChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteChannelTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const deleteMessageTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const composerEditorRef = React.useRef<TiptapEditor | null>(null);
   const pollingRef = React.useRef<{ inFlight: boolean; rowId: string | null }>({
@@ -158,15 +185,16 @@ export function TableForumView({
         `${FORUM_MENTIONS_STORAGE_KEY_PREFIX}:${tableSlug}:${currentUserId || 'anonymous'}`,
       );
       if (!raw) return {};
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed: Record<string, unknown> = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return {};
       return Object.fromEntries(
-        Object.entries(parsed).map(([channelId, value]) => [
-          channelId,
-          Array.isArray(value)
-            ? value.map((item) => String(item)).filter(Boolean)
-            : [],
-        ]),
+        Object.entries(parsed).map(([channelId, value]) => {
+          let normalized: Array<string> = [];
+          if (Array.isArray(value)) {
+            normalized = value.map((item) => String(item)).filter(Boolean);
+          }
+          return [channelId, normalized];
+        }),
       );
     } catch {
       return {};
@@ -185,14 +213,12 @@ export function TableForumView({
   // mensagem específica.
   const searchParams = useRouterState({ select: (s) => s.location.search });
   React.useEffect(() => {
-    const channelId =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).channelId
-        : undefined;
-    const messageId =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).messageId
-        : undefined;
+    let channelId: unknown;
+    let messageId: unknown;
+    if (isRecord(searchParams)) {
+      channelId = searchParams.channelId;
+      messageId = searchParams.messageId;
+    }
     if (typeof channelId === 'string' && channelId) {
       setActiveRowId(channelId);
     }
@@ -251,19 +277,20 @@ export function TableForumView({
         setSeenMentionIdsByChannel({});
         return;
       }
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed: Record<string, unknown> = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') {
         setSeenMentionIdsByChannel({});
         return;
       }
       setSeenMentionIdsByChannel(
         Object.fromEntries(
-          Object.entries(parsed).map(([channelId, value]) => [
-            channelId,
-            Array.isArray(value)
-              ? value.map((item) => String(item)).filter(Boolean)
-              : [],
-          ]),
+          Object.entries(parsed).map(([channelId, value]) => {
+            let normalized: Array<string> = [];
+            if (Array.isArray(value)) {
+              normalized = value.map((item) => String(item)).filter(Boolean);
+            }
+            return [channelId, normalized];
+          }),
         ),
       );
     } catch {
@@ -322,7 +349,8 @@ export function TableForumView({
     (row: IRow): boolean => {
       if (channelPrivacyField) {
         const raw = row[channelPrivacyField.slug];
-        const value = Array.isArray(raw) ? raw[0] : raw;
+        let value: unknown = raw;
+        if (Array.isArray(raw)) value = raw[0];
         return (
           String(value ?? '')
             .trim()
@@ -351,13 +379,16 @@ export function TableForumView({
     if (!currentUserId) return false;
     const ownerId = normalizeId(table.owner);
     if (ownerId && ownerId === currentUserId) return true;
-    const adminIds = Array.isArray(table.administrators)
-      ? table.administrators
-          .map((admin) => normalizeId(admin))
-          .filter((id): id is string => Boolean(id))
-      : [];
+    const adminIds = table.members
+      .filter(
+        (member: ITableMember) =>
+          member.profile === E_TABLE_PROFILE.OWNER ||
+          member.profile === E_TABLE_PROFILE.ADMIN,
+      )
+      .map((member: ITableMember) => member.user);
+    if (ownerId) adminIds.push(ownerId);
     return adminIds.includes(currentUserId);
-  }, [currentUserId, table.administrators, table.owner]);
+  }, [currentUserId, table.members, table.owner]);
 
   React.useEffect(() => {
     if (rowsState.length === 0) {
@@ -396,7 +427,7 @@ export function TableForumView({
           type: E_FIELD_TYPE.USER,
           multiple: true,
         },
-      ] as Array<Pick<IField, 'slug' | 'type' | 'multiple'>>,
+      ] satisfies Array<Pick<IField, 'slug' | 'type' | 'multiple'>>,
     [],
   );
 
@@ -410,6 +441,8 @@ export function TableForumView({
       return groupFields;
     }
 
+    // fallback só define os campos usados pelo fórum (slug/type/multiple).
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return fallbackGroupFields as Array<IField>;
   }, [fallbackGroupFields, groupFields]);
 
@@ -440,51 +473,71 @@ export function TableForumView({
   const rawMessages = React.useMemo(() => {
     if (!activeRow || !messagesField) return [];
     const value = activeRow[messagesField.slug];
-    return Array.isArray(value) ? value : [];
+    const out: Array<Record<string, unknown>> = [];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) out.push(item);
+      }
+    }
+    return out;
   }, [activeRow, messagesField]);
 
   const messages = React.useMemo<Array<ForumMessage>>(() => {
     return rawMessages.map((message: Record<string, unknown>, index) => {
-      const messageRecord =
-        message && typeof message === 'object' ? message : {};
-      const idValue = messageIdField
-        ? messageRecord[messageIdField.slug]
-        : null;
+      let messageRecord: Record<string, unknown> = {};
+      if (message && typeof message === 'object') messageRecord = message;
+
+      let idValue: unknown = null;
+      if (messageIdField) idValue = messageRecord[messageIdField.slug];
       const id = normalizeId(idValue) ?? `message-${index}`;
-      const text = messageTextField
-        ? ((messageRecord[messageTextField.slug] as string) ?? '')
-        : '';
-      const authorList = messageAuthorField
-        ? normalizeUserList(messageRecord[messageAuthorField.slug])
-        : [];
+
+      let text = '';
+      if (messageTextField) {
+        const rawText = messageRecord[messageTextField.slug];
+        if (typeof rawText === 'string') text = rawText;
+      }
+
+      let authorList: ReturnType<typeof normalizeUserList> = [];
+      if (messageAuthorField) {
+        authorList = normalizeUserList(messageRecord[messageAuthorField.slug]);
+      }
       const author = authorList[0] ?? null;
-      const authorId =
-        typeof author === 'string'
-          ? author
-          : author && '_id' in author
-            ? author._id
-            : null;
-      const dateRecordValue = messageDateField
-        ? messageRecord[messageDateField.slug]
-        : null;
-      const dateLabel =
-        typeof dateRecordValue === 'string' && dateRecordValue
-          ? format(new Date(dateRecordValue), 'dd/MM/yyyy HH:mm', {
-              locale: ptBR,
-            })
-          : '';
-      const attachments = messageAttachmentsField
-        ? normalizeStorageList(messageRecord[messageAttachmentsField.slug])
-        : [];
-      const mentions = messageMentionsField
-        ? normalizeUserList(messageRecord[messageMentionsField.slug])
-        : [];
-      const replyTo = messageReplyField
-        ? (messageRecord[messageReplyField.slug] as string | null)
-        : null;
-      const reactions = messageReactionsField
-        ? parseReactions(messageRecord[messageReactionsField.slug])
-        : [];
+      let authorId: string | null = null;
+      if (typeof author === 'string') authorId = author;
+      else if (author && '_id' in author) authorId = author._id;
+
+      let dateRecordValue: unknown = null;
+      if (messageDateField) {
+        dateRecordValue = messageRecord[messageDateField.slug];
+      }
+      let dateLabel = '';
+      if (typeof dateRecordValue === 'string' && dateRecordValue) {
+        dateLabel = format(new Date(dateRecordValue), 'dd/MM/yyyy HH:mm', {
+          locale: ptBR,
+        });
+      }
+      let dateValue: string | null = null;
+      if (typeof dateRecordValue === 'string') dateValue = dateRecordValue;
+
+      let attachments: ReturnType<typeof normalizeStorageList> = [];
+      if (messageAttachmentsField) {
+        attachments = normalizeStorageList(
+          messageRecord[messageAttachmentsField.slug],
+        );
+      }
+      let mentions: ReturnType<typeof normalizeUserList> = [];
+      if (messageMentionsField) {
+        mentions = normalizeUserList(messageRecord[messageMentionsField.slug]);
+      }
+      let replyTo: string | null = null;
+      if (messageReplyField) {
+        const rawReply = messageRecord[messageReplyField.slug];
+        if (typeof rawReply === 'string') replyTo = rawReply;
+      }
+      let reactions: ReturnType<typeof parseReactions> = [];
+      if (messageReactionsField) {
+        reactions = parseReactions(messageRecord[messageReactionsField.slug]);
+      }
 
       return {
         id,
@@ -492,7 +545,7 @@ export function TableForumView({
         author,
         authorId,
         dateLabel,
-        dateValue: typeof dateRecordValue === 'string' ? dateRecordValue : null,
+        dateValue,
         attachments,
         mentions,
         replyTo,
@@ -535,42 +588,50 @@ export function TableForumView({
 
     for (const row of rowsState) {
       const rawChannelMessages = row[messagesField.slug];
-      const channelMessages = Array.isArray(rawChannelMessages)
-        ? rawChannelMessages
-        : [];
+      let channelMessages: Array<unknown> = [];
+      if (Array.isArray(rawChannelMessages)) {
+        channelMessages = rawChannelMessages;
+      }
 
       for (let index = 0; index < channelMessages.length; index += 1) {
-        const messageRecord =
-          channelMessages[index] && typeof channelMessages[index] === 'object'
-            ? (channelMessages[index] as Record<string, unknown>)
-            : {};
+        const candidate = channelMessages[index];
+        let messageRecord: Record<string, unknown> = {};
+        if (isRecord(candidate)) messageRecord = candidate;
 
         const mentionIds = normalizeIdList(
           messageRecord[messageMentionsField.slug],
         );
         if (!mentionIds.includes(currentUserId)) continue;
-        const seenIds = messageMentionSeenField
-          ? normalizeIdList(messageRecord[messageMentionSeenField.slug])
-          : [];
+        let seenIds: Array<string> = [];
+        if (messageMentionSeenField) {
+          seenIds = normalizeIdList(
+            messageRecord[messageMentionSeenField.slug],
+          );
+        }
         if (seenIds.includes(currentUserId)) continue;
 
-        const authorCandidates = messageAuthorField
-          ? normalizeIdList(messageRecord[messageAuthorField.slug])
-          : [];
+        let authorCandidates: Array<string> = [];
+        if (messageAuthorField) {
+          authorCandidates = normalizeIdList(
+            messageRecord[messageAuthorField.slug],
+          );
+        }
         const authorId = authorCandidates[0] ?? null;
         if (authorId && authorId === currentUserId) continue;
 
         const messageId =
           (messageIdField && normalizeId(messageRecord[messageIdField.slug])) ??
           `message-${index}`;
-        const rawDate = messageDateField
-          ? messageRecord[messageDateField.slug]
-          : null;
-        const dateValue = typeof rawDate === 'string' ? rawDate : null;
-        const dateLabel =
-          dateValue && !Number.isNaN(new Date(dateValue).getTime())
-            ? format(new Date(dateValue), 'dd/MM/yyyy HH:mm', { locale: ptBR })
-            : '';
+        let rawDate: unknown = null;
+        if (messageDateField) rawDate = messageRecord[messageDateField.slug];
+        let dateValue: string | null = null;
+        if (typeof rawDate === 'string') dateValue = rawDate;
+        let dateLabel = '';
+        if (dateValue && !Number.isNaN(new Date(dateValue).getTime())) {
+          dateLabel = format(new Date(dateValue), 'dd/MM/yyyy HH:mm', {
+            locale: ptBR,
+          });
+        }
 
         const list = next.get(row._id) ?? [];
         list.push({
@@ -621,7 +682,8 @@ export function TableForumView({
           (alert) => alert.messageId,
         );
         const mentionSet = new Set(mentionIds);
-        const prevIds = Array.isArray(prev[channelId]) ? prev[channelId] : [];
+        let prevIds: Array<string> = [];
+        if (Array.isArray(prev[channelId])) prevIds = prev[channelId];
         const seenIds = prevIds.filter((id) => mentionSet.has(id));
 
         if (seenIds.length > 0) next[channelId] = seenIds;
@@ -660,9 +722,10 @@ export function TableForumView({
           );
           setRowsState(
             (prev): Array<IRow> =>
-              prev.map((row) =>
-                row._id === updatedRow.data._id ? updatedRow.data : row,
-              ),
+              prev.map((row) => {
+                if (row._id === updatedRow.data._id) return updatedRow.data;
+                return row;
+              }),
           );
         } catch {
           // Keep local "seen" fallback even if server persist fails.
@@ -675,14 +738,16 @@ export function TableForumView({
   const updateRow = useUpdateTableRow({
     onSuccess(updatedRow) {
       setRowsState((prev) =>
-        prev.map((row) => (row._id === updatedRow._id ? updatedRow : row)),
+        prev.map((row) => {
+          if (row._id === updatedRow._id) return updatedRow;
+          return row;
+        }),
       );
     },
     onError() {
-      toastError(
-        'Erro ao atualizar mensagens',
-        'Nao foi possivel atualizar o canal',
-      );
+      toast.error('Erro ao atualizar mensagens', {
+        description: 'Nao foi possivel atualizar o canal',
+      });
     },
   });
 
@@ -690,19 +755,23 @@ export function TableForumView({
     onSuccess(newRow) {
       setRowsState((prev) => [...prev, newRow]);
       setActiveRowId(newRow._id);
-      setIsAddChannelOpen(false);
-      toastSuccess('Canal criado', 'O canal foi criado com sucesso');
+      addChannelDialog.close();
+      toast.success('Canal criado', {
+        description: 'O canal foi criado com sucesso',
+      });
     },
     onError() {
-      toastError('Erro ao criar canal', 'Nao foi possivel criar o canal');
+      toast.error('Erro ao criar canal', {
+        description: 'Nao foi possivel criar o canal',
+      });
     },
   });
 
   const composerForm = useAppForm({
     defaultValues: {
       text: '',
-      mentions: [] as Array<string>,
-      files: [] as Array<File>,
+      mentions: Array<string>(),
+      files: Array<File>(),
     },
   });
 
@@ -724,7 +793,7 @@ export function TableForumView({
       label: '',
       description: '',
       privacy: 'publico',
-      members: [] as Array<string>,
+      members: Array<string>(),
     },
     onSubmit: async ({ value }) => {
       if (!channelField) return;
@@ -740,9 +809,9 @@ export function TableForumView({
         payload[channelDescriptionField.slug] = description;
       }
       if (channelPrivacyField) {
-        payload[channelPrivacyField.slug] = [
-          value.privacy === 'privado' ? 'privado' : 'publico',
-        ];
+        let privacyValue = 'publico';
+        if (value.privacy === 'privado') privacyValue = 'privado';
+        payload[channelPrivacyField.slug] = [privacyValue];
       }
       if (channelMembersField && value.privacy === 'privado') {
         payload[channelMembersField.slug] = members;
@@ -755,17 +824,6 @@ export function TableForumView({
     },
   });
 
-  React.useEffect(() => {
-    if (!isAddChannelOpen) {
-      addChannelForm.reset({
-        label: '',
-        description: '',
-        privacy: 'publico',
-        members: [],
-      });
-    }
-  }, [addChannelForm, isAddChannelOpen]);
-
   const addChannelLabel = useStore(
     addChannelForm.store,
     (state) => state.values.label,
@@ -776,14 +834,14 @@ export function TableForumView({
       label: '',
       description: '',
       privacy: 'publico',
-      members: [] as Array<string>,
+      members: Array<string>(),
     },
     onSubmit: async ({ value }) => {
       if (!channelField || !editingChannelId) return;
       const label = value.label.trim();
       if (!label || updateRow.status === 'pending') return;
       if (!editingChannelRow || !canManageChannel(editingChannelRow)) {
-        toastWarning('Apenas o criador pode editar este canal');
+        toast.warning('Apenas o criador pode editar este canal');
         return;
       }
       const members = Array.from(new Set(value.members.filter(Boolean)));
@@ -796,9 +854,9 @@ export function TableForumView({
         payload[channelDescriptionField.slug] = description || '';
       }
       if (channelPrivacyField) {
-        payload[channelPrivacyField.slug] = [
-          value.privacy === 'privado' ? 'privado' : 'publico',
-        ];
+        let privacyValue = 'publico';
+        if (value.privacy === 'privado') privacyValue = 'privado';
+        payload[channelPrivacyField.slug] = [privacyValue];
       }
       if (channelMembersField && value.privacy === 'privado') {
         payload[channelMembersField.slug] = members;
@@ -809,23 +867,13 @@ export function TableForumView({
         rowId: editingChannelId,
         data: payload,
       });
-      setIsEditChannelOpen(false);
+      editChannelDialog.close();
       setEditingChannelId(null);
-      toastSuccess('Canal atualizado', 'O canal foi atualizado com sucesso');
+      toast.success('Canal atualizado', {
+        description: 'O canal foi atualizado com sucesso',
+      });
     },
   });
-
-  React.useEffect(() => {
-    if (!isEditChannelOpen) {
-      editChannelForm.reset({
-        label: '',
-        description: '',
-        privacy: 'publico',
-        members: [],
-      });
-      setEditingChannelRow(null);
-    }
-  }, [editChannelForm, isEditChannelOpen]);
 
   const editChannelLabel = useStore(
     editChannelForm.store,
@@ -885,9 +933,8 @@ export function TableForumView({
           },
         },
       );
-      const nextRows = Array.isArray(response.data?.data)
-        ? response.data.data
-        : [];
+      let nextRows: typeof rowsState = [];
+      if (Array.isArray(response.data?.data)) nextRows = response.data.data;
       setRowsState(nextRows);
     } finally {
       channelsPollingRef.current.inFlight = false;
@@ -909,7 +956,10 @@ export function TableForumView({
         const row = response.data;
         if (!row || row._id !== rowId) return;
         setRowsState((prev) =>
-          prev.map((item) => (item._id === rowId ? row : item)),
+          prev.map((item) => {
+            if (item._id === rowId) return row;
+            return item;
+          }),
         );
       } finally {
         pollingRef.current.inFlight = false;
@@ -945,10 +995,9 @@ export function TableForumView({
       const row = rowsState.find((item) => item._id === rowId);
       if (!row) return;
       if (!canAccessChannel(row)) {
-        toastWarning(
-          'Canal privado',
-          'Apenas membros deste canal podem acessar as mensagens',
-        );
+        toast.warning('Canal privado', {
+          description: 'Apenas membros deste canal podem acessar as mensagens',
+        });
         return;
       }
       setActiveRowId(rowId);
@@ -960,19 +1009,21 @@ export function TableForumView({
   const handleChannelEdit = React.useCallback(
     (row: IRow) => {
       if (!canManageChannel(row)) {
-        toastWarning('Apenas o criador pode editar este canal');
+        toast.warning('Apenas o criador pode editar este canal');
         return;
       }
       const label = resolveChannelLabel(row);
       const description = resolveChannelDescription(row);
-      const privacy = channelPrivacyField
-        ? Array.isArray(row[channelPrivacyField.slug])
-          ? String(row[channelPrivacyField.slug]?.[0] ?? 'publico')
-          : String(row[channelPrivacyField.slug] ?? 'publico')
-        : 'publico';
-      const members = channelMembersField
-        ? normalizeIdList(row[channelMembersField.slug])
-        : [];
+      let privacy = 'publico';
+      if (channelPrivacyField) {
+        const raw = row[channelPrivacyField.slug];
+        if (Array.isArray(raw)) privacy = String(raw?.[0] ?? 'publico');
+        else privacy = String(raw ?? 'publico');
+      }
+      let members: Array<string> = [];
+      if (channelMembersField) {
+        members = normalizeIdList(row[channelMembersField.slug]);
+      }
       editChannelForm.reset({ label, description, privacy, members });
       editChannelForm.setFieldValue('label', label);
       editChannelForm.setFieldValue('description', description);
@@ -980,7 +1031,7 @@ export function TableForumView({
       editChannelForm.setFieldValue('members', members);
       setEditingChannelId(row._id);
       setEditingChannelRow(row);
-      setIsEditChannelOpen(true);
+      editChannelTriggerRef.current?.click();
     },
     [
       canManageChannel,
@@ -993,11 +1044,11 @@ export function TableForumView({
   );
 
   const handleChannelDelete = React.useCallback(
-    async (rowId: string) => {
+    async (rowId: string, close: () => void) => {
       const row = rowsState.find((item) => item._id === rowId);
       if (!row || !canManageChannel(row)) {
-        toastWarning('Apenas o criador pode editar este canal');
-        setDeleteChannelId(null);
+        toast.warning('Apenas o criador pode editar este canal');
+        close();
         return;
       }
       await API.delete(`/tables/${tableSlug}/rows/${rowId}`);
@@ -1009,17 +1060,25 @@ export function TableForumView({
         });
         return nextRows;
       });
-      setDeleteChannelId(null);
+      close();
     },
     [canManageChannel, rowsState, tableSlug],
   );
+
+  React.useEffect(() => {
+    if (deleteChannelTarget) deleteChannelTriggerRef.current?.click();
+  }, [deleteChannelTarget]);
+
+  React.useEffect(() => {
+    if (deleteMessageTarget) deleteMessageTriggerRef.current?.click();
+  }, [deleteMessageTarget]);
 
   const buildMessagesPayload = React.useCallback(
     (messagesValue: Array<Record<string, unknown>>) => {
       if (!messagesField) return [];
       return messagesValue.map((message) => {
-        const messageRecord =
-          message && typeof message === 'object' ? message : {};
+        let messageRecord: Record<string, unknown> = {};
+        if (isRecord(message)) messageRecord = message;
         const payload: Record<string, unknown> = {};
         for (const field of resolvedGroupFields) {
           if (field.slug === messageIdField?.slug) {
@@ -1029,9 +1088,9 @@ export function TableForumView({
           }
 
           if (field.slug === messageAuthorField?.slug) {
-            const authorValue =
-              messageRecord[field.slug] ??
-              (currentUserId ? [currentUserId] : []);
+            let authorFallback: Array<string> = [];
+            if (currentUserId) authorFallback = [currentUserId];
+            const authorValue = messageRecord[field.slug] ?? authorFallback;
             payload[field.slug] = normalizeGroupFieldValue(field, authorValue);
             continue;
           }
@@ -1079,11 +1138,11 @@ export function TableForumView({
   const handleSend = React.useCallback(async () => {
     if (!activeRow || !messagesField) return;
     if (!canAccessChannel(activeRow)) {
-      toastWarning('Apenas membros deste canal podem enviar mensagens');
+      toast.warning('Apenas membros deste canal podem enviar mensagens');
       return;
     }
     if (!currentUserId) {
-      toastWarning('Usuario nao identificado');
+      toast.warning('Usuario nao identificado');
       return;
     }
 
@@ -1097,7 +1156,7 @@ export function TableForumView({
     const hasAttachments = composerStorages.length > 0;
 
     if (!hasText && !hasAttachments) {
-      toastWarning('Escreva uma mensagem ou adicione um anexo');
+      toast.warning('Escreva uma mensagem ou adicione um anexo');
       return;
     }
 
@@ -1128,10 +1187,9 @@ export function TableForumView({
       resetComposer();
       bumpFocus();
     } catch {
-      toastError(
-        'Erro ao enviar mensagem',
-        'Nao foi possivel salvar a mensagem neste canal',
-      );
+      toast.error('Erro ao enviar mensagem', {
+        description: 'Nao foi possivel salvar a mensagem neste canal',
+      });
     }
   }, [
     activeRow,
@@ -1154,7 +1212,7 @@ export function TableForumView({
   }, []);
 
   const handleDelete = React.useCallback(
-    async (index: number) => {
+    async (index: number, close: () => void) => {
       if (!activeRow) return;
       const message = messages[index];
       if (!message) return;
@@ -1164,11 +1222,11 @@ export function TableForumView({
           `/tables/${tableSlug}/rows/${activeRow._id}/forum/messages/${message.id}`,
         );
         await refreshRowById(activeRow._id);
+        close();
       } catch {
-        toastError(
-          'Erro ao excluir mensagem',
-          'Voce so pode excluir mensagens enviadas por voce',
-        );
+        toast.error('Erro ao excluir mensagem', {
+          description: 'Voce so pode excluir mensagens enviadas por voce',
+        });
       }
     },
     [activeRow, messages, refreshRowById, tableSlug],
@@ -1204,14 +1262,19 @@ export function TableForumView({
         entries.push({ emoji, users: [currentUserId] });
       } else {
         const hasUser = existing.users.includes(currentUserId);
-        existing.users = hasUser
-          ? existing.users.filter((id) => id !== currentUserId)
-          : [...existing.users, currentUserId];
+        if (hasUser) {
+          existing.users = existing.users.filter((id) => id !== currentUserId);
+        } else {
+          existing.users = [...existing.users, currentUserId];
+        }
       }
 
       const nextMessages = [...rawMessages];
+      const rawBase = rawMessages[messageIndex];
+      let baseRecord: Record<string, unknown> = {};
+      if (isRecord(rawBase)) baseRecord = rawBase;
       const base = {
-        ...(rawMessages[messageIndex] as Record<string, unknown>),
+        ...baseRecord,
         [messageReactionsField.slug]: serializeReactions(entries),
       };
       nextMessages[messageIndex] = base;
@@ -1298,17 +1361,18 @@ export function TableForumView({
     ],
   );
 
-  const channelTitle =
-    activeRow && channelField
-      ? String(activeRow[channelField.slug] ?? 'Canal')
-      : 'Canal';
-  const channelDescription =
-    activeRow && typeof activeRow['descricao'] === 'string'
-      ? activeRow['descricao']
-      : '';
-  const replyMessage = replyToId
-    ? (messages.find((message) => message.id === replyToId) ?? null)
-    : null;
+  let channelTitle = 'Canal';
+  if (activeRow && channelField) {
+    channelTitle = String(activeRow[channelField.slug] ?? 'Canal');
+  }
+  let channelDescription = '';
+  if (activeRow && typeof activeRow['descricao'] === 'string') {
+    channelDescription = activeRow['descricao'];
+  }
+  let replyMessage: (typeof messages)[number] | null = null;
+  if (replyToId) {
+    replyMessage = messages.find((message) => message.id === replyToId) ?? null;
+  }
 
   return (
     <div
@@ -1321,67 +1385,78 @@ export function TableForumView({
         channelField={channelField}
         canAddChannel={canAddChannel}
         isOpen={isSidebarOpen}
-        onToggleOpen={() => setIsSidebarOpen((value) => !value)}
-        onAddChannel={() => setIsAddChannelOpen(true)}
+        onToggleOpen={() => {
+          sidebarUserToggledRef.current = true;
+          setIsSidebarOpen((value) => !value);
+        }}
+        onAddChannel={() => {
+          addChannelForm.reset({
+            label: '',
+            description: '',
+            privacy: 'publico',
+            members: [],
+          });
+          addChannelTriggerRef.current?.click();
+        }}
         onSelectRow={handleSelectRow}
         canAccessRow={canAccessChannel}
         canManageRow={canManageChannel}
         onEditRow={handleChannelEdit}
-        onDeleteRow={(row) => setDeleteChannelId(row._id)}
+        onDeleteRow={(row) =>
+          setDeleteChannelTarget((prev) => ({
+            id: row._id,
+            nonce: (prev?.nonce ?? 0) + 1,
+          }))
+        }
         mentionCountByRowId={mentionCountByRowId}
       />
 
       <ForumAddChannelDialog
-        open={isAddChannelOpen}
-        onOpenChange={setIsAddChannelOpen}
+        ref={addChannelTriggerRef}
         form={addChannelForm}
+        closeRef={addChannelDialog.closeRef}
         isPending={createRow.status === 'pending'}
         labelValue={addChannelLabel}
         requiresMembers={Boolean(channelMembersField)}
         requiresPrivacy={Boolean(channelPrivacyField)}
-        onCancel={() => setIsAddChannelOpen(false)}
       />
 
       <ForumEditChannelDialog
         key={editingChannelId ?? 'edit-channel'}
-        open={isEditChannelOpen}
-        onOpenChange={setIsEditChannelOpen}
+        ref={editChannelTriggerRef}
         form={editChannelForm}
+        closeRef={editChannelDialog.closeRef}
         isPending={updateRow.status === 'pending'}
         labelValue={editChannelLabel}
         requiresMembers={Boolean(channelMembersField)}
         requiresPrivacy={Boolean(channelPrivacyField)}
-        onCancel={() => setIsEditChannelOpen(false)}
       />
 
       <ForumDeleteChannelDialog
-        open={deleteChannelId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteChannelId(null);
-        }}
-        onConfirm={async () => {
-          if (!deleteChannelId) return;
-          await handleChannelDelete(deleteChannelId);
+        key={deleteChannelTarget?.nonce ?? 'delete-channel'}
+        ref={deleteChannelTriggerRef}
+        onConfirm={(close) => {
+          const id = deleteChannelTarget?.id;
+          if (!id) return;
+          void handleChannelDelete(id, close);
         }}
       />
 
       <ForumDeleteMessageDialog
-        open={deleteIndex !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteIndex(null);
-        }}
-        onConfirm={async () => {
-          if (deleteIndex === null) return;
-          await handleDelete(deleteIndex);
-          setDeleteIndex(null);
+        key={deleteMessageTarget?.nonce ?? 'delete-message'}
+        ref={deleteMessageTriggerRef}
+        onConfirm={(close) => {
+          const index = deleteMessageTarget?.index;
+          if (index === undefined) return;
+          void handleDelete(index, close);
         }}
       />
 
-      <section className="flex-1 flex flex-col min-h-0">
+      <section className="flex-1 flex flex-col min-h-0 min-w-0">
         <ForumHeader
           title={channelTitle}
           description={channelDescription}
-          composerLayout={composerLayout}
+          composerLayout={effectiveComposerLayout}
           onChangeLayout={setComposerLayout}
         />
 
@@ -1411,11 +1486,12 @@ export function TableForumView({
             value="chat"
             className="flex-1 flex flex-col min-h-0"
           >
-            {activeRow ? (
+            {activeRow && (
               <div
                 className={cn(
                   'flex-1 min-h-0 relative',
-                  composerLayout === 'side' ? 'flex' : 'flex flex-col',
+                  effectiveComposerLayout === 'side' && 'flex',
+                  effectiveComposerLayout !== 'side' && 'flex flex-col',
                 )}
               >
                 <ForumMessagesList
@@ -1424,7 +1500,12 @@ export function TableForumView({
                   endRef={messagesEndRef}
                   onReply={setReplyToId}
                   onEdit={handleStartEdit}
-                  onDelete={(index) => setDeleteIndex(index)}
+                  onDelete={(index) =>
+                    setDeleteMessageTarget((prev) => ({
+                      index,
+                      nonce: (prev?.nonce ?? 0) + 1,
+                    }))
+                  }
                   onToggleReaction={toggleReaction}
                   trackedMentionMessageIds={
                     (activeRowId && unseenMentionIdsByChannel[activeRowId]) ||
@@ -1441,7 +1522,8 @@ export function TableForumView({
                   <div
                     className={cn(
                       'absolute z-20 right-4',
-                      composerLayout === 'bottom' ? 'bottom-24' : 'bottom-4',
+                      effectiveComposerLayout === 'bottom' && 'bottom-24',
+                      effectiveComposerLayout !== 'bottom' && 'bottom-4',
                     )}
                   >
                     <Button
@@ -1462,9 +1544,8 @@ export function TableForumView({
                       <AtSignIcon className="size-4" />
                       <span>
                         Mencionado
-                        {activeChannelPrimaryMentionAlert.dateLabel
-                          ? ` • ${activeChannelPrimaryMentionAlert.dateLabel}`
-                          : ''}
+                        {activeChannelPrimaryMentionAlert.dateLabel &&
+                          ` • ${activeChannelPrimaryMentionAlert.dateLabel}`}
                       </span>
                       <ArrowDownIcon className="size-4" />
                     </Button>
@@ -1472,7 +1553,7 @@ export function TableForumView({
                 )}
 
                 <ForumComposer
-                  composerLayout={composerLayout}
+                  composerLayout={effectiveComposerLayout}
                   composerText={composerText}
                   onTextChange={(value) =>
                     composerForm.setFieldValue('text', value)
@@ -1507,7 +1588,8 @@ export function TableForumView({
                   onEditorReady={handleEditorReady}
                 />
               </div>
-            ) : (
+            )}
+            {!activeRow && (
               <div className="flex flex-1 items-center justify-center">
                 <p className="text-sm text-muted-foreground">
                   Selecione um canal para ver as mensagens.
@@ -1520,7 +1602,7 @@ export function TableForumView({
             value="docs"
             className="flex-1 overflow-auto p-4"
           >
-            {activeRow ? (
+            {activeRow && (
               <>
                 <ForumDocuments documents={documents} />
                 {documents.length === 0 && (
@@ -1529,7 +1611,8 @@ export function TableForumView({
                   </p>
                 )}
               </>
-            ) : (
+            )}
+            {!activeRow && (
               <div className="flex h-full items-center justify-center">
                 <p className="text-sm text-muted-foreground">
                   Selecione um canal para ver os documentos.

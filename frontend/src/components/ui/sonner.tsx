@@ -5,15 +5,41 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
+function useDocumentTheme(): ToasterProps['theme'] {
+  // Inicializa com valor estavel (igual no server e no primeiro render client)
+  // para evitar hydration mismatch na raiz do documento. O tema real e
+  // sincronizado apos o mount, ja no client.
+  const [theme, setTheme] = useState<ToasterProps['theme']>('light');
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const themeByMode = { true: 'dark', false: 'light' } as const;
+
+    const sync = (): void => {
+      const isDark = root.classList.contains('dark');
+      setTheme(themeByMode[`${isDark}`]);
+    };
+
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return theme;
+}
+
+const Toaster = ({ ...props }: ToasterProps): React.JSX.Element => {
+  const theme = useDocumentTheme();
 
   return (
     <Sonner
-      theme={theme as ToasterProps['theme']}
+      theme={theme}
+      richColors
+      closeButton
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
@@ -22,20 +48,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <OctagonXIcon className="size-4" />,
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
-      style={
-        {
-          '--normal-bg': 'var(--popover)',
-          '--normal-text': 'var(--popover-foreground)',
-          '--normal-border': 'var(--border)',
-          '--success-bg': '#16a34a',
-          '--success-text': '#ffffff',
-          '--success-border': '#16a34a',
-          '--error-bg': 'hsl(var(--destructive))',
-          '--error-text': '#ffffff',
-          '--error-border': 'hsl(var(--destructive))',
-          '--border-radius': 'var(--radius)',
-        } as React.CSSProperties
-      }
+      style={{ '--border-radius': 'var(--radius)' } as React.CSSProperties}
       {...props}
     />
   );

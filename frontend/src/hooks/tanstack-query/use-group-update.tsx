@@ -8,23 +8,26 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IGroup } from '@/lib/interfaces';
+import type { IGroup, Merge } from '@/lib/interfaces';
 import type { UserGroupUpdatePayload } from '@/lib/payloads';
 
-type UseGroupUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<
-      IGroup,
-      AxiosError | Error,
-      UserGroupUpdatePayload,
-      unknown
+type UseGroupUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        IGroup,
+        AxiosError | Error,
+        UserGroupUpdatePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IGroup, variables: UserGroupUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: IGroup, variables: UserGroupUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateGroup(
   props: UseGroupUpdateProps,

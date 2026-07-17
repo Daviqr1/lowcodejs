@@ -5,9 +5,9 @@ import { SETUP_STEPS, SETUP_STEP_LABELS } from '@/lib/constant';
 import type { SetupStep } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface StepperProps {
+type StepperProps = {
   currentStep: SetupStep;
-}
+};
 
 function resolveState(
   index: number,
@@ -38,7 +38,7 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
             <div className="flex flex-col items-center gap-1.5">
               <div
                 className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300',
+                  'flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-xs sm:text-sm font-semibold transition-all duration-300',
                   state === 'completed' &&
                     'bg-brand-blue-dark text-white shadow-sm',
                   state === 'active' &&
@@ -47,11 +47,10 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
                     'border-2 border-muted-foreground/20 bg-transparent text-muted-foreground/50',
                 )}
               >
-                {state === 'completed' ? (
+                {state === 'completed' && (
                   <CheckIcon className="size-4 stroke-[3]" />
-                ) : (
-                  index + 1
                 )}
+                {state !== 'completed' && index + 1}
               </div>
               <span
                 className={cn(
@@ -66,13 +65,12 @@ export function Stepper({ currentStep }: StepperProps): React.JSX.Element {
             </div>
 
             {!isLast && (
-              <div className="mx-2 flex-1 sm:mx-3">
+              <div className="mx-1 flex-1 sm:mx-3">
                 <div
                   className={cn(
                     'h-px w-full transition-colors duration-500',
-                    index < currentIndex
-                      ? 'bg-brand-blue-dark/40'
-                      : 'bg-border',
+                    index < currentIndex && 'bg-brand-blue-dark/40',
+                    index >= currentIndex && 'bg-border',
                   )}
                 />
               </div>

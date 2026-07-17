@@ -16,14 +16,14 @@ import type {
 
 export type { MentionPage, ResolveMentionPage };
 
-export interface MentionConfig {
+export type MentionConfig = {
   enabled: boolean;
   resolvePage: ResolveMentionPage;
-}
+};
 
 type ClientRectFn = () => DOMRect | null;
 
-interface PopupState {
+type PopupState = {
   items: Array<MentionItem>;
   query: string;
   hasMore: boolean;
@@ -31,17 +31,17 @@ interface PopupState {
   command: (item: MentionItem) => void;
   clientRect: ClientRectFn;
   ref: React.RefObject<MentionListHandle | null>;
-}
+};
 
-interface PopupController {
+type PopupController = {
   rerender: (state: PopupState | null) => void;
   destroy: () => void;
-}
+};
 
-interface MentionAttrs {
+type MentionAttrs = {
   id: string;
   label: string;
-}
+};
 
 function getMentionAttrs(node: {
   attrs: Record<string, unknown>;
@@ -55,9 +55,9 @@ function getMentionAttrs(node: {
   return { id: safeId, label: safeLabel };
 }
 
-interface MentionFloatingPopupProps {
+type MentionFloatingPopupProps = {
   state: PopupState | null;
-}
+};
 
 function MentionFloatingPopup({
   state,

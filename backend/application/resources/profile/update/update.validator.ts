@@ -1,7 +1,7 @@
 import z from 'zod';
 
 import { Merge } from '@application/core/entity.core';
-import { PASSWORD_REGEX } from '@application/core/util.core';
+import { PASSWORD_REGEX } from '@application/core/field-rules.core';
 
 export const ProfileUpdateBodyValidator = z.object({
   name: z

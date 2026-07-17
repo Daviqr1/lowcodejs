@@ -7,7 +7,7 @@ Repositorio da entidade Storage (registros de arquivos armazenados).
 | Arquivo | Descricao |
 |---------|-----------|
 | `storage-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `storage-mongoose.repository.ts` | Implementacao com Mongoose |
+| `storage.repository.ts` | Implementacao com Mongoose |
 | `storage-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

@@ -22,24 +22,27 @@ export const MenuExportCsvSchema: FastifySchema = {
   response: {
     200: { description: 'Arquivo CSV', type: 'string', format: 'binary' },
     401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     403: {
+      description: 'Proibido - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     422: {
+      description: 'Resultado excede o limite de exportação',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -49,9 +52,10 @@ export const MenuExportCsvSchema: FastifySchema = {
       },
     },
     500: {
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Erro interno do servidor'] },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['EXPORT_MENU_CSV_ERROR'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },

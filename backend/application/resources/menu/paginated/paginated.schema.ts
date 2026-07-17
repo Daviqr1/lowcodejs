@@ -139,7 +139,7 @@ export const MenuPaginatedSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -152,7 +152,7 @@ export const MenuPaginatedSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string', enum: ['Erro interno do servidor'] },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['LIST_MENU_PAGINATED_ERROR'] },
         errors: {

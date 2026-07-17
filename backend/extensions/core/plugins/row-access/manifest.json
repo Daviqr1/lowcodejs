@@ -1,0 +1,11 @@
+{
+  "id": "row-access",
+  "type": "PLUGIN",
+  "name": "Controle de Acesso a Linhas",
+  "description": "Visibilidade por grupo + bypass do criador + janela temporal num plugin único",
+  "version": "1.0.0",
+  "author": "Time Core",
+  "icon": "ShieldCheck",
+  "placement": { "kind": "row-access-guard" },
+  "requires": { "lowcodejs": ">=1.0.0" }
+}

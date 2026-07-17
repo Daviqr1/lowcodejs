@@ -8,6 +8,7 @@ import {
 import { isAxiosError } from 'axios';
 import { Share2Icon, ShieldXIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { AutoSaveRowForm } from './-auto-save-row-form';
 import { RowDetailSkeleton } from './-row-detail-skeleton';
@@ -28,17 +29,17 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { Spinner } from '@/components/ui/spinner';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useReadTableRow } from '@/hooks/tanstack-query/use-table-row-read';
-import { toastInfo } from '@/lib/toast';
+import type { IRow } from '@/lib/interfaces';
 import { useAuthStore } from '@/stores/authentication';
 
 export const Route = createLazyFileRoute('/_private/tables/$slug/row/')({
   component: RouteComponent,
 });
 
-interface ApiErrorData {
+type ApiErrorData = {
   cause?: string;
   code?: number;
-}
+};
 
 function isApiErrorData(value: unknown): value is ApiErrorData {
   return typeof value === 'object' && value !== null;
@@ -52,7 +53,6 @@ function RouteComponent(): React.JSX.Element {
   const search = useSearch({ from: '/_private/tables/$slug/row/' });
 
   const rowId = search._id;
-  const mode = search.mode ?? 'view';
 
   const goBack = (): void => {
     sidebar.setOpen(false);
@@ -77,17 +77,35 @@ function RouteComponent(): React.JSX.Element {
     <ExistingRowView
       slug={slug}
       rowId={rowId}
-      mode={mode}
+      mode={search.mode}
       onBack={goBack}
     />
   );
 }
 
-interface CreateRowViewProps {
+// Sem `mode` explícito na URL, um rascunho do próprio criador abre direto em
+// edição para continuar o preenchimento; os demais abrem em visualização.
+function resolveExistingMode(
+  explicit: 'view' | 'edit' | undefined,
+  row: IRow,
+  userId: string | undefined,
+): 'view' | 'edit' {
+  if (explicit) return explicit;
+  if (
+    row.status === 'draft' &&
+    Boolean(userId) &&
+    row.creator?._id === userId
+  ) {
+    return 'edit';
+  }
+  return 'view';
+}
+
+type CreateRowViewProps = {
   slug: string;
   initialCategory?: string;
   onBack: () => void;
-}
+};
 
 function CreateRowView({
   slug,
@@ -142,12 +160,12 @@ function CreateRowView({
   );
 }
 
-interface ExistingRowViewProps {
+type ExistingRowViewProps = {
   slug: string;
   rowId: string;
-  mode: 'view' | 'edit';
+  mode: 'view' | 'edit' | undefined;
   onBack: () => void;
-}
+};
 
 function ExistingRowView({
   slug,
@@ -170,9 +188,11 @@ function ExistingRowView({
 
   const goToView = (): void => {
     void navigate({
-      to: '/tables/$slug/row/',
+      to: '/tables/$slug/row',
       params: { slug },
-      search: { _id: rowId },
+      // mode explícito: sair da edição vai para visualização mesmo se o
+      // registro ainda for rascunho (sem isso o default reabriria em edição).
+      search: { _id: rowId, mode: 'view' as const },
       replace: true,
     });
   };
@@ -188,18 +208,27 @@ function ExistingRowView({
 
   const goToEdit = (): void => {
     void navigate({
-      to: '/tables/$slug/row/',
+      to: '/tables/$slug/row',
       params: { slug },
       search: { _id: rowId, mode: 'edit' as const },
     });
   };
 
   const handleShare = (): void => {
-    navigator.clipboard.writeText(window.location.href);
-    toastInfo(
-      'Link do registro copiado',
-      'O link do registro foi copiado para a área de transferência',
-    );
+    const origin = window.location.origin;
+
+    // Com slug amigavel (rowSlugFieldId configurado), copia a URL limpa
+    // /tables/<slug>/<sharedRowSlug>; senao cai no fallback por _id.
+    let url = `${origin}/tables/${slug}/row?_id=${rowId}&mode=view`;
+    if (row.data?.sharedRowSlug) {
+      url = `${origin}/tables/${slug}/${row.data.sharedRowSlug}`;
+    }
+
+    navigator.clipboard.writeText(url);
+    toast.info('Link do registro copiado', {
+      description:
+        'O link do registro foi copiado para a área de transferência',
+    });
   };
 
   if (isLoading) {
@@ -269,9 +298,14 @@ function ExistingRowView({
     backHandler = onBack;
   }
 
+  let effectiveMode: 'view' | 'edit' = mode ?? 'view';
+  if (row.data) {
+    effectiveMode = resolveExistingMode(mode, row.data, user?._id);
+  }
+
   return (
     <PageShell data-test-id="row-detail-page">
-      {mode === 'view' && (
+      {effectiveMode === 'view' && (
         <PageShell.Header borderBottom={false}>
           <PageHeader
             onBack={backHandler}
@@ -290,7 +324,7 @@ function ExistingRowView({
         </PageShell.Header>
       )}
 
-      {mode === 'edit' && (
+      {effectiveMode === 'edit' && (
         <PageShell.Header borderBottom={false}>
           <PageHeader
             onBack={handleEditBack}
@@ -299,7 +333,7 @@ function ExistingRowView({
         </PageShell.Header>
       )}
 
-      {mode === 'view' &&
+      {effectiveMode === 'view' &&
         table.status === 'success' &&
         row.status === 'success' && (
           <RowDetailView
@@ -310,10 +344,13 @@ function ExistingRowView({
           />
         )}
 
-      {mode === 'edit' &&
+      {effectiveMode === 'edit' &&
         table.status === 'success' &&
         row.status === 'success' && (
+          // key por _id: garante que o form remonte com os defaultValues do
+          // registro (TanStack Form só aplica defaultValues no mount).
           <AutoSaveRowForm
+            key={row.data._id}
             table={table.data}
             rowId={rowId}
             existingRow={row.data}

@@ -44,10 +44,10 @@ export function NotificationBell(): React.JSX.Element {
   const profile = useProfileRead();
   const isAuthenticated = profile.status === 'success';
   // Default ligado: usuários antigos não têm o campo no DB, então undefined também é true.
-  const visualEnabled =
-    profile.status === 'success'
-      ? profile.data.notificationsEnabled !== false
-      : false;
+  let visualEnabled = false;
+  if (profile.status === 'success') {
+    visualEnabled = profile.data.notificationsEnabled !== false;
+  }
 
   useNotificationsSocket({
     baseUrl,
@@ -96,7 +96,8 @@ export function NotificationBell(): React.JSX.Element {
               variant="destructive"
               className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] leading-none"
             >
-              {total > 99 ? '99+' : total}
+              {total > 99 && '99+'}
+              {total <= 99 && total}
             </Badge>
           )}
         </Button>
@@ -146,12 +147,13 @@ export function NotificationBell(): React.JSX.Element {
                     className="flex-1 min-w-0 text-left px-1 py-1 cursor-pointer"
                   >
                     <div className="flex items-start gap-2">
-                      {!notification.read ? (
+                      {!notification.read && (
                         <span
                           aria-label="Não lida"
                           className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0"
                         />
-                      ) : (
+                      )}
+                      {notification.read && (
                         <Check
                           aria-label="Lida"
                           className="mt-0.5 h-3 w-3 text-muted-foreground shrink-0"
@@ -161,9 +163,9 @@ export function NotificationBell(): React.JSX.Element {
                         <p
                           className={cn(
                             'text-sm leading-tight',
-                            notification.read
-                              ? 'font-normal text-muted-foreground'
-                              : 'font-medium',
+                            notification.read &&
+                              'font-normal text-muted-foreground',
+                            !notification.read && 'font-medium',
                           )}
                         >
                           {notification.title}

@@ -1,5 +1,6 @@
 import type { MultipartFile } from '@fastify/multipart';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Readable } from 'node:stream';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import StorageInMemoryRepository from '@application/repositories/storage/storage-in-memory.repository';
 import InMemoryStorageService from '@application/services/storage/in-memory-storage.service';
@@ -11,16 +12,25 @@ let storageService: InMemoryStorageService;
 let sut: StorageUploadUseCase;
 
 function createMockFile(filename: string): MultipartFile {
-  return {
-    filename,
-    mimetype: 'image/jpeg',
-    encoding: '7bit',
+  const file = Object.assign(Readable.from([]), {
+    truncated: false,
+    bytesRead: 0,
+  });
+  const part = {
     type: 'file',
+    toBuffer: async (): Promise<Buffer> => Buffer.from(''),
+    file,
     fieldname: 'file',
-    file: {} as unknown as import('node:stream').Readable,
+    filename,
+    encoding: '7bit',
+    mimetype: 'image/jpeg',
     fields: {},
-    toBuffer: vi.fn(),
-  } as unknown as MultipartFile;
+  };
+  // `MultipartFile` (@fastify/multipart) exige `BusboyFileStream` e o campo
+  // interno `value` do union `Multipart`; mockar o tipo completo da lib num
+  // teste unitário é inviável — única asserção retida, na fronteira de lib.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return part as unknown as MultipartFile;
 }
 
 describe('Storage Upload Use Case', () => {

@@ -1,6 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVerticalIcon } from 'lucide-react';
+import {
+  ArrowDownWideNarrowIcon,
+  ArrowUpNarrowWideIcon,
+  GripVerticalIcon,
+} from 'lucide-react';
 import React from 'react';
 
 import {
@@ -8,46 +12,58 @@ import {
   hexToRgb,
 } from '@/components/common/dynamic-table/table-cells/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { IDropdown, Merge } from '@/lib/interfaces';
 import {
   columnHeaderStyleFromColor,
   columnStyleFromColor,
 } from '@/lib/kanban-helpers';
 import { cn } from '@/lib/utils';
 
+// Sentinela para "sem ordenação por campo" (mantém a ordem manual de drag-drop).
+const MANUAL_SORT_VALUE = '__manual__';
+
+export type KanbanColumnSortFieldOption = {
+  label: string;
+  value: string;
+};
+
+export type KanbanListUpdate = {
+  label: string;
+  color: string | null;
+  sortField: string | null;
+  sortDirection: 'asc' | 'desc' | null;
+};
+
 export function KanbanColumn({
   option,
   count,
   children,
-  editingColumnId,
-  editingColumnLabel,
-  editingColumnColor,
-  onEditStart,
-  onEditChange,
-  onEditColorChange,
-  onEditCancel,
-  onEditCommit,
+  sortFieldOptions,
+  onUpdate,
+  isUpdating,
 }: {
-  option: { id: string; label: string; color?: string | null };
+  option: IDropdown;
   count: number;
   children: React.ReactNode;
-  editingColumnId: string | null;
-  editingColumnLabel: string;
-  editingColumnColor: string | null;
-  onEditStart: (option: {
-    id: string;
-    label: string;
-    color?: string | null;
-  }) => void;
-  onEditChange: (value: string) => void;
-  onEditColorChange: (value: string) => void;
-  onEditCancel: () => void;
-  onEditCommit: (
-    optionId: string,
-    nextLabel: string,
-    nextColor: string | null,
-  ) => void;
+  sortFieldOptions: Array<KanbanColumnSortFieldOption>;
+  onUpdate: (optionId: string, update: KanbanListUpdate) => void;
+  isUpdating?: boolean;
 }): React.JSX.Element {
-  const colorInputRef = React.useRef<HTMLInputElement | null>(null);
   const {
     attributes,
     listeners,
@@ -60,6 +76,25 @@ export function KanbanColumn({
     data: { type: 'column', columnId: option.id },
   });
 
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [label, setLabel] = React.useState(option.label);
+  const [color, setColor] = React.useState(option.color ?? '#64748b');
+  const [sortField, setSortField] = React.useState(
+    option.sortField ?? MANUAL_SORT_VALUE,
+  );
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(
+    option.sortDirection ?? 'asc',
+  );
+
+  // Sincroniza o formulário com a opção sempre que o popover abre.
+  React.useEffect(() => {
+    if (!isEditing) return;
+    setLabel(option.label);
+    setColor(option.color ?? '#64748b');
+    setSortField(option.sortField ?? MANUAL_SORT_VALUE);
+    setSortDirection(option.sortDirection ?? 'asc');
+  }, [isEditing, option]);
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -70,11 +105,36 @@ export function KanbanColumn({
     if (!option.color) return undefined;
     const rgb = hexToRgb(option.color);
     if (!rgb) return undefined;
-    return {
-      ['--kanban-scroll-thumb' as string]: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
-      ['--kanban-scroll-thumb-hover' as string]: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
+    const vars: Merge<React.CSSProperties, Record<`--${string}`, string>> = {
+      '--kanban-scroll-thumb': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
+      '--kanban-scroll-thumb-hover': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
     };
+    return vars;
   }, [option.color]);
+
+  function handleSave(): void {
+    const nextLabel = label.trim();
+    if (!nextLabel) return;
+    const useField = sortField !== MANUAL_SORT_VALUE;
+    let nextSortField: typeof sortField | null = null;
+    if (useField) nextSortField = sortField;
+    let nextSortDirection: typeof sortDirection | null = null;
+    if (useField) nextSortDirection = sortDirection;
+    onUpdate(option.id, {
+      label: nextLabel,
+      color,
+      sortField: nextSortField,
+      sortDirection: nextSortDirection,
+    });
+    setIsEditing(false);
+  }
+
+  // Hint de ordenação automática: quando a lista tem campo de ordenação, a ordem
+  // manual de drag-drop é ignorada — sinaliza isso no header.
+  const sortLabel = sortFieldOptions.find(
+    (field) => field.value === option.sortField,
+  )?.label;
+  const hasSort = Boolean(option.sortField) && Boolean(sortLabel);
 
   return (
     <section
@@ -101,84 +161,125 @@ export function KanbanColumn({
           >
             <GripVerticalIcon className="size-4" />
           </button>
-          {((): React.ReactNode => {
-            if (editingColumnId === option.id) {
-              return (
+          <Popover
+            open={isEditing}
+            onOpenChange={setIsEditing}
+          >
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex flex-col items-start text-left cursor-pointer"
+                title="Configurar lista"
+              >
+                <span className="text-base font-semibold">{option.label}</span>
+                {hasSort && (
+                  <span className="flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
+                    {option.sortDirection === 'desc' && (
+                      <ArrowDownWideNarrowIcon className="size-3" />
+                    )}
+                    {option.sortDirection !== 'desc' && (
+                      <ArrowUpNarrowWideIcon className="size-3" />
+                    )}
+                    {sortLabel}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-72 space-y-3"
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor={`kanban-list-name-${option.id}`}>Nome</Label>
                 <div className="flex items-center gap-2">
-                  <input
-                    value={editingColumnLabel}
-                    onChange={(event) => onEditChange(event.target.value)}
-                    onBlur={(event) => {
-                      if (event.relatedTarget === colorInputRef.current) return;
-                      const nextLabel = editingColumnLabel.trim();
-                      const nextColor =
-                        editingColumnColor ?? option.color ?? null;
-                      const labelChanged =
-                        nextLabel && nextLabel !== option.label;
-                      const colorChanged = nextColor !== (option.color ?? null);
-                      if (!labelChanged && !colorChanged) {
-                        onEditCancel();
-                        return;
-                      }
-                      if (!nextLabel) {
-                        onEditCancel();
-                        return;
-                      }
-                      onEditCommit(option.id, nextLabel, nextColor);
-                    }}
+                  <Input
+                    id={`kanban-list-name-${option.id}`}
+                    value={label}
+                    onChange={(event) => setLabel(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         event.preventDefault();
-                        (event.target as HTMLInputElement).blur();
-                      }
-                      if (event.key === 'Escape') {
-                        event.preventDefault();
-                        onEditCancel();
+                        handleSave();
                       }
                     }}
                     autoFocus
-                    className="w-40 rounded-md border border-input bg-background px-2 py-1 text-base font-semibold focus:outline-none"
                   />
                   <input
                     type="color"
-                    value={editingColumnColor ?? option.color ?? '#64748b'}
-                    onChange={(event) => onEditColorChange(event.target.value)}
-                    onBlur={() => {
-                      const nextLabel = editingColumnLabel.trim();
-                      const nextColor =
-                        editingColumnColor ?? option.color ?? null;
-                      const labelChanged =
-                        nextLabel && nextLabel !== option.label;
-                      const colorChanged = nextColor !== (option.color ?? null);
-                      if (!labelChanged && !colorChanged) {
-                        onEditCancel();
-                        return;
-                      }
-                      if (!nextLabel) {
-                        onEditCancel();
-                        return;
-                      }
-                      onEditCommit(option.id, nextLabel, nextColor);
-                    }}
-                    className="h-7 w-10 rounded border bg-transparent p-0"
-                    aria-label="Cor da coluna"
-                    ref={colorInputRef}
+                    value={color}
+                    onChange={(event) => setColor(event.target.value)}
+                    className="h-9 w-10 shrink-0 rounded border bg-transparent p-0"
+                    aria-label="Cor da lista"
                   />
                 </div>
-              );
-            }
-            return (
-              <button
-                type="button"
-                className="text-base font-semibold cursor-pointer"
-                onDoubleClick={() => {
-                  onEditStart(option);
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })()}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Ordenar por</Label>
+                <Select
+                  value={sortField}
+                  onValueChange={setSortField}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um campo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={MANUAL_SORT_VALUE}>
+                      Ordem manual
+                    </SelectItem>
+                    {sortFieldOptions.map((field) => (
+                      <SelectItem
+                        key={field.value}
+                        value={field.value}
+                      >
+                        {field.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Direção</Label>
+                <Select
+                  value={sortDirection}
+                  onValueChange={(value) => {
+                    if (value === 'asc' || value === 'desc') {
+                      setSortDirection(value);
+                    }
+                  }}
+                  disabled={sortField === MANUAL_SORT_VALUE}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione a direção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Ascendente (A–Z, 0–9)</SelectItem>
+                    <SelectItem value="desc">Descendente (Z–A, 9–0)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isUpdating || !label.trim()}
+                >
+                  Salvar
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <Badge
           variant="outline"

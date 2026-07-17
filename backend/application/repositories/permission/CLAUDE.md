@@ -7,7 +7,7 @@ Repositorio da entidade Permission (permissoes RBAC do sistema).
 | Arquivo | Descricao |
 |---------|-----------|
 | `permission-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `permission-mongoose.repository.ts` | Implementacao com Mongoose |
+| `permission.repository.ts` | Implementacao com Mongoose |
 | `permission-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

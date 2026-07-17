@@ -7,14 +7,32 @@ import HTTPException from '@application/core/exception.core';
 import { getOrCreateConfig } from './doc-transcription-config.model';
 import type { ITranscribeResult } from './doc-transcription.types';
 
-interface Input {
+type Input = {
   documentTypeId: string;
   fileBuffer: Buffer;
   filename: string;
   mimetype: string;
-}
+};
 
 type Response = Either<HTTPException, ITranscribeResult>;
+
+// Narrows para a resposta (JSON) da API externa — evita asserção sobre `unknown`.
+function toRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value));
+  }
+  return {};
+}
+function toPrimitive(value: unknown): string | number | boolean | null {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+  return null;
+}
 
 @Service()
 export default class TranscribeDocumentUseCase {
@@ -75,8 +93,15 @@ export default class TranscribeDocumentUseCase {
           );
           let detail = `${res.status} ${res.statusText}`;
           try {
-            const parsed = JSON.parse(errorText) as { error?: string };
-            if (parsed.error) detail = parsed.error;
+            const parsed: unknown = JSON.parse(errorText);
+            if (
+              parsed &&
+              typeof parsed === 'object' &&
+              'error' in parsed &&
+              typeof parsed.error === 'string'
+            ) {
+              detail = parsed.error;
+            }
           } catch {
             /* não é JSON */
           }
@@ -102,19 +127,18 @@ export default class TranscribeDocumentUseCase {
         );
       }
 
-      const rawResponse = rawData as Record<string, unknown>;
+      const rawResponse = toRecord(rawData);
       // A API externa retorna { data: {...}, model, usage }
       // O payload de campos está em .data — com fallback para o objeto raiz
-      const raw = (rawResponse.data as Record<string, unknown>) ?? rawResponse;
+      const dataField = rawResponse['data'];
+      let raw = rawResponse;
+      if (dataField && typeof dataField === 'object') raw = toRecord(dataField);
 
       const fields = docType.responseFields.map((rf) => ({
         key: rf.key,
         label: rf.label,
         type: rf.type,
-        value:
-          raw[rf.key] !== undefined
-            ? (raw[rf.key] as string | number | boolean | null)
-            : null,
+        value: toPrimitive(raw[rf.key]),
       }));
 
       return right({

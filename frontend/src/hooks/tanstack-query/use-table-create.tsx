@@ -8,18 +8,26 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { ITable } from '@/lib/interfaces';
+import type { ITable, Merge } from '@/lib/interfaces';
 import type { TableCreatePayload } from '@/lib/payloads';
 
-type UseTableCreateProps = Pick<
-  Omit<
-    UseMutationOptions<ITable, AxiosError | Error, TableCreatePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseTableCreateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        ITable,
+        AxiosError | Error,
+        TableCreatePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: ITable, variables: TableCreatePayload) => void;
-};
+  {
+    onSuccess?: (data: ITable, variables: TableCreatePayload) => void;
+  }
+>;
 
 export function useCreateTable(
   props: UseTableCreateProps,

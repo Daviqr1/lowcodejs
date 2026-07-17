@@ -3,11 +3,11 @@ import { useCallback, useState } from 'react';
 
 import type { TreeNode } from './tree-list';
 
-interface NodeFormData {
+type NodeFormData = {
   id: string;
   label: string;
   selectable: boolean;
-}
+};
 
 export const useTreeEditor = (
   initialData: Array<TreeNode> = [],

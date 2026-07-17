@@ -32,6 +32,25 @@ describe('UserGroup Remove From Trash Use Case', () => {
     expect(restored?.trashedAt).toBeNull();
   });
 
+  it('deve retornar SYSTEM_GROUP_PROTECTED ao restaurar grupo do sistema', async () => {
+    const group = await groupRepo.create({
+      name: 'Master',
+      slug: 'MASTER',
+      permissions: [],
+    });
+    await groupRepo.update({
+      _id: group._id,
+      trashed: true,
+      trashedAt: new Date(),
+    });
+
+    const result = await sut.execute({ _id: group._id });
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('expected left');
+    expect(result.value.code).toBe(403);
+    expect(result.value.cause).toBe('SYSTEM_GROUP_PROTECTED');
+  });
+
   it('deve retornar USER_GROUP_NOT_FOUND', async () => {
     const result = await sut.execute({ _id: 'unknown' });
     expect(result.isLeft()).toBe(true);

@@ -17,10 +17,10 @@ export const MenuEmptyTrashSchema: FastifySchema = {
       },
     },
     401: {
-      description: 'Não autorizado',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -30,7 +30,7 @@ export const MenuEmptyTrashSchema: FastifySchema = {
       },
     },
     403: {
-      description: 'Permissão insuficiente',
+      description: 'Proibido - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },

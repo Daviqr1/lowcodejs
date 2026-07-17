@@ -6,18 +6,21 @@ import { useMutation } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 
 import { API } from '@/lib/api';
-import type { IRow } from '@/lib/interfaces';
+import type { IRow, Merge } from '@/lib/interfaces';
 import type { RowAutoSavePayload } from '@/lib/payloads';
 
-type UseAutoSaveTableRowProps = Pick<
-  Omit<
-    UseMutationOptions<IRow, AxiosError | Error, RowAutoSavePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseAutoSaveTableRowProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<IRow, AxiosError | Error, RowAutoSavePayload, unknown>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IRow, variables: RowAutoSavePayload) => void;
-};
+  {
+    onSuccess?: (data: IRow, variables: RowAutoSavePayload) => void;
+  }
+>;
 
 export function useAutoSaveTableRow(
   props: UseAutoSaveTableRowProps,

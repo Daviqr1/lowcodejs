@@ -6,9 +6,9 @@ import { menuAllOptions } from './_query-options';
 import type { IMenu } from '@/lib/interfaces';
 import { useAuthStore } from '@/stores/authentication';
 
-interface UseMenuReadListOptions {
+type UseMenuReadListOptions = {
   enabled?: boolean;
-}
+};
 
 export function useMenuReadList(
   options?: UseMenuReadListOptions,

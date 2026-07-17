@@ -9,7 +9,7 @@ Envia um usuário para a lixeira (soft delete).
 ## Middleware
 
 1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR])`
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 
 ## Regras
 
@@ -22,7 +22,7 @@ Envia um usuário para a lixeira (soft delete).
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Role insuficiente |
+| 403 | FORBIDDEN | Sem capability MANAGE_USERS |
 | 403 | CANNOT_TRASH_MASTER | ADMIN tentando trashar MASTER |
 | 404 | USER_NOT_FOUND | Usuário inexistente |
 | 409 | CANNOT_TRASH_SELF | Auto-trash |

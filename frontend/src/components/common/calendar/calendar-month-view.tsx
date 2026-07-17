@@ -16,11 +16,11 @@ import { eventOccursOnDay, formatEventTimeRange } from '@/lib/calendar-helpers';
 import type { CalendarEventItem } from '@/lib/calendar-helpers';
 import { cn } from '@/lib/utils';
 
-interface CalendarMonthViewProps {
+type CalendarMonthViewProps = {
   currentDate: Date;
   events: Array<CalendarEventItem>;
   onSelectEvent: (event: CalendarEventItem) => void;
-}
+};
 
 export function CalendarMonthView({
   currentDate,
@@ -62,7 +62,7 @@ export function CalendarMonthView({
             <div
               key={day.toISOString()}
               className={cn(
-                'min-h-28 border-r border-b p-1 align-top',
+                'min-h-16 border-r border-b p-1 align-top sm:min-h-28',
                 !isSameMonth(day, currentDate) && 'bg-muted/20',
               )}
             >

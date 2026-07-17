@@ -18,7 +18,7 @@ import {
   type IField,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
-import { validateRowPayload } from '@application/core/row-payload-validator.core';
+import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import {
@@ -112,6 +112,7 @@ function buildFieldMap(
 function isUnsupportedImportType(fieldType: IField['type']): boolean {
   return (
     fieldType === E_FIELD_TYPE.USER ||
+    fieldType === E_FIELD_TYPE.USER_GROUP ||
     fieldType === E_FIELD_TYPE.FILE ||
     fieldType === E_FIELD_TYPE.FIELD_GROUP
   );
@@ -236,7 +237,7 @@ async function processImportJob(
 
     payload['creator'] = userId;
 
-    const errors = validateRowPayload(payload, table.fields, groups);
+    const errors = RowPayloadValidator.validate(payload, table.fields, groups);
 
     if (errors) {
       skipped++;

@@ -12,6 +12,9 @@ export const UserGroupCreateBodyValidator = z.object({
   permissions: z
     .array(z.string({ message: 'Cada permissão deve ser um texto' }))
     .min(1, 'Pelo menos uma permissão é obrigatória'),
+  encompasses: z
+    .array(z.string({ message: 'Cada grupo deve ser um texto' }))
+    .optional(),
 });
 
 export type UserGroupCreatePayload = z.infer<

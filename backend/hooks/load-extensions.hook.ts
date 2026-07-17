@@ -2,7 +2,7 @@ import { getInstanceByToken } from 'fastify-decorators';
 
 import { loadExtensions } from '@application/core/extensions/loader';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
-import ExtensionMongooseRepository from '@application/repositories/extension/extension-mongoose.repository';
+import ExtensionMongooseRepository from '@application/repositories/extension/extension.repository';
 
 export async function LoadExtensionHook(): Promise<void> {
   try {

@@ -1,15 +1,17 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
+import { MenuReorderSchema } from './reorder.schema';
 import MenuReorderUseCase from './reorder.use-case';
 import { MenuReorderBodyValidator } from './reorder.validator';
 
 @Controller()
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: MenuReorderUseCase = getInstanceByToken(
       MenuReorderUseCase,
     ),
@@ -22,7 +24,9 @@ export default class {
         AuthenticationMiddleware({
           optional: false,
         }),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU),
       ],
+      schema: MenuReorderSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

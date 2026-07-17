@@ -5,16 +5,17 @@ import { ChatPanel } from './chat-panel';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-interface ChatSidebarProps {
+type ChatSidebarProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
 export function ChatSidebar({
   open,
@@ -32,10 +33,13 @@ export function ChatSidebar({
       >
         <SheetContent
           side="right"
-          className="flex flex-col p-0 gap-0 w-full sm:max-w-md"
+          className="flex flex-col p-0 gap-0 sm:max-w-md"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Assistente IA</SheetTitle>
+            <SheetDescription>
+              Converse com o assistente de inteligência artificial
+            </SheetDescription>
           </SheetHeader>
           <ChatPanel onClose={() => onOpenChange(false)} />
         </SheetContent>

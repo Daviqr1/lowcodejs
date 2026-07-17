@@ -1,0 +1,12 @@
+{
+  "id": "generate-test-data",
+  "type": "TOOL",
+  "name": "Gerador de Dados de Teste",
+  "description": "Gera registros de teste em massa para uma tabela selecionada. A inserção física é limitada por um orçamento de bytes (estimativa de tamanho/impacto antes de gerar); acima do teto o progresso é simulado.",
+  "version": "1.1.0",
+  "author": "LowcodeJS",
+  "icon": "DatabaseIcon",
+  "tool": {
+    "submenu": "tables"
+  }
+}

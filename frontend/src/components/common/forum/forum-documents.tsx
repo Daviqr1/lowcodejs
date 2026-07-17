@@ -3,11 +3,12 @@ import React from 'react';
 
 import type { ForumDocument } from './forum-types';
 
+import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 
-interface ForumDocumentsProps {
+type ForumDocumentsProps = {
   documents: Array<ForumDocument>;
-}
+};
 
 export function ForumDocuments({
   documents,
@@ -46,21 +47,25 @@ export function ForumDocuments({
             key={`${doc.messageId}-${doc.file._id}`}
             className="flex gap-3 rounded-lg border p-3 hover:bg-muted/40"
           >
-            <a
-              href={doc.file.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex gap-3 flex-1 min-w-0"
-            >
-              {thumbnail}
-              <div className="flex-1 space-y-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-2">
-                  {doc.file.originalName}
-                </p>
-                <p className="text-xs text-muted-foreground">{authorLabel}</p>
-                <p className="text-xs text-muted-foreground">{doc.dateLabel}</p>
-              </div>
-            </a>
+            <AttachmentContextMenu storage={doc.file}>
+              <a
+                href={doc.file.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex gap-3 flex-1 min-w-0"
+              >
+                {thumbnail}
+                <div className="flex-1 space-y-1 min-w-0">
+                  <p className="text-sm font-medium line-clamp-2">
+                    {doc.file.originalName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{authorLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.dateLabel}
+                  </p>
+                </div>
+              </a>
+            </AttachmentContextMenu>
             <a
               href={getStorageDownloadUrl(doc.file)}
               aria-label={`Baixar ${doc.file.originalName}`}

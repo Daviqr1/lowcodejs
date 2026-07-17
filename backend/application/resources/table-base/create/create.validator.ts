@@ -3,7 +3,7 @@ import z from 'zod';
 
 import { Merge } from '@application/core/entity.core';
 
-import { TableStyleSchema, TableVisibilitySchema } from '../table-base.schema';
+import { TableStyleSchema } from '../table-base.schema';
 
 export const TableCreateBodyValidator = z
   .object({
@@ -19,7 +19,6 @@ export const TableCreateBodyValidator = z
     slug: z.string().trim().min(1).optional(),
     logo: z.string().trim().nullable().optional(),
     style: TableStyleSchema.optional(),
-    visibility: TableVisibilitySchema.optional(),
   })
   .transform((data) => {
     let slug = slugify(data.name, { lower: true, strict: true, trim: true });

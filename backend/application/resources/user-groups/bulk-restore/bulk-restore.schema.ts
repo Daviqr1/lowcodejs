@@ -1,8 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserGroupBulkRestoreSchema: FastifySchema = {
-  tags: ['User Groups'],
+  tags: ['Grupos de Usuários'],
   summary: 'Restaurar múltiplos grupos da lixeira',
+  description:
+    'Restaura os grupos informados que estejam na lixeira e retorna a quantidade efetivamente restaurada. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
   body: {
     type: 'object',
@@ -13,7 +15,33 @@ export const UserGroupBulkRestoreSchema: FastifySchema = {
     additionalProperties: false,
   },
   response: {
-    200: { type: 'object', properties: { modified: { type: 'number' } } },
+    200: {
+      description: 'Quantidade de grupos restaurados da lixeira',
+      type: 'object',
+      properties: {
+        modified: {
+          type: 'number',
+          description: 'Total de grupos restaurados',
+        },
+      },
+    },
+    400: {
+      description: 'Requisição inválida - Falha na validação',
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'Mensagem de erro de validação',
+        },
+        code: { type: 'number', enum: [400] },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Erros de validação por campo',
+        },
+      },
+    },
     401: {
       type: 'object',
       properties: {

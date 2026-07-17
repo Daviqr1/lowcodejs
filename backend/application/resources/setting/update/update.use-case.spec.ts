@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import SettingInMemoryRepository from '@application/repositories/setting/setting-in-memory.repository';
+import InMemoryStorageService from '@application/services/storage/in-memory-storage.service';
 
 import SettingUpdateUseCase from './update.use-case';
 
 let settingInMemoryRepository: SettingInMemoryRepository;
+let storageService: InMemoryStorageService;
 let sut: SettingUpdateUseCase;
 
 describe('Setting Update Use Case', () => {
   beforeEach(() => {
     settingInMemoryRepository = new SettingInMemoryRepository();
-    sut = new SettingUpdateUseCase(settingInMemoryRepository);
+    storageService = new InMemoryStorageService();
+    sut = new SettingUpdateUseCase(settingInMemoryRepository, storageService);
   });
 
   it('deve atualizar configurações com sucesso', async () => {

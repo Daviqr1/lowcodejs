@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-interface ToolbarButtonProps {
+type ToolbarButtonProps = {
   icon?: LucideIcon;
   tooltip?: string;
   action?: () => void;
@@ -16,7 +16,7 @@ interface ToolbarButtonProps {
   disabled?: boolean;
   className?: string;
   children?: React.ReactNode;
-}
+};
 
 export function ToolbarButton({
   icon: Icon,

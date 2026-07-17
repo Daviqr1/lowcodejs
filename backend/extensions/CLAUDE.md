@@ -6,6 +6,14 @@ esta pasta no boot, valida cada `manifest.json` e faz upsert na collection
 `extensions` do MongoDB. O frontend espelha apenas o código (`frontend/extensions/`),
 mas a "fonte de verdade" para o registro no DB é este diretório.
 
+## Pacotes
+
+| Pacote | Ativação | CLAUDE.md | Conteúdo |
+|--------|----------|-----------|----------|
+| `core` | auto-ativado no boot (exceção de ativação) | `core/CLAUDE.md` | tools/plugins/modules shipados com a plataforma |
+| `apps` | opcional (começa desativado) | `apps/CLAUDE.md` | extensões oficiais opcionais (ex: dashboard) |
+| `forms` | opcional (começa desativado) | `forms/CLAUDE.md` | plugins que enriquecem os formulários das tabelas |
+
 ## Tipos de extensão
 
 | Tipo | Descrição | Exemplo | Onde aparece |
@@ -162,6 +170,11 @@ Slots são pontos no JSX do core onde plugins são injetados via
 Slots reservados podem ser instalados conforme demanda. A SKILL (Fase 5)
 valida `placement.slots` contra os slots ativos.
 
+> Extensões podem registrar **slots adicionais** fora deste catálogo. O pacote
+> `forms` provê `table.fields.manage` (plugin `conditional-fields`) e
+> `table.field.relationship.config` (plugin `cascade-dropdown`) — ver
+> `backend/extensions/forms/CLAUDE.md`.
+
 ## Ciclo de vida
 
 1. **Build/deploy**: o código da extensão entra no bundle
@@ -192,8 +205,9 @@ do MASTER são preservados — uma vez desligada, fica desligada.
 ## Convenções
 
 - **Sem sandbox**: extensões rodam com privilégios totais — o desenvolvedor
-  assume o risco. Use os repos via `getInstanceByToken` ou `@Inject`, igual ao
-  core
+  assume o risco. Acesse repos/services via `getInstanceByToken` (controllers de
+  extensão não são `@Service`) ou, em classes `@Service`, por constructor
+  injection — igual ao core. Não use `@Inject`.
 - **Either pattern**: use-cases retornam `Either<HTTPException, T>`
 - **Mensagens em PT-BR**
 - **Design system obrigatório no frontend**: importe de `@/components/ui/*`

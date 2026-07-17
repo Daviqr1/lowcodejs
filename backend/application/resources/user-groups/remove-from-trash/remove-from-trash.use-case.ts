@@ -1,8 +1,8 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 
@@ -27,6 +27,15 @@ export default class UserGroupRemoveFromTrashUseCase {
           HTTPException.NotFound(
             'Grupo não encontrado',
             'USER_GROUP_NOT_FOUND',
+          ),
+        );
+      }
+
+      if (SYSTEM_GROUP_SLUGS.has(group.slug)) {
+        return left(
+          HTTPException.Forbidden(
+            'Grupos do sistema não podem ser editados',
+            'SYSTEM_GROUP_PROTECTED',
           ),
         );
       }

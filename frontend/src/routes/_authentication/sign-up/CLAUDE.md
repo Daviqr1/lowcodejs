@@ -39,7 +39,8 @@ Pagina de cadastro de novos usuarios. Acessivel em `/sign-up`.
 1. Usuario preenche nome, email, senha e confirmacao, submete o formulario
 2. `confirmPassword` e removido do payload antes do envio
 3. `signUpMutation.mutateAsync(data)` envia dados ao backend
-4. **Sucesso**: redireciona para `/` (pagina de login) com `router.navigate`
+4. **Sucesso**: redireciona para `/sign-up/success` (tela de confirmacao) com
+   `router.navigate`; de la o CTA "Comecar" leva para `/` (login)
 5. **Erro**: `handleApiError` mapeia erros por campo; tratamento especial para
    `USER_ALREADY_EXISTS` que seta erro no campo email
 

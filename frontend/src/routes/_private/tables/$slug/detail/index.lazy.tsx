@@ -5,8 +5,13 @@ import {
 } from '@tanstack/react-router';
 import { ArchiveRestoreIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
-import { TableUpdateSchema, UpdateTableFormFields } from './-update-form';
+import {
+  TableUpdateSchema,
+  UpdateTableFormFields,
+  buildDefaultPermissions,
+} from './-update-form';
 import { UpdateTableFormSkeleton } from './-update-form-skeleton';
 import { TableView } from './-view';
 
@@ -25,7 +30,6 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ITable } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/tables/$slug/detail/')({
   component: RouteComponent,
@@ -70,7 +74,7 @@ function RouteComponent(): React.JSX.Element {
       </PageShell.Header>
 
       {/* Content */}
-      <PageShell.Content>
+      <PageShell.Content className="overflow-hidden">
         {_read.status === 'error' && (
           <LoadError
             message="Erro ao buscar dados da tabela"
@@ -90,12 +94,12 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface TableUpdateContentProps {
+type TableUpdateContentProps = {
   data: ITable;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
   permission: ReturnType<typeof useTablePermission>;
-}
+};
 
 function TableUpdateContent({
   data,
@@ -107,10 +111,9 @@ function TableUpdateContent({
   const router = useRouter();
   const _update = useUpdateTable({
     onSuccess(responseData) {
-      toastSuccess(
-        'Tabela atualizada',
-        'Os dados da tabela foram atualizados com sucesso',
-      );
+      toast.success('Tabela atualizada', {
+        description: 'Os dados da tabela foram atualizados com sucesso',
+      });
 
       sidebar.setOpen(false);
       router.navigate({
@@ -131,17 +134,20 @@ function TableUpdateContent({
       slug: data.slug,
       description: data.description ?? '',
       style: data.style,
-      visibility: data.visibility,
-      collaboration: data.collaboration,
       logo: data.logo?._id ?? null,
-      logoFile: [] as Array<File>,
-      administrators: data.administrators.map((admin) =>
-        typeof admin === 'string' ? admin : admin._id,
-      ),
+      logoFile: new Array<File>(),
+      // Garante as 10 chaves (default Ninguém) e sobrepõe com o que a tabela tem.
+      permissions: {
+        ...buildDefaultPermissions(),
+        ...(data.permissions ?? {}),
+      },
+      members: data.members ?? [],
+      owner: data.owner?._id ?? '',
       order:
-        data.order?.field && data.order?.direction
-          ? `${data.order.field}:${data.order.direction}`
-          : 'none',
+        (data.order?.field &&
+          data.order?.direction &&
+          `${data.order.field}:${data.order.direction}`) ||
+        'none',
       layoutFields: {
         title: data.layoutFields?.title ?? '',
         description: data.layoutFields?.description ?? '',
@@ -153,6 +159,7 @@ function TableUpdateContent({
         participants: data.layoutFields?.participants ?? '',
         reminder: data.layoutFields?.reminder ?? '',
       },
+      rowSlugFieldId: data.rowSlugFieldId ?? null,
     },
     // @ts-expect-error Zod Standard Schema type inference
     validators: { onChange: TableUpdateSchema, onSubmit: TableUpdateSchema },
@@ -165,6 +172,8 @@ function TableUpdateContent({
         const [field, direction] = value.order.split(':');
         orderPayload = {
           field,
+          // direction vem do split de value.order (formato `campo:asc|desc`).
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           direction: direction as 'asc' | 'desc',
         };
       }
@@ -175,14 +184,14 @@ function TableUpdateContent({
         name: value.name || data.name,
         description: value.description || null,
         logo: value.logo || data.logo?._id || null,
-        visibility: value.visibility,
         style: value.style,
-        collaboration: value.collaboration,
         fieldOrderList: data.fieldOrderList,
         fieldOrderForm: data.fieldOrderForm,
         fieldOrderFilter: data.fieldOrderFilter,
         fieldOrderDetail: data.fieldOrderDetail,
-        administrators: value.administrators,
+        permissions: value.permissions,
+        members: value.members,
+        owner: value.owner || undefined,
         methods: {
           ...data.methods,
         },
@@ -198,6 +207,7 @@ function TableUpdateContent({
           participants: value.layoutFields.participants || null,
           reminder: value.layoutFields.reminder || null,
         },
+        rowSlugFieldId: value.rowSlugFieldId || null,
       });
     },
   });

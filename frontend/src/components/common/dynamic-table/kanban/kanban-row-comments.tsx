@@ -29,12 +29,15 @@ export function KanbanRowCommentsSection({
   onAddComment,
   mentions,
 }: {
+  // comentários são dados dinâmicos de row (valor por slug é any no low-code).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comments: Array<Record<string, any>>;
   profile?: IUser;
   currentUserId: string;
   rowCreatorId?: string;
   editingCommentIndex: number | null;
   editingCommentText: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEditStart: (index: number, comment: Record<string, any>) => void;
   onEditCancel: () => void;
   onEditChange: (value: string) => void;
@@ -56,15 +59,16 @@ export function KanbanRowCommentsSection({
       <h3 className="text-sm font-semibold">Comentarios</h3>
       <div className="space-y-3">
         {comments.map((comment, index) => {
-          const rawAuthor = Array.isArray(comment.autor)
-            ? comment.autor[0]
-            : comment.autor;
-          const author =
+          let rawAuthor = comment.autor;
+          if (Array.isArray(comment.autor)) rawAuthor = comment.autor[0];
+          let author: IUser | string | undefined = rawAuthor;
+          if (
             typeof rawAuthor === 'string' &&
             profile &&
             rawAuthor === profile._id
-              ? profile
-              : (rawAuthor as IUser | string | undefined);
+          ) {
+            author = profile;
+          }
           let authorId: string | undefined;
           if (typeof author === 'string') {
             authorId = author;
@@ -73,11 +77,12 @@ export function KanbanRowCommentsSection({
           }
           const canManage =
             authorId === currentUserId || rowCreatorId === currentUserId;
-          const dateLabel = comment.data
-            ? format(new Date(comment.data), 'dd/MM/yyyy HH:mm', {
-                locale: ptBR,
-              })
-            : '';
+          let dateLabel = '';
+          if (comment.data) {
+            dateLabel = format(new Date(comment.data), 'dd/MM/yyyy HH:mm', {
+              locale: ptBR,
+            });
+          }
 
           return (
             <div

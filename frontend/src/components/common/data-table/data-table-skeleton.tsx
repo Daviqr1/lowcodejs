@@ -11,12 +11,12 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface DataTableSkeletonCellProps {
+type DataTableSkeletonCellProps = {
   width: string;
   height?: string;
   rounded?: string;
   className?: string;
-}
+};
 
 function DataTableSkeletonCell({
   width,
@@ -39,12 +39,12 @@ function DataTableSkeletonActionCell(): React.JSX.Element {
   );
 }
 
-interface DataTableSkeletonProps {
+type DataTableSkeletonProps = {
   headers: Array<string>;
   children: React.ReactNode;
   rows?: number;
   className?: string;
-}
+};
 
 function DataTableSkeletonRoot({
   headers,

@@ -10,7 +10,7 @@ template via `EmailContractService.buildTemplate` e envia via
 | Arquivo | Descricao |
 |---------|-----------|
 | `email-queue-contract.service.ts` | Classe abstrata + `EmailJobPayload` + constantes (`EMAIL_QUEUE_NAME`, `EMAIL_JOB.SEND`) |
-| `bullmq-email-queue.service.ts` | Implementacao BullMQ. `attempts: 3`, backoff exponencial (1s/5s/25s), `removeOnComplete: 100`, `removeOnFail: 500` |
+| `email-queue.service.ts` | Implementacao BullMQ. `attempts: 3`, backoff exponencial (1s/5s/25s), `removeOnComplete: 100`, `removeOnFail: 500` |
 | `in-memory-email-queue.service.ts` | Mock para testes. Armazena jobs num array; expoe `getJobs()`, `getLastJob()`, `clear()`, `simulateError()` |
 | `worker.ts` | `startEmailWorker(deps)` cria BullMQ Worker, processa jobs, chama EmailContractService. `concurrency` lido de `Env.EMAIL_WORKER_CONCURRENCY` (default 5) |
 

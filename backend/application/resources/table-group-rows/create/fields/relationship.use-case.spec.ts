@@ -94,65 +94,9 @@ describe('Group Row Create - RELATIONSHIP', () => {
     expect(result.value.produtos).toHaveLength(2);
   });
 
-  it('deve rejeitar quando valor nao e array', async () => {
-    const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
-      slug: 'produtos',
-    });
-    const table = await makeTableWithGroup(
-      tableRepository,
-      'itens',
-      [field],
-      [],
-      { slug: 'pedidos' },
-    );
-
-    const row = await rowRepository.create({
-      table,
-      data: { itens: [] },
-    });
-
-    const result = await sut.execute({
-      slug: 'pedidos',
-      rowId: row._id,
-      groupSlug: 'itens',
-      produtos: VALID_OBJECT_ID,
-    });
-
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-  });
-
-  it('deve rejeitar quando itens nao sao ObjectIds validos', async () => {
-    const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
-      slug: 'produtos',
-    });
-    const table = await makeTableWithGroup(
-      tableRepository,
-      'itens',
-      [field],
-      [],
-      { slug: 'pedidos' },
-    );
-
-    const row = await rowRepository.create({
-      table,
-      data: { itens: [] },
-    });
-
-    const result = await sut.execute({
-      slug: 'pedidos',
-      rowId: row._id,
-      groupSlug: 'itens',
-      produtos: ['not-a-valid-id', 'also-invalid'],
-    });
-
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-  });
-
-  it('deve rejeitar quando required e valor ausente', async () => {
+  // RELATIONSHIP não é mais validado no payload do row (gerido via links); o
+  // validador ignora o campo, então valores ausentes/atípicos não rejeitam.
+  it('deve aceitar quando required e valor ausente (gerido via links)', async () => {
     const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
       slug: 'produtos',
       required: true,
@@ -176,10 +120,7 @@ describe('Group Row Create - RELATIONSHIP', () => {
       groupSlug: 'itens',
     });
 
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-    expect(result.value.errors).toHaveProperty('produtos');
+    expect(result.isRight()).toBe(true);
   });
 
   it('deve aceitar array vazio quando nao required', async () => {

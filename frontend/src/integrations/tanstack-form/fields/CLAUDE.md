@@ -32,24 +32,22 @@ registro no `createFormHook`.
 | `FieldEditor`     | Editor de texto rico (lazy loading interno) |
 | `FieldCodeEditor` | Editor de codigo (lazy loading interno)     |
 
-### table-config.ts - Configuracao de Tabela (14)
+### table-config.ts - Configuracao de Tabela (12)
 
-| Componente                          | Descricao                         |
-| ----------------------------------- | --------------------------------- |
-| `TableComboboxField`                | Combobox de tabela                |
-| `TableVisibilitySelectField`        | Select de visibilidade            |
-| `TableCollaborationSelectField`     | Select de colaboracao             |
-| `TableLayoutFieldSelect`            | Select de layout                  |
-| `TableOrderSelectField`             | Select de ordenacao               |
-| `TableStyleSelectField`             | Select de estilo                  |
-| `TableFieldTypeSelect`              | Select de tipo de campo           |
-| `TableFieldFormatSelect`            | Select de formato de campo        |
-| `TableFieldDropdownOptions`         | Opcoes de dropdown                |
-| `TableFieldDropdownDefaultValue`    | Valor padrao de dropdown          |
-| `TableFieldRelationshipTableSelect` | Select de tabela relacionada      |
-| `TableFieldRelationshipFieldSelect` | Select de campo relacionado       |
-| `TableFieldRelationshipOrderSelect` | Select de ordem de relacionamento |
-| `TableFieldCategoryTree`            | Arvore de categorias              |
+| Componente                          | Descricao                                      |
+| ----------------------------------- | ---------------------------------------------- |
+| `TableComboboxField`                | Combobox de tabela                             |
+| `TableLayoutFieldSelect`            | Select de layout                               |
+| `TableOrderSelectField`             | Select de ordenacao                            |
+| `TableStyleSelectField`             | Select de estilo                               |
+| `TableFieldTypeSelect`              | Select de tipo de campo                        |
+| `TableFieldValidationsField`        | Multi-select de validações do campo (+ config) |
+| `TableFieldFormatSelect`            | Select de formato de campo                     |
+| `TableFieldDropdownOptions`         | Opcoes de dropdown                             |
+| `TableFieldDropdownDefaultValue`    | Valor padrao de dropdown                       |
+| `TableFieldRelationshipTableSelect` | Select de tabela relacionada                   |
+| `TableFieldRelationshipOrderSelect` | Select de ordem de relacionamento              |
+| `TableFieldCategoryTree`            | Arvore de categorias                           |
 
 ### table-row.ts - Input de Dados de Registro (10)
 

@@ -19,7 +19,7 @@ Retorna um registro especifico de uma tabela pelo ID.
 4. Repository: TableContractRepository.findBy, colecao dinamica via buildTable().findOne
 
 ## Regras de Negocio
-- Auth opcional permite visualizacao em tabelas PUBLIC/OPEN
+- Auth opcional permite visualizacao quando o binding de VIEW_ROW (`table.permissions`) e PUBLIC
 - Campos PASSWORD sao mascarados no retorno
 
 ## Erros Possiveis

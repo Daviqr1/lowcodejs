@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
-import { E_ROLE } from '@application/core/entity.core';
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { UserGroupDeleteSchema } from './delete.schema';
 import UserGroupDeleteUseCase from './delete.use-case';
@@ -14,7 +14,6 @@ import { UserGroupDeleteParamValidator } from './delete.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserGroupDeleteUseCase = getInstanceByToken(
       UserGroupDeleteUseCase,
     ),
@@ -25,7 +24,7 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER]),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS),
       ],
       schema: UserGroupDeleteSchema,
     },

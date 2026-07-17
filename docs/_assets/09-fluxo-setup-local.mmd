@@ -1,0 +1,10 @@
+graph LR
+    SETUP[setup.sh] --> ENV[.env + backend/.env + frontend/.env]
+    SETUP --> CRED[credential-generator.sh JWT + COOKIE_SECRET]
+    ENV --> UP[docker compose up -d]
+    UP --> MONGO[(mongo 27017)]
+    UP --> REDIS[(redis 6379)]
+    UP --> API[api 3000]
+    UP --> APP[app 5173]
+    API --> ENTRY[docker-entry-point.sh migrations + seeders]
+    ENTRY --> SERVER[node bin server.js]

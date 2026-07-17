@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { getDropdownContrastStyle } from '@/components/common/dynamic-table/table-cells/utils';
+import { ContentViewer } from '@/components/common/rich-editor';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import {
   DATE_FORMAT_OPTIONS,
@@ -9,10 +16,12 @@ import {
   TEXT_LONG_FORMAT_OPTIONS,
 } from '@/lib/constant';
 import type { IField } from '@/lib/interfaces';
+import { isFieldShownInContext } from '@/lib/permission';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface FieldViewProps {
+type FieldViewProps = {
   data: IField;
-}
+};
 
 export function FieldView({ data }: FieldViewProps): React.JSX.Element {
   const typeLabel =
@@ -56,6 +65,53 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
         </p>
       </div>
 
+      {/* Título efetivo na listagem (resolve label.list ou name) */}
+      <div className="space-y-1">
+        <p className="text-sm font-medium">Título na listagem</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+          {resolveFieldLabel(data, 'list')}
+        </p>
+      </div>
+
+      {/* Rótulos por contexto */}
+      {data.label && (
+        <Accordion
+          type="single"
+          collapsible
+          defaultValue="labels"
+          className="rounded-lg border"
+        >
+          <AccordionItem
+            value="labels"
+            className="px-3"
+          >
+            <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+              Rótulos por contexto
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid gap-2 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Listagem</span>
+                  <span>{data.label.list ?? '-'}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Filtros</span>
+                  <span>{data.label.filter ?? '-'}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Formulário</span>
+                  <span>{data.label.form ?? '-'}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Detalhes</span>
+                  <span>{data.label.detail ?? '-'}</span>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+
       <div className="space-y-1">
         <p className="text-sm font-medium">Slug</p>
         <p className="text-sm text-muted-foreground break-all">
@@ -78,6 +134,14 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
         <p className="text-sm text-muted-foreground">{typeLabel}</p>
       </div>
 
+      {/* Conteúdo HTML (HTML_CONTENT) */}
+      {data.type === E_FIELD_TYPE.HTML_CONTENT && (
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Conteúdo HTML</p>
+          <ContentViewer content={data.htmlContent ?? ''} />
+        </div>
+      )}
+
       {/* Formato (condicional) */}
       {formatLabel && (
         <div className="space-y-1">
@@ -98,46 +162,51 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
       <div className="space-y-2">
         <p className="text-sm font-medium">Configurações</p>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={data.required ? 'default' : 'secondary'}>
-            {data.required ? 'Obrigatório' : 'Opcional'}
+          <Badge variant={(data.required && 'default') || 'secondary'}>
+            {data.required && 'Obrigatório'}
+            {!data.required && 'Opcional'}
           </Badge>
           {data.multiple && <Badge variant="outline">Múltiplos valores</Badge>}
-          {data.showInList && (
+          {isFieldShownInContext(data, 'list') && (
             <Badge variant="outline">Exibir em listagem</Badge>
           )}
           {data.showInFilter && (
             <Badge variant="outline">Permitir filtro</Badge>
           )}
-          {data.showInForm && (
+          {isFieldShownInContext(data, 'form') && (
             <Badge variant="outline">Exibir em formulários</Badge>
           )}
-          {data.showInDetail && (
+          {isFieldShownInContext(data, 'detail') && (
             <Badge variant="outline">Exibir em detalhes</Badge>
           )}
         </div>
       </div>
 
       {/* Dropdown options (se for dropdown) */}
-      {data.type === E_FIELD_TYPE.DROPDOWN && data.dropdown.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Opções do Dropdown</p>
-          <div className="flex flex-wrap gap-1">
-            {data.dropdown.map((opt) => {
-              const colorStyle = getDropdownContrastStyle(opt.color);
-              return (
-                <Badge
-                  key={opt.id}
-                  variant="outline"
-                  className={colorStyle ? undefined : 'text-muted-foreground'}
-                  style={colorStyle}
-                >
-                  {opt.label}
-                </Badge>
-              );
-            })}
+      {data.type === E_FIELD_TYPE.DROPDOWN &&
+        (data.dropdown?.length ?? 0) > 0 && (
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Opções do Dropdown</p>
+            <div className="flex flex-wrap gap-1">
+              {data.dropdown.map((opt) => {
+                const colorStyle = getDropdownContrastStyle(opt.color);
+                let badgeClassName: string | undefined =
+                  'text-muted-foreground';
+                if (colorStyle) badgeClassName = undefined;
+                return (
+                  <Badge
+                    key={opt.id}
+                    variant="outline"
+                    className={badgeClassName}
+                    style={colorStyle}
+                  >
+                    {opt.label}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Relacionamento (se for relationship) */}
       {data.type === E_FIELD_TYPE.RELATIONSHIP && data.relationship && (
@@ -150,8 +219,8 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
             Campo: {data.relationship.field.slug}
           </p>
           <p className="text-sm text-muted-foreground">
-            Ordem:{' '}
-            {data.relationship.order === 'asc' ? 'Crescente' : 'Decrescente'}
+            Ordem: {data.relationship.order === 'asc' && 'Crescente'}
+            {data.relationship.order !== 'asc' && 'Decrescente'}
           </p>
           {data.relationship.customLabel &&
             (data.relationship.labelParts?.length ?? 0) > 0 && (
@@ -166,14 +235,15 @@ export function FieldView({ data }: FieldViewProps): React.JSX.Element {
       )}
 
       {/* Categorias (se for category) */}
-      {data.type === E_FIELD_TYPE.CATEGORY && data.category.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Categorias</p>
-          <p className="text-sm text-muted-foreground">
-            {data.category.length} categoria(s) configurada(s)
-          </p>
-        </div>
-      )}
+      {data.type === E_FIELD_TYPE.CATEGORY &&
+        (data.category?.length ?? 0) > 0 && (
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Categorias</p>
+            <p className="text-sm text-muted-foreground">
+              {data.category.length} categoria(s) configurada(s)
+            </p>
+          </div>
+        )}
 
       {/* Grupo de campos */}
       {data.type === E_FIELD_TYPE.FIELD_GROUP && data.group && (

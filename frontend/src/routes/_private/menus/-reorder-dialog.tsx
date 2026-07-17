@@ -30,22 +30,26 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import { useMenuReorder } from '@/hooks/tanstack-query/use-menu-reorder';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IMenu } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import type { IMenu, ValueOf } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
 type DropMode = 'before' | 'after' | 'nest';
@@ -56,25 +60,23 @@ type MenuTreeNode = {
   children: Array<MenuTreeNode>;
 };
 
-interface MenuReorderDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+type MenuReorderDialogProps = React.ComponentProps<typeof DialogTrigger>;
 
-interface SortableMenuNodeProps {
+type SortableMenuNodeProps = {
   node: MenuTreeNode;
   level: number;
   parentId: string | null;
   dropMode: DropMode | null;
   children?: React.ReactNode;
-}
+};
 
-const TypeMapper = {
+const TypeMapper: Record<ValueOf<typeof E_MENU_ITEM_TYPE>, string> = {
   [E_MENU_ITEM_TYPE.PAGE]: 'Página',
   [E_MENU_ITEM_TYPE.TABLE]: 'Tabela',
   [E_MENU_ITEM_TYPE.FORM]: 'Formulário',
   [E_MENU_ITEM_TYPE.EXTERNAL]: 'Link',
   [E_MENU_ITEM_TYPE.SEPARATOR]: 'Separador',
+  [E_MENU_ITEM_TYPE.EXTENSION_MODULE]: 'Módulo',
 };
 
 function getParentId(menu: IMenu): string | null {
@@ -102,7 +104,8 @@ function buildTree(menus: Array<IMenu>): Array<MenuTreeNode> {
 
   for (const node of nodeById.values()) {
     const parentId = getParentId(node.menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(node);
@@ -277,9 +280,8 @@ function getDropMode(
   }
 
   if (!allowNest) {
-    return activeCenterY < overRect.top + overRect.height / 2
-      ? 'before'
-      : 'after';
+    if (activeCenterY < overRect.top + overRect.height / 2) return 'before';
+    return 'after';
   }
 
   return 'nest';
@@ -304,10 +306,12 @@ function SortableMenuNode({
     data: { parentId },
   });
 
+  let opacity = 1;
+  if (isDragging) opacity = 0.55;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.55 : 1,
+    opacity,
     marginLeft: `${level * 24}px`,
   };
 
@@ -343,11 +347,8 @@ function SortableMenuNode({
           <GripVerticalIcon className="size-4" />
         </button>
         <span className="inline-flex size-7 items-center justify-center rounded bg-muted text-muted-foreground">
-          {node.children.length > 0 ? (
-            <FolderTreeIcon className="size-4" />
-          ) : (
-            <TableIcon className="size-4" />
-          )}
+          {node.children.length > 0 && <FolderTreeIcon className="size-4" />}
+          {node.children.length === 0 && <TableIcon className="size-4" />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{node.menu.name}</p>
@@ -383,10 +384,35 @@ function DragPreview({ node }: { node: MenuTreeNode }): React.JSX.Element {
 }
 
 export function MenuReorderDialog({
-  open,
-  onOpenChange,
+  ref,
+  ...rest
 }: MenuReorderDialogProps): React.JSX.Element {
-  const { data: menus, status } = useMenuReadList({ enabled: open });
+  const { closeRef, close } = useDismissableDialog();
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent className="max-w-4xl">
+        <MenuReorderContent
+          close={close}
+          closeRef={closeRef}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MenuReorderContent({
+  close,
+  closeRef,
+}: {
+  close: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
+}): React.JSX.Element {
+  const { data: menus, status } = useMenuReadList({ enabled: true });
   const [scope, setScope] = React.useState<ReorderScope>('root');
   const [tree, setTree] = React.useState<Array<MenuTreeNode>>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -401,14 +427,16 @@ export function MenuReorderDialog({
   );
 
   React.useEffect(() => {
-    if (!open || !menus) return;
+    if (!menus) return;
     setTree(buildTree(menus));
-  }, [menus, open]);
+  }, [menus]);
 
   const reorder = useMenuReorder({
     onSuccess() {
-      toastSuccess('Ordem salva', 'A ordem dos menus foi atualizada');
-      onOpenChange(false);
+      toast.success('Ordem salva', {
+        description: 'A ordem dos menus foi atualizada',
+      });
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao ordenar menus' });
@@ -429,8 +457,7 @@ export function MenuReorderDialog({
 
     const activeIdValue = String(active.id);
     const overId = String(over.id);
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
 
     if (
       isDescendant(tree, activeIdValue, overId) ||
@@ -461,8 +488,7 @@ export function MenuReorderDialog({
 
     const activeIdValue = String(active.id);
     const overId = String(over.id);
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
     const mode = getDropMode(event, scope === 'all') ?? 'after';
 
     if (
@@ -483,23 +509,25 @@ export function MenuReorderDialog({
     }
 
     const nextParentId = findParentIdByNodeId(updated, overId) ?? overParentId;
-    const targetList =
-      nextParentId === null
-        ? updated
-        : (findNodeById(updated, nextParentId)?.children ?? []);
+    let targetList = updated;
+    if (nextParentId !== null) {
+      targetList = findNodeById(updated, nextParentId)?.children ?? [];
+    }
     const overIndex = targetList.findIndex((node) => node.menu._id === overId);
     let insertIndex = targetList.length;
     if (overIndex !== -1) {
-      insertIndex = mode === 'after' ? overIndex + 1 : overIndex;
+      insertIndex = overIndex;
+      if (mode === 'after') insertIndex = overIndex + 1;
     }
 
     setTree(insertNodeAt(updated, nextParentId, insertIndex, removed));
   };
 
-  const activeNode = activeId ? findNodeById(tree, activeId) : null;
+  let activeNode = null;
+  if (activeId) activeNode = findNodeById(tree, activeId);
   const isLoading = status === 'pending';
   const canRenderOverlay = typeof document !== 'undefined';
-  const visibleTree = scope === 'root' ? tree : tree;
+  const visibleTree = tree;
 
   const renderNodes = (
     nodes: Array<MenuTreeNode>,
@@ -531,112 +559,110 @@ export function MenuReorderDialog({
   );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Ordenar menu lateral</DialogTitle>
-        </DialogHeader>
+    <React.Fragment>
+      <DialogHeader>
+        <DialogTitle>Ordenar menu lateral</DialogTitle>
+        <DialogDescription className="sr-only">
+          Arraste os itens para reordenar o menu lateral
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/20 p-2">
-          {isLoading && (
-            <div className="flex min-h-48 items-center justify-center">
-              <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {!isLoading && tree.length === 0 && (
-            <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
-              Nenhum menu encontrado
-            </div>
-          )}
-
-          {!isLoading && tree.length > 0 && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <div className="space-y-1">
-                {scope === 'root'
-                  ? renderNodes(
-                      visibleTree.map((node) => ({ ...node, children: [] })),
-                      0,
-                      null,
-                    )
-                  : renderNodes(visibleTree, 0, null)}
-              </div>
-              {canRenderOverlay &&
-                createPortal(
-                  <DragOverlay>
-                    {activeNode && <DragPreview node={activeNode} />}
-                  </DragOverlay>,
-                  document.body,
-                )}
-            </DndContext>
-          )}
-        </div>
-
-        <DialogFooter>
-          <div className="mr-auto inline-flex rounded-md border bg-background p-1">
-            <Button
-              type="button"
-              variant={scope === 'root' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8"
-              onClick={() => setScope('root')}
-              disabled={reorder.isPending}
-            >
-              Raiz
-            </Button>
-            <Button
-              type="button"
-              variant={scope === 'all' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8"
-              onClick={() => setScope('all')}
-              disabled={reorder.isPending}
-            >
-              Todos
-            </Button>
+      <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/20 p-2">
+        {isLoading && (
+          <div className="flex min-h-48 items-center justify-center">
+            <LoaderCircleIcon className="size-6 animate-spin text-muted-foreground" />
           </div>
+        )}
+
+        {!isLoading && tree.length === 0 && (
+          <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
+            Nenhum menu encontrado
+          </div>
+        )}
+
+        {!isLoading && tree.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <div className="space-y-1">
+              {scope === 'root' &&
+                renderNodes(
+                  visibleTree.map((node) => ({ ...node, children: [] })),
+                  0,
+                  null,
+                )}
+              {scope !== 'root' && renderNodes(visibleTree, 0, null)}
+            </div>
+            {canRenderOverlay &&
+              createPortal(
+                <DragOverlay>
+                  {activeNode && <DragPreview node={activeNode} />}
+                </DragOverlay>,
+                document.body,
+              )}
+          </DndContext>
+        )}
+      </div>
+
+      <DialogFooter>
+        <div className="mr-auto inline-flex rounded-md border bg-background p-1">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => {
-              if (menus) setTree(buildTree(menus));
-            }}
-            disabled={reorder.isPending || isLoading}
+            variant={(scope === 'root' && 'secondary') || 'ghost'}
+            size="sm"
+            className="h-8"
+            onClick={() => setScope('root')}
+            disabled={reorder.isPending}
           >
-            Restaurar
+            Raiz
           </Button>
           <Button
             type="button"
+            variant={(scope === 'all' && 'secondary') || 'ghost'}
+            size="sm"
+            className="h-8"
+            onClick={() => setScope('all')}
+            disabled={reorder.isPending}
+          >
+            Todos
+          </Button>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (menus) setTree(buildTree(menus));
+          }}
+          disabled={reorder.isPending || isLoading}
+        >
+          Restaurar
+        </Button>
+        <DialogClose asChild>
+          <Button
+            ref={closeRef}
+            type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
             disabled={reorder.isPending}
           >
             Cancelar
           </Button>
-          <Button
-            type="button"
-            onClick={() =>
-              reorder.mutate({ items: flattenPayload(tree, scope) })
-            }
-            disabled={reorder.isPending || isLoading || tree.length === 0}
-          >
-            {reorder.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            <span>Salvar ordem</span>
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogClose>
+        <Button
+          type="button"
+          onClick={() => reorder.mutate({ items: flattenPayload(tree, scope) })}
+          disabled={reorder.isPending || isLoading || tree.length === 0}
+        >
+          {reorder.isPending && (
+            <LoaderCircleIcon className="size-4 animate-spin" />
+          )}
+          <span>Salvar ordem</span>
+        </Button>
+      </DialogFooter>
+    </React.Fragment>
   );
 }

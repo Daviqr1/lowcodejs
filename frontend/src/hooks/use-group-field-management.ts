@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import type {
   FieldManagementActions,
@@ -11,8 +12,58 @@ import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useGroupFieldUpdate } from '@/hooks/tanstack-query/use-group-field-update';
 import { useUpdateTable } from '@/hooks/tanstack-query/use-table-update';
 import { API } from '@/lib/api';
-import type { IField, ITable, Paginated } from '@/lib/interfaces';
-import { toastError, toastSuccess } from '@/lib/toast';
+import { E_PERMISSION_TARGET } from '@/lib/constant';
+import type {
+  IField,
+  IPermissionBinding,
+  ITable,
+  Paginated,
+} from '@/lib/interfaces';
+import type { FieldContext } from '@/lib/permission';
+import { resolveFieldLabel } from '@/lib/table';
+
+// Chave do toggle -> contexto do binding. `showInFilter` não é permissão.
+const CONTEXT_BY_VISIBILITY_KEY: Partial<Record<VisibilityKey, FieldContext>> =
+  {
+    showInList: 'list',
+    showInForm: 'form',
+    showInDetail: 'detail',
+  };
+
+// Traduz o toggle mostrar/ocultar para o override do payload: `showInFilter`
+// booleano; list/form/detail viram binding PUBLIC/NOBODY em `permissions`.
+function buildVisibilityOverride(
+  field: IField,
+  visibilityKey: VisibilityKey,
+  newValue: boolean,
+): Partial<IField> {
+  if (visibilityKey === 'showInFilter') {
+    return { showInFilter: newValue };
+  }
+
+  const context = CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
+  if (!context) return {};
+
+  const publicBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.PUBLIC,
+    group: null,
+  };
+  const nobodyBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.NOBODY,
+    group: null,
+  };
+
+  const base = field.permissions ?? {
+    list: publicBinding,
+    form: publicBinding,
+    detail: publicBinding,
+  };
+
+  let nextBinding = nobodyBinding;
+  if (newValue) nextBinding = publicBinding;
+
+  return { permissions: { ...base, [context]: nextBinding } };
+}
 
 function buildGroupFieldPayload(
   field: IField,
@@ -35,6 +86,13 @@ function buildGroupFieldPayload(
         slug: field.relationship.field.slug,
       },
       order: field.relationship.order,
+      relationshipId: field.relationship.relationshipId ?? null,
+      side: field.relationship.side ?? null,
+      formMode: field.relationship.formMode,
+      visible: field.relationship.visible,
+      onDelete: field.relationship.onDelete,
+      mirror: field.relationship.mirror,
+      max: field.relationship.max ?? null,
     };
   }
 
@@ -49,9 +107,7 @@ function buildGroupFieldPayload(
     required: field.required,
     multiple: field.multiple,
     showInFilter: field.showInFilter,
-    showInForm: field.showInForm,
-    showInDetail: field.showInDetail,
-    showInList: field.showInList,
+    permissions: field.permissions ?? null,
     widthInForm: field.widthInForm ?? 50,
     widthInList: field.widthInList ?? 10,
     widthInDetail: field.widthInDetail ?? 50,
@@ -88,10 +144,10 @@ export function useGroupFieldManagement(
 
   const updateTable = useUpdateTable({
     onSuccess: () => {
-      toastSuccess('Ordem atualizada com sucesso');
+      toast.success('Ordem atualizada com sucesso');
     },
     onError: () => {
-      toastError('Erro ao atualizar ordem dos campos');
+      toast.error('Erro ao atualizar ordem dos campos');
     },
   });
 
@@ -103,18 +159,18 @@ export function useGroupFieldManagement(
         if (pendingWidthKey === 'widthInList') {
           unit = 'px';
         }
-        toastSuccess(`Largura atualizada para ${widthValue}${unit}`);
+        toast.success(`Largura atualizada para ${widthValue}${unit}`);
       } else if (togglingFieldId) {
         // Determine which visibility key was toggled by checking context
         // The toast is generic here since we don't track the key in this callback
-        toastSuccess('Campo atualizado com sucesso');
+        toast.success('Campo atualizado com sucesso');
       }
       setTogglingFieldId(null);
       setChangingWidthFieldId(null);
       setPendingWidthKey(null);
     },
     onError: () => {
-      toastError('Erro ao atualizar campo do grupo');
+      toast.error('Erro ao atualizar campo do grupo');
       setTogglingFieldId(null);
       setChangingWidthFieldId(null);
       setPendingWidthKey(null);
@@ -137,14 +193,13 @@ export function useGroupFieldManagement(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === groupSlug
-                ? {
-                    ...g,
-                    fields: g.fields.filter((f) => f._id !== field._id),
-                  }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== groupSlug) return g;
+              return {
+                ...g,
+                fields: g.fields.filter((f) => f._id !== field._id),
+              };
+            }),
           };
         },
       );
@@ -159,28 +214,29 @@ export function useGroupFieldManagement(
               if (t.slug !== tableSlug) return t;
               return {
                 ...t,
-                groups: t.groups.map((g) =>
-                  g.slug === groupSlug
-                    ? {
-                        ...g,
-                        fields: g.fields.filter((f) => f._id !== field._id),
-                      }
-                    : g,
-                ),
+                groups: t.groups.map((g) => {
+                  if (g.slug !== groupSlug) return g;
+                  return {
+                    ...g,
+                    fields: g.fields.filter((f) => f._id !== field._id),
+                  };
+                }),
               };
             }),
           };
         },
       );
 
-      toastSuccess(`Campo "${field.name}" excluído permanentemente`);
+      toast.success(
+        `Campo "${resolveFieldLabel(field)}" excluído permanentemente`,
+      );
     },
     onError: (error) => {
       console.error(error);
-      toastError(
-        'Erro ao excluir campo',
-        'Não foi possível excluir o campo permanentemente. Tente novamente.',
-      );
+      toast.error('Erro ao excluir campo', {
+        description:
+          'Não foi possível excluir o campo permanentemente. Tente novamente.',
+      });
     },
     onSettled: () => {
       setDeletingFieldId(null);
@@ -198,9 +254,12 @@ export function useGroupFieldManagement(
       tableSlug,
       groupSlug,
       fieldId: field._id,
-      data: buildGroupFieldPayload(field, groupSlug, targetGroup?._id, {
-        [visibilityKey]: newValue,
-      }),
+      data: buildGroupFieldPayload(
+        field,
+        groupSlug,
+        targetGroup?._id,
+        buildVisibilityOverride(field, visibilityKey, newValue),
+      ),
     });
   }
 
@@ -245,14 +304,11 @@ export function useGroupFieldManagement(
       name: table.name,
       description: table.description,
       logo: table.logo?._id ?? null,
-      visibility: table.visibility,
       style: table.style,
-      collaboration: table.collaboration,
       fieldOrderList: table.fieldOrderList,
       fieldOrderForm: table.fieldOrderForm,
       fieldOrderFilter: table.fieldOrderFilter,
       fieldOrderDetail: table.fieldOrderDetail,
-      administrators: table.administrators.flatMap((admin) => admin._id),
       groups: updatedGroups,
       fields: table.fields.flatMap((f) => f._id),
       methods: {
@@ -280,16 +336,16 @@ export function useGroupFieldManagement(
           if (!old) return old;
           return {
             ...old,
-            groups: old.groups.map((g) =>
-              g.slug === groupSlug
-                ? {
-                    ...g,
-                    fields: g.fields.map((f) =>
-                      f._id === response._id ? response : f,
-                    ),
-                  }
-                : g,
-            ),
+            groups: old.groups.map((g) => {
+              if (g.slug !== groupSlug) return g;
+              return {
+                ...g,
+                fields: g.fields.map((f) => {
+                  if (f._id === response._id) return response;
+                  return f;
+                }),
+              };
+            }),
           };
         },
       );
@@ -304,32 +360,31 @@ export function useGroupFieldManagement(
               if (t.slug !== tableSlug) return t;
               return {
                 ...t,
-                groups: t.groups.map((g) =>
-                  g.slug === groupSlug
-                    ? {
-                        ...g,
-                        fields: g.fields.map((f) =>
-                          f._id === response._id ? response : f,
-                        ),
-                      }
-                    : g,
-                ),
+                groups: t.groups.map((g) => {
+                  if (g.slug !== groupSlug) return g;
+                  return {
+                    ...g,
+                    fields: g.fields.map((f) => {
+                      if (f._id === response._id) return response;
+                      return f;
+                    }),
+                  };
+                }),
               };
             }),
           };
         },
       );
 
-      toastSuccess(
-        'Campo restaurado',
-        'O campo foi restaurado da lixeira com sucesso.',
-      );
+      toast.success('Campo restaurado', {
+        description: 'O campo foi restaurado da lixeira com sucesso.',
+      });
     },
     onError: () => {
-      toastError(
-        'Erro ao restaurar campo',
-        'Não foi possível restaurar o campo da lixeira. Tente novamente.',
-      );
+      toast.error('Erro ao restaurar campo', {
+        description:
+          'Não foi possível restaurar o campo da lixeira. Tente novamente.',
+      });
     },
     onSettled: () => {
       setRestoringFieldId(null);
@@ -354,6 +409,10 @@ export function useGroupFieldManagement(
 
   return {
     fields,
+    // Gerenciamento DENTRO de um grupo não injeta campos-filho na listagem geral
+    // da tabela pai — isso só vale no gerenciamento da própria tabela.
+    parentListChildFields: [],
+    parentListChildIds: new Set<string>(),
     fieldOrderList: [],
     fieldOrderForm: [],
     fieldOrderFilter: [],

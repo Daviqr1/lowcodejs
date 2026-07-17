@@ -7,10 +7,10 @@ import { E_FIELD_FORMAT } from '@/lib/constant';
 import type { IField } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowDateFieldProps {
+type TableRowDateFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 export function TableRowDateField({
   field,

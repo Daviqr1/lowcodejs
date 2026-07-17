@@ -14,10 +14,11 @@ estrutura.
 
 ## Subdiretórios
 
-| Diretório          | URL base | Tipo            | Responsabilidade                         |
-| ------------------ | -------- | --------------- | ---------------------------------------- |
-| `_authentication/` | —        | Pathless layout | Guard público (redireciona autenticados) |
-| `_private/`        | —        | Pathless layout | Guard autenticado + Sidebar + Header     |
+| Diretório          | URL base | Tipo            | Responsabilidade                                     |
+| ------------------ | -------- | --------------- | ---------------------------------------------------- |
+| `_authentication/` | —        | Pathless layout | Guard público (redireciona autenticados)             |
+| `_private/`        | —        | Pathless layout | Guard autenticado + Sidebar + Header                 |
+| `setup/`           | `/setup` | Route group     | Wizard de onboarding inicial (tem CLAUDE.md próprio) |
 
 ## Convenções de Arquivo
 

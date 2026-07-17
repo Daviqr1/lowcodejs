@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
@@ -22,10 +21,7 @@ let sut: GroupRowAutoSaveUseCase;
 const TABLE_DEFAULTS = {
   _schema: {},
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -39,9 +35,7 @@ const GROUP_FIELD = {
   multiple: true,
   format: E_FIELD_FORMAT.ALPHA_NUMERIC,
   showInFilter: false,
-  showInForm: true,
-  showInDetail: true,
-  showInList: false,
+  permissions: buildFieldPermissions(false, true, true),
   widthInForm: 100,
   widthInList: null,
   widthInDetail: null,
@@ -71,9 +65,7 @@ const GROUP_CONFIG = {
       multiple: false,
       format: E_FIELD_FORMAT.ALPHA_NUMERIC,
       showInFilter: false,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: 50,
       widthInList: 10,
       widthInDetail: null,
@@ -109,7 +101,9 @@ async function createRowWithItems(table: ITable): Promise<string> {
   const row = await rowRepository.create({
     table,
     data: {
-      items: [{ _id: 'item-1', descricao: 'Item existente', trashed: false }],
+      items: [
+        { _id: 'item-1', descricao: 'Item existente', status: 'published' },
+      ],
     },
   });
   return row._id;
@@ -128,7 +122,7 @@ describe('Group Row Auto Save Use Case', () => {
     );
   });
 
-  it('deve criar item incompleto como rascunho (trashed=true)', async () => {
+  it('deve criar item incompleto como rascunho (status=draft)', async () => {
     const table = await createTableWithGroup();
     const rowId = await createRowWithItems(table);
 
@@ -142,10 +136,10 @@ describe('Group Row Auto Save Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value).toHaveProperty('_id');
-    expect(result.value).toHaveProperty('trashed', true);
+    expect(result.value).toHaveProperty('status', 'draft');
   });
 
-  it('deve criar item completo como salvo (trashed=false)', async () => {
+  it('deve criar item como rascunho mesmo completo (auto-save nunca publica)', async () => {
     const table = await createTableWithGroup();
     const rowId = await createRowWithItems(table);
 
@@ -159,7 +153,7 @@ describe('Group Row Auto Save Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value).toHaveProperty('descricao', 'Novo item');
-    expect(result.value).toHaveProperty('trashed', false);
+    expect(result.value).toHaveProperty('status', 'draft');
   });
 
   it('deve atualizar item existente quando _id e informado', async () => {
@@ -177,7 +171,7 @@ describe('Group Row Auto Save Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value).toHaveProperty('descricao', 'Atualizado');
-    expect(result.value).toHaveProperty('trashed', false);
+    expect(result.value).toHaveProperty('status', 'draft');
   });
 
   it('deve retornar ITEM_NOT_FOUND ao atualizar item inexistente', async () => {

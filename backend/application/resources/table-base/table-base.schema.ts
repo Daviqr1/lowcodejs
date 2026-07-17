@@ -1,10 +1,73 @@
 import z from 'zod';
 
 import {
-  E_TABLE_COLLABORATION,
+  E_PERMISSION_TARGET,
+  E_TABLE_PERMISSION,
+  E_TABLE_PROFILE,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
+
+// Binding de uma acao: a quem ela esta liberada (Grupo|Public|Nobody).
+export const TablePermissionBindingSchema = z.object({
+  kind: z
+    .enum([
+      E_PERMISSION_TARGET.PUBLIC,
+      E_PERMISSION_TARGET.NOBODY,
+      E_PERMISSION_TARGET.GROUP,
+    ])
+    .describe(
+      'Alvo da acao: PUBLIC (qualquer pessoa, inclusive sem login), NOBODY ' +
+        '(ninguem) ou GROUP (apenas o grupo informado em `group`). Para GROUP ' +
+        'vale a regra de intersecao: o usuario tambem precisa da permissao ' +
+        'global correspondente no seu grupo.',
+    ),
+  group: z
+    .string()
+    .trim()
+    .nullable()
+    .default(null)
+    .describe(
+      'Id do grupo liberado quando `kind` = GROUP; null caso contrario.',
+    ),
+});
+
+// Mapa das 10 acoes -> binding. Todas opcionais.
+export const TablePermissionsSchema = z
+  .object({
+    [E_TABLE_PERMISSION.VIEW_TABLE]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.UPDATE_TABLE]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.CREATE_FIELD]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.UPDATE_FIELD]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.REMOVE_FIELD]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.VIEW_FIELD]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.CREATE_ROW]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.UPDATE_ROW]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.REMOVE_ROW]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.VIEW_ROW]: TablePermissionBindingSchema,
+  })
+  .partial()
+  .describe(
+    'Permissoes por acao da tabela (binding Grupo/Publico/Ninguem). O acesso ' +
+      'efetivo e a intersecao: alem do binding liberar, o usuario precisa da ' +
+      'permissao global da acao no seu grupo. Dono e membros (members[]) sao ' +
+      'concessoes explicitas e nao dependem dessa intersecao.',
+  );
+
+// Convidados da tabela e seus perfis.
+export const TableMembersSchema = z
+  .array(
+    z.object({
+      user: z.string().trim().min(1),
+      profile: z.enum([
+        E_TABLE_PROFILE.OWNER,
+        E_TABLE_PROFILE.ADMIN,
+        E_TABLE_PROFILE.EDITOR,
+        E_TABLE_PROFILE.CONTRIBUTOR,
+        E_TABLE_PROFILE.VIEWER,
+      ]),
+    }),
+  )
+  .default([]);
 
 export const GroupConfigurationSchema = z.object({
   slug: z.string().trim(),
@@ -26,22 +89,6 @@ export const TableStyleSchema = z
     E_TABLE_STYLE.GANTT,
   ])
   .default(E_TABLE_STYLE.LIST);
-
-export const TableVisibilitySchema = z
-  .enum([
-    E_TABLE_VISIBILITY.PUBLIC,
-    E_TABLE_VISIBILITY.RESTRICTED,
-    E_TABLE_VISIBILITY.OPEN,
-    E_TABLE_VISIBILITY.FORM,
-    E_TABLE_VISIBILITY.PRIVATE,
-  ])
-  .default(E_TABLE_VISIBILITY.PUBLIC);
-
-export const TableCollaborationSchema = z
-  .enum([E_TABLE_COLLABORATION.OPEN, E_TABLE_COLLABORATION.RESTRICTED])
-  .default(E_TABLE_COLLABORATION.OPEN);
-
-export const TableAdministratorsSchema = z.array(z.string()).default([]);
 
 export const TableFieldOrderListSchema = z.array(z.string().trim()).default([]);
 

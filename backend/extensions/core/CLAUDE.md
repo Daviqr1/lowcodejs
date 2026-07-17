@@ -27,6 +27,7 @@ core/
 | `clone-table`           | `POST /tools/clone-table`                              | Clona uma ou mais tabelas com base em modelos existentes ou templates built-in (Kanban, Cards, etc.) |
 | `tables-import-export`  | `POST /tools/export-table`, `POST /tools/import-table` | Exporta uma ou mais tabelas em JSON (estrutura/dados/full) preservando relacionamentos e itens de menu vinculados, e importa de volta com remapeamento de IDs (formato v2; v1 single-table ainda aceito na importação) |
 | `doc-transcription`     | `GET /tools/doc-transcription/config`, `PATCH /tools/doc-transcription/config`, `POST /tools/doc-transcription/transcribe` | Transcreve documentos (CNH, comprovante de endereço, etc.) via API externa. Config inclui URL da API e tipos de documento com campos de resposta esperados. |
+| `generate-test-data`    | `POST /tools/generate-test-data/estimate`, `POST /tools/generate-test-data`, `GET /tools/generate-test-data/status/:jobId` | Gera registros de teste em massa numa tabela. Inserção física limitada por orçamento de bytes (teto ~1M, estimativa de tamanho/impacto via `/estimate`); acima do teto o progresso é simulado. Job assíncrono em memória com polling. Usa `ModelBuilderContractService`. |
 
 ## Plugins
 

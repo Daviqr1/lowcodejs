@@ -8,22 +8,28 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IField, ITable } from '@/lib/interfaces';
+import type { IField, ITable, Merge } from '@/lib/interfaces';
 
-type FieldCreatePayload = Partial<IField> & {
-  group?: { slug: string } | string | null;
-};
+type FieldCreatePayload = Merge<
+  Partial<IField>,
+  {
+    group?: { slug: string } | string | null;
+  }
+>;
 
-interface UseFieldCreateProps extends Pick<
-  Omit<
-    UseMutationOptions<IField, AxiosError | Error, FieldCreatePayload>,
-    'mutationFn' | 'onSuccess'
+type UseFieldCreateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<IField, AxiosError | Error, FieldCreatePayload>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> {
-  slug: string;
-  onSuccess?: (data: IField) => void;
-}
+  {
+    slug: string;
+    onSuccess?: (data: IField) => void;
+  }
+>;
 
 export function useFieldCreate(
   props: UseFieldCreateProps,
@@ -46,10 +52,10 @@ export function useFieldCreate(
         return {
           ...old,
           fields: [...old.fields, response],
-          fieldOrderForm: [...(old.fieldOrderForm ?? []), response.slug],
-          fieldOrderList: [...(old.fieldOrderList ?? []), response.slug],
-          fieldOrderFilter: [...(old.fieldOrderFilter ?? []), response.slug],
-          fieldOrderDetail: [...(old.fieldOrderDetail ?? []), response.slug],
+          fieldOrderForm: [...(old.fieldOrderForm ?? []), response._id],
+          fieldOrderList: [...(old.fieldOrderList ?? []), response._id],
+          fieldOrderFilter: [...(old.fieldOrderFilter ?? []), response._id],
+          fieldOrderDetail: [...(old.fieldOrderDetail ?? []), response._id],
         };
       });
 

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import type {
   FieldManagementActions,
@@ -10,16 +11,69 @@ import type {
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useUpdateTable } from '@/hooks/tanstack-query/use-table-update';
 import { API } from '@/lib/api';
-import type { IField, ITable, Paginated } from '@/lib/interfaces';
-import { toastError, toastSuccess } from '@/lib/toast';
+import { E_PERMISSION_TARGET } from '@/lib/constant';
+import type {
+  IField,
+  IPermissionBinding,
+  ITable,
+  Paginated,
+} from '@/lib/interfaces';
+import type { FieldContext } from '@/lib/permission';
+import { isFieldShownInContext } from '@/lib/permission';
+import { resolveFieldLabel } from '@/lib/table';
+
+// Chave de visibilidade do toggle -> contexto do binding. `showInFilter` não é
+// permissão (config de filtro), então não mapeia.
+const CONTEXT_BY_VISIBILITY_KEY: Partial<Record<VisibilityKey, FieldContext>> =
+  {
+    showInList: 'list',
+    showInForm: 'form',
+    showInDetail: 'detail',
+  };
+
+// Traduz o toggle (mostrar/ocultar) para o override do payload: `showInFilter`
+// continua booleano; list/form/detail viram binding PUBLIC (visível) ou NOBODY
+// (oculto) no mapa `permissions`.
+function buildVisibilityOverride(
+  field: IField,
+  visibilityKey: VisibilityKey,
+  newValue: boolean,
+): Record<string, unknown> {
+  if (visibilityKey === 'showInFilter') {
+    return { showInFilter: newValue };
+  }
+
+  const context = CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
+  if (!context) return {};
+
+  const publicBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.PUBLIC,
+    group: null,
+  };
+  const nobodyBinding: IPermissionBinding = {
+    kind: E_PERMISSION_TARGET.NOBODY,
+    group: null,
+  };
+
+  const base = field.permissions ?? {
+    list: publicBinding,
+    form: publicBinding,
+    detail: publicBinding,
+  };
+
+  let nextBinding = nobodyBinding;
+  if (newValue) nextBinding = publicBinding;
+
+  return { permissions: { ...base, [context]: nextBinding } };
+}
 
 function buildFieldPayload(
   field: IField,
   overrides: Partial<IField>,
 ): Record<string, unknown> {
   const hasRelationship = field.relationship !== null;
-  const hasDropdown = field.dropdown.length > 0;
-  const hasCategory = field.category.length > 0;
+  const hasDropdown = (field.dropdown?.length ?? 0) > 0;
+  const hasCategory = (field.category?.length ?? 0) > 0;
   let group: { slug: string; _id?: string } | null = null;
   if (field.group) {
     group = { slug: field.group.slug };
@@ -28,36 +82,50 @@ function buildFieldPayload(
     }
   }
 
+  let dropdown: unknown = [];
+  if (hasDropdown) dropdown = field.dropdown;
+
+  let category: unknown = [];
+  if (hasCategory) category = field.category;
+
+  let relationship: unknown = null;
+  if (hasRelationship) {
+    relationship = {
+      table: {
+        _id: field.relationship!.table._id,
+        slug: field.relationship!.table.slug,
+      },
+      field: {
+        _id: field.relationship!.field._id,
+        slug: field.relationship!.field.slug,
+      },
+      order: field.relationship!.order,
+      relationshipId: field.relationship!.relationshipId ?? null,
+      side: field.relationship!.side ?? null,
+      formMode: field.relationship!.formMode,
+      visible: field.relationship!.visible,
+      onDelete: field.relationship!.onDelete,
+      mirror: field.relationship!.mirror ?? null,
+      max: field.relationship!.max ?? null,
+    };
+  }
+
   return {
     name: field.name,
     type: field.type,
     required: field.required,
     multiple: field.multiple,
     showInFilter: field.showInFilter,
-    showInForm: field.showInForm,
-    showInDetail: field.showInDetail,
-    showInList: field.showInList,
+    permissions: field.permissions ?? null,
     widthInForm: field.widthInForm,
     widthInList: field.widthInList,
     widthInDetail: field.widthInDetail,
     format: field.format ?? null,
     defaultValue: field.defaultValue ?? null,
-    dropdown: hasDropdown ? field.dropdown : [],
-    relationship: hasRelationship
-      ? {
-          table: {
-            _id: field.relationship!.table._id,
-            slug: field.relationship!.table.slug,
-          },
-          field: {
-            _id: field.relationship!.field._id,
-            slug: field.relationship!.field.slug,
-          },
-          order: field.relationship!.order,
-        }
-      : null,
+    dropdown,
+    relationship,
     group,
-    category: hasCategory ? field.category : [],
+    category,
     trashed: field.trashed,
     trashedAt: field.trashedAt ?? null,
     ...overrides,
@@ -69,6 +137,16 @@ const VISIBILITY_LABELS: Record<VisibilityKey, string> = {
   showInFilter: 'filtros',
   showInForm: 'formulários',
   showInDetail: 'detalhes',
+};
+
+const ORDER_FIELD_KEY_BY_VISIBILITY: Record<
+  VisibilityKey,
+  'fieldOrderList' | 'fieldOrderForm' | 'fieldOrderFilter' | 'fieldOrderDetail'
+> = {
+  showInList: 'fieldOrderList',
+  showInForm: 'fieldOrderForm',
+  showInFilter: 'fieldOrderFilter',
+  showInDetail: 'fieldOrderDetail',
 };
 
 function updateFieldInTableCache(
@@ -87,7 +165,10 @@ function updateFieldInTableCache(
       if (!old) return old;
       return {
         ...old,
-        fields: old.fields.map((f) => (f._id === response._id ? response : f)),
+        fields: old.fields.map((f) => {
+          if (f._id === response._id) return response;
+          return f;
+        }),
       };
     },
   );
@@ -102,9 +183,10 @@ function updateFieldInTableCache(
           if (t.slug !== tableSlug) return t;
           return {
             ...t,
-            fields: t.fields.map((f) =>
-              f._id === response._id ? response : f,
-            ),
+            fields: t.fields.map((f) => {
+              if (f._id === response._id) return response;
+              return f;
+            }),
           };
         }),
       };
@@ -128,12 +210,41 @@ export function useTableFieldManagement(
   const tableSlug = table?.slug ?? '';
   const fields = table?.fields ?? [];
 
+  // Índice campo-filho -> slug do grupo dono, e lista de filhos elegíveis a
+  // aparecer na aba Lista (config `showInParentList`). A visibilidade da coluna
+  // na lista principal é `visibleInParentList`, alternada aqui pelo endpoint do
+  // grupo (`/tables/:slug/groups/:groupSlug/fields/:id`).
+  const parentGroupSlugByChildId = new Map<string, string>();
+  const parentListChildFields: Array<IField> = [];
+  for (const group of table?.groups ?? []) {
+    for (const childField of group.fields ?? []) {
+      parentGroupSlugByChildId.set(childField._id, group.slug);
+      if (childField.showInParentList && !childField.trashed) {
+        parentListChildFields.push(childField);
+      }
+    }
+  }
+  const parentListChildIds = new Set(parentListChildFields.map((f) => f._id));
+
+  async function putGroupChildField(
+    field: IField,
+    overrides: Partial<IField>,
+  ): Promise<IField> {
+    const groupSlug = parentGroupSlugByChildId.get(field._id) ?? '';
+    const route = `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`;
+    const response = await API.put<IField>(
+      route,
+      buildFieldPayload(field, overrides),
+    );
+    return response.data;
+  }
+
   const updateTable = useUpdateTable({
     onSuccess: () => {
-      toastSuccess('Ordem atualizada com sucesso');
+      toast.success('Ordem atualizada com sucesso');
     },
     onError: () => {
-      toastError('Erro ao atualizar ordem dos campos');
+      toast.error('Erro ao atualizar ordem dos campos');
     },
   });
 
@@ -150,7 +261,10 @@ export function useTableFieldManagement(
       const route = `/tables/${tableSlug}/fields/${field._id}`;
       const response = await API.put<IField>(
         route,
-        buildFieldPayload(field, { [visibilityKey]: newValue }),
+        buildFieldPayload(
+          field,
+          buildVisibilityOverride(field, visibilityKey, newValue),
+        ),
       );
       return { data: response.data, visibilityKey };
     },
@@ -159,15 +273,23 @@ export function useTableFieldManagement(
     },
     onSuccess: ({ data: response, visibilityKey }) => {
       updateFieldInTableCache(queryClient, tableSlug, response);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(tableSlug),
+      });
       const label = VISIBILITY_LABELS[visibilityKey];
-      if (response[visibilityKey]) {
-        toastSuccess(`Campo visível em ${label}`);
+      let shown = Boolean(response.showInFilter);
+      const context = CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
+      if (context) {
+        shown = isFieldShownInContext(response, context);
+      }
+      if (shown) {
+        toast.success(`Campo visível em ${label}`);
       } else {
-        toastSuccess(`Campo oculto em ${label}`);
+        toast.success(`Campo oculto em ${label}`);
       }
     },
     onError: () => {
-      toastError('Erro ao atualizar visibilidade do campo');
+      toast.error('Erro ao atualizar visibilidade do campo');
     },
     onSettled: () => {
       setTogglingFieldId(null);
@@ -200,10 +322,66 @@ export function useTableFieldManagement(
       if (widthKey === 'widthInList') {
         unit = 'px';
       }
-      toastSuccess(`Largura atualizada para ${response[widthKey]}${unit}`);
+      toast.success(`Largura atualizada para ${response[widthKey]}${unit}`);
     },
     onError: () => {
-      toastError('Erro ao atualizar largura do campo');
+      toast.error('Erro ao atualizar largura do campo');
+    },
+    onSettled: () => {
+      setChangingWidthFieldId(null);
+    },
+  });
+
+  // Toggle de visibilidade da coluna na lista principal para campo-filho de
+  // grupo: persiste `visibleInParentList` via endpoint do grupo.
+  const toggleParentListMutation = useMutation({
+    mutationFn: async ({
+      field,
+      newValue,
+    }: {
+      field: IField;
+      newValue: boolean;
+    }) => putGroupChildField(field, { visibleInParentList: newValue }),
+    onMutate: ({ field }) => {
+      setTogglingFieldId(field._id);
+    },
+    onSuccess: (_response, { newValue }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(tableSlug),
+      });
+      if (newValue) {
+        toast.success('Campo visível em listagem');
+      } else {
+        toast.success('Campo oculto em listagem');
+      }
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar visibilidade do campo');
+    },
+    onSettled: () => {
+      setTogglingFieldId(null);
+    },
+  });
+
+  const changeParentListWidthMutation = useMutation({
+    mutationFn: async ({
+      field,
+      newWidth,
+    }: {
+      field: IField;
+      newWidth: number;
+    }) => putGroupChildField(field, { widthInList: newWidth }),
+    onMutate: ({ field }) => {
+      setChangingWidthFieldId(field._id);
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(tableSlug),
+      });
+      toast.success(`Largura atualizada para ${response.widthInList}px`);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar largura do campo');
     },
     onSettled: () => {
       setChangingWidthFieldId(null);
@@ -248,14 +426,16 @@ export function useTableFieldManagement(
         },
       );
 
-      toastSuccess(`Campo "${field.name}" excluído permanentemente`);
+      toast.success(
+        `Campo "${resolveFieldLabel(field)}" excluído permanentemente`,
+      );
     },
     onError: (error) => {
       console.error(error);
-      toastError(
-        'Erro ao excluir campo',
-        'Não foi possível excluir o campo permanentemente. Tente novamente.',
-      );
+      toast.error('Erro ao excluir campo', {
+        description:
+          'Não foi possível excluir o campo permanentemente. Tente novamente.',
+      });
     },
     onSettled: () => {
       setDeletingFieldId(null);
@@ -267,6 +447,10 @@ export function useTableFieldManagement(
     visibilityKey: VisibilityKey,
     newValue: boolean,
   ): void {
+    if (visibilityKey === 'showInList' && parentListChildIds.has(field._id)) {
+      toggleParentListMutation.mutate({ field, newValue });
+      return;
+    }
     toggleVisibilityMutation.mutate({ field, visibilityKey, newValue });
   }
 
@@ -275,6 +459,10 @@ export function useTableFieldManagement(
     widthKey: WidthKey,
     newWidth: number,
   ): void {
+    if (widthKey === 'widthInList' && parentListChildIds.has(field._id)) {
+      changeParentListWidthMutation.mutate({ field, newWidth });
+      return;
+    }
     changeWidthMutation.mutate({ field, widthKey, newWidth });
   }
 
@@ -291,26 +479,16 @@ export function useTableFieldManagement(
       fieldOrderDetail: table.fieldOrderDetail,
     };
 
-    if (visibilityKey === 'showInList') {
-      orderPayload.fieldOrderList = orderedFieldIds;
-    } else if (visibilityKey === 'showInForm') {
-      orderPayload.fieldOrderForm = orderedFieldIds;
-    } else if (visibilityKey === 'showInFilter') {
-      orderPayload.fieldOrderFilter = orderedFieldIds;
-    } else if (visibilityKey === 'showInDetail') {
-      orderPayload.fieldOrderDetail = orderedFieldIds;
-    }
+    orderPayload[ORDER_FIELD_KEY_BY_VISIBILITY[visibilityKey]] =
+      orderedFieldIds;
 
     updateTable.mutate({
       routeSlug: table.slug,
       name: table.name,
       description: table.description,
       logo: table.logo?._id ?? null,
-      visibility: table.visibility,
       style: table.style,
-      collaboration: table.collaboration,
       ...orderPayload,
-      administrators: table.administrators.flatMap((admin) => admin._id),
       fields: table.fields.flatMap((f) => f._id),
       methods: {
         ...table.methods,
@@ -332,16 +510,15 @@ export function useTableFieldManagement(
     },
     onSuccess: (response) => {
       updateFieldInTableCache(queryClient, tableSlug, response);
-      toastSuccess(
-        'Campo restaurado',
-        'O campo foi restaurado da lixeira com sucesso.',
-      );
+      toast.success('Campo restaurado', {
+        description: 'O campo foi restaurado da lixeira com sucesso.',
+      });
     },
     onError: () => {
-      toastError(
-        'Erro ao restaurar campo',
-        'Não foi possível restaurar o campo da lixeira. Tente novamente.',
-      );
+      toast.error('Erro ao restaurar campo', {
+        description:
+          'Não foi possível restaurar o campo da lixeira. Tente novamente.',
+      });
     },
     onSettled: () => {
       setRestoringFieldId(null);
@@ -357,14 +534,22 @@ export function useTableFieldManagement(
   }
 
   function onEditField(fieldId: string): void {
+    let search: { group?: string } = {};
+    const groupSlug = parentGroupSlugByChildId.get(fieldId);
+    if (groupSlug && parentListChildIds.has(fieldId)) {
+      search = { group: groupSlug };
+    }
     router.navigate({
       to: '/tables/$slug/field/$fieldId',
       params: { slug: tableSlug, fieldId },
+      search,
     });
   }
 
   return {
     fields,
+    parentListChildFields,
+    parentListChildIds,
     fieldOrderList: table?.fieldOrderList ?? [],
     fieldOrderForm: table?.fieldOrderForm ?? [],
     fieldOrderFilter: table?.fieldOrderFilter ?? [],

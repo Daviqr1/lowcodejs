@@ -8,7 +8,8 @@ export function parseDate(value: unknown): Date | null {
   if (value instanceof Date) return value;
   if (typeof value === 'string') {
     const d = parseISO(value);
-    return Number.isNaN(d.getTime()) ? null : d;
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
   }
   return null;
 }
@@ -22,9 +23,8 @@ export function getStatusLabel(
   const optionId = raw[0];
   if (!optionId) return null;
   const option = listField.dropdown?.find((o: IDropdown) => o.id === optionId);
-  return option
-    ? { id: option.id, label: option.label, color: option.color }
-    : null;
+  if (!option) return null;
+  return { id: option.id, label: option.label, color: option.color };
 }
 
 export function getBarStyle(
@@ -36,7 +36,8 @@ export function getBarStyle(
 ): { left: number; width: number } | null {
   if (!start) return null;
   const barStart = startOfDay(start);
-  const barEnd = end ? startOfDay(end) : barStart;
+  let barEnd = barStart;
+  if (end) barEnd = startOfDay(end);
   const offsetDays = differenceInDays(barStart, viewStart);
   const durationDays = Math.max(differenceInDays(barEnd, barStart), 1);
 

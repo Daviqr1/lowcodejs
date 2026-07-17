@@ -16,8 +16,10 @@ import {
 } from '@dnd-kit/sortable';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
+import { useStore } from '@tanstack/react-store';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import {
   KanbanAddListDialog,
@@ -31,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useCreateTableRow } from '@/hooks/tanstack-query/use-table-row-create';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@/lib/constant';
@@ -38,26 +41,29 @@ import type { IField, IRow, ITable } from '@/lib/interfaces';
 import {
   ORDER_FIELD_NAME,
   ORDER_FIELD_SLUG,
+  SORTABLE_FIELD_TYPES,
   TEMPLATE_FIELD_SLUGS,
+  buildListFieldPayload,
+  compareRowsByField,
   getFieldBySlug,
   getFirstFieldByType,
   normalizeRowValue,
   parseOrderValue,
 } from '@/lib/kanban-helpers';
 import type { FieldMap } from '@/lib/kanban-types';
-import { toastError, toastSuccess } from '@/lib/toast';
+import { buildFieldPermissions } from '@/lib/permission';
 import {
   buildDefaultValues,
   buildPayload,
 } from '@/routes/_private/tables/$slug/row/create/-create-form';
 import { useAuthStore } from '@/stores/authentication';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableKanbanView({
   data,
@@ -69,22 +75,21 @@ export function TableKanbanView({
   const currentUserId = useAuthStore((s) => s.user?._id) ?? '';
   const [activeRow, setActiveRow] = React.useState<IRow | null>(null);
   const activeRowId = activeRow?._id ?? null;
-  const [isAddListOpen, setIsAddListOpen] = React.useState(false);
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
-  const [isCreateCardOpen, setIsCreateCardOpen] = React.useState(false);
   const [createColumnId, setCreateColumnId] = React.useState<string | null>(
     null,
   );
+  const [rowNonce, setRowNonce] = React.useState(0);
+  const [addListNonce, setAddListNonce] = React.useState(0);
+  const [createCardNonce, setCreateCardNonce] = React.useState(0);
+  const rowTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const addListTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const createCardTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const addListDialog = useDismissableDialog();
+  const createCardDialog = useDismissableDialog();
   const [activeDragCardId, setActiveDragCardId] = React.useState<string | null>(
     null,
   );
-  const [editingColumnId, setEditingColumnId] = React.useState<string | null>(
-    null,
-  );
-  const [editingColumnLabel, setEditingColumnLabel] = React.useState('');
-  const [editingColumnColor, setEditingColumnColor] = React.useState<
-    string | null
-  >(null);
   const [rowEditTarget, setRowEditTarget] = React.useState<
     'members' | 'start' | 'due' | 'list' | null
   >(null);
@@ -161,14 +166,28 @@ export function TableKanbanView({
 
   const orderedListOptions = React.useMemo(() => {
     const byId = new Map(listOptions.map((opt) => [opt.id, opt] as const));
-    return columnOrder.map((id) => byId.get(id)).filter(Boolean) as Array<
-      (typeof listOptions)[number]
-    >;
+    return columnOrder
+      .map((id) => byId.get(id))
+      .filter((opt): opt is (typeof listOptions)[number] => opt !== undefined);
   }, [columnOrder, listOptions]);
 
   const activeFields = React.useMemo(
     () => headers.filter((field) => !field.trashed && !field.native),
     [headers],
+  );
+  // Campos disponíveis para ordenar os cards de uma lista (exclui o campo de
+  // lista e o campo interno de ordem manual do Kanban).
+  const sortFieldOptions = React.useMemo(
+    () =>
+      activeFields
+        .filter(
+          (field) =>
+            field.slug !== ORDER_FIELD_SLUG &&
+            field.slug !== fields.list?.slug &&
+            SORTABLE_FIELD_TYPES.has(field.type),
+        )
+        .map((field) => ({ label: field.name, value: field.slug })),
+    [activeFields, fields.list?.slug],
   );
   const createDialogExtraFields = React.useMemo(() => {
     return table.fields.filter(
@@ -205,10 +224,10 @@ export function TableKanbanView({
           color: payload.color ?? null,
         },
       ];
-      const response = await API.put<IField>(route, {
-        ...fields.list,
-        dropdown,
-      });
+      const response = await API.put<IField>(
+        route,
+        buildListFieldPayload(fields.list, dropdown),
+      );
       return response.data;
     },
     onSuccess(updatedField) {
@@ -218,17 +237,22 @@ export function TableKanbanView({
           if (!old) return old;
           return {
             ...old,
-            fields: old.fields.map((field) =>
-              field._id === updatedField._id ? updatedField : field,
-            ),
+            fields: old.fields.map((field) => {
+              if (field._id === updatedField._id) return updatedField;
+              return field;
+            }),
           };
         },
       );
-      toastSuccess('Lista adicionada', 'A nova coluna foi criada com sucesso');
-      setIsAddListOpen(false);
+      toast.success('Lista adicionada', {
+        description: 'A nova coluna foi criada com sucesso',
+      });
+      addListDialog.close();
     },
     onError() {
-      toastError('Erro ao adicionar lista', 'Nao foi possivel criar a coluna');
+      toast.error('Erro ao adicionar lista', {
+        description: 'Nao foi possivel criar a coluna',
+      });
     },
   });
 
@@ -248,33 +272,33 @@ export function TableKanbanView({
   });
 
   React.useEffect(() => {
-    if (isAddListOpen) return;
-    addListForm.reset({
-      label: '',
-      color: '#a3a3a3',
-    });
-  }, [addListForm, isAddListOpen]);
+    if (addListNonce > 0) addListTriggerRef.current?.click();
+  }, [addListNonce]);
 
   const updateListOption = useMutation({
     mutationFn: async (payload: {
       optionId: string;
       label: string;
       color: string | null;
+      sortField: string | null;
+      sortDirection: 'asc' | 'desc' | null;
     }) => {
       if (!fields.list) {
         throw new Error('Campo de lista não encontrado');
       }
-      const dropdown = fields.list.dropdown.map((opt) =>
-        opt.id === payload.optionId
-          ? { ...opt, label: payload.label, color: payload.color }
-          : opt,
-      );
+      const dropdown = fields.list.dropdown.map((opt) => {
+        if (opt.id !== payload.optionId) return opt;
+        return {
+          ...opt,
+          label: payload.label,
+          color: payload.color,
+          sortField: payload.sortField,
+          sortDirection: payload.sortDirection,
+        };
+      });
       const response = await API.put<IField>(
         '/tables/'.concat(tableSlug).concat('/fields/').concat(fields.list._id),
-        {
-          ...fields.list,
-          dropdown,
-        },
+        buildListFieldPayload(fields.list, dropdown),
       );
       return response.data;
     },
@@ -285,22 +309,21 @@ export function TableKanbanView({
           if (!old) return old;
           return {
             ...old,
-            fields: old.fields.map((field) =>
-              field._id === updatedField._id ? updatedField : field,
-            ),
+            fields: old.fields.map((field) => {
+              if (field._id === updatedField._id) return updatedField;
+              return field;
+            }),
           };
         },
       );
-      setEditingColumnId(null);
-      setEditingColumnLabel('');
-      setEditingColumnColor(null);
-      toastSuccess('Lista atualizada', 'A lista foi atualizada');
+      toast.success('Lista atualizada', {
+        description: 'A lista foi atualizada',
+      });
     },
     onError() {
-      toastError(
-        'Erro ao atualizar lista',
-        'Nao foi possivel atualizar o nome',
-      );
+      toast.error('Erro ao atualizar lista', {
+        description: 'Nao foi possivel atualizar a lista',
+      });
     },
   });
 
@@ -316,7 +339,8 @@ export function TableKanbanView({
     );
 
     rowsState.forEach((row) => {
-      const raw = fields.list ? row[fields.list.slug] : null;
+      let raw = null;
+      if (fields.list) raw = row[fields.list.slug];
       const values = normalizeRowValue(raw);
       const value = values[0];
       if (value && value in byStatus) {
@@ -326,28 +350,57 @@ export function TableKanbanView({
       }
     });
 
-    if (orderFieldSlug) {
-      Object.keys(byStatus).forEach((key) => {
-        byStatus[key].sort((a, b) => {
-          const aOrder = parseOrderValue(a[orderFieldSlug]);
-          const bOrder = parseOrderValue(b[orderFieldSlug]);
-          if (aOrder === null && bOrder === null) {
-            return (
-              (rowOrderIndex.get(a._id) ?? 0) - (rowOrderIndex.get(b._id) ?? 0)
-            );
-          }
-          if (aOrder === null) return 1;
-          if (bOrder === null) return -1;
-          return aOrder - bOrder;
-        });
+    const optionById = new Map(
+      orderedListOptions.map((opt) => [opt.id, opt] as const),
+    );
+
+    const sortByManualOrder = (rows: Array<IRow>): void => {
+      if (!orderFieldSlug) return;
+      rows.sort((a, b) => {
+        const aOrder = parseOrderValue(a[orderFieldSlug]);
+        const bOrder = parseOrderValue(b[orderFieldSlug]);
+        if (aOrder === null && bOrder === null) {
+          return (
+            (rowOrderIndex.get(a._id) ?? 0) - (rowOrderIndex.get(b._id) ?? 0)
+          );
+        }
+        if (aOrder === null) return 1;
+        if (bOrder === null) return -1;
+        return aOrder - bOrder;
       });
-    }
+    };
+
+    Object.keys(byStatus).forEach((key) => {
+      const option = optionById.get(key);
+      const sortField = option?.sortField;
+      // Ordenação por campo configurada na lista tem prioridade sobre a ordem
+      // manual de drag-drop. Se o campo configurado foi removido, cai na ordem
+      // manual.
+      if (sortField) {
+        const field = getFieldBySlug(activeFields, sortField);
+        if (field) {
+          let direction: 'asc' | 'desc' = 'asc';
+          if (option?.sortDirection === 'desc') direction = 'desc';
+          byStatus[key].sort((a, b) =>
+            compareRowsByField(a, b, field, direction),
+          );
+          return;
+        }
+      }
+      sortByManualOrder(byStatus[key]);
+    });
 
     return {
       byStatus,
       unassigned,
     };
-  }, [fields.list, orderedListOptions, orderFieldSlug, rowsState]);
+  }, [
+    activeFields,
+    fields.list,
+    orderedListOptions,
+    orderFieldSlug,
+    rowsState,
+  ]);
 
   React.useEffect(() => {
     if (!activeRowId) return;
@@ -360,10 +413,14 @@ export function TableKanbanView({
   const searchParams = useRouterState({ select: (s) => s.location.search });
   const deepLinkRowIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    const rowIdParam =
-      typeof searchParams === 'object' && searchParams !== null
-        ? (searchParams as Record<string, unknown>).rowId
-        : undefined;
+    let rowIdParam: unknown;
+    if (
+      typeof searchParams === 'object' &&
+      searchParams !== null &&
+      'rowId' in searchParams
+    ) {
+      rowIdParam = searchParams.rowId;
+    }
     if (typeof rowIdParam !== 'string' || !rowIdParam) return;
     if (deepLinkRowIdRef.current === rowIdParam) return;
     const target = rowsState.find((row) => row._id === rowIdParam);
@@ -375,12 +432,16 @@ export function TableKanbanView({
   const createRow = useCreateTableRow({
     onSuccess(createdRow) {
       setRowsState((prev) => [...prev, createdRow]);
-      toastSuccess('Card criado', 'O card foi criado com sucesso');
-      setIsCreateCardOpen(false);
+      toast.success('Card criado', {
+        description: 'O card foi criado com sucesso',
+      });
+      createCardDialog.close();
       setCreateColumnId(null);
     },
     onError() {
-      toastError('Erro ao criar card', 'Nao foi possivel criar o card');
+      toast.error('Erro ao criar card', {
+        description: 'Nao foi possivel criar o card',
+      });
     },
   });
 
@@ -389,24 +450,26 @@ export function TableKanbanView({
     if (startDateEnsureAttemptedRef.current) return;
     startDateEnsureAttemptedRef.current = true;
 
-    void API.post<IField>('/tables/'.concat(tableSlug).concat('/fields'), {
-      name: 'Data de início',
-      type: E_FIELD_TYPE.DATE,
-      required: false,
-      multiple: false,
-      format: E_FIELD_FORMAT.DD_MM_YYYY,
-      showInFilter: true,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
-      defaultValue: null,
-      locked: true,
-      relationship: null,
-      dropdown: [],
-      category: [],
-      group: null,
-    })
-      .then((createdField) => {
+    const ensureStartDateField = async (): Promise<void> => {
+      try {
+        const createdField = await API.post<IField>(
+          '/tables/'.concat(tableSlug).concat('/fields'),
+          {
+            name: 'Data de início',
+            type: E_FIELD_TYPE.DATE,
+            required: false,
+            multiple: false,
+            format: E_FIELD_FORMAT.DD_MM_YYYY,
+            showInFilter: true,
+            permissions: buildFieldPermissions(true, true, true),
+            defaultValue: null,
+            locked: true,
+            relationship: null,
+            dropdown: [],
+            category: [],
+            group: null,
+          },
+        );
         queryClient.setQueryData<ITable>(
           queryKeys.tables.detail(tableSlug),
           (old) => {
@@ -419,17 +482,17 @@ export function TableKanbanView({
             };
           },
         );
-        toastSuccess(
-          'Campo Data de início criado',
-          'Kanban atualizado com o novo campo de início',
-        );
-      })
-      .catch(() => {
-        toastError(
-          'Erro ao criar Data de início',
-          'Nao foi possivel adicionar o campo no Kanban',
-        );
-      });
+        toast.success('Campo Data de início criado', {
+          description: 'Kanban atualizado com o novo campo de início',
+        });
+      } catch {
+        toast.error('Erro ao criar Data de início', {
+          description: 'Nao foi possivel adicionar o campo no Kanban',
+        });
+      }
+    };
+
+    void ensureStartDateField();
   }, [fields.startDate, queryClient, tableSlug]);
 
   const createForm = useAppForm({
@@ -446,13 +509,13 @@ export function TableKanbanView({
         fields.attachments?.type === E_FIELD_TYPE.FIELD_GROUP &&
         Array.isArray(payload[fields.attachments.slug])
       ) {
-        payload[fields.attachments.slug] = (
-          payload[fields.attachments.slug] as Array<Record<string, any>>
-        ).map((item) => ({
-          ...item,
-          autor: currentUserId ? [currentUserId] : [],
-          data: new Date().toISOString(),
-        }));
+        payload[fields.attachments.slug] = payload[fields.attachments.slug].map(
+          (item: Record<string, unknown>) => {
+            let autor: Array<string> = [];
+            if (currentUserId) autor = [currentUserId];
+            return { ...item, autor, data: new Date().toISOString() };
+          },
+        );
       }
 
       if (orderFieldSlug) {
@@ -486,7 +549,10 @@ export function TableKanbanView({
   const handleRowDeleted = React.useCallback(
     (rowId: string) => {
       setRowsState((prev) => prev.filter((row) => row._id !== rowId));
-      setActiveRow((prev) => (prev && prev._id === rowId ? null : prev));
+      setActiveRow((prev) => {
+        if (prev && prev._id === rowId) return null;
+        return prev;
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.rows.lists(tableSlug),
       });
@@ -495,12 +561,68 @@ export function TableKanbanView({
   );
 
   React.useEffect(() => {
-    if (!isCreateCardOpen) return;
-    createForm.reset(buildDefaultValues(activeFields));
-    if (fields.list && createColumnId) {
-      createForm.setFieldValue(fields.list.slug, [createColumnId]);
+    if (createCardNonce > 0) createCardTriggerRef.current?.click();
+  }, [createCardNonce]);
+
+  React.useEffect(() => {
+    if (rowNonce > 0) rowTriggerRef.current?.click();
+  }, [rowNonce]);
+
+  const openRow = React.useCallback(
+    (row: IRow, editTarget: 'members' | 'start' | 'due' | 'list' | null) => {
+      setActiveRow(row);
+      setRowEditTarget(editTarget);
+      setRowNonce((value) => value + 1);
+    },
+    [],
+  );
+
+  const openCreateCard = React.useCallback(
+    (columnId: string) => {
+      setCreateColumnId(columnId);
+      createForm.reset(buildDefaultValues(activeFields));
+      if (fields.list) {
+        createForm.setFieldValue(fields.list.slug, [columnId]);
+      }
+      setCreateCardNonce((value) => value + 1);
+    },
+    [activeFields, createForm, fields.list],
+  );
+
+  // Auto-preenche o Título a partir do item escolhido num campo de origem
+  // (Chamado / Caso de Uso / Caso de Teste / qualquer relacionamento). O valor
+  // selecionado guarda { value, label }, onde label é o nome do item.
+  const relationshipFieldSlugs = React.useMemo(
+    () =>
+      createDialogExtraFields
+        .filter((field) => field.type === E_FIELD_TYPE.RELATIONSHIP)
+        .map((field) => field.slug),
+    [createDialogExtraFields],
+  );
+
+  // Nome do primeiro relacionamento selecionado, candidato a semear o título.
+  const relationshipSeedLabel = useStore(createForm.store, (state) => {
+    const values: Record<string, unknown> = state.values;
+    for (const slug of relationshipFieldSlugs) {
+      const value = values[slug];
+      if (Array.isArray(value) && value.length > 0) {
+        const first: { label?: unknown } = value[0];
+        const label = first.label;
+        if (typeof label === 'string' && label.trim()) return label.trim();
+      }
     }
-  }, [activeFields, createColumnId, createForm, fields.list, isCreateCardOpen]);
+    return '';
+  });
+
+  React.useEffect(() => {
+    if (!fields.title || !relationshipSeedLabel) return;
+    const titleSlug = fields.title.slug;
+    const values: Record<string, unknown> = createForm.store.state.values;
+    const currentTitle = String(values[titleSlug] ?? '').trim();
+    // Só preenche quando vazio; se já houver texto, não sobrescreve.
+    if (currentTitle) return;
+    createForm.setFieldValue(titleSlug, relationshipSeedLabel);
+  }, [createForm, fields.title, relationshipSeedLabel]);
 
   const ensureOrderField = React.useCallback(async (): Promise<
     string | null
@@ -525,17 +647,17 @@ export function TableKanbanView({
               if (!old) return old;
               return {
                 ...old,
-                fields: old.fields.map((field) =>
-                  field._id === updatedField._id ? updatedField : field,
-                ),
+                fields: old.fields.map((field) => {
+                  if (field._id === updatedField._id) return updatedField;
+                  return field;
+                }),
               };
             },
           );
         } catch (error) {
-          toastError(
-            'Erro ao travar o campo de ordem',
-            'Nao foi possivel travar o campo de ordem',
-          );
+          toast.error('Erro ao travar o campo de ordem', {
+            description: 'Nao foi possivel travar o campo de ordem',
+          });
         }
       }
       return orderField.slug;
@@ -551,9 +673,7 @@ export function TableKanbanView({
           multiple: false,
           format: E_FIELD_FORMAT.INTEGER,
           showInFilter: false,
-          showInForm: false,
-          showInDetail: false,
-          showInList: false,
+          permissions: buildFieldPermissions(false, false, false),
           defaultValue: null,
           locked: true,
           relationship: null,
@@ -582,10 +702,9 @@ export function TableKanbanView({
 
       return createdField.slug;
     } catch (error) {
-      toastError(
-        'Erro ao preparar ordenação',
-        'Nao foi possivel criar o campo de ordem',
-      );
+      toast.error('Erro ao preparar ordenação', {
+        description: 'Nao foi possivel criar o campo de ordem',
+      });
       return null;
     }
   }, [orderField, orderFieldSlug, queryClient, tableSlug]);
@@ -615,17 +734,17 @@ export function TableKanbanView({
             if (!old) return old;
             return {
               ...old,
-              fields: old.fields.map((field) =>
-                field._id === updatedField._id ? updatedField : field,
-              ),
+              fields: old.fields.map((field) => {
+                if (field._id === updatedField._id) return updatedField;
+                return field;
+              }),
             };
           },
         );
       } catch (error) {
-        toastError(
-          'Erro ao ordenar colunas',
-          'Nao foi possivel salvar a nova ordem',
-        );
+        toast.error('Erro ao ordenar colunas', {
+          description: 'Nao foi possivel salvar a nova ordem',
+        });
       }
     },
     [fields.list, queryClient, tableSlug],
@@ -660,10 +779,9 @@ export function TableKanbanView({
           queryKey: queryKeys.rows.lists(tableSlug),
         });
       } catch (error) {
-        toastError(
-          'Erro ao reordenar cards',
-          'Nao foi possivel salvar a nova ordem',
-        );
+        toast.error('Erro ao reordenar cards', {
+          description: 'Nao foi possivel salvar a nova ordem',
+        });
       }
     },
     [queryClient, tableSlug],
@@ -695,23 +813,20 @@ export function TableKanbanView({
       if (activeType !== 'card') return;
 
       const activeId = String(active.id);
-      const sourceColumn = active.data.current?.columnId as string;
+      const sourceColumn: string = active.data.current?.columnId;
       const overColumnId = over.data.current?.columnId;
 
-      const targetColumn =
-        overType === 'card'
-          ? (overColumnId as string)
-          : (overColumnId ?? String(over.id));
+      // overColumnId vem do data.current do dnd-kit (tipagem frouxa).
+      let targetColumn = overColumnId ?? String(over.id);
+      if (overType === 'card') targetColumn = overColumnId;
 
       if (!fields.list) return;
 
       const orderSlug = await ensureOrderField();
 
       const sourceRows = columns.byStatus[sourceColumn] ?? [];
-      const targetRows =
-        sourceColumn === targetColumn
-          ? sourceRows
-          : (columns.byStatus[targetColumn] ?? []);
+      let targetRows = columns.byStatus[targetColumn] ?? [];
+      if (sourceColumn === targetColumn) targetRows = sourceRows;
 
       const sourceIds = sourceRows.map((row) => row._id);
       const targetIds = targetRows.map((row) => row._id);
@@ -734,14 +849,12 @@ export function TableKanbanView({
         nextTargetIds = nextSourceIds;
       } else {
         nextSourceIds.splice(fromIndex, 1);
-        const insertAt =
-          overType === 'card'
-            ? targetIds.indexOf(String(over.id))
-            : targetIds.length;
-        const index =
-          insertAt === -1 || insertAt > nextTargetIds.length
-            ? nextTargetIds.length
-            : insertAt;
+        let insertAt = targetIds.length;
+        if (overType === 'card') insertAt = targetIds.indexOf(String(over.id));
+        let index = insertAt;
+        if (insertAt === -1 || insertAt > nextTargetIds.length) {
+          index = nextTargetIds.length;
+        }
         nextTargetIds.splice(index, 0, activeId);
       }
 
@@ -831,27 +944,10 @@ export function TableKanbanView({
               key={option.id}
               option={option}
               count={columns.byStatus[option.id].length}
-              editingColumnId={editingColumnId}
-              editingColumnLabel={editingColumnLabel}
-              editingColumnColor={editingColumnColor}
-              onEditStart={(opt) => {
-                setEditingColumnId(opt.id);
-                setEditingColumnLabel(opt.label);
-                setEditingColumnColor(opt.color ?? '#64748b');
-              }}
-              onEditChange={(value) => setEditingColumnLabel(value)}
-              onEditColorChange={(value) => setEditingColumnColor(value)}
-              onEditCancel={() => {
-                setEditingColumnId(null);
-                setEditingColumnLabel('');
-                setEditingColumnColor(null);
-              }}
-              onEditCommit={(optionId, nextLabel, nextColor) => {
-                updateListOption.mutate({
-                  optionId,
-                  label: nextLabel,
-                  color: nextColor,
-                });
+              sortFieldOptions={sortFieldOptions}
+              isUpdating={updateListOption.status === 'pending'}
+              onUpdate={(optionId, update) => {
+                updateListOption.mutate({ optionId, ...update });
               }}
             >
               <SortableContext
@@ -864,14 +960,8 @@ export function TableKanbanView({
                     row={row}
                     fields={fields}
                     columnId={option.id}
-                    onClick={() => {
-                      setActiveRow(row);
-                      setRowEditTarget(null);
-                    }}
-                    onFieldClick={(field) => {
-                      setActiveRow(row);
-                      setRowEditTarget(field);
-                    }}
+                    onClick={() => openRow(row, null)}
+                    onFieldClick={(field) => openRow(row, field)}
                   />
                 ))}
               </SortableContext>
@@ -879,10 +969,7 @@ export function TableKanbanView({
                 type="button"
                 variant="ghost"
                 className="w-full justify-start text-muted-foreground cursor-pointer"
-                onClick={() => {
-                  setCreateColumnId(option.id);
-                  setIsCreateCardOpen(true);
-                }}
+                onClick={() => openCreateCard(option.id)}
               >
                 <PlusIcon className="size-4" />
                 <span>Adicionar card</span>
@@ -893,21 +980,18 @@ export function TableKanbanView({
           <KanbanUnassignedColumn
             rows={columns.unassigned}
             fields={fields}
-            onSelectRow={(row) => {
-              setActiveRow(row);
-              setRowEditTarget(null);
-            }}
-            onFieldClick={(row, field) => {
-              setActiveRow(row);
-              setRowEditTarget(field);
-            }}
+            onSelectRow={(row) => openRow(row, null)}
+            onFieldClick={(row, field) => openRow(row, field)}
           />
 
           <section className="w-72 shrink-0 rounded-xl border border-dashed bg-muted/10 p-4 flex items-center justify-center">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsAddListOpen(true)}
+              onClick={() => {
+                addListForm.reset({ label: '', color: '#a3a3a3' });
+                setAddListNonce((value) => value + 1);
+              }}
               disabled={!fields.list}
               className="cursor-pointer"
             >
@@ -917,11 +1001,9 @@ export function TableKanbanView({
           </section>
 
           <KanbanRowDialog
+            key={rowNonce}
+            ref={rowTriggerRef}
             row={activeRow}
-            onClose={() => {
-              setActiveRow(null);
-              setRowEditTarget(null);
-            }}
             onRowUpdated={(row) => setActiveRow(row)}
             onRowDuplicated={handleRowDuplicated}
             onRowDeleted={handleRowDeleted}
@@ -932,38 +1014,27 @@ export function TableKanbanView({
           />
 
           <KanbanAddListDialog
-            open={isAddListOpen}
-            onOpenChange={(open) => {
-              setIsAddListOpen(open);
-              if (!open) {
-                addListForm.reset({
-                  label: '',
-                  color: '#a3a3a3',
-                });
-              }
-            }}
+            ref={addListTriggerRef}
             form={addListForm}
+            closeRef={addListDialog.closeRef}
             isSubmitting={addListOption.status === 'pending'}
           />
 
           <KanbanCreateCardDialog
-            open={isCreateCardOpen}
-            onOpenChange={(open) => {
-              setIsCreateCardOpen(open);
-              if (!open) setCreateColumnId(null);
-            }}
-            createForm={createForm}
+            key={createColumnId ?? 'create-card'}
+            ref={createCardTriggerRef}
+            form={createForm}
+            closeRef={createCardDialog.closeRef}
             fields={fields}
             extraFields={createDialogExtraFields}
             tableSlug={tableSlug}
             createColumnOption={createColumnOption}
             isSubmitting={createRow.status === 'pending'}
-            onCancel={() => setIsCreateCardOpen(false)}
           />
         </div>
       </SortableContext>
       <DragOverlay>
-        {activeDragCard ? (
+        {activeDragCard && (
           <div className="w-[17rem]">
             <KanbanCard
               row={activeDragCard}
@@ -971,7 +1042,7 @@ export function TableKanbanView({
               onClick={() => {}}
             />
           </div>
-        ) : null}
+        )}
       </DragOverlay>
     </DndContext>
   );

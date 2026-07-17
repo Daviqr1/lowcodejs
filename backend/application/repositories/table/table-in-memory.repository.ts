@@ -1,14 +1,12 @@
 import type {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   FindOptions,
   IField,
   IStorage,
   ITable,
   IUser,
 } from '@application/core/entity.core';
+
+import { makeField, makeStorage, makeUser } from '../entity-fixtures';
 
 import type {
   TableContractRepository,
@@ -17,6 +15,17 @@ import type {
   TableUpdateManyPayload,
   TableUpdatePayload,
 } from './table-contract.repository';
+
+// Refs do double de teste: entidade completa (defaults inertes) a partir do id.
+function storageRef(id: string): IStorage {
+  return makeStorage(id);
+}
+function userRef(id: string): IUser {
+  return makeUser(id);
+}
+function fieldRef(id: string): IField {
+  return makeField(id);
+}
 
 export default class TableInMemoryRepository implements TableContractRepository {
   items: ITable[] = [];
@@ -36,28 +45,24 @@ export default class TableInMemoryRepository implements TableContractRepository 
 
   async create(payload: TableCreatePayload): Promise<ITable> {
     this._checkError('create');
+    let logo: IStorage | null = null;
+    if (payload.logo) logo = storageRef(payload.logo);
     const table: ITable = {
       _id: crypto.randomUUID(),
       _schema: payload._schema ?? {},
       name: payload.name,
       description: payload.description ?? null,
-      logo: payload.logo ? ({ _id: payload.logo } as IStorage) : null,
+      logo,
       slug: payload.slug,
-      fields: (payload.fields ?? []).map(
-        (f) => (typeof f === 'object' ? f : { _id: f }) as IField,
-      ),
-      type: payload.type ?? ('TABLE' as typeof E_TABLE_TYPE.TABLE),
-      style: payload.style ?? ('LIST' as typeof E_TABLE_STYLE.LIST),
-      visibility:
-        payload.visibility ??
-        ('RESTRICTED' as typeof E_TABLE_VISIBILITY.RESTRICTED),
-      collaboration:
-        payload.collaboration ??
-        ('RESTRICTED' as typeof E_TABLE_COLLABORATION.RESTRICTED),
-      administrators: (payload.administrators ?? []).map(
-        (a) => ({ _id: a }) as IUser,
-      ),
-      owner: { _id: payload.owner } as IUser,
+      fields: (payload.fields ?? []).map((f) => {
+        if (typeof f === 'object') return f;
+        return fieldRef(f);
+      }),
+      type: payload.type ?? 'TABLE',
+      style: payload.style ?? 'LIST',
+      owner: userRef(payload.owner),
+      permissions: payload.permissions ?? null,
+      members: payload.members ?? [],
       fieldOrderList: payload.fieldOrderList ?? [],
       fieldOrderForm: payload.fieldOrderForm ?? [],
       fieldOrderFilter: payload.fieldOrderFilter ?? [],
@@ -80,6 +85,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
         participants: null,
         reminder: null,
       },
+      rowSlugFieldId: payload.rowSlugFieldId ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,
@@ -140,13 +146,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
     if (payload?.owner?.length) {
       const ownerIds = payload.owner;
       filtered = filtered.filter((t) =>
-        ownerIds.includes(String((t.owner as IUser)?._id)),
-      );
-    }
-
-    if (payload?.visibility?.length) {
-      filtered = filtered.filter((t) =>
-        payload.visibility!.includes(t.visibility),
+        ownerIds.includes(String(t.owner?._id)),
       );
     }
 
@@ -167,27 +167,23 @@ export default class TableInMemoryRepository implements TableContractRepository 
     if (!table) throw new Error('Table not found');
 
     if (payload.logo !== undefined) {
-      table.logo = payload.logo ? ({ _id: payload.logo } as IStorage) : null;
+      table.logo = null;
+      if (payload.logo) table.logo = storageRef(payload.logo);
     }
     if (payload.fields !== undefined) {
-      table.fields = payload.fields.map((f) => ({ _id: f }) as IField);
-    }
-    if (payload.administrators !== undefined) {
-      table.administrators = payload.administrators.map(
-        (a) => ({ _id: a }) as IUser,
-      );
+      table.fields = payload.fields.map((f) => fieldRef(f));
     }
     if (payload.owner !== undefined) {
-      table.owner = { _id: payload.owner } as IUser;
+      table.owner = userRef(payload.owner);
+    }
+    if (payload.permissions !== undefined) {
+      table.permissions = payload.permissions;
+    }
+    if (payload.members !== undefined) {
+      table.members = payload.members;
     }
     if (payload.style !== undefined) {
       table.style = payload.style;
-    }
-    if (payload.visibility !== undefined) {
-      table.visibility = payload.visibility;
-    }
-    if (payload.collaboration !== undefined) {
-      table.collaboration = payload.collaboration;
     }
     if (payload.fieldOrderList !== undefined) {
       table.fieldOrderList = payload.fieldOrderList;
@@ -211,6 +207,8 @@ export default class TableInMemoryRepository implements TableContractRepository 
     if (payload.type !== undefined) table.type = payload.type;
     if (payload._schema !== undefined) table._schema = payload._schema;
     if (payload.methods !== undefined) table.methods = payload.methods;
+    if (payload.rowSlugFieldId !== undefined)
+      table.rowSlugFieldId = payload.rowSlugFieldId;
     if (payload.trashed !== undefined) table.trashed = payload.trashed;
     if (payload.trashedAt !== undefined) table.trashedAt = payload.trashedAt;
 
@@ -236,9 +234,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
     }
 
     for (const table of filtered) {
-      if (data.visibility) table.visibility = data.visibility;
       if (data.style) table.style = data.style;
-      if (data.collaboration) table.collaboration = data.collaboration;
       if (data.trashed !== undefined) table.trashed = data.trashed;
       if (data.trashedAt !== undefined) table.trashedAt = data.trashedAt;
       table.updatedAt = new Date();
@@ -264,7 +260,6 @@ export default class TableInMemoryRepository implements TableContractRepository 
     return filtered.length;
   }
 
-  // eslint-disable-next-line no-unused-vars
   async dropCollection(_slug: string): Promise<void> {
     // No-op em memória — os registros não existem separadamente
   }

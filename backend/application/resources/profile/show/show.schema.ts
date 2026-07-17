@@ -52,8 +52,42 @@ export const ProfileShowSchema: FastifySchema = {
                 },
               },
             },
+            encompasses: {
+              type: 'array',
+              description: 'IDs dos grupos englobados',
+              items: { type: 'string' },
+            },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        capabilities: {
+          type: 'array',
+          description:
+            'Capacidades de área resolvidas pelo fecho de grupos (slugs de permissão); usado pelo frontend para liberar a navegação por capability',
+          items: { type: 'string' },
+        },
+        groups: {
+          type: 'array',
+          description: 'Grupos adicionais do usuário (multi-grupo)',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string' },
+              name: { type: 'string' },
+              slug: { type: 'string' },
+              permissions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    _id: { type: 'string' },
+                    slug: { type: 'string' },
+                  },
+                },
+              },
+              encompasses: { type: 'array', items: { type: 'string' } },
+            },
           },
         },
         createdAt: {
@@ -72,7 +106,7 @@ export const ProfileShowSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -85,7 +119,7 @@ export const ProfileShowSchema: FastifySchema = {
       description: 'Usuário não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Usuário não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
         errors: {
@@ -93,19 +127,12 @@ export const ProfileShowSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Usuário não encontrado',
-          code: 404,
-          cause: 'USER_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['GET_USER_PROFILE_ERROR'] },
         errors: {

@@ -5,14 +5,16 @@ perfil do usuario, logo e botao de login.
 
 ## Arquivos
 
-| Arquivo            | Descricao                                                                                                            |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`         | Barrel de exports do modulo                                                                                          |
-| `header.tsx`       | Header com SidebarTrigger, InputSearch condicional por rota e area de autenticacao (Profile ou LoginButton)          |
-| `sidebar.tsx`      | Sidebar de navegacao recursiva (ate 4 niveis) com suporte a menu dinamico, loading skeleton, links externos e logout |
-| `profile.tsx`      | Dropdown de perfil do usuario com avatar, iniciais, link para perfil e logout                                        |
-| `logo.tsx`         | Componente de logo que busca imagem do loader data da rota root                                                      |
-| `login-button.tsx` | Botao de login com icone que redireciona para a pagina inicial                                                       |
+| Arquivo                 | Descricao                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`              | Barrel de exports do modulo                                                                                          |
+| `header.tsx`            | Header com SidebarTrigger, InputSearch condicional por rota e area de autenticacao (Profile ou LoginButton)          |
+| `sidebar.tsx`           | Sidebar de navegacao recursiva (ate 4 niveis) com suporte a menu dinamico, loading skeleton, links externos e logout |
+| `profile.tsx`           | Dropdown de perfil do usuario com avatar, iniciais, link para perfil e logout                                        |
+| `logo.tsx`              | Componente de logo que busca imagem do loader data da rota root                                                      |
+| `login-button.tsx`      | Botao de login com icone que redireciona para a pagina inicial                                                       |
+| `notification-bell.tsx` | Sino de notificacoes: badge de nao-lidas, popover com ultimas 3, marcar (todas) como lida, socket em tempo real      |
+| `theme-toggle.tsx`      | Botao de alternancia de tema claro/escuro via `useTheme`                                                             |
 
 ## Dependencias principais
 

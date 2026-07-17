@@ -1,5 +1,4 @@
 import { useStore } from '@tanstack/react-form';
-import { useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
@@ -17,10 +16,11 @@ import {
 } from '@/components/common/file-upload/uploading-context';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { groupRowListOptions } from '@/hooks/tanstack-query/_query-options';
-import { useAutoSaveGroupRow } from '@/hooks/tanstack-query/use-group-row-auto-save';
+import { useCreateGroupRow } from '@/hooks/tanstack-query/use-group-row-create';
 import { useDeleteGroupRow } from '@/hooks/tanstack-query/use-group-row-delete';
+import { useUpdateGroupRow } from '@/hooks/tanstack-query/use-group-row-update';
 import { useAutoSave } from '@/hooks/use-auto-save';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
@@ -30,18 +30,28 @@ import type {
   IRow,
   ITable,
 } from '@/lib/interfaces';
-import { buildFieldValidator } from '@/lib/table';
+import {
+  buildFieldValidator,
+  getFieldContainerProps,
+  resolveFieldLabel,
+} from '@/lib/table';
 import { AutoSaveStatusIndicator } from '@/routes/_private/tables/$slug/row/-auto-save-status';
 
-interface GroupRowsInlineProps {
+type GroupRowsInlineProps = {
   tableSlug: string;
   rowId?: string;
   field: IField;
   table: ITable;
+  // Itens já persistidos do grupo, embutidos no registro pai (existingRow).
+  // Semeiam os cards na edição — evita uma query separada com cache stale.
+  initialItems?: Array<IRow>;
   // Garante que o registro pai exista (auto-save como rascunho) e devolve o
   // rowId. Usado ao adicionar o primeiro item antes de salvar o pai.
   onEnsureParentRow: () => Promise<string | undefined>;
-}
+  // Sinaliza ao pai que um item de grupo foi adicionado, para que ele não
+  // ofereça descartar o rascunho ao sair.
+  onChildAdded?: () => void;
+};
 
 type Card = {
   key: string;
@@ -51,13 +61,23 @@ type Card = {
 export function GroupRowsInline(
   props: GroupRowsInlineProps,
 ): React.JSX.Element {
-  const { tableSlug, rowId, field, table, onEnsureParentRow } = props;
+  const {
+    tableSlug,
+    rowId,
+    field,
+    table,
+    initialItems,
+    onEnsureParentRow,
+    onChildAdded,
+  } = props;
 
   const groupSlug = field.group?.slug;
 
   const group: IGroupConfiguration | undefined = table.groups?.find(
     (g) => g?.slug === groupSlug,
   );
+
+  const { isFieldVisible } = useFieldVisibility();
 
   const formFields = React.useMemo(
     (): Array<IField> =>
@@ -66,38 +86,24 @@ export function GroupRowsInline(
           !!f &&
           f.type !== E_FIELD_TYPE.FIELD_GROUP &&
           f.type !== E_FIELD_TYPE.IDENTIFIER &&
-          f.type !== E_FIELD_TYPE.TRASHED &&
+          f.type !== E_FIELD_TYPE.STATUS &&
           f.type !== E_FIELD_TYPE.TRASHED_AT &&
           !f.trashed &&
-          f.showInForm,
+          isFieldVisible(f, 'form'),
       ),
-    [group],
+    [group, isFieldVisible],
   );
 
-  const { data, status } = useQuery(
-    groupRowListOptions(tableSlug, rowId ?? '', groupSlug ?? ''),
+  // Semeia os cards a partir dos itens persistidos embutidos no registro pai
+  // (initialItems), ignorando os que estão na lixeira (mesmo filtro do endpoint
+  // de lista). Cards novos (item===null) são adicionados localmente depois.
+  const [cards, setCards] = React.useState<Array<Card>>(() =>
+    (initialItems ?? [])
+      .filter((item) => !item.trashedAt)
+      .map((item) => ({ key: String(item._id), item })),
   );
-
-  const [cards, setCards] = React.useState<Array<Card>>([]);
-  const seededRef = React.useRef<boolean>(false);
   const tempKeyRef = React.useRef<number>(0);
   const [adding, setAdding] = React.useState<boolean>(false);
-
-  // Semeia os cards a partir dos itens persistidos uma unica vez, preservando
-  // os cards novos (item===null) adicionados localmente nesta sessao.
-  React.useEffect((): void => {
-    if (seededRef.current) return;
-    if (status !== 'success') return;
-    seededRef.current = true;
-    setCards((prev) => {
-      const existing: Array<Card> = (data ?? []).map((item) => ({
-        key: String(item._id),
-        item,
-      }));
-      const localNew = prev.filter((c) => c.item === null);
-      return [...existing, ...localNew];
-    });
-  }, [status, data]);
 
   const removeCard = React.useCallback((key: string): void => {
     setCards((prev) => prev.filter((c) => c.key !== key));
@@ -118,10 +124,11 @@ export function GroupRowsInline(
       tempKeyRef.current += 1;
       const key = `new-${tempKeyRef.current.toString()}`;
       setCards((prev) => [...prev, { key, item: null }]);
+      onChildAdded?.();
     } finally {
       setAdding(false);
     }
-  }, [addDisabled, rowId, onEnsureParentRow]);
+  }, [addDisabled, rowId, onEnsureParentRow, onChildAdded]);
 
   if (!groupSlug || !group) {
     return <span className="text-muted-foreground text-sm">-</span>;
@@ -134,7 +141,9 @@ export function GroupRowsInline(
       className="space-y-2"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium ml-2">{field.name}</span>
+        <span className="text-sm font-medium ml-2">
+          {resolveFieldLabel(field, 'form')}
+        </span>
         <Button
           type="button"
           variant="outline"
@@ -174,7 +183,7 @@ export function GroupRowsInline(
   );
 }
 
-interface GroupItemCardProps {
+type GroupItemCardProps = {
   index: number;
   tableSlug: string;
   rowId: string;
@@ -182,7 +191,7 @@ interface GroupItemCardProps {
   fields: Array<IField>;
   item: IRow | null;
   onRemove: () => void;
-}
+};
 
 function GroupItemCard(props: GroupItemCardProps): React.JSX.Element {
   return (
@@ -190,6 +199,22 @@ function GroupItemCard(props: GroupItemCardProps): React.JSX.Element {
       <GroupItemCardContent {...props} />
     </UploadingProvider>
   );
+}
+
+// Todos os campos obrigatórios preenchidos no payload (não null/''/[]). Usado
+// para só criar o item quando o create (que valida tudo) vai passar.
+function allRequiredFilled(
+  payload: Record<string, unknown>,
+  fields: Array<IField>,
+): boolean {
+  for (const field of fields) {
+    if (!field.required) continue;
+    const value = payload[field.slug];
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string' && value.length === 0) return false;
+    if (Array.isArray(value) && value.length === 0) return false;
+  }
+  return true;
 }
 
 function GroupItemCardContent({
@@ -204,9 +229,6 @@ function GroupItemCardContent({
   const isUploading = useIsUploading();
 
   const itemIdRef = React.useRef<string | undefined>(item?._id);
-  const [isTrashed, setIsTrashed] = React.useState<boolean>(
-    item?.trashed === true,
-  );
 
   const defaultValues = React.useMemo((): Record<string, unknown> => {
     const defaults: Record<string, unknown> = {};
@@ -228,8 +250,13 @@ function GroupItemCardContent({
   const form = useAppForm({
     defaultValues,
     onSubmit: async (): Promise<void> => {},
+    // onChange além do onBlur: relationship/date/user/category/file só chamam
+    // handleChange ao selecionar (não dão blur), então sem isto não salvariam.
     listeners: {
       onBlur: (): void => {
+        triggerSaveRef.current();
+      },
+      onChange: (): void => {
         triggerSaveRef.current();
       },
     },
@@ -237,13 +264,18 @@ function GroupItemCardContent({
 
   const isDirty = useStore(form.store, (state) => state.isDirty);
 
-  const _autoSave = useAutoSaveGroupRow({
+  const _create = useCreateGroupRow({
     onSuccess(data: IRow): void {
       if (!itemIdRef.current) {
         itemIdRef.current = data._id;
       }
-      setIsTrashed(data.trashed === true);
     },
+    onError(error: AxiosError | Error): void {
+      handleApiError(error, { context: 'Erro ao salvar o item' });
+    },
+  });
+
+  const _update = useUpdateGroupRow({
     onError(error: AxiosError | Error): void {
       handleApiError(error, { context: 'Erro ao salvar o item' });
     },
@@ -255,18 +287,51 @@ function GroupItemCardContent({
     },
   });
 
+  // Persiste via create/update normais (como o Sheet). O registro pai sempre tem
+  // _id, então não há mais auto-save de item. Create valida todos obrigatórios;
+  // update aceita parcial.
   const performSave = React.useCallback(async (): Promise<void> => {
-    if (_autoSave.isPending) return;
+    if (_create.isPending || _update.isPending) return;
     if (isUploading) return;
     const payload = buildGroupRowPayload(form.state.values, fields);
-    await _autoSave.mutateAsync({
+    if (itemIdRef.current) {
+      await _update.mutateAsync({
+        tableSlug,
+        rowId,
+        groupSlug,
+        itemId: itemIdRef.current,
+        data: payload,
+      });
+      return;
+    }
+    const created = await _create.mutateAsync({
       tableSlug,
       rowId,
       groupSlug,
-      itemId: itemIdRef.current,
       data: payload,
     });
-  }, [_autoSave, isUploading, form, fields, tableSlug, rowId, groupSlug]);
+    itemIdRef.current = created._id;
+  }, [
+    _create,
+    _update,
+    isUploading,
+    form,
+    fields,
+    tableSlug,
+    rowId,
+    groupSlug,
+  ]);
+
+  // Gate: card novo só cria quando os obrigatórios estão preenchidos (create
+  // valida tudo); item já existente atualiza parcialmente.
+  const canSaveCallback = React.useCallback((): boolean => {
+    if (!isDirty) return false;
+    if (itemIdRef.current) return true;
+    return allRequiredFilled(
+      buildGroupRowPayload(form.state.values, fields),
+      fields,
+    );
+  }, [isDirty, form, fields]);
 
   const isDirtyCallback = React.useCallback((): boolean => {
     return isDirty;
@@ -274,8 +339,8 @@ function GroupItemCardContent({
 
   const { status, lastSavedAt, triggerSave, cancelPending } = useAutoSave({
     onSave: performSave,
-    isTrashed,
-    canSave: isDirtyCallback,
+    isDraft: false,
+    canSave: canSaveCallback,
     isDirty: isDirtyCallback,
   });
 
@@ -320,20 +385,27 @@ function GroupItemCardContent({
         </Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex flex-wrap gap-4">
         {fields.map((field) => (
-          <form.AppField
+          <div
             key={field._id}
-            name={field.slug}
-            validators={{
-              onChange: ({ value }: { value: any }) =>
-                buildFieldValidator(field, value),
-            }}
+            {...getFieldContainerProps(field.widthInForm)}
           >
-            {(formField: any) =>
-              renderGroupFormField(formField, field, tableSlug, groupSlug)
-            }
-          </form.AppField>
+            <form.AppField
+              name={field.slug}
+              validators={{
+                // form de grupo é tipado Record<string, unknown>; buildFieldValidator
+                // espera FieldValue — impedância genuína neste boundary dinâmico.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onChange: ({ value }: { value: any }) =>
+                  buildFieldValidator(field, value),
+              }}
+            >
+              {(formField) =>
+                renderGroupFormField(formField, field, tableSlug, groupSlug)
+              }
+            </form.AppField>
+          </div>
         ))}
       </div>
     </div>

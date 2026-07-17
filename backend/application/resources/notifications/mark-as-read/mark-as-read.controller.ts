@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 import z from 'zod';
@@ -6,8 +5,10 @@ import z from 'zod';
 import { E_NOTIFICATION_EVENT } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
-import NotificationMongooseRepository from '@application/repositories/notification/notification-mongoose.repository';
+import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
 import { getNotificationsNamespace } from '@application/resources/notifications/notifications.socket';
+
+import { NotificationMarkAsReadSchema } from './mark-as-read.schema';
 
 const ParamsValidator = z.object({ _id: z.string().trim().min(1) });
 
@@ -25,6 +26,7 @@ export default class {
     url: '/:_id/read',
     options: {
       onRequest: [AuthenticationMiddleware({ optional: false })],
+      schema: NotificationMarkAsReadSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

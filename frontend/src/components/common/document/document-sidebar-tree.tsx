@@ -50,8 +50,6 @@ function TreeNodeItem({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
-  dragEnabledId,
-  dragMode,
   dragOverId,
   dragOverMode,
   children,
@@ -73,8 +71,6 @@ function TreeNodeItem({
   onStartEdit: (nodeId: string, label: string) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
-  dragEnabledId: string | null;
-  dragMode: boolean;
   dragOverId: string | null;
   dragOverMode: DropMode;
   children?: React.ReactNode;
@@ -82,8 +78,8 @@ function TreeNodeItem({
   const hasChildren = !!node.children?.length;
   const showAdd = canAdd && onAddChild;
   const showMenu = canAdd;
+  const showDrag = canAdd;
   const isEditing = editingNodeId === node.id;
-  const canDrag = dragEnabledId === node.id && dragMode;
   const {
     attributes,
     listeners,
@@ -188,10 +184,10 @@ function TreeNodeItem({
           </button>
         )}
 
-        {canDrag && (
+        {showDrag && (
           <button
             type="button"
-            className="p-0.5 rounded hover:bg-background/60 cursor-grab active:cursor-grabbing"
+            className="p-0.5 rounded hover:bg-background/60 cursor-grab active:cursor-grabbing opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
             aria-label="Arrastar item"
             {...attributes}
             {...listeners}
@@ -284,8 +280,6 @@ export function DocumentSidebarTree({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
-  dragEnabledId,
-  dragMode,
   dragOverId,
   dragOverMode,
   parentId = null,
@@ -306,8 +300,6 @@ export function DocumentSidebarTree({
   onStartEdit: (nodeId: string, label: string) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
-  dragEnabledId: string | null;
-  dragMode: boolean;
   dragOverId: string | null;
   dragOverMode: DropMode;
   parentId?: string | null;
@@ -378,8 +370,6 @@ export function DocumentSidebarTree({
               onStartEdit={handleDoubleClick}
               onSaveEdit={onSaveEdit}
               onCancelEdit={onCancelEdit}
-              dragEnabledId={dragEnabledId}
-              dragMode={dragMode}
               dragOverId={dragOverId}
               dragOverMode={dragOverMode}
             >
@@ -402,8 +392,6 @@ export function DocumentSidebarTree({
                     onStartEdit={onStartEdit}
                     onSaveEdit={onSaveEdit}
                     onCancelEdit={onCancelEdit}
-                    dragEnabledId={dragEnabledId}
-                    dragMode={dragMode}
                     dragOverId={dragOverId}
                     dragOverMode={dragOverMode}
                     parentId={n.id}

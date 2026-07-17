@@ -29,9 +29,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const Reaction = (mongoose?.models?.Reaction ||
-  mongoose.model<Entity>(
-    'Reaction',
-    Schema,
-    'reactions',
-  )) as mongoose.Model<Entity>;
+export const Reaction: mongoose.Model<Entity> =
+  mongoose?.models?.Reaction ||
+  mongoose.model<Entity>('Reaction', Schema, 'reactions');

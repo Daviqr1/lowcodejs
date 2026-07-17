@@ -8,13 +8,13 @@ import {
 } from '@/components/ui/input-group';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldNumberProps {
+type FieldNumberProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   min?: number;
   required?: boolean;
-}
+};
 
 export function FieldNumber({
   label,
@@ -51,11 +51,13 @@ export function FieldNumber({
           type="number"
           min={min}
           placeholder={placeholder}
-          value={Number.isFinite(field.state.value) ? field.state.value : 0}
+          value={(Number.isFinite(field.state.value) && field.state.value) || 0}
           onBlur={field.handleBlur}
           onChange={(e) => {
             const value = e.target.valueAsNumber;
-            field.handleChange(Number.isNaN(value) ? 0 : value);
+            let next = value;
+            if (Number.isNaN(value)) next = 0;
+            field.handleChange(next);
           }}
           aria-invalid={isInvalid}
           aria-required={required || undefined}

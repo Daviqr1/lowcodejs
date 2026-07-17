@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const BulkDeleteSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'Bulk delete rows permanently',
+  tags: ['Registros'],
+  summary: 'Excluir registros permanentemente em lote',
   description:
-    'Permanently deletes multiple rows that are already in the trash. Only rows with trashed=true will be affected.',
+    'Exclui permanentemente múltiplos registros de uma tabela. Operação irreversível (hard delete).',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,7 +12,7 @@ export const BulkDeleteSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the rows',
+        description: 'Slug da tabela que contém os registros',
       },
     },
     additionalProperties: false,
@@ -25,24 +25,65 @@ export const BulkDeleteSchema: FastifySchema = {
         type: 'array',
         items: { type: 'string' },
         minItems: 1,
-        description: 'Array of row IDs to permanently delete',
+        description: 'IDs dos registros a excluir permanentemente',
       },
     },
     additionalProperties: false,
   },
   response: {
     200: {
-      description: 'Rows permanently deleted',
+      description: 'Registros excluídos permanentemente',
       type: 'object',
       properties: {
         deleted: {
           type: 'number',
-          description: 'Number of rows permanently deleted',
+          description: 'Quantidade de registros excluídos permanentemente',
+        },
+      },
+    },
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [401] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    403: {
+      description: 'Acesso negado - Permissões insuficientes',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
         },
       },
     },
     404: {
-      description: 'Table not found',
+      description: 'Tabela não encontrada',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -55,7 +96,7 @@ export const BulkDeleteSchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
         message: { type: 'string' },

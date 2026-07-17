@@ -16,7 +16,6 @@ import {
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: BulkRestoreUseCase = getInstanceByToken(
       BulkRestoreUseCase,
     ),
@@ -40,7 +39,12 @@ export default class {
     const params = BulkRestoreParamsValidator.parse(request.params);
     const body = BulkRestoreBodyValidator.parse(request.body);
 
-    const result = await this.useCase.execute({ ...params, ...body });
+    const result = await this.useCase.execute({
+      ...params,
+      ...body,
+      ...(request?.user?.sub && { __actorUserId: request.user.sub }),
+      ...(request.ownership?.ownOnly && { __ownOnly: true }),
+    });
 
     if (result.isLeft()) {
       const error = result.value;

@@ -7,13 +7,17 @@ import {
   FieldEmail,
   FieldFileUpload,
   FieldGroupCombobox,
+  FieldGroupMultiSelect,
   FieldMenuCombobox,
   FieldMenuPositionSelect,
   FieldMenuTypeSelect,
   FieldNumber,
+  FieldOwnerSelect,
   FieldPassword,
+  FieldPermissionBinding,
   FieldPermissionMultiSelect,
   FieldSwitch,
+  FieldTableMembers,
   FieldTableMultiSelect,
   FieldText,
   FieldTextarea,
@@ -26,7 +30,6 @@ import { FieldCodeEditor, FieldEditor } from './fields/rich';
 
 // Configuracao de tabela
 import {
-  TableCollaborationSelectField,
   TableComboboxField,
   TableFieldCategoryDefaultValue,
   TableFieldCategoryTree,
@@ -34,16 +37,16 @@ import {
   TableFieldDropdownDefaultValue,
   TableFieldDropdownOptions,
   TableFieldFormatSelect,
-  TableFieldRelationshipDefaultValue,
   TableFieldRelationshipFieldSelect,
+  TableFieldRelationshipOnDeleteSelect,
   TableFieldRelationshipOrderSelect,
   TableFieldRelationshipTableSelect,
   TableFieldTypeSelect,
   TableFieldUserDefaultValue,
+  TableFieldValidationsField,
   TableLayoutFieldSelect,
   TableOrderSelectField,
   TableStyleSelectField,
-  TableVisibilitySelectField,
 } from './fields/table-config';
 
 // Campos de input de dados de registros
@@ -57,6 +60,7 @@ import {
   TableRowTextField,
   TableRowTextareaField,
   TableRowUserField,
+  TableRowUserGroupField,
 } from './fields/table-row';
 import { fieldContext, formContext } from './form-context';
 
@@ -76,17 +80,19 @@ export const { useAppForm, withForm } = createFormHook({
     FieldCodeEditor,
     FieldFileUpload,
     FieldGroupCombobox,
+    FieldGroupMultiSelect,
     FieldMenuCombobox,
     FieldMenuPositionSelect,
     FieldMenuTypeSelect,
     FieldNumber,
+    FieldOwnerSelect,
+    FieldPermissionBinding,
     FieldPermissionMultiSelect,
+    FieldTableMembers,
     FieldUserMultiSelect,
     FieldTableMultiSelect,
     // Table configuration
     TableComboboxField,
-    TableVisibilitySelectField,
-    TableCollaborationSelectField,
     TableLayoutFieldSelect,
     TableOrderSelectField,
     TableStyleSelectField,
@@ -98,11 +104,12 @@ export const { useAppForm, withForm } = createFormHook({
     TableFieldDateDefaultValue,
     TableFieldCategoryDefaultValue,
     TableFieldUserDefaultValue,
-    TableFieldRelationshipDefaultValue,
     TableFieldRelationshipTableSelect,
     TableFieldRelationshipFieldSelect,
     TableFieldRelationshipOrderSelect,
+    TableFieldRelationshipOnDeleteSelect,
     TableFieldCategoryTree,
+    TableFieldValidationsField,
     // Table row data input
     TableRowTextField,
     TableRowTextareaField,
@@ -113,6 +120,7 @@ export const { useAppForm, withForm } = createFormHook({
     TableRowRelationshipField,
     TableRowCategoryField,
     TableRowUserField,
+    TableRowUserGroupField,
   },
   formComponents: {},
 });

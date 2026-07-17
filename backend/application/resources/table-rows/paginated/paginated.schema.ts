@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableRowPaginatedSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'List rows paginated',
+  tags: ['Registros'],
+  summary: 'Listar registros paginados',
   description:
-    'Get a paginated list of rows in a table with optional search and dynamic filtering',
+    'Retorna uma lista paginada de registros de uma tabela com busca opcional e filtragem dinâmica',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,7 +12,7 @@ export const TableRowPaginatedSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Slug of the table to list rows from',
+        description: 'Slug da tabela cujos registros serão listados',
         examples: ['users', 'products', 'blog-posts'],
       },
     },
@@ -25,50 +25,57 @@ export const TableRowPaginatedSchema: FastifySchema = {
         type: 'number',
         minimum: 1,
         default: 1,
-        description: 'Page number (starts from 1)',
+        description: 'Número da página (inicia em 1)',
         examples: [1, 2, 5],
       },
       perPage: {
         type: 'number',
-        minimum: 1,
+        minimum: -1,
         maximum: 100,
         default: 50,
-        description: 'Number of items per page (max 100)',
-        examples: [10, 25, 50, 100],
+        description:
+          'Quantidade de itens por página (máx. 100). Use -1 para buscar todos os registros (sem paginação).',
+        examples: [10, 25, 50, 100, -1],
       },
       search: {
         type: 'string',
         minLength: 1,
-        description: 'Search term for filtering rows (optional)',
+        description: 'Termo de busca para filtrar registros (opcional)',
         examples: ['john', 'product', 'category'],
       },
       trashed: {
         type: 'string',
         enum: ['true', 'false'],
         default: 'false',
-        description: 'Include trashed rows (optional)',
+        description: 'Incluir registros na lixeira (opcional)',
         examples: ['true', 'false'],
       },
       public: {
         type: 'string',
         enum: ['true', 'false'],
         default: 'false',
-        description: 'Filter by public visibility only (optional)',
+        description: 'Filtrar apenas por visibilidade pública (opcional)',
         examples: ['true', 'false'],
+      },
+      excludeSelfId: {
+        type: 'string',
+        description:
+          'Auto-relacionamento: oculta o próprio registro editado da lista de candidatos (opcional). Sem efeito quando a tabela-alvo é outra.',
       },
     },
     additionalProperties: true,
   },
   response: {
     200: {
-      description: 'Paginated list of rows in the table',
+      description: 'Lista paginada de registros da tabela',
       type: 'object',
       properties: {
         data: {
           type: 'array',
           items: {
             type: 'object',
-            description: 'Row data structure varies based on table fields',
+            description:
+              'A estrutura dos dados do registro varia conforme os campos da tabela',
             additionalProperties: true,
           },
         },
@@ -77,47 +84,71 @@ export const TableRowPaginatedSchema: FastifySchema = {
           properties: {
             total: {
               type: 'number',
-              description: 'Total number of rows',
+              description: 'Total de registros',
             },
             perPage: {
               type: 'number',
-              description: 'Number of items per page',
+              description: 'Quantidade de itens por página',
             },
-            page: { type: 'number', description: 'Current page number' },
-            lastPage: { type: 'number', description: 'Last page number' },
+            page: { type: 'number', description: 'Número da página atual' },
+            lastPage: {
+              type: 'number',
+              description: 'Número da última página',
+            },
             firstPage: {
               type: 'number',
-              description: 'First page number',
+              description: 'Número da primeira página',
             },
           },
         },
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Unauthorized',
-          code: 401,
-          cause: 'AUTHENTICATION_REQUIRED',
-        },
-      ],
     },
-    404: {
-      description: 'Table not found',
+    403: {
+      description: 'Acesso negado - Permissão insuficiente ou tabela restrita',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Table not found'] },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    404: {
+      description: 'Tabela não encontrada',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
         errors: {
@@ -127,17 +158,18 @@ export const TableRowPaginatedSchema: FastifySchema = {
       },
       examples: [
         {
-          message: 'Table not found',
+          message: 'Tabela não encontrada',
           code: 404,
           cause: 'TABLE_NOT_FOUND',
         },
       ],
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description:
+        'Erro interno do servidor - Problemas no banco ou no servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: {
           type: 'string',

@@ -7,7 +7,7 @@ Servico de hashing e comparacao de senhas.
 | Arquivo | Descricao |
 |---------|-----------|
 | `password-contract.service.ts` | Classe abstrata com decorator `@Service()` |
-| `bcrypt-password.service.ts` | Implementacao com bcrypt |
+| `password.service.ts` | Implementacao com bcrypt |
 | `in-memory-password.service.ts` | Mock para testes |
 
 ## Metodos

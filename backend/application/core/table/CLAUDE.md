@@ -26,9 +26,11 @@ Sistema de sandbox para execucao segura de scripts de usuario (beforeSave, after
 
 | API | Metodos | Descricao |
 |-----|---------|-----------|
-| `field` | `get(slug)`, `set(slug, value)`, `getAll()` | Leitura/escrita de campos do registro |
-| `context` | `action`, `moment`, `userId`, `isNew`, `table` | Contexto de execucao (read-only, Object.freeze) |
+| `field` | `get(slug)`, `set(slug, value)`, `getAll()`, `getLabel(slug, value?)` | Leitura/escrita de campos do registro (getLabel resolve label de DROPDOWN) |
+| `context` | `action`, `moment`, `userId`, `isNew`, `appUrl`, `table`, `reentrant`, `previous` | Contexto de execucao (read-only, Object.freeze) |
 | `email` | `send(to[], subject, body)`, `sendTemplate(to[], subject, message, data?)` | Envio de email via Nodemailer |
+| `users` | `resolve(ids)`, `emails(ids)` | Resolve ids de campos USER/CREATOR (string, ObjectId, objeto populado ou arrays/nested) em `{ _id, name, email }`. Roda no host com acesso ao model User (conexao system) |
+| `notify` | `send({ userIds, title, body?, action?, source?, type?, actorUserId? })` | Cria notificacoes in-app (uma por usuario) + emite via socket `/notifications`. `actorUserId` (default `context.userId`) e excluido dos destinatarios |
 | `utils` | `today()`, `now()`, `formatDate(date, format?)`, `sha256(text)`, `uuid()` | Utilitarios de data, crypto, UUID |
 | `console` | `log()`, `warn()`, `error()` | Logs interceptados e retornados no resultado |
 
@@ -38,6 +40,26 @@ Sistema de sandbox para execucao segura de scripts de usuario (beforeSave, after
 |-------|---------|
 | `action` | `novo_registro`, `editar_registro`, `excluir_registro`, `carregamento_formulario` |
 | `moment` | `carregamento_formulario`, `antes_salvar`, `depois_salvar` |
+| `reentrant` | `true` quando o script roda pelo hook `pre/post('save')` do Mongoose (model-builder), `false` quando roda pelo use-case do controller. **No create o beforeSave roda 2x** (use-case + hook); scripts com efeitos colaterais (email/notificacao) devem usar este flag para nao duplicar |
+| `previous` | Registro ANTES do save (apenas em update via use-case) ou `null` (create). Permite comparar valor anterior x novo |
+
+## Efeitos colaterais em beforeSave (email/notificacao)
+
+`afterSave` roda como `post('save')` e **nao dispara em update** (update usa
+`findOneAndUpdate`). Para enviar email/notificacao em create E update, use
+`beforeSave` + as APIs `users`/`notify`, respeitando:
+
+- **Dedup do create**: `if (context.isNew && !context.reentrant) return;` faz o
+  efeito rodar so no passe de hook (onde o `_id` ja existe, para o link).
+- **Evitar spam**: `if (!context.isNew && context.reentrant) return;` ignora
+  saves vindos de hook em update (reacoes, itens de grupo), agindo so no passe
+  do controller.
+- **Nao bloquear o save**: dispare `email.sendTemplate(...)` e `notify.send(...)`
+  **sem `await`** (fire-and-forget) — o SMTP lento nao deve estourar o timeout
+  de 5s do beforeSave e travar a gravacao. Ambas as APIs capturam erros
+  internamente (nunca lancam).
+
+Exemplo completo de referencia: `_docs/chamados/beforeSave.js`.
 
 ## Retorno (ExecutionResult)
 

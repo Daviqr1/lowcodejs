@@ -3,7 +3,7 @@
 Remove permanentemente um menu que ja esta na lixeira.
 
 ## Endpoint
-`DELETE /menu/:_id` | Auth: Yes | Permission: nenhuma especifica
+`DELETE /menu/:_id` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

@@ -1,197 +1,115 @@
-/* eslint-disable import/order */
 import { injectablesHolder } from 'fastify-decorators';
+import { existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
-import { EvaluationContractRepository } from '@application/repositories/evaluation/evaluation-contract.repository';
-import EvaluationMongooseRepository from '@application/repositories/evaluation/evaluation-mongoose.repository';
-import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
-import ExtensionMongooseRepository from '@application/repositories/extension/extension-mongoose.repository';
-import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import FieldMongooseRepository from '@application/repositories/field/field-mongoose.repository';
-import { LoggerContractRepository } from '@application/repositories/logger/logger-contract.repository';
-import LoggerMongooseRepository from '@application/repositories/logger/logger-mongoose.repository';
-import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
-import MenuMongooseRepository from '@application/repositories/menu/menu-mongoose.repository';
-import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
-import NotificationMongooseRepository from '@application/repositories/notification/notification-mongoose.repository';
-import { PermissionContractRepository } from '@application/repositories/permission/permission-contract.repository';
-import PermissionMongooseRepository from '@application/repositories/permission/permission-mongoose.repository';
-import { ReactionContractRepository } from '@application/repositories/reaction/reaction-contract.repository';
-import ReactionMongooseRepository from '@application/repositories/reaction/reaction-mongoose.repository';
-import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import RowMongooseRepository from '@application/repositories/row/row-mongoose.repository';
-import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
-import SettingMongooseRepository from '@application/repositories/setting/setting-mongoose.repository';
-import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
-import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
-import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
-import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
-import UserGroupMongooseRepository from '@application/repositories/user-group/user-group-mongoose.repository';
-import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
-import UserMongooseRepository from '@application/repositories/user/user-mongoose.repository';
-import { ValidationTokenContractRepository } from '@application/repositories/validation-token/validation-token-contract.repository';
-import ValidationTokenMongooseRepository from '@application/repositories/validation-token/validation-token-mongoose.repository';
-import BullMQEmailQueueService from '@application/services/email-queue/bullmq-email-queue.service';
-import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
-import { EmailContractService } from '@application/services/email/email-contract.service';
-import NodemailerEmailService from '@application/services/email/nodemailer-email.service';
-import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
-import KanbanCommentMentionService from '@application/services/kanban-comment-mention/kanban-comment-mention.service';
-import { NotificationContractService } from '@application/services/notification/notification-contract.service';
-import NotificationService from '@application/services/notification/notification.service';
-import BcryptPasswordService from '@application/services/password/bcrypt-password.service';
-import { PasswordContractService } from '@application/services/password/password-contract.service';
-import { PermissionContractService } from '@application/services/permission/permission-contract.service';
-import PermissionService from '@application/services/permission/permission.service';
-import { RowContextContractService } from '@application/services/row-context/row-context-contract.service';
-import RowContextService from '@application/services/row-context/row-context.service';
-import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
-import RowMemberNotificationService from '@application/services/row-member-notification/row-member-notification.service';
-import BcryptRowPasswordService from '@application/services/row-password/bcrypt-row-password.service';
-import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
-import NodeVmScriptExecutionService from '@application/services/script-execution/node-vm-script-execution.service';
-import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
-import BullMQStorageMigrationQueueService from '@application/services/storage-migration/bullmq-storage-migration-queue.service';
-import { StorageMigrationQueueContractService } from '@application/services/storage-migration/storage-migration-queue-contract.service';
-import BullMQCsvImportQueueService from '@application/services/csv-import/bullmq-csv-import-queue.service';
-import { CsvImportQueueContractService } from '@application/services/csv-import/csv-import-queue-contract.service';
-import { StorageContractService } from '@application/services/storage/storage-contract.service';
-import StorageService from '@application/services/storage/storage.service';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
-import TableSchemaMongooseService from '@application/services/table-schema/table-schema-mongoose.service';
+import { Env } from '@start/env';
 
 /**
- * Registro explícito de dependências.
- * Quando trocar de ORM, altere apenas os imports e registros aqui.
+ * Registro dinâmico de dependências (Contract -> Implementation).
+ *
+ * Espelha `controllers.ts`: varre o filesystem em vez de manter uma lista
+ * manual. Convenção única — para cada `<base>-contract.<kind>.ts` o scanner
+ * pareia com `<base>.<kind>.ts`:
+ *
+ *   - Contract  = export nomeado cujo nome casa /Contract(Repository|Service)$/
+ *   - Impl      = `export default` do arquivo irmão `<base>.<kind>.ts`
+ *
+ * Arquivos `in-memory-*`, `*.worker`, drivers (`local-*`/`s3-*`) e `*.schema.ts`
+ * nunca colidem: o impl é *derivado* do base do contract, não adivinhado por
+ * exclusão. Criar repo/service novo = só seguir a nomenclatura; nada a editar
+ * aqui. Para trocar a implementação, troque o arquivo `<base>.<kind>.ts`.
  */
-export function registerDependencies(): void {
-  injectablesHolder.injectService(
-    EvaluationContractRepository,
-    EvaluationMongooseRepository,
-  );
 
-  injectablesHolder.injectService(
-    ExtensionContractRepository,
-    ExtensionMongooseRepository,
-  );
+const isDevOrTest = ['development'].includes(Env.NODE_ENV);
 
-  injectablesHolder.injectService(
-    FieldContractRepository,
-    FieldMongooseRepository,
-  );
+const CONTRACT_PATTERN = {
+  repository: /-contract\.repository\.(ts|js)$/,
+  service: /-contract\.service\.(ts|js)$/,
+} as const;
 
-  injectablesHolder.injectService(
-    MenuContractRepository,
-    MenuMongooseRepository,
-  );
+type Kind = keyof typeof CONTRACT_PATTERN;
 
-  injectablesHolder.injectService(
-    NotificationContractRepository,
-    NotificationMongooseRepository,
-  );
+const CONTRACT_NAME_PATTERN = /Contract(Repository|Service)$/;
 
-  injectablesHolder.injectService(
-    PermissionContractRepository,
-    PermissionMongooseRepository,
-  );
+async function importModule(path: string): Promise<Record<string, unknown>> {
+  return import(path);
+}
 
-  injectablesHolder.injectService(RowContractRepository, RowMongooseRepository);
+async function registerFromRoot(root: string, kind: Kind): Promise<number> {
+  if (!existsSync(root)) return 0;
 
-  injectablesHolder.injectService(
-    ReactionContractRepository,
-    ReactionMongooseRepository,
-  );
+  const contractPattern = CONTRACT_PATTERN[kind];
+  const files = await readdir(root, { recursive: true });
+  const contractFiles = files
+    .filter((file) => contractPattern.test(String(file)))
+    .sort((a, b) => String(a).localeCompare(String(b)));
 
-  injectablesHolder.injectService(
-    SettingContractRepository,
-    SettingMongooseRepository,
-  );
+  let registered = 0;
 
-  injectablesHolder.injectService(
-    StorageContractRepository,
-    StorageMongooseRepository,
-  );
+  for (const file of contractFiles) {
+    const relative = String(file);
+    const implPath = join(
+      root,
+      relative.replace(contractPattern, `.${kind}.$1`),
+    );
 
-  injectablesHolder.injectService(
-    TableContractRepository,
-    TableMongooseRepository,
-  );
+    if (!existsSync(implPath)) {
+      console.warn(`⚠️  DI [${kind}] impl ausente para ${relative}, ignorado`);
+      continue;
+    }
 
-  injectablesHolder.injectService(
-    UserContractRepository,
-    UserMongooseRepository,
-  );
+    const contractModule = await importModule(join(root, relative));
+    const Contract = Object.values(contractModule).find(
+      (value): value is { name: string } =>
+        typeof value === 'function' && CONTRACT_NAME_PATTERN.test(value.name),
+    );
 
-  injectablesHolder.injectService(
-    UserGroupContractRepository,
-    UserGroupMongooseRepository,
-  );
+    const Implementation = (await importModule(implPath)).default;
 
-  injectablesHolder.injectService(
-    ValidationTokenContractRepository,
-    ValidationTokenMongooseRepository,
-  );
+    if (!Contract || typeof Implementation !== 'function') {
+      console.warn(
+        `⚠️  DI [${kind}] par incompleto em ${relative} (contract ou default export ausente), ignorado`,
+      );
+      continue;
+    }
 
-  injectablesHolder.injectService(EmailContractService, NodemailerEmailService);
+    injectablesHolder.injectService(Contract, Implementation);
+    registered += 1;
 
-  injectablesHolder.injectService(
-    EmailQueueContractService,
-    BullMQEmailQueueService,
-  );
+    if (isDevOrTest) {
+      console.info(`✅ DI [${kind}] ${Contract.name} → ${Implementation.name}`);
+    }
+  }
 
-  injectablesHolder.injectService(StorageContractService, StorageService);
+  return registered;
+}
 
-  injectablesHolder.injectService(
-    PasswordContractService,
-    BcryptPasswordService,
-  );
+export async function registerDependencies(): Promise<void> {
+  const roots: Array<{ root: string; kinds: Kind[] }> = [
+    {
+      root: join(process.cwd(), 'application/repositories'),
+      kinds: ['repository'],
+    },
+    {
+      root: join(process.cwd(), 'application/services'),
+      kinds: ['service'],
+    },
+    {
+      root: join(process.cwd(), 'extensions'),
+      kinds: ['repository', 'service'],
+    },
+  ];
 
-  injectablesHolder.injectService(PermissionContractService, PermissionService);
+  let total = 0;
 
-  injectablesHolder.injectService(
-    TableSchemaContractService,
-    TableSchemaMongooseService,
-  );
+  for (const { root, kinds } of roots) {
+    for (const kind of kinds) {
+      total += await registerFromRoot(root, kind);
+    }
+  }
 
-  injectablesHolder.injectService(
-    RowPasswordContractService,
-    BcryptRowPasswordService,
-  );
-
-  injectablesHolder.injectService(
-    ScriptExecutionContractService,
-    NodeVmScriptExecutionService,
-  );
-
-  injectablesHolder.injectService(RowContextContractService, RowContextService);
-
-  injectablesHolder.injectService(
-    StorageMigrationQueueContractService,
-    BullMQStorageMigrationQueueService,
-  );
-
-  injectablesHolder.injectService(
-    LoggerContractRepository,
-    LoggerMongooseRepository,
-  );
-
-  injectablesHolder.injectService(
-    NotificationContractService,
-    NotificationService,
-  );
-
-  injectablesHolder.injectService(
-    KanbanCommentMentionContractService,
-    KanbanCommentMentionService,
-  );
-
-  injectablesHolder.injectService(
-    RowMemberNotificationContractService,
-    RowMemberNotificationService,
-  );
-
-  injectablesHolder.injectService(
-    CsvImportQueueContractService,
-    BullMQCsvImportQueueService,
-  );
+  if (isDevOrTest) {
+    console.info(`✅ ${total} dependências registradas no DI`);
+  }
 }

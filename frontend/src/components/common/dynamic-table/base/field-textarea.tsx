@@ -2,13 +2,13 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldTextareaProps {
+type FieldTextareaProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   rows?: number;
   required?: boolean;
-}
+};
 
 export function FieldTextarea({
   label,

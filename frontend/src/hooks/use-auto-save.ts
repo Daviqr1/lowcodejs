@@ -4,7 +4,7 @@ export type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'draft' | 'error';
 
 type UseAutoSaveOptions = {
   onSave: () => Promise<void>;
-  isTrashed: boolean;
+  isDraft: boolean;
   canSave?: () => boolean;
   debounceMs?: number;
   intervalMs?: number;
@@ -26,7 +26,7 @@ const DEFAULT_INTERVAL_MS = 30_000;
 
 export function useAutoSave({
   onSave,
-  isTrashed,
+  isDraft,
   canSave,
   isDirty,
   debounceMs = DEFAULT_DEBOUNCE_MS,
@@ -40,14 +40,14 @@ export function useAutoSave({
   const onSaveRef = React.useRef(onSave);
   const canSaveRef = React.useRef(canSave);
   const isDirtyRef = React.useRef(isDirty);
-  const isTrashedRef = React.useRef(isTrashed);
+  const isDraftRef = React.useRef(isDraft);
 
   React.useEffect((): void => {
     onSaveRef.current = onSave;
     canSaveRef.current = canSave;
     isDirtyRef.current = isDirty;
-    isTrashedRef.current = isTrashed;
-  }, [onSave, canSave, isDirty, isTrashed]);
+    isDraftRef.current = isDraft;
+  }, [onSave, canSave, isDirty, isDraft]);
 
   const performSave = React.useCallback(async (): Promise<void> => {
     if (isSavingRef.current) return;
@@ -60,7 +60,7 @@ export function useAutoSave({
       await onSaveRef.current();
       const now = new Date();
       setLastSavedAt(now);
-      if (isTrashedRef.current) {
+      if (isDraftRef.current) {
         setStatus('draft');
       } else {
         setStatus('saved');
@@ -110,13 +110,13 @@ export function useAutoSave({
   }, []);
 
   React.useEffect((): void => {
-    if (status === 'saved' && isTrashed) {
+    if (status === 'saved' && isDraft) {
       setStatus('draft');
     }
-    if (status === 'draft' && !isTrashed) {
+    if (status === 'draft' && !isDraft) {
       setStatus('saved');
     }
-  }, [isTrashed, status]);
+  }, [isDraft, status]);
 
   return { status, lastSavedAt, triggerSave, cancelPending };
 }

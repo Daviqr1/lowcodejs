@@ -2,11 +2,32 @@ import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 import { getApiBaseUrl } from '@/lib/get-api-config';
+import type { Merge } from '@/lib/interfaces';
 import { getServerCookies } from '@/lib/server/get-cookies';
 import { useAuthStore } from '@/stores/authentication';
 
 let resolvedBaseUrl: string | null = null;
 let baseUrlPromise: Promise<string> | null = null;
+
+const ACTIVE_ACCOUNT_COOKIE = 'activeAccountId';
+
+// Conta ativa lida do cookie `activeAccountId` (httpOnly:false, legível por JS).
+// Usado só para, ao perder a sessão, decidir entre remover a conta ativa do
+// store ou limpar tudo. A resolução do token no backend é pelo cookie
+// `accessToken` fixo — não há mais header X-Auth-Account-Id.
+function readActiveAccountCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+
+  for (const part of document.cookie.split(';')) {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (rawKey === ACTIVE_ACCOUNT_COOKIE) {
+      const value = rest.join('=').trim();
+      if (value) return decodeURIComponent(value);
+    }
+  }
+
+  return null;
+}
 
 export const API = axios.create({
   withCredentials: true,
@@ -28,7 +49,9 @@ API.interceptors.request.use(async (config) => {
   }
   config.baseURL = resolvedBaseUrl;
 
-  if (typeof window === 'undefined') {
+  // Em SSR injeta os cookies do request — exceto quando a chamada já trouxe um
+  // Cookie explícito (ex.: retry pós-refresh no beforeLoad com os cookies novos).
+  if (typeof window === 'undefined' && !config.headers.has('Cookie')) {
     try {
       const cookies = await getServerCookies();
       if (cookies) config.headers.set('Cookie', cookies);
@@ -51,6 +74,8 @@ const AUTH_ENDPOINTS = [
   '/authentication/sign-up',
   '/authentication/sign-out',
   '/authentication/refresh-token',
+  '/authentication/accounts',
+  '/authentication/switch-account',
 ];
 
 const isAuthEndpoint = (url: string | undefined): boolean => {
@@ -58,18 +83,26 @@ const isAuthEndpoint = (url: string | undefined): boolean => {
   return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 };
 
-type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+type RetriableConfig = Merge<
+  InternalAxiosRequestConfig,
+  { _retried?: boolean }
+>;
 
 let refreshPromise: Promise<void> | null = null;
 
 const performRefresh = (): Promise<void> => {
-  if (!refreshPromise) {
-    refreshPromise = API.post('/authentication/refresh-token')
-      .then(() => undefined)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
+  if (refreshPromise) return refreshPromise;
+
+  const run = async (): Promise<void> => {
+    try {
+      await API.post('/authentication/refresh-token');
+    } finally {
+      refreshPromise = null;
+    }
+  };
+
+  refreshPromise = run();
+
   return refreshPromise;
 };
 
@@ -77,7 +110,13 @@ const handleSessionLost = (): void => {
   if (typeof window === 'undefined') return;
   const currentPath = window.location.pathname;
   if (isPublicPath(currentPath)) return;
-  useAuthStore.getState().clear();
+  const activeAccountId =
+    readActiveAccountCookie() ?? useAuthStore.getState().activeAccountId;
+  if (activeAccountId) {
+    useAuthStore.getState().removeAccount(activeAccountId);
+  } else {
+    useAuthStore.getState().clear();
+  }
   window.location.href = '/';
 };
 
@@ -85,7 +124,7 @@ API.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const config = error.config as RetriableConfig | undefined;
+    const config: RetriableConfig | undefined = error.config;
 
     if (status !== 401 || !config) {
       return Promise.reject(error);

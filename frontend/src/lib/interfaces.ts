@@ -18,23 +18,30 @@ import type {
   E_EXTENSION_TYPE,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
+  E_FIELD_VALIDATION,
   E_JWT_TYPE,
   E_LOGGER_ACTION_TYPE,
   E_LOGGER_OBJECT_TYPE,
   E_MENU_ITEM_TYPE,
   E_NOTIFICATION_TYPE,
+  E_PERMISSION_TARGET,
   E_REACTION_TYPE,
   E_ROLE,
-  E_TABLE_COLLABORATION,
+  E_ROW_STATUS,
+  E_TABLE_PERMISSION,
+  E_TABLE_PROFILE,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   E_TOKEN_STATUS,
   E_USER_STATUS,
 } from './constant';
 
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+export type Optional<T, K extends keyof T> = Merge<
+  Pick<Partial<T>, K>,
+  Omit<T, K>
+>;
 export type Merge<T, U> = {
+  // eslint-disable-next-line lowcodejs/no-type-intersection -- é a definição do próprio Merge; não há como usá-lo para defini-lo
   [K in keyof (T & U)]: (T & U)[K];
 };
 
@@ -93,6 +100,8 @@ export type IGroup = Merge<
     slug: string;
     description: string | null;
     permissions: Array<IPermission>;
+    // IDs dos grupos englobados (quem pertence a este grupo herda o acesso deles).
+    encompasses: Array<string>;
   }
 >;
 
@@ -103,10 +112,21 @@ export type IUser = Merge<
     email: string;
     password: string;
     status: ValueOf<typeof E_USER_STATUS>;
+    // Grupo principal (define o papel no sistema).
     group: IGroup;
+    // Grupos adicionais do usuario (multi-grupo).
+    groups: Array<IGroup>;
+    // Capacidades de area resolvidas pelo backend (fecho de grupos): slugs de
+    // permissao (MANAGE_*) usados para liberar a navegacao por capability.
+    capabilities?: Array<string>;
     notificationsEnabled: boolean;
   }
 >;
+
+export type IAuthenticationAccounts = {
+  activeAccountId: string | null;
+  accounts: Array<IUser>;
+};
 
 export type INotificationAction = {
   type: 'route' | 'url';
@@ -172,6 +192,8 @@ export type IMenu = Merge<
     order: number;
     isInitial: boolean;
     extension: IMenuExtensionRef | null;
+    // Visibilidade da opção (Grupo|Public|Nobody). null em menus legados.
+    visibility?: IPermissionBinding | null;
     children?: Array<IMenu>;
   }
 >;
@@ -186,6 +208,10 @@ export type IDropdown = {
   id: string;
   label: string;
   color: string | null;
+  /** Slug do campo usado para ordenar os cards desta lista no Kanban. */
+  sortField?: string | null;
+  /** Direção da ordenação dos cards desta lista no Kanban. */
+  sortDirection?: 'asc' | 'desc' | null;
 };
 
 export type IRelationshipLabelPart = {
@@ -211,12 +237,56 @@ export type IFieldConfigurationRelationship = {
   labelParts?: Array<IRelationshipLabelPart>;
   /** Separador usado entre os `labelParts`. Default: " - ". */
   labelSeparator?: string;
+  visible?: boolean;
+  onDelete?: 'CASCADE' | 'SET_NULL' | 'RESTRICT';
+  mirror?: { multiple: boolean; visible: boolean; label?: string };
+  /** Back-pointer para a RelationshipDefinition (fonte de verdade do vínculo). */
+  relationshipId?: string | null;
+  /**
+   * Lado da definition que este campo representa. A tela de detalhe usa para
+   * chamar os endpoints `/links` com o `side` correto.
+   */
+  side?: 'source' | 'target' | null;
+  /**
+   * Como o relacionamento aparece no formulário: `select` (multi-select de
+   * vínculo direto) ou `manage` (tabelas internas / cards + Sheet). Ausência =
+   * `select`.
+   */
+  formMode?: 'select' | 'manage';
+  /** Limite numérico de vínculos neste lado. null = ilimitado. */
+  max?: number | null;
+};
+
+/** Vínculo entre dois registros (pivô) gerido pelos endpoints `/links`. */
+export type IRelationshipLink = {
+  _id: string;
+  relationshipId: string;
+  sourceId: string;
+  targetId: string;
+  order: number;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type IFieldConfigurationGroup = {
   _id?: string;
   slug: string;
   fields?: Array<IField>;
+};
+
+// Uma regra de validação configurada num campo. `config` carrega os parâmetros
+// (IS_IN_RANGE → { min, max }; IS_NOT → { values }); regras sem parâmetro = {}.
+export type IFieldValidation = {
+  rule: ValueOf<typeof E_FIELD_VALIDATION>;
+  config: Record<string, unknown>;
+};
+
+export type IFieldLabel = {
+  list: string | null;
+  filter: string | null;
+  form: string | null;
+  detail: string | null;
 };
 
 export type IField = Merge<
@@ -228,34 +298,55 @@ export type IField = Merge<
     required: boolean;
     multiple: boolean;
     format: ValueOf<typeof E_FIELD_FORMAT> | null;
+    // Regras de validação de valor do campo (camada única de validação).
+    // Opcional no tipo; em runtime sempre presente ([] por default).
+    validations?: Array<IFieldValidation>;
+    // Exibe o campo na barra de filtros (config de UX, não é permissão).
     showInFilter: boolean;
-    showInForm: boolean;
-    showInDetail: boolean;
-    showInList: boolean;
+    // Campos-filho de FIELD_GROUP: elegibilidade + visibilidade na listagem
+    // geral da tabela pai. `showInParentList` (config no form) injeta o campo em
+    // "Gerenciar campos" da lista principal; `visibleInParentList` (toggle em
+    // Gerenciar) controla se a coluna é renderizada. Não é permissão.
+    showInParentList?: boolean;
+    visibleInParentList?: boolean;
+    // Visibilidade do campo por contexto (Grupo|Public|Nobody). null apenas em
+    // documentos ainda não backfillados.
+    permissions?: {
+      list: IPermissionBinding;
+      form: IPermissionBinding;
+      detail: IPermissionBinding;
+    } | null;
     widthInForm: number | null;
     widthInList: number | null;
     widthInDetail: number | null;
     tip?: string | null;
+    htmlContent?: string;
     defaultValue: string | Array<string> | null;
     locked?: boolean;
     native?: boolean;
+    // Rotulo customizado por contexto de exibicao. `name` continua original
+    // (controla o slug). Cada chave sobrescreve o name apenas naquele contexto.
+    // null no objeto inteiro = sem rotulo customizado em nenhum contexto.
+    label?: IFieldLabel | null;
     relationship: IFieldConfigurationRelationship | null;
     dropdown: Array<IDropdown>;
     allowCustomDropdownOptions?: boolean;
     allowCreateRelationshipRecords?: boolean;
+    // Campo USER: grava o usuario logado quando nenhum id vem no payload.
+    fillWithCurrentUserWhenEmpty?: boolean;
     category: Array<ICategory>;
     group: IFieldConfigurationGroup | null;
   }
 >;
 
-export type IFilterField = Pick<
-  IField,
-  'slug' | 'name' | 'type' | 'multiple'
-> & {
-  dropdown?: Array<IDropdown>;
-  category?: Array<ICategory>;
-  relationship?: IFieldConfigurationRelationship | null;
-};
+export type IFilterField = Merge<
+  Pick<IField, 'slug' | 'name' | 'label' | 'type' | 'multiple'>,
+  {
+    dropdown?: Array<IDropdown>;
+    category?: Array<ICategory>;
+    relationship?: IFieldConfigurationRelationship | null;
+  }
+>;
 
 export type ISchema = {
   type: 'Number' | 'String' | 'Date' | 'Boolean' | 'ObjectId';
@@ -292,6 +383,23 @@ export type ILayoutFields = {
   reminder: string | null;
 };
 
+// Vínculo de uma ação a quem pode realizá-la. `group` só é usado quando
+// kind === 'GROUP'.
+export type IPermissionBinding = {
+  kind: ValueOf<typeof E_PERMISSION_TARGET>;
+  group: string | null;
+};
+
+// Mapa ação -> binding. Parcial: tabelas legadas podem não ter o mapa.
+export type ITablePermissions = Partial<
+  Record<ValueOf<typeof E_TABLE_PERMISSION>, IPermissionBinding>
+>;
+
+export type ITableMember = {
+  user: string;
+  profile: ValueOf<typeof E_TABLE_PROFILE>;
+};
+
 export type ITable = Merge<
   Base,
   {
@@ -303,10 +411,12 @@ export type ITable = Merge<
     fields: Array<IField>;
     type: ValueOf<typeof E_TABLE_TYPE>;
     style: ValueOf<typeof E_TABLE_STYLE>;
-    visibility: ValueOf<typeof E_TABLE_VISIBILITY>;
-    collaboration: ValueOf<typeof E_TABLE_COLLABORATION>;
-    administrators: Array<IUser>;
     owner: IUser;
+    // Cada ação aponta para um binding (Grupo|Public|Nobody). null apenas em
+    // documentos ainda não backfillados.
+    permissions: ITablePermissions | null;
+    // Convidados da tabela e seus perfis.
+    members: Array<ITableMember>;
     fieldOrderList: Array<string>;
     fieldOrderForm: Array<string>;
     fieldOrderFilter: Array<string>;
@@ -315,6 +425,7 @@ export type ITable = Merge<
     groups: Array<IGroupConfiguration>;
     order: { field: string; direction: 'asc' | 'desc' } | null;
     layoutFields: ILayoutFields;
+    rowSlugFieldId: string | null;
   }
 >;
 
@@ -330,6 +441,9 @@ export type ISetting = {
   STORAGE_SECRET_KEY?: string;
   LOGO_SMALL_URL: string | null;
   LOGO_LARGE_URL: string | null;
+  LOGO_SMALL_DARK_URL: string | null;
+  LOGO_LARGE_DARK_URL: string | null;
+  LOGIN_BACKGROUND_URL: string | null;
   FILE_UPLOAD_MAX_SIZE: number;
   FILE_UPLOAD_MAX_FILES_PER_UPLOAD: number;
   FILE_UPLOAD_ACCEPTED: Array<string>;
@@ -346,7 +460,12 @@ export type ISetting = {
   CHAT_HISTORY_ENABLED: boolean;
   MCP_SERVER_URL: string | null;
   MCP_SERVER_TOKEN: string | null;
+  MCP_LOWCODE_API_URL: string | null;
   OPENAI_MODEL: string;
+  AI_LLM_PROVIDER: string;
+  LLM_API_KEY: string | null;
+  LLM_MODEL: string;
+  LLM_BASE_URL: string | null;
   SETUP_COMPLETED: boolean;
   SETUP_CURRENT_STEP: string | null;
 };
@@ -367,23 +486,94 @@ export type ISetupStatus = {
   steps: ReadonlyArray<SetupStep>;
 };
 
-// type RowResponseValue =
-//   | string
-//   | null
-//   | Array<string>
-//   | Array<IStorage>
-//   | Array<IRow>
-//   | Array<IUser>
-//   | IUser;
-// | Array<Record<string, RowResponseValue>>;
+// Ref lean de usuario populado na resposta (creator/updater e campo USER
+// chegam como { _id, name, email }). Paridade com o backend.
+export type IUserRef = Pick<IUser, '_id' | 'name' | 'email'>;
 
+// Valor de UM campo no PAYLOAD de envio (create/update). Chaves da row sao
+// dinamicas, mas o formato por tipo de campo e fechado: TEXT/DATE -> string|null;
+// DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP -> ids; FIELD_GROUP -> sub-payloads.
+export type RowPayloadValue = string | null | Array<string> | Array<RowPayload>;
+
+// Valor de UM campo na RESPOSTA. FILE volta populado (IStorage), USER como ref
+// User (IUser), RELATIONSHIP como row populada, FIELD_GROUP aninhado, e
+// REACTION/EVALUATION como objetos-resumo computados pelo backend.
+export type RowResultValue =
+  | string
+  | null
+  | Array<string>
+  | Array<IStorage>
+  | Array<IUser>
+  | Array<IGroup>
+  | Array<IRow>
+  | IReactionSummary
+  | IEvaluationSummary;
+
+// Payload de envio: chaves dinamicas, valores tipados (substitui
+// Record<string, unknown> nos payloads da API).
+export type RowPayload = Record<string, RowPayloadValue>;
+
+// Campos nativos da resposta de row. creator/updater sao ref User, sempre
+// populados na resposta da API.
+export type RowNative = {
+  _id: string;
+  status?: ValueOf<typeof E_ROW_STATUS>;
+  creator: IUser;
+  updater?: IUser | null;
+  createdAt: string;
+  updatedAt: string | null;
+  trashedAt: string | null;
+  // Flag otimista de UI (trash/restore); a fonte de verdade e `trashedAt`.
+  trashed?: boolean;
+  draftAt?: string | null;
+  sharedRowSlug?: string | null;
+};
+
+// Resposta de row: nativos tipados + indice dinamico tipado (substitui o antigo
+// `[x: string]: any`). Sem interop com Mongoose no front, o indice segue o
+// contrato de `RowResultValue`. O indice inclui os tipos dos nativos por
+// constraint do TS (props nomeadas precisam ser atribuiveis ao indice).
 export type IRow = Merge<
-  Base,
-  {
-    creator: IUser;
-    [x: string]: any;
-  }
+  RowNative,
+  { [slug: string]: RowResultValue | RowNative[keyof RowNative] }
 >;
+
+// Mapa tipo-de-campo -> valor na resposta (fonte unica, sem conditional type).
+export type RowFieldValueMap = {
+  [E_FIELD_TYPE.TEXT_SHORT]: string | null;
+  [E_FIELD_TYPE.TEXT_LONG]: string | null;
+  [E_FIELD_TYPE.HTML_CONTENT]: string | null;
+  [E_FIELD_TYPE.DATE]: string | null;
+  [E_FIELD_TYPE.DROPDOWN]: Array<string>;
+  [E_FIELD_TYPE.CATEGORY]: Array<string>;
+  [E_FIELD_TYPE.FILE]: Array<IStorage>;
+  [E_FIELD_TYPE.USER]: Array<IUser>;
+  [E_FIELD_TYPE.USER_GROUP]: Array<IGroup>;
+  [E_FIELD_TYPE.RELATIONSHIP]: Array<IRow>;
+  [E_FIELD_TYPE.FIELD_GROUP]: Array<IRow>;
+  [E_FIELD_TYPE.REACTION]: IReactionSummary;
+  [E_FIELD_TYPE.EVALUATION]: IEvaluationSummary;
+  [E_FIELD_TYPE.CREATOR]: IUser;
+  [E_FIELD_TYPE.UPDATER]: IUser | null;
+  [E_FIELD_TYPE.IDENTIFIER]: string;
+  [E_FIELD_TYPE.CREATED_AT]: string | null;
+  [E_FIELD_TYPE.UPDATED_AT]: string | null;
+  [E_FIELD_TYPE.TRASHED_AT]: string | null;
+  [E_FIELD_TYPE.STATUS]: ValueOf<typeof E_ROW_STATUS>;
+};
+
+// Valor de um campo por tipo (indexed access, base do generico Row<TFields>).
+export type FieldValueByType<T extends keyof RowFieldValueMap> =
+  RowFieldValueMap[T];
+
+// Row tipada por um conjunto de fields conhecido em compile-time. Opt-in: usar
+// so onde ha `fields as const` (ex.: helpers de template). Nao forcar onde os
+// fields vem da API em runtime.
+export type Row<TFields extends ReadonlyArray<Pick<IField, 'slug' | 'type'>>> =
+  Merge<
+    RowNative,
+    { [F in TFields[number] as F['slug']]: FieldValueByType<F['type']> }
+  >;
 
 export type IAttachment = {
   filename: string;
@@ -491,6 +681,8 @@ export type IExtension = Merge<
     manifestSnapshot: Record<string, unknown>;
     requires: IExtensionRequires;
     permissions: IExtensionPermissions;
+    supportsScopeAll: boolean;
+    tableSettings?: Record<string, Record<string, unknown>>;
   }
 >;
 
@@ -505,10 +697,16 @@ export type ILogger = Merge<
     object: ValueOf<typeof E_LOGGER_OBJECT_TYPE> | null;
     object_id: string | null;
     content: Record<string, unknown> | null;
+    // Dados do registro referenciado por object_id (nao do log). Null quando o
+    // objeto nao for uma ROW de tabela dinamica.
+    creator: ILoggerUserRef | null;
+    updater: ILoggerUserRef | null;
+    objectCreatedAt: string | null;
+    objectUpdatedAt: string | null;
   }
 >;
 
-export interface ICloneTableResponse {
+export type ICloneTableResponse = {
   tableId: string;
   slug: string;
   tables?: Array<{
@@ -518,4 +716,4 @@ export interface ICloneTableResponse {
   }>;
   fieldIdMap: Record<string, string>;
   fieldIdMaps?: Record<string, Record<string, string>>;
-}
+};

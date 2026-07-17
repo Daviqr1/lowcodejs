@@ -1,4 +1,5 @@
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import {
   CloneTableBodySchema,
@@ -14,8 +15,9 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useCloneTable } from '@/hooks/tanstack-query/use-clone-table';
 import { usePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
+import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
+import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/tables/clone/')({
   component: RouteComponent,
@@ -28,7 +30,9 @@ function RouteComponent(): React.JSX.Element {
 
   const _clone = useCloneTable({
     onSuccess(data) {
-      toastSuccess('Tabela clonada', 'A tabela foi clonada com sucesso');
+      toast.success('Tabela clonada', {
+        description: 'A tabela foi clonada com sucesso',
+      });
 
       form.reset();
       sidebar.setOpen(true);
@@ -43,6 +47,7 @@ function RouteComponent(): React.JSX.Element {
     onError(error) {
       handleApiError(error, {
         context: 'Erro ao clonar tabela',
+        onFieldErrors: (errors) => applyApiFieldErrors(form, errors),
       });
     },
   });
@@ -62,6 +67,8 @@ function RouteComponent(): React.JSX.Element {
       });
     },
   });
+
+  useApiErrorAutoClear(form);
 
   const isPending = _clone.status === 'pending';
 

@@ -1,13 +1,15 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField, IField as Entity } from '@application/core/entity.core';
+import {
+  buildFieldPermissions,
+  type IField as Entity,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type { GroupFieldRemoveFromTrashPayload } from './remove-from-trash.validator';
 
@@ -19,7 +21,7 @@ export default class GroupFieldRemoveFromTrashUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
-    private readonly tableSchemaService: TableSchemaContractService,
+    private readonly schemaBuilder: SchemaBuilderContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -54,9 +56,7 @@ export default class GroupFieldRemoveFromTrashUseCase {
 
       const updatedField = await this.fieldRepository.update({
         _id: field._id,
-        showInList: true,
-        showInForm: true,
-        showInDetail: true,
+        permissions: buildFieldPermissions(true, true, true),
         showInFilter: true,
         required: false,
         trashed: false,
@@ -67,11 +67,11 @@ export default class GroupFieldRemoveFromTrashUseCase {
       const updatedGroups = table.groups.map((g) => {
         if (g.slug !== targetGroup.slug) return g;
 
-        const updatedFields = g.fields.map((f) =>
-          f._id === field._id ? updatedField : f,
-        );
-        const groupSchema =
-          this.tableSchemaService.computeSchema(updatedFields);
+        const updatedFields = g.fields.map((f) => {
+          if (f._id === field._id) return updatedField;
+          return f;
+        });
+        const groupSchema = this.schemaBuilder.build(updatedFields);
 
         return {
           ...g,
@@ -81,7 +81,7 @@ export default class GroupFieldRemoveFromTrashUseCase {
       });
 
       // Reconstrói o schema da tabela pai com os grupos atualizados
-      const parentSchema = this.tableSchemaService.computeSchema(
+      const parentSchema = this.schemaBuilder.build(
         table.fields,
         updatedGroups,
       );
@@ -91,7 +91,6 @@ export default class GroupFieldRemoveFromTrashUseCase {
         _schema: parentSchema,
         groups: updatedGroups,
         owner: table.owner._id,
-        administrators: table.administrators.flatMap((a) => a._id),
       });
 
       return right(updatedField);

@@ -3,10 +3,10 @@
 Cria um novo grupo de usuarios com nome, descricao e permissoes.
 
 ## Endpoint
-`POST /user-group` | Auth: Yes | Permission: -
+`POST /user-group` | Auth: Yes | Permission: MANAGE_USER_GROUPS
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS)`
 2. Validator: `UserGroupCreateBodyValidator` - campos: name (string, required, trim, min 1), description (string, trim, nullable), permissions (array de strings, min 1)
 3. UseCase: `UserGroupCreateUseCase`
    - Gera slug a partir do name via `slugify(name, { trim: true, lower: true })`

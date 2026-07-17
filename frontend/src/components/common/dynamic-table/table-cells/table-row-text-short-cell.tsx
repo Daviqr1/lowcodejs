@@ -1,16 +1,18 @@
 import { E_FIELD_FORMAT } from '@/lib/constant';
 import type { IField, IRow } from '@/lib/interfaces';
 
-interface TableRowTextShortCellProps {
+type TableRowTextShortCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowTextShortCell({
   field,
   row,
 }: TableRowTextShortCellProps): React.JSX.Element {
-  const value = row[field.slug];
+  const raw = row[field.slug];
+  let value = '';
+  if (typeof raw === 'string') value = raw;
 
   if (!value) {
     return (

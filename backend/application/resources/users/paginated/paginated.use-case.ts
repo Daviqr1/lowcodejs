@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -41,7 +40,7 @@ export default class UserPaginatedUseCase {
         perPage: payload.perPage,
         page: payload.page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       return right({

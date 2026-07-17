@@ -135,10 +135,37 @@ export const SettingUpdateSchema: FastifySchema = {
         nullable: true,
         description: 'Token de autenticação do servidor MCP (Bearer)',
       },
+      MCP_LOWCODE_API_URL: {
+        type: 'string',
+        nullable: true,
+        description:
+          'URL da API LowCodeJS enviada ao MCP no header X-Lowcode-Api-Url',
+      },
       OPENAI_MODEL: {
         type: 'string',
         nullable: true,
-        description: 'Modelo OpenAI usado pelo assistente IA',
+        description: 'Modelo OpenAI usado pelo assistente IA (legado)',
+      },
+      AI_LLM_PROVIDER: {
+        type: 'string',
+        enum: ['openai', 'gemini', 'claude', 'openrouter', 'ollama'],
+        nullable: true,
+        description: 'Provedor LLM do assistente IA',
+      },
+      LLM_API_KEY: {
+        type: 'string',
+        nullable: true,
+        description: 'Chave da API do provedor LLM',
+      },
+      LLM_MODEL: {
+        type: 'string',
+        nullable: true,
+        description: 'Modelo LLM do provedor selecionado',
+      },
+      LLM_BASE_URL: {
+        type: 'string',
+        nullable: true,
+        description: 'URL base do LLM (ex.: Ollama local)',
       },
       LOGO_SMALL_URL: {
         type: 'string',
@@ -154,6 +181,30 @@ export const SettingUpdateSchema: FastifySchema = {
         description: 'URL do logo grande',
         errorMessage: {
           type: 'A URL do logo grande deve ser um texto',
+        },
+      },
+      LOGO_SMALL_DARK_URL: {
+        type: 'string',
+        nullable: true,
+        description: 'URL do logo pequeno para o modo escuro',
+        errorMessage: {
+          type: 'A URL do logo pequeno (modo escuro) deve ser um texto',
+        },
+      },
+      LOGO_LARGE_DARK_URL: {
+        type: 'string',
+        nullable: true,
+        description: 'URL do logo grande para o modo escuro',
+        errorMessage: {
+          type: 'A URL do logo grande (modo escuro) deve ser um texto',
+        },
+      },
+      LOGIN_BACKGROUND_URL: {
+        type: 'string',
+        nullable: true,
+        description: 'URL da imagem de fundo da tela de login',
+        errorMessage: {
+          type: 'A URL da imagem de fundo do login deve ser um texto',
         },
       },
       STORAGE_DRIVER: {
@@ -281,10 +332,37 @@ export const SettingUpdateSchema: FastifySchema = {
           nullable: true,
           description: 'Token de autenticação do servidor MCP (Bearer)',
         },
+        MCP_LOWCODE_API_URL: {
+          type: 'string',
+          nullable: true,
+          description:
+            'URL da API LowCodeJS enviada ao MCP no header X-Lowcode-Api-Url',
+        },
         OPENAI_MODEL: {
           type: 'string',
           nullable: true,
-          description: 'Modelo OpenAI usado pelo assistente IA',
+          description: 'Modelo OpenAI usado pelo assistente IA (legado)',
+        },
+        AI_LLM_PROVIDER: {
+          type: 'string',
+          enum: ['openai', 'gemini', 'claude', 'openrouter', 'ollama'],
+          nullable: true,
+          description: 'Provedor LLM do assistente IA',
+        },
+        LLM_API_KEY: {
+          type: 'string',
+          nullable: true,
+          description: 'Chave da API do provedor LLM',
+        },
+        LLM_MODEL: {
+          type: 'string',
+          nullable: true,
+          description: 'Modelo LLM do provedor selecionado',
+        },
+        LLM_BASE_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL base do LLM (ex.: Ollama local)',
         },
         SETUP_COMPLETED: {
           type: 'boolean',
@@ -293,7 +371,15 @@ export const SettingUpdateSchema: FastifySchema = {
         SETUP_CURRENT_STEP: {
           type: 'string',
           nullable: true,
-          enum: ['admin', 'name', 'logos', 'upload', 'paging', 'email'],
+          enum: [
+            'admin',
+            'name',
+            'storage',
+            'logos',
+            'upload',
+            'paging',
+            'email',
+          ],
           description: 'Etapa atual do setup wizard (null se concluído)',
         },
         LOGO_SMALL_URL: {
@@ -305,6 +391,21 @@ export const SettingUpdateSchema: FastifySchema = {
           type: 'string',
           nullable: true,
           description: 'URL do logo grande',
+        },
+        LOGO_SMALL_DARK_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL do logo pequeno para o modo escuro',
+        },
+        LOGO_LARGE_DARK_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL do logo grande para o modo escuro',
+        },
+        LOGIN_BACKGROUND_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL da imagem de fundo da tela de login',
         },
         STORAGE_DRIVER: {
           type: 'string',
@@ -343,7 +444,7 @@ export const SettingUpdateSchema: FastifySchema = {
         code: { type: 'number', enum: [400] },
         cause: {
           type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT', 'VALIDATION_ERROR'],
+          enum: ['INVALID_PAYLOAD_FORMAT'],
         },
         errors: {
           type: 'object',
@@ -356,25 +457,9 @@ export const SettingUpdateSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
-      description: 'Arquivo de configurações não encontrado',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: ['Arquivo de configurações não encontrado'],
-        },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['SETTINGS_FILE_NOT_FOUND'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -385,14 +470,11 @@ export const SettingUpdateSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Erro interno do servidor ao atualizar configurações'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: {
           type: 'string',
-          enum: ['SETTINGS_UPDATE_ERROR', 'FILE_WRITE_ERROR'],
+          enum: ['SETTINGS_UPDATE_ERROR'],
         },
         errors: {
           type: 'object',

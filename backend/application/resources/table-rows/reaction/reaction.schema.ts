@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableRowReactionSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'Add reaction to row',
+  tags: ['Registros'],
+  summary: 'Adiciona reação a um registro',
   description:
-    'Adds a reaction (like/unlike) to a specific field in a row. Creates or updates reaction record linked to user and field.',
+    'Adiciona ou atualiza uma reação (like/unlike) do usuário em um campo de reação de um registro. Cada usuário tem uma única reação por campo (upsert). Retorna o registro atualizado.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,14 +12,9 @@ export const TableRowReactionSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the row',
-        examples: ['users', 'products', 'blog-posts'],
+        description: 'Slug da tabela que contém o registro',
       },
-      _id: {
-        type: 'string',
-        description: 'Row ID to add reaction to',
-        examples: ['507f1f77bcf86cd799439011'],
-      },
+      _id: { type: 'string', description: 'ID do registro a reagir' },
     },
     additionalProperties: false,
   },
@@ -30,110 +25,102 @@ export const TableRowReactionSchema: FastifySchema = {
       type: {
         type: 'string',
         enum: ['LIKE', 'UNLIKE'],
-        description: 'Type of reaction',
+        description: 'Tipo da reação',
       },
       field: {
         type: 'string',
-        description:
-          'Field slug that accepts reactions (must be REACTION type field)',
-        examples: ['rating', 'feedback', 'approval'],
+        description: 'Slug do campo de reação (tipo REACTION)',
       },
     },
     additionalProperties: false,
   },
   response: {
     200: {
-      description:
-        'Reaction added successfully - Returns the complete updated row',
+      description: 'Reação registrada - Retorna o registro atualizado',
       type: 'object',
       properties: {
-        _id: { type: 'string', description: 'Row ID' },
-        trashed: { type: 'boolean', description: 'Is row in trash' },
+        _id: { type: 'string', description: 'ID do registro' },
+        creator: {
+          type: 'string',
+          nullable: true,
+          description: 'ID do criador',
+        },
+        trashed: { type: 'boolean', description: 'Se está na lixeira' },
         trashedAt: {
           type: 'string',
           format: 'date-time',
           nullable: true,
-          description: 'When row was trashed',
+          description: 'Data de envio para lixeira',
         },
         createdAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Creation timestamp',
+          description: 'Data de criação',
         },
         updatedAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Last update timestamp',
+          description: 'Data da última atualização',
         },
       },
       additionalProperties: true,
     },
-    400: {
-      description: 'Bad request - Invalid field type or validation error',
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Field is not a reaction field',
-            'Invalid reaction type',
-            'User not found',
-          ],
-        },
-        code: { type: 'number', enum: [400] },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
-          enum: ['INVALID_FIELD_TYPE', 'INVALID_PARAMETERS'],
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
         },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
-    401: {
-      description: 'Unauthorized - Authentication required',
+    403: {
+      description: 'Acesso negado - Permissão insuficiente',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
         },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     404: {
-      description: 'Not found - ITable, row, or field does not exist',
+      description: 'Tabela ou registro não encontrado',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Table not found', 'Row not found', 'Field not found'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: {
           type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND', 'FIELD_NOT_FOUND'],
+          enum: ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND'],
         },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['REACTION_ROW_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+        cause: { type: 'string', enum: ['REACTION_ROW_TABLE_ERROR'] },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
   },

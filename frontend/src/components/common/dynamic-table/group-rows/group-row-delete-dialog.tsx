@@ -1,41 +1,50 @@
 import { TrashIcon } from 'lucide-react';
-import React from 'react';
+import type * as React from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { useDeleteGroupRow } from '@/hooks/tanstack-query/use-group-row-delete';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastSuccess } from '@/lib/toast';
+import type { Merge } from '@/lib/interfaces';
 
-interface GroupRowDeleteDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  tableSlug: string;
-  rowId: string;
-  groupSlug: string;
-  itemId: string;
-}
+type GroupRowDeleteDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    tableSlug: string;
+    rowId: string;
+    groupSlug: string;
+    itemId: string;
+  }
+>;
 
 export function GroupRowDeleteDialog({
-  open,
-  onOpenChange,
+  ref,
   tableSlug,
   rowId,
   groupSlug,
   itemId,
+  ...rest
 }: GroupRowDeleteDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   const _delete = useDeleteGroupRow({
     onSuccess() {
-      toastSuccess('Item removido', 'O item foi removido com sucesso');
-      onOpenChange(false);
+      toast.success('Item removido', {
+        description: 'O item foi removido com sucesso',
+      });
+      close();
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao remover item' });
@@ -43,13 +52,15 @@ export function GroupRowDeleteDialog({
   });
 
   return (
-    <Dialog
-      data-slot="group-row-delete-dialog"
-      data-test-id="group-row-delete-dialog"
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent>
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
+      <DialogContent
+        data-slot="group-row-delete-dialog"
+        data-test-id="group-row-delete-dialog"
+      >
         <DialogHeader>
           <DialogTitle>Remover item</DialogTitle>
           <DialogDescription>
@@ -58,14 +69,16 @@ export function GroupRowDeleteDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={_delete.status === 'pending'}
-          >
-            Cancelar
-          </Button>
+          <DialogClose asChild>
+            <Button
+              ref={closeRef}
+              type="button"
+              variant="outline"
+              disabled={_delete.status === 'pending'}
+            >
+              Cancelar
+            </Button>
+          </DialogClose>
           <Button
             type="button"
             variant="destructive"

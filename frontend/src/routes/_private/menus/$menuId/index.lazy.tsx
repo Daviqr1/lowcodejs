@@ -3,10 +3,12 @@ import {
   createLazyFileRoute,
   useParams,
   useRouter,
+  useSearch,
 } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
 import { ArchiveRestoreIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { parseMenuPosition } from '../-position';
 
@@ -26,10 +28,10 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
 import { API } from '@/lib/api';
 import type { E_MENU_ITEM_TYPE } from '@/lib/constant';
+import { E_PERMISSION_TARGET } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IMenu, ValueOf } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/menus/$menuId/')({
   component: RouteComponent,
@@ -45,7 +47,10 @@ function RouteComponent(): React.JSX.Element {
 
   const { data } = useSuspenseQuery(menuDetailOptions(menuId));
 
-  const [mode, setMode] = React.useState<'show' | 'edit'>('show');
+  const search = useSearch({ from: '/_private/menus/$menuId/' });
+  let initialMode: 'show' | 'edit' = 'show';
+  if (search.mode === 'edit') initialMode = 'edit';
+  const [mode, setMode] = React.useState<'show' | 'edit'>(initialMode);
 
   const goBack = (): void => {
     sidebar.setOpen(true);
@@ -74,11 +79,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface MenuUpdateContentProps {
+type MenuUpdateContentProps = {
   data: IMenu;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function MenuUpdateContent({
   data,
@@ -99,10 +104,9 @@ function MenuUpdateContent({
 
   const _update = useUpdateMenu({
     onSuccess() {
-      toastSuccess(
-        'Menu atualizado',
-        'Os dados do menu foram atualizados com sucesso',
-      );
+      toast.success('Menu atualizado', {
+        description: 'Os dados do menu foram atualizados com sucesso',
+      });
 
       form.reset();
       setMode('show');
@@ -125,12 +129,16 @@ function MenuUpdateContent({
       url: data.url ?? '',
       icon: data.icon ?? null,
       parent: data.parent?._id ?? '',
-      position: data.parent
-        ? String((data.order ?? 0) + 1)
-        : String(data.order ?? 0),
+      position:
+        (data.parent && String((data.order ?? 0) + 1)) ||
+        String(data.order ?? 0),
       isInitial: data.isInitial ?? false,
       extension: data.extension ?? null,
-      iconFile: [] as Array<File>,
+      iconFile: new Array<File>(),
+      visibility: data.visibility ?? {
+        kind: E_PERMISSION_TARGET.PUBLIC,
+        group: null,
+      },
     } satisfies MenuUpdateFormValues,
     // @ts-expect-error Zod Standard Schema type inference
     validators: { onChange: MenuUpdateSchema, onSubmit: MenuUpdateSchema },
@@ -150,8 +158,9 @@ function MenuUpdateContent({
         url: value.url || null,
         icon: value.icon || null,
         order,
-        isInitial: value.type === 'SEPARATOR' ? false : value.isInitial,
+        isInitial: value.type !== 'SEPARATOR' && value.isInitial,
         extension: value.extension ?? null,
+        visibility: value.visibility,
       });
     },
   });
@@ -159,9 +168,10 @@ function MenuUpdateContent({
   useApiErrorAutoClear(form);
 
   const isPending = _update.status === 'pending';
-  const menuType = useStore(form.store, (state) => state.values.type) as
-    | ValueOf<typeof E_MENU_ITEM_TYPE>
-    | '';
+  const menuType: ValueOf<typeof E_MENU_ITEM_TYPE> | '' = useStore(
+    form.store,
+    (state) => state.values.type,
+  );
 
   return (
     <>
@@ -309,7 +319,7 @@ function MenuUpdateContent({
         <PageShell.Content>
           <form
             data-test-id="menu-update-form"
-            className="flex-1 flex flex-col min-h-0 overflow-auto"
+            className="flex-1 flex flex-col"
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();

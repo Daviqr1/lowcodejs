@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import FieldValidationService from '@application/services/field-validation/field-validation.service';
+import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
@@ -43,6 +46,9 @@ describe('Table Row Create - RELATIONSHIP', () => {
       rowPasswordService,
       scriptExecutionService,
       new InMemoryRowMemberNotificationService(),
+      new InMemoryFieldVisibilityService(),
+      new FieldValidationService(rowRepository, userRepository),
+      new InMemoryRowAccessGuardService(),
     );
   });
 
@@ -81,41 +87,10 @@ describe('Table Row Create - RELATIONSHIP', () => {
     expect(result.value.produtos).toHaveLength(2);
   });
 
-  it('deve rejeitar quando valor nao e array', async () => {
-    const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
-      slug: 'produtos',
-    });
-    await makeTable(tableRepository, [field], { slug: 'pedidos' });
-
-    const result = await sut.execute({
-      slug: 'pedidos',
-      produtos: VALID_OBJECT_ID,
-      creator: 'user-id',
-    });
-
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-  });
-
-  it('deve rejeitar quando itens nao sao ObjectIds validos', async () => {
-    const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
-      slug: 'produtos',
-    });
-    await makeTable(tableRepository, [field], { slug: 'pedidos' });
-
-    const result = await sut.execute({
-      slug: 'pedidos',
-      produtos: ['not-a-valid-id', 'also-invalid'],
-      creator: 'user-id',
-    });
-
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-  });
-
-  it('deve rejeitar quando required e valor ausente', async () => {
+  // RELATIONSHIP não é mais validado no payload do row: os vínculos são geridos
+  // via links (extract/persist) e o required é barrado no frontend. O validador
+  // ignora o campo, então valores ausentes/atípicos não rejeitam a criação.
+  it('deve aceitar quando required e valor ausente (gerido via links)', async () => {
     const field = makeRelationshipField(RELATIONSHIP_CONFIG, {
       slug: 'produtos',
       required: true,
@@ -127,10 +102,7 @@ describe('Table Row Create - RELATIONSHIP', () => {
       creator: 'user-id',
     });
 
-    expect(result.isLeft()).toBe(true);
-    if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.cause).toBe('INVALID_PAYLOAD_FORMAT');
-    expect(result.value.errors).toHaveProperty('produtos');
+    expect(result.isRight()).toBe(true);
   });
 
   it('deve aceitar array vazio quando nao required', async () => {

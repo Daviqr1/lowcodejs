@@ -24,7 +24,8 @@ import {
   PlusIcon,
   SettingsIcon,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { DocumentSidebarAddDialog } from './document-sidebar-add-dialog';
 import type { DropMode } from './document-sidebar-helpers';
@@ -41,18 +42,10 @@ import {
 } from './document-sidebar-helpers';
 import { DocumentSidebarTree } from './document-sidebar-tree';
 
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { API } from '@/lib/api';
@@ -61,7 +54,7 @@ import type { CatNode } from '@/lib/document-helpers';
 import { buildLabelMap } from '@/lib/document-helpers';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IField } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import { isFieldShownInContext } from '@/lib/permission';
 import { cn } from '@/lib/utils';
 
 export function DocumentSidebar({
@@ -88,8 +81,12 @@ export function DocumentSidebar({
   );
   const labelMap = useMemo(() => buildLabelMap(treeNodes), [treeNodes]);
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const [addParentId, setAddParentId] = useState<string | null>(null);
+  const [addNonce, setAddNonce] = useState(0);
+  const [deleteNonce, setDeleteNonce] = useState(0);
+  const addTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const addDialog = useDismissableDialog();
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
   const [dragEnabledId, setDragEnabledId] = useState<string | null>(null);
@@ -172,9 +169,11 @@ export function DocumentSidebar({
         queryKey: queryKeys.tables.detail(slug),
       });
 
-      toastSuccess('Seção criada', 'A seção foi criada com sucesso');
+      toast.success('Seção criada', {
+        description: 'A seção foi criada com sucesso',
+      });
 
-      setAddModalOpen(false);
+      addDialog.close();
     },
     onError(error) {
       handleApiError(error, {
@@ -200,15 +199,18 @@ export function DocumentSidebar({
   });
 
   useEffect(() => {
-    if (addModalOpen) return;
-    addCategoryForm.reset({ label: '' });
-  }, [addCategoryForm, addModalOpen]);
+    if (addNonce > 0) addTriggerRef.current?.click();
+  }, [addNonce]);
+
+  useEffect(() => {
+    if (deleteNonce > 0) deleteTriggerRef.current?.click();
+  }, [deleteNonce]);
 
   const handleOpenAdd = (parentId: string | null): void => {
     if (!canManageCategory) return;
     setAddParentId(parentId);
     addCategoryForm.reset({ label: '' });
-    setAddModalOpen(true);
+    setAddNonce((value) => value + 1);
   };
 
   const updateCategoryTree = useMutation({
@@ -220,9 +222,9 @@ export function DocumentSidebar({
         required: categoryField.required,
         multiple: categoryField.multiple,
         showInFilter: categoryField.showInFilter,
-        showInForm: categoryField.showInForm,
-        showInDetail: categoryField.showInDetail,
-        showInList: categoryField.showInList,
+        showInForm: isFieldShownInContext(categoryField, 'form'),
+        showInDetail: isFieldShownInContext(categoryField, 'detail'),
+        showInList: isFieldShownInContext(categoryField, 'list'),
         format: categoryField.format,
         defaultValue: categoryField.defaultValue,
         dropdown: categoryField.dropdown,
@@ -259,7 +261,9 @@ export function DocumentSidebar({
       queryClient.invalidateQueries({
         queryKey: queryKeys.tables.detail(slug),
       });
-      toastSuccess('Seção excluída', 'A seção foi excluída com sucesso');
+      toast.success('Seção excluída', {
+        description: 'A seção foi excluída com sucesso',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -271,9 +275,10 @@ export function DocumentSidebar({
   const handleRequestDelete = (id: string, label: string): void => {
     if (!canManageCategory) return;
     setDeleteTarget({ id, label });
+    setDeleteNonce((value) => value + 1);
   };
 
-  const handleConfirmDelete = async (): Promise<void> => {
+  const handleConfirmDelete = async (close: () => void): Promise<void> => {
     if (!deleteTarget) return;
     const targetId = deleteTarget.id;
 
@@ -282,7 +287,7 @@ export function DocumentSidebar({
     const previous = treeNodes;
     const { updated, removed } = findNodeAndRemove(treeNodes, targetId);
     if (removed) setTreeNodes(updated);
-    setDeleteTarget(null);
+    close();
 
     try {
       await deleteCategory.mutateAsync(targetId);
@@ -305,7 +310,6 @@ export function DocumentSidebar({
     if (!canManageCategory) return;
     setEditingNodeId(nodeId);
     setEditingLabel(label);
-    setDragEnabledId(nodeId);
   };
 
   const cancelEdit = (): void => {
@@ -341,12 +345,12 @@ export function DocumentSidebar({
   };
 
   const handleDragStart = (event: DragStartEvent): void => {
-    if (!dragEnabledId || !canManageCategory) return;
-    if (String(event.active.id) !== dragEnabledId) return;
+    if (!canManageCategory) return;
+    setDragEnabledId(String(event.active.id));
   };
 
   const handleDragOver = (event: DragOverEvent): void => {
-    if (!dragEnabledId || !canManageCategory) return;
+    if (!canManageCategory) return;
     const { active, over } = event;
     if (!over) {
       setDragOverId(null);
@@ -378,21 +382,21 @@ export function DocumentSidebar({
   };
 
   const handleDragCancel = (_event: DragCancelEvent): void => {
+    setDragEnabledId(null);
     setDragOverId(null);
     setDragOverMode(null);
   };
 
   const handleDragEnd = async (event: DragEndEvent): Promise<void> => {
-    if (!dragEnabledId || !canManageCategory) return;
+    if (!canManageCategory) return;
     const { active, over } = event;
+    setDragEnabledId(null);
     setDragOverId(null);
     setDragOverMode(null);
     if (!over || active.id === over.id) return;
 
-    const activeParentId =
-      (active.data.current?.parentId as string | null | undefined) ?? null;
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const activeParentId: string | null = active.data.current?.parentId ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
 
     const activeId = String(active.id);
     const overId = String(over.id);
@@ -445,10 +449,10 @@ export function DocumentSidebar({
         const childIndex = targetNode?.children?.length ?? 0;
         next = insertNodeAt(updated, overId, childIndex, removed);
       } else {
-        const targetList =
-          overParentId === null
-            ? updated
-            : (findNodeByIdLocal(updated, overParentId)?.children ?? []);
+        let targetList = updated;
+        if (overParentId !== null) {
+          targetList = findNodeByIdLocal(updated, overParentId)?.children ?? [];
+        }
         const insertIndex = targetList.findIndex((item) => item.id === overId);
         let nextIndex = targetList.length;
         if (insertIndex !== -1) {
@@ -590,8 +594,6 @@ export function DocumentSidebar({
                   onStartEdit={startEdit}
                   onSaveEdit={saveEdit}
                   onCancelEdit={cancelEdit}
-                  dragEnabledId={dragEnabledId}
-                  dragMode={!!dragEnabledId}
                   dragOverId={dragOverId}
                   dragOverMode={dragOverMode}
                   parentId={null}
@@ -603,62 +605,28 @@ export function DocumentSidebar({
       </aside>
 
       <DocumentSidebarAddDialog
-        open={addModalOpen}
-        onOpenChange={(open) => {
-          setAddModalOpen(open);
-          if (!open) {
-            addCategoryForm.reset({ label: '' });
-            setAddParentId(null);
-          }
-        }}
+        key={addParentId ?? 'root'}
+        ref={addTriggerRef}
         parentLabel={parentLabel}
         form={addCategoryForm}
-        onCancel={() => setAddModalOpen(false)}
+        closeRef={addDialog.closeRef}
         isPending={addCategory.status === 'pending'}
       />
 
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <DialogContent
-          className="sm:max-w-md"
-          data-test-id="document-delete-section-dialog"
-        >
-          <DialogHeader>
-            <DialogTitle>Excluir seção</DialogTitle>
-            <DialogDescription>
-              {deleteTarget &&
-                `A seção "${deleteTarget.label}" e suas subseções serão excluídas. Os artigos vinculados não serão apagados, mas perderão a categoria.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={deleteCategory.status === 'pending'}
-              onClick={() => setDeleteTarget(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={deleteCategory.status === 'pending'}
-              onClick={() => {
-                void handleConfirmDelete();
-              }}
-            >
-              {deleteCategory.status === 'pending' && <Spinner />}
-              <span>Excluir</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        key={deleteNonce}
+        ref={deleteTriggerRef}
+        title="Excluir seção"
+        description={
+          (deleteTarget &&
+            `A seção "${deleteTarget.label}" e suas subseções serão excluídas. Os artigos vinculados não serão apagados, mas perderão a categoria.`) ||
+          ''
+        }
+        isPending={deleteCategory.status === 'pending'}
+        confirmLabel="Excluir"
+        testId="document-delete-section-dialog"
+        onConfirm={(close) => void handleConfirmDelete(close)}
+      />
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserPaginatedSchema: FastifySchema = {
-  tags: ['Users'],
-  summary: 'List users with pagination',
+  tags: ['Usuários'],
+  summary: 'Listar usuários com paginação',
   description:
-    'Retrieves a paginated list of users with optional search functionality',
+    'Retorna uma lista paginada de usuários com funcionalidade de busca opcional',
   security: [{ cookieAuth: [] }],
   querystring: {
     type: 'object',
@@ -13,7 +13,7 @@ export const UserPaginatedSchema: FastifySchema = {
         type: 'number',
         minimum: 1,
         default: 1,
-        description: 'Page number (starts from 1)',
+        description: 'Número da página (começa em 1)',
         examples: [1, 2, 5],
       },
       perPage: {
@@ -21,33 +21,33 @@ export const UserPaginatedSchema: FastifySchema = {
         minimum: 1,
         maximum: 100,
         default: 50,
-        description: 'Number of items per page (max 100)',
+        description: 'Itens por página (máx. 100)',
         examples: [10, 25, 50, 100],
       },
       search: {
         type: 'string',
         minLength: 1,
         description:
-          'Search term for filtering users by name or email (optional)',
+          'Termo de busca para filtrar usuários por nome ou email (opcional)',
         examples: ['john', 'john@example.com', 'doe'],
       },
       status: {
         type: 'string',
         enum: ['ACTIVE', 'INACTIVE'],
-        description: 'Filter returned users by status (optional)',
+        description: 'Filtra os usuários retornados por status (opcional)',
       },
       trashed: {
         type: 'string',
         enum: ['true', 'false'],
         description:
-          'Filter users by trash state. true = trashed only, false = active only (default).',
+          'Filtra usuários pelo estado da lixeira. true = somente na lixeira, false = somente ativos (padrão).',
         examples: ['true', 'false'],
       },
       role: {
         type: 'string',
         enum: ['MASTER', 'ADMINISTRATOR', 'MANAGER', 'REGISTERED'],
         description:
-          'Query context role. When ADMINISTRATOR, backend applies admin scope rules (hides MASTER users). JWT confirms authorization.',
+          'Papel do contexto da consulta. Quando ADMINISTRATOR, o backend aplica regras de escopo de admin (oculta usuários MASTER). O JWT confirma a autorização.',
       },
       'order-name': {
         type: 'string',
@@ -79,7 +79,7 @@ export const UserPaginatedSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'Paginated list of users',
+      description: 'Lista paginada de usuários',
       type: 'object',
       properties: {
         data: {
@@ -117,10 +117,10 @@ export const UserPaginatedSchema: FastifySchema = {
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -128,19 +128,12 @@ export const UserPaginatedSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Unauthorized',
-          code: 401,
-          cause: 'AUTHENTICATION_REQUIRED',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['LIST_USER_PAGINATED_ERROR'] },
         errors: {
@@ -148,13 +141,6 @@ export const UserPaginatedSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Internal server error',
-          code: 500,
-          cause: 'LIST_USER_PAGINATED_ERROR',
-        },
-      ],
     },
   },
 };

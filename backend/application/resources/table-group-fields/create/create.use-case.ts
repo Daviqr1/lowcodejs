@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -6,17 +5,17 @@ import { left, right } from '@application/core/either.core';
 import {
   E_FIELD_TYPE,
   type IField as Entity,
-  type IField,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveFieldSlug } from '@application/core/field-slug.core';
+import { FieldSlug } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import {
   hasDuplicateDropdownLabels,
   normalizeDefaultValue,
 } from '@application/resources/table-fields/table-field-base.schema';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
+import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type { GroupFieldCreatePayload } from './create.validator';
 
@@ -24,10 +23,13 @@ type Response = Either<HTTPException, Entity>;
 type Payload = GroupFieldCreatePayload;
 
 // Invariante nível único: tipos proibidos dentro de um grupo de campos.
+// RELATIONSHIP é sempre top-level (associação entre tabelas independentes, §2);
+// grupo é composição embedded e só aceita campos simples.
 const TYPES_NOT_ALLOWED_IN_GROUP = new Set<string>([
   E_FIELD_TYPE.FIELD_GROUP,
   E_FIELD_TYPE.REACTION,
   E_FIELD_TYPE.EVALUATION,
+  E_FIELD_TYPE.RELATIONSHIP,
 ]);
 
 @Service()
@@ -35,7 +37,8 @@ export default class GroupFieldCreateUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
-    private readonly tableSchemaService: TableSchemaContractService,
+    private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly modelBuilder: ModelBuilderContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -90,9 +93,11 @@ export default class GroupFieldCreateUseCase {
         );
       }
 
-      const resolvedSlug = resolveFieldSlug({
+      let slugInput: string | undefined;
+      if (payload.tableSlug) slugInput = payload.slug;
+      const resolvedSlug = FieldSlug.resolve({
         name: payload.name,
-        slug: payload.tableSlug ? payload.slug : undefined,
+        slug: slugInput,
       });
 
       if (resolvedSlug.error) {
@@ -143,8 +148,7 @@ export default class GroupFieldCreateUseCase {
         if (g.slug !== targetGroup.slug) return g;
 
         const updatedFields = [...(g.fields || []), field];
-        const groupSchema =
-          this.tableSchemaService.computeSchema(updatedFields);
+        const groupSchema = this.schemaBuilder.build(updatedFields);
 
         return {
           ...g,
@@ -154,7 +158,7 @@ export default class GroupFieldCreateUseCase {
       });
 
       // Reconstrói o schema da tabela pai com os grupos atualizados
-      const parentSchema = this.tableSchemaService.computeSchema(
+      const parentSchema = this.schemaBuilder.build(
         table.fields,
         updatedGroups,
       );
@@ -164,10 +168,9 @@ export default class GroupFieldCreateUseCase {
         _schema: parentSchema,
         groups: updatedGroups,
         owner: table.owner._id,
-        administrators: table.administrators.flatMap((a) => a._id),
       });
 
-      await this.tableSchemaService.syncModel({
+      await this.modelBuilder.build({
         ...table,
         _id: table._id,
         _schema: parentSchema,

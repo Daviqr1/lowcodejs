@@ -12,22 +12,12 @@ filtros e acoes de lixeira. Importacao/exportacao de tabelas vive na tool
 
 ## Arquivos
 
-| Arquivo                      | Tipo               | Descricao                                                                                                      |
-| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `index.tsx`                  | Loader             | Valida search params (page, perPage, search, trashed, visibility, owner, order-\*), carrega `tableListOptions` |
-| `index.lazy.tsx`             | Componente         | Layout com header, FilterSidebar, TableTables, ChatSidebar e Pagination                                        |
-| `-table-tables.tsx`          | Componente privado | DataTable com colunas: nome, slug, visibilidade, criado por, criado em, acoes                                  |
-| `-table-tables-skeleton.tsx` | Skeleton           | Skeleton da tabela de listagem                                                                                 |
-
-## Visibilidades (E_TABLE_VISIBILITY)
-
-| Valor      | Label      |
-| ---------- | ---------- |
-| PRIVATE    | Privada    |
-| RESTRICTED | Restrita   |
-| OPEN       | Aberta     |
-| PUBLIC     | Publica    |
-| FORM       | Formulario |
+| Arquivo                      | Tipo               | Descricao                                                                                          |
+| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------------- |
+| `index.tsx`                  | Loader             | Valida search params (page, perPage, search, trashed, owner, order-\*), carrega `tableListOptions` |
+| `index.lazy.tsx`             | Componente         | Layout com header, FilterSidebar, TableTables, ChatSidebar e Pagination                            |
+| `-table-tables.tsx`          | Componente privado | DataTable com colunas: nome, slug, criado por, criado em, acoes                                    |
+| `-table-tables-skeleton.tsx` | Skeleton           | Skeleton da tabela de listagem                                                                     |
 
 ## Modos de Visualizacao (E_TABLE_STYLE)
 

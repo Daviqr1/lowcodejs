@@ -3,6 +3,8 @@ import { Setting } from '@application/model/setting.model';
 import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 
+import { TaskLogger } from '../shared/task-logger';
+
 export default async function Seed(): Promise<void> {
   const masterGroup = await UserGroup.findOne({ slug: E_ROLE.MASTER });
 
@@ -17,14 +19,12 @@ export default async function Seed(): Promise<void> {
   }
 
   let update: Record<string, unknown>;
-  let message: string;
+  let detail = '';
   if (hasMaster) {
     update = { $set: { SETUP_COMPLETED: true, SETUP_CURRENT_STEP: null } };
-    message =
-      '🌱 \x1b[32m Setting (singleton) \x1b[0m — SETUP_COMPLETED=true (MASTER existente)';
+    detail = 'SETUP_COMPLETED (MASTER já existe)';
   } else {
     update = { $setOnInsert: {} };
-    message = '🌱 \x1b[32m Setting (singleton) \x1b[0m';
   }
 
   await Setting.findOneAndUpdate({}, update, {
@@ -33,5 +33,5 @@ export default async function Seed(): Promise<void> {
     new: true,
   });
 
-  console.info(message);
+  new TaskLogger('Configurações').ok(detail);
 }

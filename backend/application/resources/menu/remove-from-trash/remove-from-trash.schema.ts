@@ -31,11 +31,24 @@ export const MenuRemoveFromTrashSchema: FastifySchema = {
       description: 'Menu removido da lixeira com sucesso',
       type: 'null',
     },
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
+      type: 'object',
+      properties: {
+        message: { type: 'string', enum: ['Autenticação necessária'] },
+        code: { type: 'number', enum: [401] },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
     404: {
       description: 'Menu não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Menu not found'] },
+        message: { type: 'string', enum: ['Menu não encontrado'] },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
         errors: {
@@ -48,7 +61,7 @@ export const MenuRemoveFromTrashSchema: FastifySchema = {
       description: 'Menu não está na lixeira',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Menu is not in trash'] },
+        message: { type: 'string', enum: ['Menu não está na lixeira'] },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['NOT_TRASHED'] },
         errors: {
@@ -61,7 +74,7 @@ export const MenuRemoveFromTrashSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string', enum: ['Erro interno do servidor'] },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['REMOVE_FROM_TRASH_MENU_ERROR'] },
         errors: {

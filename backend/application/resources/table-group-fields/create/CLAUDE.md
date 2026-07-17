@@ -7,7 +7,7 @@ Cria um novo campo dentro de um grupo (FIELD_GROUP) de uma tabela.
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio), TableAccessMiddleware (CREATE_FIELD)
-2. Validator: GroupFieldCreateBodyValidator - campos: name (string, required), type (enum E_FIELD_TYPE, required) + TableFieldBaseSchema (required, multiple, showInFilter, showInForm, showInDetail, showInList, widthInForm, widthInList, widthInDetail, locked, format, defaultValue, dropdown, relationship, category) | GroupFieldCreateParamsValidator - campos: slug (string), groupSlug (string)
+2. Validator: GroupFieldCreateBodyValidator - campos: name (string, required), type (enum E_FIELD_TYPE, required) + TableFieldBaseSchema (required, multiple, `permissions` { list, form, detail } → binding, showInFilter, widthInForm, widthInList, widthInDetail, locked, format, defaultValue, dropdown, relationship, category) | GroupFieldCreateParamsValidator - campos: slug (string), groupSlug (string)
 3. UseCase:
    - Busca tabela pelo slug (exact match)
    - Encontra o grupo pelo groupSlug dentro de table.groups

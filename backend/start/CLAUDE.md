@@ -43,6 +43,7 @@ Validadas com Zod. Principais grupos:
 | CORS       | `ALLOWED_ORIGINS`                                                        |
 | Redis      | `REDIS_URL`                                                              |
 | Workers    | `STORAGE_MIGRATION_CONCURRENCY`, `EMAIL_WORKER_CONCURRENCY`              |
+| Scheduler  | `SCHEDULER_ENABLED` (default `true` — liga a engine de agendamentos)     |
 | AI / Chat  | `MCP_SERVER_URL` (opcional)                                              |
 
 ### Configurações que **NÃO** ficam mais em env

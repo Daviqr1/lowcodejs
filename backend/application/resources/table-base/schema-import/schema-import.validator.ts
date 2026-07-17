@@ -4,13 +4,9 @@ import {
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 
-const FIELD_FORMAT_VALUES = Object.values(E_FIELD_FORMAT) as Array<
-  (typeof E_FIELD_FORMAT)[keyof typeof E_FIELD_FORMAT]
->;
-const FIELD_FORMAT_KEY_TO_VALUE = E_FIELD_FORMAT as Record<string, string>;
+const FIELD_FORMAT_KEY_TO_VALUE: Record<string, string> = E_FIELD_FORMAT;
 
 const FieldFormatSchema = z
   .union([z.string(), z.null()])
@@ -25,7 +21,7 @@ const FieldFormatSchema = z
     }
     return value;
   })
-  .pipe(z.enum(FIELD_FORMAT_VALUES as [string, ...string[]]).nullable());
+  .pipe(z.enum(E_FIELD_FORMAT).nullable());
 
 const IMPORTABLE_FIELD_TYPES = [
   E_FIELD_TYPE.TEXT_SHORT,
@@ -34,6 +30,7 @@ const IMPORTABLE_FIELD_TYPES = [
   E_FIELD_TYPE.DROPDOWN,
   E_FIELD_TYPE.FILE,
   E_FIELD_TYPE.USER,
+  E_FIELD_TYPE.USER_GROUP,
   E_FIELD_TYPE.CATEGORY,
   E_FIELD_TYPE.RELATIONSHIP,
 ] as const;
@@ -78,7 +75,6 @@ const SchemaImportTableSchema = z.object({
     .trim()
     .min(1, 'Nome da tabela é obrigatório')
     .max(40, 'Nome da tabela deve ter no máximo 40 caracteres'),
-  visibility: z.enum(E_TABLE_VISIBILITY).optional(),
   style: z.enum(E_TABLE_STYLE).optional(),
   fields: z
     .array(SchemaImportFieldSchema)

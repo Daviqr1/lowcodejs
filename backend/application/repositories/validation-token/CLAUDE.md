@@ -7,7 +7,7 @@ Repositorio da entidade ValidationToken (tokens de validacao para magic link e r
 | Arquivo | Descricao |
 |---------|-----------|
 | `validation-token-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `validation-token-mongoose.repository.ts` | Implementacao com Mongoose |
+| `validation-token.repository.ts` | Implementacao com Mongoose |
 | `validation-token-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

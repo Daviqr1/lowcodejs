@@ -20,9 +20,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const Evaluation = (mongoose?.models?.Evaluation ||
-  mongoose.model<Entity>(
-    'Evaluation',
-    Schema,
-    'evaluations',
-  )) as mongoose.Model<Entity>;
+export const Evaluation: mongoose.Model<Entity> =
+  mongoose?.models?.Evaluation ||
+  mongoose.model<Entity>('Evaluation', Schema, 'evaluations');

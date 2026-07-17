@@ -11,12 +11,12 @@ import { getNextDropdownOptionColor } from '@/lib/dropdown-colors';
 import type { IDropdown } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableFieldDropdownOptionsProps {
+type TableFieldDropdownOptionsProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function TableFieldDropdownOptions({
   label,

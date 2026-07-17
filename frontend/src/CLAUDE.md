@@ -19,7 +19,7 @@ global, estilos e o entry point do roteador.
 | --------------- | ---------------------------------------------------------- |
 | `routes/`       | File-based routing (~138 arquivos de rota)                 |
 | `components/`   | Design system (`ui/`) + componentes de negócio (`common/`) |
-| `hooks/`        | Custom hooks + 46+ hooks TanStack Query                    |
+| `hooks/`        | Custom hooks + 110 hooks TanStack Query                    |
 | `integrations/` | Setup de TanStack Form e TanStack Query                    |
 | `lib/`          | Utilitários, tipos, schemas, constantes, API client        |
 | `stores/`       | Estado global Zustand (autenticação)                       |

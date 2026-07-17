@@ -30,6 +30,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type {
   FieldManagementActions,
   VisibilityKey,
+  WidthKey,
 } from './field-management-context';
 import {
   FieldManagementProvider,
@@ -52,25 +53,72 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField } from '@/lib/interfaces';
+import type { FieldContext } from '@/lib/permission';
+import { isFieldShownInContext } from '@/lib/permission';
+import { resolveFieldLabel } from '@/lib/table';
+import { cn } from '@/lib/utils';
+
+// Chave do toggle -> contexto do binding. `showInFilter` não é permissão.
+const FIELD_CONTEXT_BY_VISIBILITY_KEY: Partial<
+  Record<VisibilityKey, FieldContext>
+> = {
+  showInList: 'list',
+  showInForm: 'form',
+  showInDetail: 'detail',
+};
+
+// Valor atual de visibilidade do campo para uma chave do toggle: `showInFilter`
+// é booleano; list/form/detail derivam do binding (não NOBODY = visível).
+// Campo-filho de grupo na aba Lista usa `visibleInParentList` (não o binding).
+function fieldVisibilityValue(
+  field: IField,
+  visibilityKey: VisibilityKey,
+  isParentListChild?: boolean,
+): boolean {
+  if (visibilityKey === 'showInFilter') return field.showInFilter;
+  if (visibilityKey === 'showInList' && isParentListChild) {
+    return Boolean(field.visibleInParentList);
+  }
+  const context = FIELD_CONTEXT_BY_VISIBILITY_KEY[visibilityKey];
+  if (!context) return false;
+  return isFieldShownInContext(field, context);
+}
+
+// Campos internos de sistema que nunca devem ser gerenciaveis na UI.
+// Filtra por slug (estavel) alem do type, cobrindo dados legados onde o type difere.
+const SYSTEM_INTERNAL_FIELD_SLUGS = ['status', 'trashed', 'trashedAt'];
+
+function isManageableField(field: IField, excludeNative?: boolean): boolean {
+  if (field.trashed) return false;
+  if (excludeNative && field.native) return false;
+  if (SYSTEM_INTERNAL_FIELD_SLUGS.includes(field.slug)) return false;
+  if (field.type === E_FIELD_TYPE.STATUS) return false;
+  if (field.type === E_FIELD_TYPE.TRASHED_AT) return false;
+  return true;
+}
 
 // --- Internal components ---
 
-interface SortableManagementItemProps {
+type SortableManagementItemProps = {
   field: IField;
   disabled?: boolean;
+  dimmed?: boolean;
   visibilityKey: VisibilityKey;
+  isParentListChild?: boolean;
   widthKey?: 'widthInForm' | 'widthInList' | 'widthInDetail';
   onEdit: () => void;
   onToggleVisibility: () => void;
   onWidthChange?: (width: number) => void;
   isTogglingVisibility?: boolean;
   isChangingWidth?: boolean;
-}
+};
 
 function SortableManagementItem({
   field,
   disabled,
+  dimmed,
   visibilityKey,
+  isParentListChild,
   widthKey,
   onEdit,
   onToggleVisibility,
@@ -98,12 +146,15 @@ function SortableManagementItem({
     opacity: opacityValue,
   };
 
-  const isVisible = field[visibilityKey];
+  const isVisible = fieldVisibilityValue(
+    field,
+    visibilityKey,
+    isParentListChild,
+  );
   let currentWidth: number | null = null;
   if (widthKey) {
     currentWidth = field[widthKey] ?? 50;
   }
-  const isNative = !!field.native;
 
   const [localWidth, setLocalWidth] = useState<string>(
     String(currentWidth ?? 0),
@@ -125,13 +176,19 @@ function SortableManagementItem({
       data-slot="sortable-management-item"
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm"
+      className={cn(
+        'flex items-center justify-between gap-2 rounded-lg border p-3 shadow-sm min-w-0',
+        {
+          'bg-card': !dimmed,
+          'bg-muted/50': dimmed,
+        },
+      )}
     >
       <FieldTitle
-        value={field.name}
+        value={resolveFieldLabel(field)}
         className="text-sm font-medium"
       />
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 shrink-0">
         {widthKey && onWidthChange && (
           <Input
             inputMode="numeric"
@@ -164,16 +221,14 @@ function SortableManagementItem({
             <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
           )}
         </Button>
-        {!isNative && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onEdit}
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onEdit}
+        >
+          <PencilIcon className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -188,14 +243,14 @@ function SortableManagementItem({
   );
 }
 
-interface TrashedItemProps {
+type TrashedItemProps = {
   field: IField;
   onEdit: () => void;
   onDelete: () => void;
   onRestore: () => void;
   isDeleting?: boolean;
   isRestoring?: boolean;
-}
+};
 
 function TrashedItem({
   field,
@@ -205,20 +260,14 @@ function TrashedItem({
   isDeleting,
   isRestoring,
 }: TrashedItemProps): React.JSX.Element {
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [restoreOpen, setRestoreOpen] = useState(false);
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/50 p-3">
       <FieldTitle
-        value={field.name}
+        value={resolveFieldLabel(field)}
         className="text-sm text-muted-foreground"
       />
       <div className="flex items-center gap-1">
-        <Dialog
-          modal
-          open={restoreOpen}
-          onOpenChange={setRestoreOpen}
-        >
+        <Dialog modal>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -227,11 +276,10 @@ function TrashedItem({
               disabled={isRestoring || isDeleting}
               title="Restaurar campo"
             >
-              {isRestoring ? (
+              {isRestoring && (
                 <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArchiveRestoreIcon className="h-4 w-4" />
               )}
+              {!isRestoring && <ArchiveRestoreIcon className="h-4 w-4" />}
             </Button>
           </DialogTrigger>
           <DialogContent className="py-4 px-6">
@@ -248,20 +296,18 @@ function TrashedItem({
                   <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
                   </DialogClose>
-                  <Button
-                    type="button"
-                    disabled={isRestoring}
-                    onClick={() => {
-                      onRestore();
-                      setRestoreOpen(false);
-                    }}
-                  >
-                    {isRestoring ? (
-                      <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <span>Confirmar</span>
-                    )}
-                  </Button>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      disabled={isRestoring}
+                      onClick={() => onRestore()}
+                    >
+                      {isRestoring && (
+                        <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                      )}
+                      {!isRestoring && <span>Confirmar</span>}
+                    </Button>
+                  </DialogClose>
                 </DialogFooter>
               </form>
             </section>
@@ -276,11 +322,7 @@ function TrashedItem({
         >
           <PencilIcon className="h-4 w-4" />
         </Button>
-        <Dialog
-          modal
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-        >
+        <Dialog modal>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -308,20 +350,18 @@ function TrashedItem({
                       Cancelar
                     </Button>
                   </DialogClose>
-                  <Button
-                    type="button"
-                    disabled={isDeleting}
-                    onClick={() => {
-                      onDelete();
-                      setDeleteOpen(false);
-                    }}
-                  >
-                    {isDeleting ? (
-                      <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <span>Confirmar</span>
-                    )}
-                  </Button>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => onDelete()}
+                    >
+                      {isDeleting && (
+                        <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                      )}
+                      {!isDeleting && <span>Confirmar</span>}
+                    </Button>
+                  </DialogClose>
                 </DialogFooter>
               </form>
             </section>
@@ -334,10 +374,10 @@ function TrashedItem({
 
 // --- Compound Components ---
 
-interface RootProps {
+type RootProps = {
   actions: FieldManagementActions;
   children: React.ReactNode;
-}
+};
 
 function FieldManagementRoot({
   actions,
@@ -347,7 +387,7 @@ function FieldManagementRoot({
     <FieldManagementProvider value={actions}>
       <div
         data-test-id="field-management"
-        className="flex flex-col h-full overflow-hidden"
+        className="flex flex-col flex-1 min-h-0 overflow-hidden"
       >
         {children}
       </div>
@@ -355,10 +395,10 @@ function FieldManagementRoot({
   );
 }
 
-interface HeaderProps {
+type HeaderProps = {
   title: string;
   onBack: () => void;
-}
+};
 
 function FieldManagementHeader({
   title,
@@ -387,44 +427,61 @@ function FieldManagementTabs(): React.JSX.Element {
   const trashedCount = nonNativeFields.filter((f) => f.trashed).length;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto relative p-4">
+    <div className="flex-1 flex flex-col min-h-0 relative">
       <Tabs
         defaultValue="display"
-        className="w-full max-w-6xl mx-auto"
+        className="w-full max-w-6xl mx-auto flex flex-col flex-1 min-h-0"
       >
-        <TabsList className="grid w-full grid-cols-5 mb-4">
-          <TabsTrigger value="display">Lista</TabsTrigger>
-          <TabsTrigger value="filter">Filtros</TabsTrigger>
-          <TabsTrigger value="form">Formulários</TabsTrigger>
-          <TabsTrigger value="detail">Detalhes</TabsTrigger>
-          <TabsTrigger
-            value="trashed"
-            disabled={trashedCount === 0}
-          >
-            Lixeira{trashedCount > 0 && ` (${trashedCount})`}
-          </TabsTrigger>
-        </TabsList>
+        <div className="px-4 pt-4 shrink-0">
+          <TabsList className="flex w-full overflow-x-auto [&>*]:flex-none sm:grid sm:grid-cols-5 mb-4">
+            <TabsTrigger value="display">Lista</TabsTrigger>
+            <TabsTrigger value="filter">Filtros</TabsTrigger>
+            <TabsTrigger value="form">Formulários</TabsTrigger>
+            <TabsTrigger value="detail">Detalhes</TabsTrigger>
+            <TabsTrigger
+              value="trashed"
+              disabled={trashedCount === 0}
+            >
+              Lixeira{trashedCount > 0 && ` (${trashedCount})`}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="display">
+        <TabsContent
+          value="display"
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        >
           <FieldManagementList visibilityKey="showInList" />
         </TabsContent>
 
-        <TabsContent value="filter">
+        <TabsContent
+          value="filter"
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        >
           <FieldManagementList visibilityKey="showInFilter" />
         </TabsContent>
 
-        <TabsContent value="form">
+        <TabsContent
+          value="form"
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        >
           <FieldManagementList
             visibilityKey="showInForm"
             excludeNative
           />
         </TabsContent>
 
-        <TabsContent value="detail">
+        <TabsContent
+          value="detail"
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        >
           <FieldManagementList visibilityKey="showInDetail" />
         </TabsContent>
 
-        <TabsContent value="trashed">
+        <TabsContent
+          value="trashed"
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        >
           <FieldManagementTrashedList excludeNative />
         </TabsContent>
       </Tabs>
@@ -432,10 +489,10 @@ function FieldManagementTabs(): React.JSX.Element {
   );
 }
 
-interface ListProps {
+type ListProps = {
   visibilityKey: VisibilityKey;
   excludeNative?: boolean;
-}
+};
 
 function FieldManagementList({
   visibilityKey,
@@ -443,6 +500,8 @@ function FieldManagementList({
 }: ListProps): React.JSX.Element {
   const {
     fields: allFields,
+    parentListChildFields,
+    parentListChildIds,
     fieldOrderList,
     fieldOrderForm,
     fieldOrderFilter,
@@ -456,13 +515,11 @@ function FieldManagementList({
     isSavingOrder,
   } = useFieldManagement();
 
-  const activeFields = allFields.filter(
-    (f) =>
-      !f.trashed &&
-      !(excludeNative && f.native) &&
-      f.type !== E_FIELD_TYPE.TRASHED &&
-      f.type !== E_FIELD_TYPE.TRASHED_AT,
-  );
+  // Só a aba Lista traz os campos-filho de grupo elegíveis (config
+  // `showInParentList`); esses usam `visibleInParentList` como visibilidade.
+  function isParentListChild(field: IField): boolean {
+    return visibilityKey === 'showInList' && parentListChildIds.has(field._id);
+  }
 
   const orderArray = React.useMemo(() => {
     if (visibilityKey === 'showInList') return fieldOrderList;
@@ -478,26 +535,54 @@ function FieldManagementList({
     fieldOrderDetail,
   ]);
 
-  const sortedActiveFields = React.useMemo(() => {
-    if (orderArray.length === 0) return activeFields;
-    return [...activeFields].sort((a, b) => {
-      const idxA = orderArray.indexOf(a._id);
-      const idxB = orderArray.indexOf(b._id);
-      return (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB);
-    });
-  }, [activeFields, orderArray]);
+  const managedFields = React.useMemo(() => {
+    const base = allFields.filter((f) => isManageableField(f, excludeNative));
+    if (visibilityKey !== 'showInList') return base;
+    return [...base, ...parentListChildFields];
+  }, [allFields, excludeNative, visibilityKey, parentListChildFields]);
 
-  const [fields, setFields] = useState<Array<IField>>(sortedActiveFields);
+  const [orderedIds, setOrderedIds] = useState<Array<string>>(() => {
+    if (orderArray.length === 0) return managedFields.map((f) => f._id);
+    return [...managedFields]
+      .sort((a, b) => {
+        const idxA = orderArray.indexOf(a._id);
+        const idxB = orderArray.indexOf(b._id);
+        let rankA = idxA;
+        if (idxA === -1) rankA = Infinity;
+        let rankB = idxB;
+        if (idxB === -1) rankB = Infinity;
+        return rankA - rankB;
+      })
+      .map((f) => f._id);
+  });
   const [hasChanges, setHasChanges] = useState(false);
 
-  let widthKey: 'widthInForm' | 'widthInList' | 'widthInDetail' | undefined;
-  if (visibilityKey === 'showInForm') {
-    widthKey = 'widthInForm';
-  } else if (visibilityKey === 'showInList') {
-    widthKey = 'widthInList';
-  } else if (visibilityKey === 'showInDetail') {
-    widthKey = 'widthInDetail';
-  }
+  const orderedFields = React.useMemo(() => {
+    if (orderedIds.length === 0) return managedFields;
+    return [...managedFields].sort((a, b) => {
+      const idxA = orderedIds.indexOf(a._id);
+      const idxB = orderedIds.indexOf(b._id);
+      let rankA = idxA;
+      if (idxA === -1) rankA = Infinity;
+      let rankB = idxB;
+      if (idxB === -1) rankB = Infinity;
+      return rankA - rankB;
+    });
+  }, [managedFields, orderedIds]);
+
+  const visibleFields = orderedFields.filter((f) =>
+    fieldVisibilityValue(f, visibilityKey, isParentListChild(f)),
+  );
+  const hiddenFields = orderedFields.filter(
+    (f) => !fieldVisibilityValue(f, visibilityKey, isParentListChild(f)),
+  );
+
+  const WIDTH_KEY_BY_VISIBILITY: Partial<Record<VisibilityKey, WidthKey>> = {
+    showInForm: 'widthInForm',
+    showInList: 'widthInList',
+    showInDetail: 'widthInDetail',
+  };
+  const widthKey = WIDTH_KEY_BY_VISIBILITY[visibilityKey];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -508,24 +593,48 @@ function FieldManagementList({
 
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setFields((items) => {
-        const oldIndex = items.findIndex((item) => item._id === active.id);
-        const newIndex = items.findIndex((item) => item._id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-      setHasChanges(true);
+    if (!over || active.id === over.id) return;
+
+    const activeField = orderedFields.find((f) => f._id === active.id);
+    const overField = orderedFields.find((f) => f._id === over.id);
+    if (!activeField || !overField) return;
+
+    // Bloqueia mover entre as secoes (visivel/oculto); olho faz essa troca.
+    if (
+      fieldVisibilityValue(
+        activeField,
+        visibilityKey,
+        isParentListChild(activeField),
+      ) !==
+      fieldVisibilityValue(
+        overField,
+        visibilityKey,
+        isParentListChild(overField),
+      )
+    ) {
+      return;
     }
+
+    setOrderedIds((prev) => {
+      const oldIndex = prev.indexOf(String(active.id));
+      const newIndex = prev.indexOf(String(over.id));
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+    setHasChanges(true);
   }
 
   function handleSave(): void {
-    const orderedIds = fields.map((f) => f._id);
-    onSaveOrder(visibilityKey, orderedIds);
+    const ids = [...visibleFields, ...hiddenFields].map((f) => f._id);
+    onSaveOrder(visibilityKey, ids);
     setHasChanges(false);
   }
 
   function handleToggleVisibility(field: IField): void {
-    const currentValue = field[visibilityKey];
+    const currentValue = fieldVisibilityValue(
+      field,
+      visibilityKey,
+      isParentListChild(field),
+    );
     onToggleVisibility(field, visibilityKey, !currentValue);
   }
 
@@ -534,28 +643,44 @@ function FieldManagementList({
     onChangeWidth(field, widthKey, newWidth);
   }
 
-  // Sync fields when context fields change (after mutation responses)
+  // Sincroniza IDs quando campos são adicionados ou removidos (não para toggle).
   useEffect(() => {
-    const updated = allFields.filter(
-      (f) =>
-        !f.trashed &&
-        !(excludeNative && f.native) &&
-        f.type !== E_FIELD_TYPE.TRASHED &&
-        f.type !== E_FIELD_TYPE.TRASHED_AT,
-    );
-
-    setFields((prev) => {
-      const updatedPrev = prev.map((pf) => {
-        const found = updated.find((uf) => uf._id === pf._id);
-        if (found) return found;
-        return pf;
-      });
-      const newFields = updated.filter(
-        (uf) => !prev.some((pf) => pf._id === uf._id),
-      );
-      return [...updatedPrev, ...newFields];
+    let updatedIds = allFields
+      .filter((f) => isManageableField(f, excludeNative))
+      .map((f) => f._id);
+    if (visibilityKey === 'showInList') {
+      updatedIds = [...updatedIds, ...parentListChildFields.map((f) => f._id)];
+    }
+    setOrderedIds((prev) => {
+      const kept = prev.filter((id) => updatedIds.includes(id));
+      const added = updatedIds.filter((id) => !prev.includes(id));
+      if (kept.length === prev.length && added.length === 0) return prev;
+      return [...kept, ...added];
     });
-  }, [allFields, excludeNative]);
+  }, [allFields, excludeNative, visibilityKey, parentListChildFields]);
+
+  function renderField(field: IField, dimmed: boolean): React.JSX.Element {
+    let onWidthChange: ((width: number) => void) | undefined;
+    if (widthKey) {
+      onWidthChange = (width: number): void => handleWidthChange(field, width);
+    }
+    return (
+      <SortableManagementItem
+        key={field._id}
+        field={field}
+        dimmed={dimmed}
+        disabled={isSavingOrder}
+        visibilityKey={visibilityKey}
+        isParentListChild={isParentListChild(field)}
+        widthKey={widthKey}
+        onEdit={(): void => onEditField(field._id)}
+        onToggleVisibility={(): void => handleToggleVisibility(field)}
+        onWidthChange={onWidthChange}
+        isTogglingVisibility={togglingFieldId === field._id}
+        isChangingWidth={changingWidthFieldId === field._id}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -564,34 +689,42 @@ function FieldManagementList({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={fields.map((f) => f._id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-2">
-            {fields.map((field) => (
-              <SortableManagementItem
-                key={field._id}
-                field={field}
-                disabled={isSavingOrder}
-                visibilityKey={visibilityKey}
-                widthKey={widthKey}
-                onEdit={() => onEditField(field._id)}
-                onToggleVisibility={() => handleToggleVisibility(field)}
-                onWidthChange={
-                  widthKey
-                    ? (width): void => handleWidthChange(field, width)
-                    : undefined
-                }
-                isTogglingVisibility={togglingFieldId === field._id}
-                isChangingWidth={changingWidthFieldId === field._id}
-              />
-            ))}
-          </div>
-        </SortableContext>
+        <div className="space-y-4">
+          {visibleFields.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Visíveis
+              </p>
+              <SortableContext
+                items={visibleFields.map((f) => f._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {visibleFields.map((field) => renderField(field, false))}
+                </div>
+              </SortableContext>
+            </div>
+          )}
+
+          {hiddenFields.length > 0 && (
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Ocultos
+              </p>
+              <SortableContext
+                items={hiddenFields.map((f) => f._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {hiddenFields.map((field) => renderField(field, true))}
+                </div>
+              </SortableContext>
+            </div>
+          )}
+        </div>
       </DndContext>
 
-      {fields.length === 0 && (
+      {orderedFields.length === 0 && (
         <p className="text-center text-sm text-muted-foreground py-4">
           Nenhum campo cadastrado
         </p>
@@ -613,9 +746,9 @@ function FieldManagementList({
   );
 }
 
-interface TrashedListProps {
+type TrashedListProps = {
   excludeNative?: boolean;
-}
+};
 
 function FieldManagementTrashedList({
   excludeNative,

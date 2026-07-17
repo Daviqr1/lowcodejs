@@ -11,6 +11,9 @@ export const Schema = new mongoose.Schema(
     slug: { type: String, required: true },
     description: { type: String },
     permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Permission' }],
+    // Grupos englobados (multi-link). Quem pertence a este grupo herda o acesso
+    // liberado a eles. Default [] preserva grupos existentes sem hierarquia.
+    encompasses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'UserGroup' }],
 
     trashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },
@@ -21,9 +24,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const UserGroup = (mongoose?.models?.UserGroup ||
-  mongoose.model<Entity>(
-    'UserGroup',
-    Schema,
-    'user-groups',
-  )) as mongoose.Model<Entity>;
+export const UserGroup: mongoose.Model<Entity> =
+  mongoose?.models?.UserGroup ||
+  mongoose.model<Entity>('UserGroup', Schema, 'user-groups');

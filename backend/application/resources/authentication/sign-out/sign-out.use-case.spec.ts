@@ -14,7 +14,7 @@ describe('Sign Out Use Case', () => {
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.message).toBe('Successfully signed out');
+    expect(result.value.message).toBe('Logout realizado com sucesso');
   });
 
   it('deve sempre retornar Right (nunca Left)', async () => {

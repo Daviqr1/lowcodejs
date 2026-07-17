@@ -10,18 +10,17 @@ Formulario para criacao de nova tabela a partir do zero.
 
 ## Arquivos
 
-| Arquivo            | Tipo       | Descricao                                                                                                  |
-| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `index.tsx`        | Loader     | Rota vazia, sem pre-carregamento                                                                           |
-| `index.lazy.tsx`   | Componente | Layout com header, formulario e footer com botoes Cancelar/Criar                                           |
-| `-create-form.tsx` | Formulario | Schema Zod `TableCreateSchema` e campos: logo (upload), nome, estilo (LIST/GALLERY/DOCUMENT), visibilidade |
+| Arquivo            | Tipo       | Descricao                                                                                          |
+| ------------------ | ---------- | -------------------------------------------------------------------------------------------------- |
+| `index.tsx`        | Loader     | Rota vazia, sem pre-carregamento                                                                   |
+| `index.lazy.tsx`   | Componente | Layout com header, formulario e footer com botoes Cancelar/Criar                                   |
+| `-create-form.tsx` | Formulario | Schema Zod `TableCreateSchema` e campos: logo (upload), nome, slug, estilo (LIST/GALLERY/DOCUMENT) |
 
 ## Schema do Formulario
 
 - `name`: string, 1-40 caracteres, validado por `TABLE_NAME_REGEX`
 - `logo`: string nullable (ID do storage)
 - `style`: enum restrito a LIST, GALLERY, DOCUMENT na criacao
-- `visibility`: enum com todas as opcoes de E_TABLE_VISIBILITY
 
 ## Fluxo
 

@@ -1,0 +1,34 @@
+graph TD
+    subgraph Registry["Docker Hub (imagens :latest)"]
+        IMGAPI["marcosjhollyfer/lowcodejs-api:latest"]
+        IMGAPP["marcosjhollyfer/lowcodejs-app:latest"]
+        IMGMCP["marcosjhollyfer/lowcodejs-mcp:latest"]
+    end
+
+    subgraph CICD["CI/CD"]
+        GHA["GitHub Actions (main: test + build + push)"]
+        COOLIFY["Coolify (main + develop, Dockerfile-coolify)"]
+    end
+
+    subgraph Compose["docker-compose (rede low-code-js-network)"]
+        MONGO["mongo (27017)"]
+        REDIS["redis 7-alpine (6379)"]
+        APISVC["api Fastify (3000) - docker-entrypoint: migrate + seed"]
+        APPSVC["app Nitro/SSR (5173)"]
+        MCPSVC["mcp (3001) - profile ai"]
+    end
+
+    GHA --> IMGAPI
+    GHA --> IMGAPP
+    COOLIFY --> APISVC
+    COOLIFY --> APPSVC
+
+    IMGAPI -.-> APISVC
+    IMGAPP -.-> APPSVC
+    IMGMCP -.-> MCPSVC
+
+    APPSVC --> APISVC
+    APISVC --> MONGO
+    APISVC --> REDIS
+    MCPSVC --> APISVC
+    APISVC -.-> MCPSVC

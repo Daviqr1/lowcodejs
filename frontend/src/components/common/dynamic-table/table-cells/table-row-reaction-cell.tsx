@@ -7,18 +7,29 @@ import { handleApiError } from '@/lib/handle-api-error';
 import type { IField, IReactionSummary, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowReactionCellProps {
+type TableRowReactionCellProps = {
   row: IRow;
   field: IField;
   tableSlug: string;
-}
+};
 
 export function TableRowReactionCell({
   field,
   row,
   tableSlug,
 }: TableRowReactionCellProps): React.JSX.Element {
-  const summary = (row[field.slug] ?? {}) as IReactionSummary;
+  const rawSummary = row[field.slug];
+  let summary: IReactionSummary = {
+    _likeCount: 0,
+    _unlikeCount: 0,
+    _userReaction: null,
+  };
+  if (
+    rawSummary &&
+    typeof rawSummary === 'object' &&
+    '_likeCount' in rawSummary
+  )
+    summary = rawSummary;
   const likeCount = summary._likeCount ?? 0;
   const unlikeCount = summary._unlikeCount ?? 0;
   const userLike = summary._userReaction === E_REACTION_TYPE.LIKE;

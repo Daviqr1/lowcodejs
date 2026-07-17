@@ -1,15 +1,13 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, POST, getInstanceByToken } from 'fastify-decorators';
 
-import { E_ROLE, E_TABLE_PERMISSION } from '@application/core/entity.core';
+import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
-import BullMQCsvImportQueueService from '@application/services/csv-import/bullmq-csv-import-queue.service';
+import TableMongooseRepository from '@application/repositories/table/table.repository';
 import { CsvImportQueueContractService } from '@application/services/csv-import/csv-import-queue-contract.service';
+import BullMQCsvImportQueueService from '@application/services/csv-import/csv-import-queue.service';
 
 import { TableRowImportCsvSchema } from './import-csv.schema';
 import { ImportCsvParamsValidator } from './import-csv.validator';
@@ -32,7 +30,6 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
         TableAccessMiddleware({
           requiredPermission: E_TABLE_PERMISSION.CREATE_ROW,
         }),

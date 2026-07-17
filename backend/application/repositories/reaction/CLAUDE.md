@@ -7,7 +7,7 @@ Repositorio da entidade Reaction (reacoes/likes em registros de tabela).
 | Arquivo | Descricao |
 |---------|-----------|
 | `reaction-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `reaction-mongoose.repository.ts` | Implementacao com Mongoose |
+| `reaction.repository.ts` | Implementacao com Mongoose |
 | `reaction-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

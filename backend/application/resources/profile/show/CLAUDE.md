@@ -17,6 +17,9 @@ Retorna o perfil do usuario autenticado.
 ## Regras de Negocio
 - ID do usuario extraido do token JWT (`request.user.sub`), nao de parametros
 - Retorna usuario com grupo e permissoes populadas
+- Inclui `capabilities: string[]` — uniao das permissoes (slugs) do fecho de
+  grupos do usuario (`resolveCapabilities`). O frontend usa para liberar a
+  navegacao por capability (MANAGE_*), nao por role legado
 
 ## Erros Possiveis
 | Code | Cause | Quando |

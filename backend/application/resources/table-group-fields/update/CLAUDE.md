@@ -7,7 +7,7 @@ Atualiza um campo existente dentro de um grupo de uma tabela.
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio), TableAccessMiddleware (UPDATE_FIELD)
-2. Validator: GroupFieldUpdateBodyValidator - campos: name (string), type (enum E_FIELD_TYPE), trashed (boolean, default false), trashedAt (string nullable, transformado em Date) + TableFieldBaseSchema (required, multiple, showInFilter, showInForm, showInDetail, showInList, widthInForm, widthInList, widthInDetail, locked, format, defaultValue, dropdown, relationship, category) | GroupFieldUpdateParamsValidator - campos: slug (string), groupSlug (string), fieldId (string)
+2. Validator: GroupFieldUpdateBodyValidator - campos: name (string), type (enum E_FIELD_TYPE), trashed (boolean, default false), trashedAt (string nullable, transformado em Date) + TableFieldBaseSchema (required, multiple, `permissions` { list, form, detail } → binding, showInFilter, widthInForm, widthInList, widthInDetail, locked, format, defaultValue, dropdown, relationship, category) | GroupFieldUpdateParamsValidator - campos: slug (string), groupSlug (string), fieldId (string)
 3. UseCase:
    - Busca tabela pelo slug (exact match)
    - Encontra o grupo pelo groupSlug

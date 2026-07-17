@@ -87,12 +87,10 @@ const SECTIONS: Array<Section> = [
     items: [
       { name: 'required: true', hint: 'Campo obrigatório no formulário' },
       { name: 'multiple: true', hint: 'Permite múltiplos valores' },
-      { name: 'showInList: true', hint: 'Mostra na listagem (default)' },
-      { name: 'showInForm: true', hint: 'Mostra no formulário (default)' },
       { name: 'showInFilter: true', hint: 'Permite filtrar por este campo' },
       {
-        name: 'showInDetail: true',
-        hint: 'Mostra na tela de detalhe (default)',
+        name: 'permissions: { list, form, detail }',
+        hint: 'Visibilidade por contexto. Cada um: { kind: PUBLIC | NOBODY | GROUP, group }',
       },
       { name: 'defaultValue: "..."', hint: 'Valor inicial (string ou lista)' },
     ],
@@ -129,11 +127,8 @@ export function SchemaReference(): React.JSX.Element {
               }
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-accent/40"
             >
-              {isOpen ? (
-                <ChevronDownIcon className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              )}
+              {isOpen && <ChevronDownIcon className="h-3.5 w-3.5" />}
+              {!isOpen && <ChevronRightIcon className="h-3.5 w-3.5" />}
               {section.title}
             </button>
 

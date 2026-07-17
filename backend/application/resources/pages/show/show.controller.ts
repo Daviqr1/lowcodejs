@@ -12,7 +12,6 @@ import { PageShowParamsValidator } from './show.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: PageShowUseCase = getInstanceByToken(
       PageShowUseCase,
     ),
@@ -31,7 +30,11 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const params = PageShowParamsValidator.parse(request.params);
-    const result = await this.useCase.execute(params);
+    const result = await this.useCase.execute({
+      ...params,
+      ...(request.user?.sub && { actorUserId: request.user.sub }),
+      ...(request.user?.role && { role: request.user.role }),
+    });
 
     if (result.isLeft()) {
       const error = result.value;

@@ -32,13 +32,40 @@ export const E_FIELD_TYPE = {
   EVALUATION: 'EVALUATION',
   CATEGORY: 'CATEGORY',
   USER: 'USER',
+  USER_GROUP: 'USER_GROUP',
+  HTML_CONTENT: 'HTML_CONTENT',
 
   // NATIVE
   CREATOR: 'CREATOR',
   IDENTIFIER: 'IDENTIFIER',
   CREATED_AT: 'CREATED_AT',
-  TRASHED: 'TRASHED',
+  UPDATED_AT: 'UPDATED_AT',
+  UPDATER: 'UPDATER',
   TRASHED_AT: 'TRASHED_AT',
+  STATUS: 'STATUS',
+} as const;
+
+// Rotulos default dos campos nativos (espelha o backend). Usado como placeholder
+// no editor de rotulo de campo nativo. Chave = slug do campo nativo.
+export const NATIVE_FIELD_LABEL_DEFAULTS: Record<string, string> = {
+  _id: 'ID',
+  creator: 'Criador',
+  createdAt: 'Criado em',
+  updatedAt: 'Modificado em',
+  updater: 'Modificado por',
+  status: 'Status',
+  trashedAt: 'Enviado para lixeira em',
+};
+
+export const E_RELATIONSHIP_ON_DELETE = {
+  CASCADE: 'CASCADE',
+  SET_NULL: 'SET_NULL',
+  RESTRICT: 'RESTRICT',
+} as const;
+
+export const E_ROW_STATUS = {
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
 } as const;
 
 export const E_ROLE = {
@@ -77,6 +104,139 @@ export const E_FIELD_FORMAT = {
   YYYY_MM_DD_HH_MM_SS_DASH: 'yyyy-MM-dd HH:mm:ss',
 } as const;
 
+// Regras de validacao de valor de campo (espelha o backend E_FIELD_VALIDATION).
+// Cada regra vive numa subpasta em backend/application/core/validations.
+export const E_FIELD_VALIDATION = {
+  NOT_EMPTY: 'NOT_EMPTY',
+  IS_EMAIL: 'IS_EMAIL',
+  IS_NUMERIC: 'IS_NUMERIC',
+  IS_ALPHA_NUMERIC: 'IS_ALPHA_NUMERIC',
+  IS_IN_RANGE: 'IS_IN_RANGE',
+  IS_IBAN: 'IS_IBAN',
+  IS_NOT: 'IS_NOT',
+  IS_URL: 'IS_URL',
+  IS_PHONE: 'IS_PHONE',
+  IS_CPF: 'IS_CPF',
+  IS_CNPJ: 'IS_CNPJ',
+  IS_UNIQUE: 'IS_UNIQUE',
+  ARE_UNIQUE_VALUES: 'ARE_UNIQUE_VALUES',
+  EMAIL_EXISTS: 'EMAIL_EXISTS',
+  USER_EXISTS: 'USER_EXISTS',
+} as const;
+
+// Opcoes para o dropdown de validacoes no editor de campo. `types` lista os
+// tipos elegiveis ([] = qualquer tipo); `multipleOnly` exige field.multiple;
+// `requiresConfig` indica regras com parametros (range/is-not). `async` marca
+// regras que so validam no backend (banco) — front nao roda no submit.
+export const FIELD_VALIDATION_OPTIONS = [
+  {
+    label: 'Não vazio',
+    value: E_FIELD_VALIDATION.NOT_EMPTY,
+    types: [E_FIELD_TYPE.TEXT_SHORT, E_FIELD_TYPE.TEXT_LONG],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É e-mail',
+    value: E_FIELD_VALIDATION.IS_EMAIL,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É numérico',
+    value: E_FIELD_VALIDATION.IS_NUMERIC,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É alfanumérico',
+    value: E_FIELD_VALIDATION.IS_ALPHA_NUMERIC,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'Maior ou menor que',
+    value: E_FIELD_VALIDATION.IS_IN_RANGE,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: true,
+    async: false,
+  },
+  {
+    label: 'É IBAN',
+    value: E_FIELD_VALIDATION.IS_IBAN,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'Diferente de',
+    value: E_FIELD_VALIDATION.IS_NOT,
+    types: [E_FIELD_TYPE.TEXT_SHORT, E_FIELD_TYPE.TEXT_LONG],
+    requiresConfig: true,
+    async: false,
+  },
+  {
+    label: 'É URL',
+    value: E_FIELD_VALIDATION.IS_URL,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É telefone',
+    value: E_FIELD_VALIDATION.IS_PHONE,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É CPF',
+    value: E_FIELD_VALIDATION.IS_CPF,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'É CNPJ',
+    value: E_FIELD_VALIDATION.IS_CNPJ,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: false,
+  },
+  {
+    label: 'Valor único',
+    value: E_FIELD_VALIDATION.IS_UNIQUE,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: true,
+  },
+  {
+    label: 'Valores únicos',
+    value: E_FIELD_VALIDATION.ARE_UNIQUE_VALUES,
+    types: [],
+    multipleOnly: true,
+    requiresConfig: false,
+    async: true,
+  },
+  {
+    label: 'E-mail existe',
+    value: E_FIELD_VALIDATION.EMAIL_EXISTS,
+    types: [E_FIELD_TYPE.TEXT_SHORT],
+    requiresConfig: false,
+    async: true,
+  },
+  {
+    label: 'Usuário existe',
+    value: E_FIELD_VALIDATION.USER_EXISTS,
+    types: [E_FIELD_TYPE.TEXT_SHORT, E_FIELD_TYPE.USER],
+    requiresConfig: false,
+    async: true,
+  },
+] as const;
+
 export const E_TABLE_TYPE = {
   TABLE: 'TABLE',
   FIELD_GROUP: 'FIELD_GROUP',
@@ -92,19 +252,6 @@ export const E_TABLE_STYLE = {
   FORUM: 'FORUM',
   CALENDAR: 'CALENDAR',
   GANTT: 'GANTT',
-} as const;
-
-export const E_TABLE_VISIBILITY = {
-  PUBLIC: 'PUBLIC',
-  RESTRICTED: 'RESTRICTED',
-  OPEN: 'OPEN',
-  FORM: 'FORM',
-  PRIVATE: 'PRIVATE',
-} as const;
-
-export const E_TABLE_COLLABORATION = {
-  OPEN: 'OPEN',
-  RESTRICTED: 'RESTRICTED',
 } as const;
 
 export const E_EXTENSION_TYPE = {
@@ -172,6 +319,55 @@ export const E_TABLE_PERMISSION = {
   VIEW_ROW: 'VIEW_ROW',
 } as const;
 
+// Capacidades de area do sistema (gerenciamento por area, atribuiveis a grupos).
+export const E_AREA_CAPABILITY = {
+  MANAGE_USERS: 'MANAGE_USERS',
+  MANAGE_MENU: 'MANAGE_MENU',
+  MANAGE_USER_GROUPS: 'MANAGE_USER_GROUPS',
+  MANAGE_SETTINGS: 'MANAGE_SETTINGS',
+  MANAGE_TOOLS: 'MANAGE_TOOLS',
+  MANAGE_PLUGINS: 'MANAGE_PLUGINS',
+  MANAGE_CHAT: 'MANAGE_CHAT',
+} as const;
+
+// Alvo de uma permissao de acao da tabela.
+export const E_PERMISSION_TARGET = {
+  PUBLIC: 'PUBLIC',
+  NOBODY: 'NOBODY',
+  GROUP: 'GROUP',
+} as const;
+
+// Perfis fixos de convidados da tabela.
+export const E_TABLE_PROFILE = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  EDITOR: 'EDITOR',
+  CONTRIBUTOR: 'CONTRIBUTOR',
+  VIEWER: 'VIEWER',
+} as const;
+
+export const TABLE_PROFILE_MAPPER: Record<string, string> = {
+  [E_TABLE_PROFILE.OWNER]: 'Dono',
+  [E_TABLE_PROFILE.ADMIN]: 'Administrador',
+  [E_TABLE_PROFILE.EDITOR]: 'Editor',
+  [E_TABLE_PROFILE.CONTRIBUTOR]: 'Colaborador',
+  [E_TABLE_PROFILE.VIEWER]: 'Visualizador',
+};
+
+// As 10 acoes da tabela vinculaveis por binding, na ordem de exibicao.
+export const TABLE_PERMISSION_ACTIONS = [
+  E_TABLE_PERMISSION.VIEW_TABLE,
+  E_TABLE_PERMISSION.UPDATE_TABLE,
+  E_TABLE_PERMISSION.CREATE_FIELD,
+  E_TABLE_PERMISSION.UPDATE_FIELD,
+  E_TABLE_PERMISSION.REMOVE_FIELD,
+  E_TABLE_PERMISSION.VIEW_FIELD,
+  E_TABLE_PERMISSION.CREATE_ROW,
+  E_TABLE_PERMISSION.UPDATE_ROW,
+  E_TABLE_PERMISSION.REMOVE_ROW,
+  E_TABLE_PERMISSION.VIEW_ROW,
+] as const;
+
 export const PERMISSION_LABEL_MAPPER: Record<string, string> = {
   [E_TABLE_PERMISSION.CREATE_TABLE]: 'Criar tabela',
   [E_TABLE_PERMISSION.UPDATE_TABLE]: 'Editar tabela',
@@ -185,6 +381,49 @@ export const PERMISSION_LABEL_MAPPER: Record<string, string> = {
   [E_TABLE_PERMISSION.UPDATE_ROW]: 'Editar registro',
   [E_TABLE_PERMISSION.REMOVE_ROW]: 'Remover registro',
   [E_TABLE_PERMISSION.VIEW_ROW]: 'Visualizar registro',
+  [E_AREA_CAPABILITY.MANAGE_USERS]: 'Gerenciar usuários',
+  [E_AREA_CAPABILITY.MANAGE_MENU]: 'Gerenciar menu',
+  [E_AREA_CAPABILITY.MANAGE_USER_GROUPS]: 'Gerenciar grupos de usuários',
+  [E_AREA_CAPABILITY.MANAGE_SETTINGS]: 'Gerenciar configurações',
+  [E_AREA_CAPABILITY.MANAGE_TOOLS]: 'Gerenciar ferramentas',
+  [E_AREA_CAPABILITY.MANAGE_PLUGINS]: 'Gerenciar plugins',
+  [E_AREA_CAPABILITY.MANAGE_CHAT]: 'Usar o assistente de IA',
+};
+
+// Descrições de cada permissão/capacidade (pedido do QA: "explicar o que cada
+// opção faz"). Espelham as descrições do seed do backend.
+export const PERMISSION_DESCRIPTION_MAPPER: Record<string, string> = {
+  [E_TABLE_PERMISSION.CREATE_TABLE]: 'Permite criar uma nova tabela.',
+  [E_TABLE_PERMISSION.UPDATE_TABLE]:
+    'Permite editar os dados/configuração de uma tabela existente.',
+  [E_TABLE_PERMISSION.REMOVE_TABLE]: 'Permite remover ou excluir tabelas.',
+  [E_TABLE_PERMISSION.VIEW_TABLE]: 'Permite visualizar uma tabela existente.',
+  [E_TABLE_PERMISSION.CREATE_FIELD]:
+    'Permite criar campos em uma tabela existente.',
+  [E_TABLE_PERMISSION.UPDATE_FIELD]:
+    'Permite editar campos de uma tabela existente.',
+  [E_TABLE_PERMISSION.REMOVE_FIELD]:
+    'Permite remover ou excluir campos de uma tabela existente.',
+  [E_TABLE_PERMISSION.VIEW_FIELD]:
+    'Permite visualizar os campos de uma tabela existente.',
+  [E_TABLE_PERMISSION.CREATE_ROW]:
+    'Permite criar novos registros em uma tabela existente.',
+  [E_TABLE_PERMISSION.UPDATE_ROW]:
+    'Permite editar registros de uma tabela existente.',
+  [E_TABLE_PERMISSION.REMOVE_ROW]:
+    'Permite remover registros de uma tabela existente.',
+  [E_TABLE_PERMISSION.VIEW_ROW]:
+    'Permite visualizar registros de uma tabela existente.',
+  [E_AREA_CAPABILITY.MANAGE_USERS]: 'Permite gerenciar os usuários do sistema.',
+  [E_AREA_CAPABILITY.MANAGE_MENU]: 'Permite gerenciar as opções de menu.',
+  [E_AREA_CAPABILITY.MANAGE_USER_GROUPS]:
+    'Permite gerenciar os grupos de usuários e suas permissões.',
+  [E_AREA_CAPABILITY.MANAGE_SETTINGS]:
+    'Permite gerenciar as configurações do sistema.',
+  [E_AREA_CAPABILITY.MANAGE_TOOLS]:
+    'Permite gerenciar as ferramentas (extensões do tipo tool).',
+  [E_AREA_CAPABILITY.MANAGE_PLUGINS]: 'Permite gerenciar os plugins.',
+  [E_AREA_CAPABILITY.MANAGE_CHAT]: 'Permite usar o chat do assistente de IA.',
 };
 
 // ============== OPTIONS PARA SELECTS ==============
@@ -200,6 +439,8 @@ export const FIELD_TYPE_OPTIONS = [
   { label: 'Reação', value: E_FIELD_TYPE.REACTION },
   { label: 'Avaliação', value: E_FIELD_TYPE.EVALUATION },
   { label: 'Usuário', value: E_FIELD_TYPE.USER },
+  { label: 'Grupos de usuários', value: E_FIELD_TYPE.USER_GROUP },
+  { label: 'Conteúdo HTML', value: E_FIELD_TYPE.HTML_CONTENT },
 ] as const;
 
 export const TEXT_FORMAT_OPTIONS = [
@@ -252,19 +493,6 @@ export const MENU_ITEM_TYPE_OPTIONS = [
   { label: 'Módulo de Extensão', value: E_MENU_ITEM_TYPE.EXTENSION_MODULE },
 ] as const;
 
-export const TABLE_COLLABORATION_OPTIONS = [
-  { label: 'Restrita', value: E_TABLE_COLLABORATION.RESTRICTED },
-  { label: 'Aberta', value: E_TABLE_COLLABORATION.OPEN },
-] as const;
-
-export const TABLE_VISIBILITY_OPTIONS = [
-  { label: 'Privada', value: E_TABLE_VISIBILITY.PRIVATE },
-  { label: 'Restrita', value: E_TABLE_VISIBILITY.RESTRICTED },
-  { label: 'Aberta', value: E_TABLE_VISIBILITY.OPEN },
-  { label: 'Pública', value: E_TABLE_VISIBILITY.PUBLIC },
-  { label: 'Formulário online', value: E_TABLE_VISIBILITY.FORM },
-] as const;
-
 export const TABLE_STYLE_OPTIONS = [
   { label: 'Lista', value: E_TABLE_STYLE.LIST },
   { label: 'Galeria', value: E_TABLE_STYLE.GALLERY },
@@ -303,8 +531,17 @@ export const E_CHAT_EVENT = {
   TOOL_ERROR: 'tool_error',
   MESSAGE: 'message',
   ERROR: 'error',
+  LLM_INFO: 'llm_info',
   // Client -> Server
   HISTORY: 'history',
+} as const;
+
+export const E_AI_LLM_PROVIDER = {
+  OPENAI: 'openai',
+  GEMINI: 'gemini',
+  CLAUDE: 'claude',
+  OPENROUTER: 'openrouter',
+  OLLAMA: 'ollama',
 } as const;
 
 // Socket.IO Notification Events

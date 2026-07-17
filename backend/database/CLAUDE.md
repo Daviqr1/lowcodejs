@@ -8,7 +8,7 @@ Executados em ordem pelo timestamp no nome do arquivo:
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `1720448435-permissions.seed.ts` | Cria 12 permissoes (E_TABLE_PERMISSION). Upsert por `slug` com `$set` (metadados seguem o codigo) |
+| `1720448435-permissions.seed.ts` | Cria 19 permissoes: 12 de tabela (E_TABLE_PERMISSION) + 7 capacidades de area (E_AREA_CAPABILITY, inclui MANAGE_CHAT). Upsert por `slug` com `$set` (metadados seguem o codigo) |
 | `1720448445-user-group.seed.ts` | Cria 4 grupos: MASTER (all), ADMINISTRATOR (all), MANAGER (CRUD+VIEW), REGISTERED (VIEW+CREATE_ROW). Filtra soft-delete ao buscar permissions. Upsert por `slug`: `$set` em metadados, `$setOnInsert` em `permissions` (preserva customizacoes apos 1a criacao) |
 | `1720465893-settings.seed.ts` | Cria Setting singleton. Se existe MASTER, marca SETUP_COMPLETED=true. Caso contrario, `$setOnInsert` vazio (preserva configs existentes) |
 | `1778025600-demo-users.seed.ts` | **Gated por `DEMO_MODE=true`**. Cria/atualiza 2 usuarios publicos (`admin@admin.com` → ADMINISTRATOR, `registered@registered.com` → REGISTERED) com `$set` em todos os campos. Password re-hashado a cada execucao. No-op silencioso quando `DEMO_MODE=false` |
@@ -18,30 +18,39 @@ Usuario MASTER **nao** tem seed: e criado via Setup Wizard na UI na primeira exe
 
 ## Migrations (`migrations/`)
 
-One-time, idempotentes via marcadores persistidos no documento Setting
-singleton. Diferente de seeders, NAO seguem o padrao `<timestamp>-<nome>` —
-sao scripts manuais executados via npm script dedicado.
+One-time (`NN-migrate-*.ts`), idempotentes via marcadores persistidos no
+documento Setting singleton. Rodam **automaticamente** no boot Docker: o
+`docker-entry-point.sh` loopa `scripts/migrations/*.sh` (que invocam o `.ts`
+irmao) em ordem numerica (01→27) antes dos seeders. No 2o boot em diante sao
+no-op. **Nao ha `npm run migrate:*`** — em dev local (`npm run dev`) elas nao
+rodam.
 
-| Arquivo | Descricao |
-|---------|-----------|
-| `migrate-dual-connection.ts` | Copia collections dinamicas do DB system (`DB_DATABASE`) para o DB data (`DB_DATA_DATABASE`). Le `tables` no source, copia cada slug para o target via `insertMany` (ignora duplicatas). Marca `Setting.MIGRATION_DUAL_CONNECTION_AT` ao final. Skip silencioso se marcador ja setado (a menos que `--force`) |
+A lista completa e ordenada (marker + proposito de cada uma) vive em:
+
+- `database/migrations/CLAUDE.md` — tabela por arquivo `.ts` + marker + pattern.
+- `scripts/migrations/CLAUDE.md` — wrappers `.sh`, ordem de boot e `_lib.sh`.
+
+Fora do boot ha remodelagens **manuais/destrutivas** isoladas em
+`database/remodels/` (ver `database/remodels/CLAUDE.md`) — ex.:
+`migrate-fieldgroup-to-relationship.ts` (sem wrapper `.sh`) converte um
+`FIELD_GROUP` falso-relacionamento numa tabela independente. Destrutivo, exige
+`--apply --i-have-backup`.
 
 ### Execucao
 
 ```bash
-# Copia (idempotente — skip se ja migrado)
-npm run seed                                     # primeiro: seed
-npm run migrate:dual-connection                  # depois: migracao
-# Em container, ambos rodam automaticamente via docker-entrypoint.sh
+# Rodar uma migration a mao (dev local ou debug) — via wrapper .sh
+sh scripts/migrations/01-migrate-dual-connection.sh            # skip se ja marcado
+sh scripts/migrations/01-migrate-dual-connection.sh --force    # ignora marker
 
-# Re-executar copia mesmo com marcador setado
-npm run migrate:dual-connection -- --force
+# Ou direto no TS (equivalente)
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --force
 
-# Apagar collections do DB system apos copia (MANUAL, apenas apos validacao em prod)
-npm run migrate:dual-connection -- --drop-source
-
-# Idem em producao (dentro do container)
-docker exec -it low-code-js-api npm run migrate:dual-connection:prod -- --drop-source
+# Apagar collections do DB system apos a copia dual-connection
+# (MANUAL, apenas apos validacao em prod + backup)
+node --import @swc-node/register/esm-register \
+  database/migrations/01-migrate-dual-connection.ts -- --drop-source
 ```
 
 Pre-requisitos para `--drop-source` em producao:

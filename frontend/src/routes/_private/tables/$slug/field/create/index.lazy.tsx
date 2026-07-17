@@ -4,6 +4,7 @@ import {
   useParams,
   useSearch,
 } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import { CreateFieldSkeleton } from './-create-field-skeleton';
 import {
@@ -28,7 +29,6 @@ import { E_FIELD_TYPE, E_TABLE_TYPE } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ICategory, IField, ValueOf } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute(
   '/_private/tables/$slug/field/create/',
@@ -44,12 +44,14 @@ function normalizeDefaultValue(
     E_FIELD_TYPE.DROPDOWN,
     E_FIELD_TYPE.CATEGORY,
     E_FIELD_TYPE.USER,
+    E_FIELD_TYPE.USER_GROUP,
     E_FIELD_TYPE.RELATIONSHIP,
   ];
 
   if (arrayTypes.includes(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (defaultValue) return [defaultValue];
     return null;
@@ -57,22 +59,24 @@ function normalizeDefaultValue(
 
   // TEXT_SHORT, TEXT_LONG, DATE → string
   if (Array.isArray(defaultValue)) {
-    return defaultValue.length > 0 ? defaultValue[0] : null;
+    if (defaultValue.length > 0) return defaultValue[0];
+    return null;
   }
   return defaultValue || null;
 }
 
 function normalizeTip(tip: string): string | null {
   const normalized = tip.trim();
-  return normalized.length > 0 ? normalized : null;
+  if (normalized.length > 0) return normalized;
+  return null;
 }
 
 function convertTreeNodeToCategory(nodes: Array<TreeNode>): Array<ICategory> {
-  return nodes.map((node) => ({
-    id: node.id,
-    label: node.label,
-    children: node.children ? convertTreeNodeToCategory(node.children) : [],
-  }));
+  return nodes.map((node) => {
+    let children: Array<ICategory> = [];
+    if (node.children) children = convertTreeNodeToCategory(node.children);
+    return { id: node.id, label: node.label, children };
+  });
 }
 
 function RouteComponent(): React.JSX.Element {
@@ -91,7 +95,9 @@ function RouteComponent(): React.JSX.Element {
   const permission = useTablePermission(table.data);
 
   const onCreateSuccess = (): void => {
-    toastSuccess('Campo criado', 'O campo foi criado com sucesso');
+    toast.success('Campo criado', {
+      description: 'O campo foi criado com sucesso',
+    });
     form.reset();
     sidebar.setOpen(false);
     navigate({
@@ -135,54 +141,123 @@ function RouteComponent(): React.JSX.Element {
         return;
 
       const hasRelationship = value.relationship.tableId !== '';
-      const hasDropdown = value.dropdown.length > 0;
-      const hasCategory = value.category.length > 0;
+      const hasDropdown = (value.dropdown?.length ?? 0) > 0;
+      const hasCategory = (value.category?.length ?? 0) > 0;
+
+      let htmlContent: string | undefined;
+      if (value.type === E_FIELD_TYPE.HTML_CONTENT) {
+        htmlContent = value.htmlContent || undefined;
+      }
+
+      // Rótulo por contexto: vazio → null (volta ao name naquele contexto).
+      const labelList = value.label.list?.trim() || null;
+      const labelFilter = value.label.filter?.trim() || null;
+      const labelForm = value.label.form?.trim() || null;
+      const labelDetail = value.label.detail?.trim() || null;
+
+      let payloadLabel: {
+        list: string | null;
+        filter: string | null;
+        form: string | null;
+        detail: string | null;
+      } | null = null;
+      if (labelList || labelFilter || labelForm || labelDetail) {
+        payloadLabel = {
+          list: labelList,
+          filter: labelFilter,
+          form: labelForm,
+          detail: labelDetail,
+        };
+      }
+
+      // value.format vem do formulário como string; o campo aceita o enum.
+      let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
+
+      let dropdown: typeof value.dropdown = [];
+      if (hasDropdown) dropdown = value.dropdown.map((item) => item);
+
+      let allowCustomDropdownOptions = false;
+      if (value.type === E_FIELD_TYPE.DROPDOWN) {
+        allowCustomDropdownOptions = value.allowCustomDropdownOptions;
+      }
+
+      let allowCreateRelationshipRecords = false;
+      if (value.type === E_FIELD_TYPE.RELATIONSHIP) {
+        allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
+      }
+
+      let fillWithCurrentUserWhenEmpty = false;
+      if (value.type === E_FIELD_TYPE.USER) {
+        fillWithCurrentUserWhenEmpty = value.fillWithCurrentUserWhenEmpty;
+      }
+
+      let relationship: IField['relationship'] = null;
+      if (hasRelationship) {
+        let labelParts: typeof value.relationship.labelParts = [];
+        if (value.relationship.customLabel) {
+          labelParts = value.relationship.labelParts;
+        }
+        relationship = {
+          table: {
+            _id: value.relationship.tableId,
+            slug: value.relationship.tableSlug,
+          },
+          field: {
+            _id: value.relationship.fieldId,
+            slug: value.relationship.fieldSlug,
+          },
+          // order/onDelete vêm do form como string; reduzem à união literal.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          order: (value.relationship.order || 'asc') as 'asc' | 'desc',
+          customLabel: value.relationship.customLabel,
+          labelParts,
+          labelSeparator: value.relationship.labelSeparator || ' - ',
+          visible: value.relationship.sourceVisible,
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          onDelete: value.relationship.onDelete as
+            | 'CASCADE'
+            | 'SET_NULL'
+            | 'RESTRICT',
+          mirror: {
+            multiple: value.relationship.mirrorMultiple,
+            visible: value.relationship.mirrorVisible,
+            label: value.relationship.mirrorLabel || undefined,
+          },
+          formMode: value.relationship.formMode,
+          max: value.relationship.max ?? null,
+        };
+      }
+
+      let category: Array<ICategory> = [];
+      if (hasCategory) category = convertTreeNodeToCategory(value.category);
 
       const payload: Partial<IField> = {
         name: value.name,
         slug: value.slug,
         tip: normalizeTip(value.tip),
+        label: payloadLabel,
+        // value.type vem do select do formulario (string); reduz ao enum.
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         type: value.type as keyof typeof E_FIELD_TYPE,
         required: value.required,
         multiple: value.multiple,
         showInFilter: value.showInFilter,
-        showInForm: value.showInForm,
-        showInDetail: value.showInDetail,
-        showInList: value.showInList,
+        showInParentList: value.showInParentList,
+        permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
-        format: value.format
-          ? (value.format as ValueOf<typeof E_FIELD_FORMAT>)
-          : null,
+        format,
+        validations: value.validations,
         defaultValue: normalizeDefaultValue(value.type, value.defaultValue),
-        dropdown: hasDropdown ? value.dropdown.map((item) => item) : [],
-        allowCustomDropdownOptions:
-          value.type === E_FIELD_TYPE.DROPDOWN
-            ? value.allowCustomDropdownOptions
-            : false,
-        allowCreateRelationshipRecords:
-          value.type === E_FIELD_TYPE.RELATIONSHIP
-            ? value.allowCreateRelationshipRecords
-            : false,
-        relationship: hasRelationship
-          ? {
-              table: {
-                _id: value.relationship.tableId,
-                slug: value.relationship.tableSlug,
-              },
-              field: {
-                _id: value.relationship.fieldId,
-                slug: value.relationship.fieldSlug,
-              },
-              order: (value.relationship.order || 'asc') as 'asc' | 'desc',
-              customLabel: value.relationship.customLabel,
-              labelParts: value.relationship.customLabel
-                ? value.relationship.labelParts
-                : [],
-              labelSeparator: value.relationship.labelSeparator || ' - ',
-            }
-          : null,
-        category: hasCategory ? convertTreeNodeToCategory(value.category) : [],
+        dropdown,
+        allowCustomDropdownOptions,
+        allowCreateRelationshipRecords,
+        fillWithCurrentUserWhenEmpty,
+        relationship,
+        category,
+        htmlContent,
       };
 
       if (groupSlug) {
@@ -213,15 +288,18 @@ function RouteComponent(): React.JSX.Element {
   }
 
   // Blocked types for field-group tables or when in group context
-  const blockedTypes =
+  let blockedTypes: Array<ValueOf<typeof E_FIELD_TYPE>> = [];
+  if (
     !!groupSlug ||
     (table.status === 'success' && table.data.type === E_TABLE_TYPE.FIELD_GROUP)
-      ? [
-          E_FIELD_TYPE.FIELD_GROUP,
-          E_FIELD_TYPE.REACTION,
-          E_FIELD_TYPE.EVALUATION,
-        ]
-      : [];
+  ) {
+    blockedTypes = [
+      E_FIELD_TYPE.FIELD_GROUP,
+      E_FIELD_TYPE.REACTION,
+      E_FIELD_TYPE.EVALUATION,
+      E_FIELD_TYPE.RELATIONSHIP,
+    ];
+  }
 
   const isPending =
     _create.status === 'pending' || _createGroupField.status === 'pending';
@@ -235,17 +313,18 @@ function RouteComponent(): React.JSX.Element {
     });
   };
 
+  let headerTitle = 'Novo campo';
+  if (defaultFieldType === E_FIELD_TYPE.FIELD_GROUP) {
+    headerTitle = 'Novo grupo de campos';
+  }
+
   return (
     <PageShell data-test-id="create-field-page">
       {/* Header */}
       <PageShell.Header borderBottom={false}>
         <PageHeader
           onBack={goBack}
-          title={
-            defaultFieldType === E_FIELD_TYPE.FIELD_GROUP
-              ? 'Novo grupo de campos'
-              : 'Novo campo'
-          }
+          title={headerTitle}
         />
       </PageShell.Header>
 
@@ -274,6 +353,7 @@ function RouteComponent(): React.JSX.Element {
           isPending={isPending}
           tableSlug={slug}
           blockedTypes={blockedTypes}
+          isGroupField={!!groupSlug}
           defaultFieldType={defaultFieldType}
         />
       </form>

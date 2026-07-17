@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { TableGroups } from './-table-groups';
 
@@ -22,11 +23,12 @@ import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { groupListOptions } from '@/hooks/tanstack-query/_query-options';
 import { useGroupEmptyTrash } from '@/hooks/tanstack-query/use-group-empty-trash';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useGroupsExportCsv } from '@/hooks/tanstack-query/use-groups-export-csv';
-import { E_FIELD_TYPE, E_ROLE } from '@/lib/constant';
+import { E_FIELD_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IFilterField } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import { isMaster, isPrivileged } from '@/lib/permission';
 import { useAuthStore } from '@/stores/authentication';
 
 export const Route = createLazyFileRoute('/_private/groups/')({
@@ -43,17 +45,17 @@ function RouteComponent(): React.JSX.Element {
 
   const sidebar = useSidebar();
   const router = useRouter();
-  const navigate = useNavigate({ from: '/groups' });
+  const navigate = useNavigate({ from: '/groups/' });
   const auth = useAuthStore();
 
   const { data } = useSuspenseQuery(groupListOptions(search));
 
-  const isMaster = auth.user?.group?.slug === E_ROLE.MASTER;
-  const isAdmin = auth.user?.group?.slug === E_ROLE.ADMINISTRATOR;
-  const canExportCsv = isMaster || isAdmin;
+  // Empty-trash/hard-delete é MASTER-only (gate intencional). Export/CSV libera
+  // para qualquer privilegiado (MASTER/ADMINISTRATOR pelo fecho de grupos).
+  const groups = useGroupReadList();
+  const master = isMaster(auth.user, groups.data ?? []);
+  const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
-
-  const [emptyTrashOpen, setEmptyTrashOpen] = React.useState(false);
 
   const exportCsv = useGroupsExportCsv({
     onError(error) {
@@ -63,14 +65,13 @@ function RouteComponent(): React.JSX.Element {
 
   const emptyTrash = useGroupEmptyTrash({
     onSuccess(result) {
-      setEmptyTrashOpen(false);
-      const message =
-        result.deleted === 1
-          ? '1 grupo excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' grupos excluídos permanentemente!');
-      toastSuccess(message, 'A lixeira de grupos foi esvaziada');
+      let message = result.deleted
+        .toString()
+        .concat(' grupos excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 grupo excluído permanentemente!';
+      toast.success(message, {
+        description: 'A lixeira de grupos foi esvaziada',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao esvaziar lixeira de grupos' });
@@ -112,7 +113,7 @@ function RouteComponent(): React.JSX.Element {
             Gerencie os grupos de permissão
           </p>
         </div>
-        <div className="inline-flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div ref={setToolbarNode} />
           <TrashButton />
           <FilterTrigger
@@ -127,15 +128,26 @@ function RouteComponent(): React.JSX.Element {
               onClick={() => exportCsv.mutate(search)}
             />
           )}
-          {isTrashView && isMaster && (
-            <Button
-              data-test-id="empty-trash-groups-btn"
-              variant="destructive"
-              onClick={() => setEmptyTrashOpen(true)}
+          {isTrashView && master && (
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Esvaziar lixeira de grupos"
+              description="Essa ação é irreversível. Todos os grupos na lixeira serão excluídos permanentemente."
+              itemsCount={data.meta.total}
+              isPending={emptyTrash.isPending}
+              onConfirm={(close) => {
+                emptyTrash.mutateAsync(undefined, { onSuccess: close });
+              }}
+              testId="empty-trash-groups-dialog"
             >
-              <Trash2Icon className="size-4" />
-              <span>Esvaziar lixeira</span>
-            </Button>
+              <Button
+                data-test-id="empty-trash-groups-btn"
+                variant="destructive"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Esvaziar lixeira</span>
+              </Button>
+            </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
             <Button
@@ -182,17 +194,6 @@ function RouteComponent(): React.JSX.Element {
           }
         />
       </PageShell.Footer>
-
-      <PermanentDeleteConfirmDialog
-        open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Esvaziar lixeira de grupos"
-        description="Essa ação é irreversível. Todos os grupos na lixeira serão excluídos permanentemente."
-        itemsCount={data.meta.total}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-groups-dialog"
-      />
     </PageShell>
   );
 }

@@ -9,6 +9,14 @@ diretamente do documento Setting (MongoDB) em cada conexao. A UI `/settings`
 e a unica fonte — alterar nao requer reboot do servidor. `MCP_SERVER_URL`
 permanece como env (`.env`) por ser endpoint de infraestrutura.
 
+## Permissao de acesso
+
+Alem do toggle global `AI_ASSISTANT_ENABLED`, a conexao do socket exige a
+capacidade de area `MANAGE_CHAT` (`E_AREA_CAPABILITY`), resolvida pelo fecho de
+grupos do usuario (`GroupResolverContractService`). MASTER bypassa. Sem a
+capacidade, o socket emite `error` e desconecta. Os seeders concedem
+`MANAGE_CHAT` a todos os 4 grupos de sistema por padrao (revogavel por grupo).
+
 ## Arquivos
 
 - `chat.upload.controller.ts` - Controller de upload HTTP

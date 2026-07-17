@@ -8,17 +8,21 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 import type { MenuReorderPayload } from '@/lib/payloads';
 
-type UseMenuReorderProps = Pick<
-  Omit<
-    UseMutationOptions<null, AxiosError | Error, MenuReorderPayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseMenuReorderProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<null, AxiosError | Error, MenuReorderPayload, unknown>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: null, variables: MenuReorderPayload) => void;
-};
+  {
+    onSuccess?: (data: null, variables: MenuReorderPayload) => void;
+  }
+>;
 
 export function useMenuReorder(
   props: UseMenuReorderProps,

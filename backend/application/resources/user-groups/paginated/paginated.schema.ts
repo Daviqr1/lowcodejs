@@ -26,6 +26,11 @@ export const UserGroupPaginatedSchema: FastifySchema = {
         type: 'string',
         description: 'Termo de busca para filtrar grupos',
       },
+      trashed: {
+        type: 'string',
+        enum: ['true', 'false'],
+        description: 'Filtra grupos por estado de lixeira (padrão: ativos)',
+      },
       'order-name': {
         type: 'string',
         enum: ['asc', 'desc'],
@@ -34,12 +39,12 @@ export const UserGroupPaginatedSchema: FastifySchema = {
       'order-description': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Ordenar por descricao',
+        description: 'Ordenar por descrição',
       },
       'order-created-at': {
         type: 'string',
         enum: ['asc', 'desc'],
-        description: 'Ordenar por data de criacao',
+        description: 'Ordenar por data de criação',
       },
     },
   },

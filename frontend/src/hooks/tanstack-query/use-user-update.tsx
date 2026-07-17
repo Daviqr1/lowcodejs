@@ -8,18 +8,21 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IUser } from '@/lib/interfaces';
+import type { IUser, Merge } from '@/lib/interfaces';
 import type { UserUpdatePayload } from '@/lib/payloads';
 
-type UseUserUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<IUser, AxiosError | Error, UserUpdatePayload, unknown>,
-    'mutationFn' | 'onSuccess'
+type UseUserUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<IUser, AxiosError | Error, UserUpdatePayload, unknown>,
+      'mutationFn' | 'onSuccess'
+    >,
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IUser, variables: UserUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: IUser, variables: UserUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateUser(
   props: UseUserUpdateProps,

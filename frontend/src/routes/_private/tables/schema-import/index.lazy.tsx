@@ -11,6 +11,7 @@ import {
   UploadIcon,
 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { SchemaReference } from './-schema-reference';
 
@@ -25,7 +26,6 @@ import {
 import { useSchemaImport } from '@/hooks/tanstack-query/use-schema-import';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { SchemaImportResponse } from '@/lib/payloads';
-import { toastSuccess } from '@/lib/toast';
 
 const EXAMPLE_YAML = `# Schema de exemplo — cobre os tipos mais comuns
 # Consulte o painel "Referência" ao lado para todos os tipos suportados.
@@ -108,19 +108,24 @@ function RouteComponent(): React.JSX.Element {
       setResult(data);
       setValidationErrors(null);
       if (data.created.length > 0) {
-        toastSuccess(
-          'Schema importado',
-          `${data.created.length} ${
-            data.created.length === 1 ? 'tabela criada' : 'tabelas criadas'
-          }${data.errors.length > 0 ? ` (${data.errors.length} com erro)` : ''}`,
-        );
+        let createdLabel = 'tabelas criadas';
+        if (data.created.length === 1) createdLabel = 'tabela criada';
+        let errorSuffix = '';
+        if (data.errors.length > 0) {
+          errorSuffix = ` (${data.errors.length} com erro)`;
+        }
+        toast.success('Schema importado', {
+          description: `${data.created.length} ${createdLabel}${errorSuffix}`,
+        });
       }
     },
     onError(error) {
       setResult(null);
-      const apiErrors = (
-        error as { response?: { data?: { errors?: Record<string, string> } } }
-      ).response?.data?.errors;
+      // error é o erro do Axios (any); assumimos o contrato de erro do backend.
+      const apiErrors =
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        (error as { response?: { data?: { errors?: Record<string, string> } } })
+          .response?.data?.errors;
       if (apiErrors && Object.keys(apiErrors).length > 0) {
         setValidationErrors(apiErrors);
       } else {
@@ -167,7 +172,7 @@ function RouteComponent(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-6 overflow-auto">
+    <div className="flex h-full flex-col gap-6 p-4 sm:p-6 overflow-auto">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Button
@@ -229,7 +234,8 @@ function RouteComponent(): React.JSX.Element {
               onClick={() => setReferenceOpen((v) => !v)}
             >
               <BookOpenIcon className="h-4 w-4" />
-              {referenceOpen ? 'Ocultar referência' : 'Ver referência'}
+              {referenceOpen && 'Ocultar referência'}
+              {!referenceOpen && 'Ver referência'}
             </Button>
             <input
               ref={fileInputRef}
@@ -244,7 +250,8 @@ function RouteComponent(): React.JSX.Element {
               disabled={!yamlContent.trim() || schemaImport.isPending}
             >
               <PlayIcon className="h-4 w-4" />
-              {schemaImport.isPending ? 'Importando…' : 'Importar Schema'}
+              {schemaImport.isPending && 'Importando…'}
+              {!schemaImport.isPending && 'Importar Schema'}
             </Button>
           </div>
 
@@ -359,7 +366,7 @@ function RouteComponent(): React.JSX.Element {
 
         <aside
           className={`flex-col gap-3 min-h-0 overflow-auto rounded-md border bg-background p-3 ${
-            referenceOpen ? 'flex' : 'hidden xl:flex'
+            (referenceOpen && 'flex') || 'hidden xl:flex'
           }`}
         >
           <SchemaReference />

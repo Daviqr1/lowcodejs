@@ -8,6 +8,7 @@ import {
   ListTreeIcon,
   MessageCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,12 +26,11 @@ import { E_TABLE_STYLE } from '@/lib/constant';
 import type { ITable, Paginated, ValueOf } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
 import { getAllowedTableStyles } from '@/lib/table-style';
-import { toastError } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
-interface TableStyleViewDropdownProps {
+type TableStyleViewDropdownProps = {
   slug: string;
-}
+};
 
 export function TableStyleViewDropdown({
   slug,
@@ -64,7 +64,7 @@ export function TableStyleViewDropdown({
       );
     },
     onError() {
-      toastError('Erro ao atualizar estilo da tabela');
+      toast.error('Erro ao atualizar estilo da tabela');
     },
   });
 
@@ -80,9 +80,6 @@ export function TableStyleViewDropdown({
       description: table.data.description ?? null,
       logo: table.data.logo?._id ?? null,
       style,
-      visibility: table.data.visibility,
-      collaboration: table.data.collaboration,
-      administrators: table.data.administrators.flatMap((a) => a._id),
       fieldOrderList: table.data.fieldOrderList ?? [],
       fieldOrderForm: table.data.fieldOrderForm ?? [],
       fieldOrderFilter: table.data.fieldOrderFilter ?? [],

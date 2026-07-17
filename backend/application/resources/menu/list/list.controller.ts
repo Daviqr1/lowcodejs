@@ -3,6 +3,7 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 
+import { MenuListSchema } from './list.schema';
 import MenuPaginatedUseCase from './list.use-case';
 
 @Controller({
@@ -10,7 +11,6 @@ import MenuPaginatedUseCase from './list.use-case';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: MenuPaginatedUseCase = getInstanceByToken(
       MenuPaginatedUseCase,
     ),
@@ -24,10 +24,14 @@ export default class {
           optional: false,
         }),
       ],
+      schema: MenuListSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const result = await this.useCase.execute();
+    const result = await this.useCase.execute({
+      ...(request.user?.sub && { actorUserId: request.user.sub }),
+      ...(request.user?.role && { role: request.user.role }),
+    });
 
     if (result.isLeft()) {
       const error = result.value;

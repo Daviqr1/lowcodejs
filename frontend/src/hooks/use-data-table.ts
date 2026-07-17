@@ -13,9 +13,9 @@ import React from 'react';
 
 import { usePersistedTableState } from './use-persisted-table-state';
 
-interface UseDataTableOptions<TData> {
+type UseDataTableOptions<TData> = {
   data: Array<TData>;
-  columns: Array<ColumnDef<TData, any>>;
+  columns: Array<ColumnDef<TData, unknown>>;
   pageCount?: number;
   getRowId?: (row: TData) => string;
   enableRowSelection?: boolean | ((row: Row<TData>) => boolean);
@@ -26,7 +26,7 @@ interface UseDataTableOptions<TData> {
   initialColumnSizing?: ColumnSizingState;
   persistKey?: string;
   meta?: TableMeta<TData>;
-}
+};
 
 export function useDataTable<TData>({
   data,

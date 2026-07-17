@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
+import { AuthShell } from '@/components/common/auth-shell';
 import {
   menuAllOptions,
   profileDetailOptions,
@@ -12,6 +13,10 @@ export const Route = createFileRoute('/_authentication')({
   beforeLoad: async ({ context, location }) => {
     const isResetPassword =
       location.pathname === '/forgot-password/reset-password';
+    const isAddingAccount =
+      typeof location.search === 'object' &&
+      location.search !== null &&
+      'addAccount' in location.search;
 
     if (isResetPassword) return;
 
@@ -22,6 +27,8 @@ export const Route = createFileRoute('/_authentication')({
       const step = setupStatus.currentStep ?? 'admin';
       throw redirect({ to: `/setup/${step}` });
     }
+
+    if (isAddingAccount) return;
 
     try {
       const user = await context.queryClient.ensureQueryData(
@@ -45,7 +52,9 @@ export const Route = createFileRoute('/_authentication')({
   },
   component: () => (
     <div data-test-id="auth-layout">
-      <Outlet />
+      <AuthShell>
+        <Outlet />
+      </AuthShell>
     </div>
   ),
 });

@@ -36,7 +36,7 @@ describe('E2E Storage Delete Controller', () => {
         .set('Cookie', cookies);
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.message).toBe('File deleted successfully');
+      expect(response.body.message).toBe('Arquivo deletado com sucesso');
     });
   });
 });

@@ -4,9 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { IUser } from '@/lib/interfaces';
 
-interface ProfileViewProps {
+type ProfileViewProps = {
   data: IUser;
-}
+};
 
 export function ProfileView({ data }: ProfileViewProps): React.JSX.Element {
   return (

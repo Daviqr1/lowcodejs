@@ -1,11 +1,13 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import type { IGroup as Entity } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+
+import { GroupCycle } from '../group-cycle';
 
 import type { UserGroupUpdatePayload } from './update.validator';
 
@@ -30,6 +32,14 @@ export default class UserGroupUpdateUseCase {
           ),
         );
 
+      if (SYSTEM_GROUP_SLUGS.has(group.slug))
+        return left(
+          HTTPException.Forbidden(
+            'Grupos do sistema não podem ser editados',
+            'SYSTEM_GROUP_PROTECTED',
+          ),
+        );
+
       if (payload.permissions && payload.permissions.length === 0)
         return left(
           HTTPException.BadRequest(
@@ -41,6 +51,28 @@ export default class UserGroupUpdateUseCase {
             },
           ),
         );
+
+      if (payload.encompasses && payload.encompasses.length > 0) {
+        if (payload.encompasses.includes(group._id))
+          return left(
+            HTTPException.BadRequest(
+              'Um grupo não pode englobar a si mesmo',
+              'GROUP_SELF_REFERENCE',
+              { encompasses: 'Um grupo não pode englobar a si mesmo' },
+            ),
+          );
+
+        const groups = await this.userGroupRepository.findMany();
+
+        if (GroupCycle.hasCycle(group._id, payload.encompasses, groups))
+          return left(
+            HTTPException.BadRequest(
+              'Hierarquia de grupos circular detectada',
+              'GROUP_CYCLE_DETECTED',
+              { encompasses: 'Hierarquia de grupos circular detectada' },
+            ),
+          );
+      }
 
       const updated = await this.userGroupRepository.update(payload);
 

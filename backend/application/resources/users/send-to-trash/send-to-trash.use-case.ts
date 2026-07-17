@@ -1,11 +1,10 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import { E_ROLE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
 import type { UserSendToTrashPayload } from './send-to-trash.validator';
 
@@ -13,7 +12,10 @@ type Response = Either<HTTPException, null>;
 
 @Service()
 export default class UserSendToTrashUseCase {
-  constructor(private readonly userRepository: UserContractRepository) {}
+  constructor(
+    private readonly userRepository: UserContractRepository,
+    private readonly groupResolver: GroupResolverContractService,
+  ) {}
 
   async execute(payload: UserSendToTrashPayload): Promise<Response> {
     try {
@@ -43,16 +45,20 @@ export default class UserSendToTrashUseCase {
         );
       }
 
-      if (
-        user.group?.slug === E_ROLE.MASTER &&
-        payload.actorRole !== E_ROLE.MASTER
-      ) {
-        return left(
-          HTTPException.Forbidden(
-            'Apenas MASTER pode enviar outro MASTER para a lixeira',
-            'CANNOT_TRASH_MASTER',
-          ),
-        );
+      // Privilegio MASTER pelo fecho de grupos (nao pelo role do JWT): so um
+      // MASTER pode triturar outro MASTER.
+      const targetIsMaster = await this.groupResolver.isMaster(user);
+      if (targetIsMaster) {
+        const actor = await this.userRepository.findById(payload.actorId);
+        const actorIsMaster = await this.groupResolver.isMaster(actor);
+        if (!actorIsMaster) {
+          return left(
+            HTTPException.Forbidden(
+              'Apenas MASTER pode enviar outro MASTER para a lixeira',
+              'CANNOT_TRASH_MASTER',
+            ),
+          );
+        }
       }
 
       await this.userRepository.update({

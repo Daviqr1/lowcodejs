@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { differenceInMinutes } from 'date-fns';
 import { Service } from 'fastify-decorators';
 

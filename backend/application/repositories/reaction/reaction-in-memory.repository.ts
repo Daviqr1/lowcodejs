@@ -1,8 +1,6 @@
-import type {
-  FindOptions,
-  IReaction,
-  IUser,
-} from '@application/core/entity.core';
+import type { FindOptions, IReaction } from '@application/core/entity.core';
+
+import { makeUser } from '../entity-fixtures';
 
 import type {
   ReactionContractRepository,
@@ -31,7 +29,8 @@ export default class ReactionInMemoryRepository implements ReactionContractRepos
     const reaction: IReaction = {
       ...payload,
       _id: crypto.randomUUID(),
-      user: { _id: payload.user } as IUser,
+      // Double de teste: ref populada de usuário com defaults inertes.
+      user: makeUser(payload.user),
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,
@@ -48,7 +47,7 @@ export default class ReactionInMemoryRepository implements ReactionContractRepos
   ): Promise<IReaction | null> {
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if ((i.user as IUser)?._id !== user) return false;
+      if (i.user?._id !== user) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
       return true;
     });
@@ -59,9 +58,7 @@ export default class ReactionInMemoryRepository implements ReactionContractRepos
     let filtered = this.items;
 
     if (payload?.user) {
-      filtered = filtered.filter(
-        (r) => (r.user as IUser)?._id === payload.user,
-      );
+      filtered = filtered.filter((r) => r.user?._id === payload.user);
     }
 
     if (payload?.type) {

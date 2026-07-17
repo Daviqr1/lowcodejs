@@ -35,7 +35,7 @@ export const PageShowSchema: FastifySchema = {
         slug: { type: 'string', description: 'Slug da página' },
         type: {
           type: 'string',
-          enum: ['PAGE', 'TABLE', 'URL'],
+          enum: ['TABLE', 'FORM', 'PAGE', 'EXTERNAL', 'SEPARATOR', 'SECTION'],
           description: 'Tipo do item de menu',
         },
         table: {
@@ -51,7 +51,7 @@ export const PageShowSchema: FastifySchema = {
         url: {
           type: 'string',
           nullable: true,
-          description: 'URL externa (quando tipo é URL)',
+          description: 'URL externa (quando tipo é EXTERNAL)',
         },
         html: {
           type: 'string',

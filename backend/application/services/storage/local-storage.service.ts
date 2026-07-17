@@ -73,7 +73,7 @@ export default class LocalStorageService implements StorageContractService {
   async writeRaw(
     filename: string,
     body: Buffer,
-    // eslint-disable-next-line no-unused-vars
+
     _mimetype: string,
   ): Promise<StorageWriteRawResponse> {
     await this.ensureBucket();

@@ -12,7 +12,6 @@ import EmptyTrashUseCase from './empty-trash.use-case';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: EmptyTrashUseCase = getInstanceByToken(
       EmptyTrashUseCase,
     ),

@@ -59,12 +59,12 @@ const COLORS = [
   '#c27ba0',
 ];
 
-interface ColorPickerProps {
+type ColorPickerProps = {
   children: React.ReactNode;
   onChange?: (color: string | undefined) => void;
   value?: string;
   highlight?: boolean;
-}
+};
 
 export function ColorPicker({
   children,

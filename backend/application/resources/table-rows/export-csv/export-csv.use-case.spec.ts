@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
   type IField,
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
@@ -17,7 +16,9 @@ import TableRowExportCsvUseCase from './export-csv.use-case';
 async function streamToString(stream: Readable): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    let buf = chunk;
+    if (typeof chunk === 'string') buf = Buffer.from(chunk);
+    chunks.push(buf);
   }
   return Buffer.concat(chunks).toString('utf-8');
 }
@@ -26,35 +27,32 @@ let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;
 let sut: TableRowExportCsvUseCase;
 
-const buildField = (overrides: Partial<IField>): IField =>
-  ({
-    _id: overrides.slug ?? 'f',
-    name: 'Field',
-    slug: 'field',
-    type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
-    format: null,
-    showInFilter: false,
-    showInForm: true,
-    showInDetail: true,
-    showInList: true,
-    widthInForm: null,
-    widthInList: 10,
-    widthInDetail: null,
-    defaultValue: null,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    native: false,
-    locked: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    trashed: false,
-    trashedAt: null,
-    ...overrides,
-  }) as IField;
+const buildField = (overrides: Partial<IField>): IField => ({
+  _id: overrides.slug ?? 'f',
+  name: 'Field',
+  slug: 'field',
+  type: E_FIELD_TYPE.TEXT_SHORT,
+  required: false,
+  multiple: false,
+  format: null,
+  showInFilter: false,
+  permissions: buildFieldPermissions(true, true, true),
+  widthInForm: null,
+  widthInList: 10,
+  widthInDetail: null,
+  defaultValue: null,
+  relationship: null,
+  dropdown: [],
+  category: [],
+  group: null,
+  native: false,
+  locked: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  trashed: false,
+  trashedAt: null,
+  ...overrides,
+});
 
 describe('Table Row Export CSV Use Case', () => {
   beforeEach(() => {
@@ -77,15 +75,14 @@ describe('Table Row Export CSV Use Case', () => {
       name: 'Clientes',
       slug: 'clientes',
       _schema: {},
-      fields: fields as unknown as string[],
+      fields: fields.map((field) => field._id),
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    // popula os fields (o export lê metadados das colunas de table.fields)
+    table.fields = fields;
 
     await rowRepo.create({ table, data: { nome: 'Alice', status: 'ATIVO' } });
     await rowRepo.create({ table, data: { nome: 'Bob', status: 'INATIVO' } });
@@ -119,10 +116,7 @@ describe('Table Row Export CSV Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

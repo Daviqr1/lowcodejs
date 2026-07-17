@@ -1,7 +1,9 @@
 import { Link, useLocation, useRouter } from '@tanstack/react-router';
 import { ChevronRightIcon, LogOutIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import {
   Collapsible,
@@ -15,6 +17,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -30,15 +33,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuthenticationSignOut } from '@/hooks/tanstack-query/use-authentication-sign-out';
+import { useMenuReadList } from '@/hooks/tanstack-query/use-menu-read-list';
 import { useSettingRead } from '@/hooks/tanstack-query/use-setting-read';
 import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
+import { resolveInitialMenuRoute } from '@/lib/menu/initial-menu-route';
 import type { MenuItem, MenuRoute } from '@/lib/menu/menu-route';
-import { toastSuccess } from '@/lib/toast';
 
-interface SidebarProps {
+type SidebarProps = {
   menu: MenuRoute;
-}
+};
 
 const MAX_DEPTH = 4;
 const INDENT_PX = 16;
@@ -123,6 +127,83 @@ function SidebarMenuItemRecursive({
 }): React.JSX.Element {
   // CollapsibleItem with sub-items
   if ('items' in item && item.items && item.items.length > 0) {
+    const testId = `sidebar-menu-${item.title.toLowerCase().replace(/\s+/g, '-')}`;
+    const hasUrl = Boolean(item.url);
+
+    // Pai com url: rótulo navega (Link/a) e o chevron, como ação separada,
+    // apenas alterna o collapsible. Pai sem url: a linha inteira alterna.
+    let header: React.ReactNode;
+
+    if (hasUrl) {
+      const collapsibleUrl = String(item.url?.toString() ?? '/').replace(
+        /\/$/,
+        '',
+      );
+      const isExternal =
+        'type' in item && item.type === E_MENU_ITEM_TYPE.EXTERNAL;
+
+      let headerLink: React.ReactNode;
+      if (isExternal) {
+        headerLink = (
+          <a
+            href={collapsibleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-test-id={testId}
+            onClick={() => setOpenMobile(false)}
+          >
+            <SidebarItemIcon item={item} />
+            <span className="flex-1 truncate">{item.title}</span>
+          </a>
+        );
+      }
+      if (!isExternal) {
+        headerLink = (
+          <Link
+            to={collapsibleUrl}
+            data-test-id={testId}
+            onClick={() => setOpenMobile(false)}
+          >
+            <SidebarItemIcon item={item} />
+            <span className="flex-1 truncate">{item.title}</span>
+          </Link>
+        );
+      }
+
+      header = (
+        <>
+          <SidebarMenuButton
+            asChild
+            tooltip={{ children: item.title, hidden: false }}
+            style={{ paddingLeft: `${depth * INDENT_PX + 8}px` }}
+          >
+            {headerLink}
+          </SidebarMenuButton>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuAction aria-label={`Alternar ${item.title}`}>
+              <ChevronRightIcon className="shrink-0 size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            </SidebarMenuAction>
+          </CollapsibleTrigger>
+        </>
+      );
+    }
+
+    if (!hasUrl) {
+      header = (
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            data-test-id={testId}
+            tooltip={{ children: item.title, hidden: false }}
+            style={{ paddingLeft: `${depth * INDENT_PX + 8}px` }}
+          >
+            <SidebarItemIcon item={item} />
+            <span className="flex-1 truncate">{item.title}</span>
+            <ChevronRightIcon className="ml-auto shrink-0 size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+      );
+    }
+
     return (
       <Collapsible
         key={item.title}
@@ -130,17 +211,7 @@ function SidebarMenuItemRecursive({
         className="group/collapsible"
       >
         <SidebarMenuItem>
-          <CollapsibleTrigger asChild>
-            <SidebarMenuButton
-              data-test-id={`sidebar-menu-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-              tooltip={{ children: item.title, hidden: false }}
-              style={{ paddingLeft: `${depth * INDENT_PX + 8}px` }}
-            >
-              <SidebarItemIcon item={item} />
-              <span className="flex-1 truncate">{item.title}</span>
-              <ChevronRightIcon className="ml-auto shrink-0 size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-            </SidebarMenuButton>
-          </CollapsibleTrigger>
+          {header}
           <CollapsibleContent>
             <SidebarMenuSub className="mx-0 border-l-0 px-0 py-0 translate-x-0">
               {item.items.map((subItem) => {
@@ -184,7 +255,6 @@ function SidebarMenuItemRecursive({
                     >
                       <SidebarItemIcon item={subItem} />
                       <span className="flex-1 truncate">{subItem.title}</span>
-                      <ChevronRightIcon className="ml-auto shrink-0 size-4 text-sidebar-foreground/40" />
                     </a>
                   );
                 } else {
@@ -196,7 +266,6 @@ function SidebarMenuItemRecursive({
                     >
                       <SidebarItemIcon item={subItem} />
                       <span className="flex-1 truncate">{subItem.title}</span>
-                      <ChevronRightIcon className="ml-auto shrink-0 size-4 text-sidebar-foreground/40" />
                     </Link>
                   );
                 }
@@ -311,11 +380,30 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
 
   const { state } = useSidebar();
 
+  const logoutTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
   const setting = useSettingRead();
+
+  const menus = useMenuReadList();
+
+  function goToInitialPage(): void {
+    const initialRoute = resolveInitialMenuRoute(menus.data ?? []);
+
+    setOpenMobile(false);
+
+    if (initialRoute?.type === 'external') {
+      window.location.assign(initialRoute.href);
+      return;
+    }
+
+    router.navigate({ to: initialRoute?.to ?? '/tables', replace: false });
+  }
 
   const signOut = useAuthenticationSignOut({
     onSuccess() {
-      toastSuccess('Logout realizado com sucesso!', 'Volte sempre!');
+      toast.success('Logout realizado com sucesso!', {
+        description: 'Volte sempre!',
+      });
 
       router.navigate({
         to: '/',
@@ -337,10 +425,28 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
       <SidebarHeader className="inline-flex items-center justify-center py-6">
         {setting.status === 'pending' && <Skeleton className="h-8 w-32" />}
         {setting.status === 'success' && (
-          <img
-            src={setting.data.LOGO_LARGE_URL ?? ''}
-            className="w-32"
-          />
+          <button
+            type="button"
+            onClick={goToInitialPage}
+            aria-label="Ir para página inicial"
+            data-test-id="sidebar-logo-link"
+            className="cursor-pointer border-0 bg-transparent p-0"
+          >
+            <img
+              src={setting.data.LOGO_LARGE_URL ?? ''}
+              alt="Logo"
+              className="w-32 dark:hidden"
+            />
+            <img
+              src={
+                setting.data.LOGO_LARGE_DARK_URL ??
+                setting.data.LOGO_LARGE_URL ??
+                ''
+              }
+              alt="Logo"
+              className="hidden w-32 dark:block"
+            />
+          </button>
         )}
       </SidebarHeader>
       <SidebarContent data-test-id="sidebar-nav">
@@ -394,7 +500,7 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     data-test-id="sidebar-logout-btn"
-                    onClick={() => signOut.mutateAsync()}
+                    onClick={() => logoutTriggerRef.current?.click()}
                     className="w-full rounded-none cursor-pointer"
                   >
                     {signOut.status !== 'pending' && (
@@ -412,6 +518,19 @@ export function Sidebar({ menu }: SidebarProps): React.JSX.Element {
           </Tooltip>
         </SidebarGroup>
       </SidebarContent>
+      <ConfirmDialog
+        ref={logoutTriggerRef}
+        icon={<LogOutIcon className="size-4 text-destructive" />}
+        title="Sair da conta"
+        description="Você será desconectado e voltará para a tela de login. Deseja continuar?"
+        isPending={signOut.status === 'pending'}
+        onConfirm={(close) => {
+          signOut.mutateAsync(undefined, { onSuccess: close });
+        }}
+        testId="sidebar-logout-confirm-dialog"
+        confirmTestId="sidebar-logout-confirm"
+        cancelTestId="sidebar-logout-cancel"
+      />
     </Root>
   );
 }

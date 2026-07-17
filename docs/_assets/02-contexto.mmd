@@ -1,0 +1,42 @@
+graph TD
+    subgraph Atores
+        MASTER["MASTER (super-admin)"]
+        ADMIN["ADMINISTRATOR"]
+        MANAGER["MANAGER"]
+        REGISTERED["REGISTERED"]
+        VISITOR["Visitante nao autenticado"]
+    end
+
+    SPA["SPA / SSR (React 19 + TanStack Start, Nitro, porta 5173)"]
+    API["API Fastify 5 (REST + Socket.IO, porta 3000)"]
+
+    subgraph Persistencia
+        SYS[("MongoDB system (DB_DATABASE) - 14 models nativos")]
+        DATA[("MongoDB data (DB_DATA_DATABASE) - collections dinamicas por table.slug")]
+        REDIS[("Redis - cache + filas BullMQ")]
+        S3[["Storage local _storage/ ou S3 (Flydrive)"]]
+    end
+
+    subgraph Externos
+        MCP["MCP Server (profile ai, porta 3001)"]
+        OPENAI["OpenAI API"]
+        SMTP["Servidor SMTP (Nodemailer)"]
+    end
+
+    MASTER --> SPA
+    ADMIN --> SPA
+    MANAGER --> SPA
+    REGISTERED --> SPA
+    VISITOR --> SPA
+
+    SPA -->|HTTP REST + cookies httpOnly| API
+    SPA -.->|WebSocket| API
+
+    API --> SYS
+    API --> DATA
+    API --> REDIS
+    API --> S3
+    API -->|email assincrono BullMQ| SMTP
+    API -.->|WebSocket /chat| MCP
+    MCP --> OPENAI
+    API -.->|tools| OPENAI

@@ -1,10 +1,14 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import {
-  clearCookieTokens,
-  setCookieTokens,
+  getActiveAccountId,
+  getRequestCookie,
+  MAX_AUTH_ACCOUNTS,
+  readAccountSessions,
+  REFRESH_TOKEN_COOKIE,
+  setActiveSession,
+  writeAccountSessions,
 } from '@application/utils/cookies.util';
 import { createTokens } from '@application/utils/jwt.util';
 
@@ -42,9 +46,36 @@ export default class {
     }
 
     const tokens = await createTokens(result.value, response);
+    const accountId = result.value._id.toString();
 
-    clearCookieTokens(response);
-    setCookieTokens(response, { ...tokens });
+    const currentActiveId = getActiveAccountId(request);
+    const sessions = readAccountSessions(request);
+
+    const existingIds = new Set<string>(Object.keys(sessions));
+    if (currentActiveId) existingIds.add(currentActiveId);
+
+    if (!existingIds.has(accountId) && existingIds.size >= MAX_AUTH_ACCOUNTS) {
+      return response.status(409).send({
+        message: 'Limite de contas simultâneas atingido',
+        code: 409,
+        cause: 'MULTI_ACCOUNT_LIMIT_REACHED',
+      });
+    }
+
+    // Preserva a sessão ativa atual (de outra conta) movendo-a para o mapa de
+    // sessões inativas antes de promover a nova conta.
+    if (currentActiveId && currentActiveId !== accountId) {
+      const currentRefreshToken = getRequestCookie(
+        request,
+        REFRESH_TOKEN_COOKIE,
+      );
+      if (currentRefreshToken) sessions[currentActiveId] = currentRefreshToken;
+    }
+
+    delete sessions[accountId];
+
+    writeAccountSessions(response, sessions);
+    setActiveSession(response, accountId, { ...tokens });
 
     return response.status(200).send();
   }

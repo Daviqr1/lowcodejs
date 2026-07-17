@@ -8,23 +8,29 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { ICloneTableResponse } from '@/lib/interfaces';
+import type { ICloneTableResponse, Merge } from '@/lib/interfaces';
 import type { CloneTablePayload } from '@/lib/payloads';
 
-type UseCloneTableProps = Pick<
-  Omit<
-    UseMutationOptions<
-      ICloneTableResponse,
-      AxiosError | Error,
-      CloneTablePayload,
-      unknown
+type UseCloneTableProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        ICloneTableResponse,
+        AxiosError | Error,
+        CloneTablePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: ICloneTableResponse, variables: CloneTablePayload) => void;
-};
+  {
+    onSuccess?: (
+      data: ICloneTableResponse,
+      variables: CloneTablePayload,
+    ) => void;
+  }
+>;
 
 export function useCloneTable(
   props: UseCloneTableProps,

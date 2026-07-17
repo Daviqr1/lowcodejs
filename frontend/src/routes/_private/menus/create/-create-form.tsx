@@ -7,16 +7,25 @@ import { FileUploadWithStorage } from '@/components/common/file-upload/file-uplo
 import { ExtensionModuleSelect } from '@/components/common/selectors/extension-module-select';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
-import { E_MENU_ITEM_TYPE } from '@/lib/constant';
-import type { IStorage, ValueOf } from '@/lib/interfaces';
+import { E_MENU_ITEM_TYPE, E_PERMISSION_TARGET } from '@/lib/constant';
+import type {
+  IPermissionBinding,
+  IStorage,
+  Merge,
+  ValueOf,
+} from '@/lib/interfaces';
 import type { MenuCreatePayload } from '@/lib/payloads';
 import { MenuCreateBodySchema } from '@/lib/schemas';
 
 export const MenuCreateSchema = MenuCreateBodySchema;
-export type MenuFormType = Omit<MenuCreatePayload, 'order'> & {
-  position: string;
-  iconFile: Array<File>;
-};
+export type MenuFormType = Merge<
+  Omit<MenuCreatePayload, 'order' | 'visibility'>,
+  {
+    position: string;
+    iconFile: Array<File>;
+    visibility: IPermissionBinding;
+  }
+>;
 
 export const menuFormDefaultValues: MenuFormType = {
   name: '',
@@ -30,12 +39,15 @@ export const menuFormDefaultValues: MenuFormType = {
   isInitial: false,
   extension: null,
   iconFile: [],
+  visibility: { kind: E_PERMISSION_TARGET.PUBLIC, group: null },
 };
 
 export const CreateMenuFormFields = withForm({
   defaultValues: menuFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     menuType: E_MENU_ITEM_TYPE.SEPARATOR as
       | ValueOf<typeof E_MENU_ITEM_TYPE>
       | '',
@@ -47,7 +59,7 @@ export const CreateMenuFormFields = withForm({
     return (
       <section
         data-test-id="menu-create-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField
@@ -189,6 +201,16 @@ export const CreateMenuFormFields = withForm({
           </form.AppField>
         )}
 
+        {/* Visibilidade da opção de menu (Grupo | Público | Ninguém) */}
+        <form.AppField name="visibility">
+          {(field) => (
+            <field.FieldPermissionBinding
+              label="Visibilidade"
+              disabled={isPending}
+            />
+          )}
+        </form.AppField>
+
         {/* Campo Tabela - Condicional para tipos TABLE e FORM */}
         {(menuType === E_MENU_ITEM_TYPE.TABLE ||
           menuType === E_MENU_ITEM_TYPE.FORM) && (
@@ -301,9 +323,10 @@ export const CreateMenuFormFields = withForm({
                 disabled={isPending}
                 required
                 error={
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                    ? (field.state.meta.errors[0] ?? null)
-                    : null
+                  (field.state.meta.isTouched &&
+                    !field.state.meta.isValid &&
+                    (field.state.meta.errors[0] ?? null)) ||
+                  null
                 }
               />
             )}

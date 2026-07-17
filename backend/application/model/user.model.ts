@@ -21,6 +21,9 @@ export const Schema = new mongoose.Schema(
       default: E_USER_STATUS.INACTIVE,
     },
     group: { type: mongoose.Schema.Types.ObjectId, ref: 'UserGroup' },
+    // Grupos adicionais (multi-grupo). O acesso efetivo e o fecho de
+    // `{group} ∪ groups`. Default [] mantem usuarios atuais inalterados.
+    groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'UserGroup' }],
 
     notificationsEnabled: { type: Boolean, default: true },
 
@@ -33,5 +36,5 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const User = (mongoose?.models?.User ||
-  mongoose.model<Entity>('User', Schema, 'users')) as mongoose.Model<Entity>;
+export const User: mongoose.Model<Entity> =
+  mongoose?.models?.User || mongoose.model<Entity>('User', Schema, 'users');

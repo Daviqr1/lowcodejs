@@ -6,8 +6,8 @@ Dois grupos de componentes com responsabilidades distintas.
 
 | Diretório | Responsabilidade                                                           |
 | --------- | -------------------------------------------------------------------------- |
-| `ui/`     | Design system: 34 componentes base (shadcn/Radix UI) sem lógica de negócio |
-| `common/` | Componentes de negócio: 16 subdiretórios com funcionalidades da plataforma |
+| `ui/`     | Design system: 36 componentes base (shadcn/Radix UI) sem lógica de negócio |
+| `common/` | Componentes de negócio: 24 subdiretórios com funcionalidades da plataforma |
 
 ## Padrão `ui/`
 

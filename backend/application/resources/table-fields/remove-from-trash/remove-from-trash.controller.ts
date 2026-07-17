@@ -13,7 +13,6 @@ import { TableFieldRemoveFromTrashParamsValidator } from './remove-from-trash.va
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TableFieldRemoveFromTrashUseCase = getInstanceByToken(
       TableFieldRemoveFromTrashUseCase,
     ),

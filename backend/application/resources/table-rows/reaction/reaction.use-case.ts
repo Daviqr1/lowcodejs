@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -7,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { ReactionContractRepository } from '@application/repositories/reaction/reaction-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import { RowContextContractService } from '@application/services/row-context/row-context-contract.service';
+import { RowContextBuilderContractService } from '@application/services/table/row-context-builder-contract.service';
 
 import type { TableRowReactionPayload } from './reaction.validator';
 
@@ -24,7 +23,7 @@ export default class TableRowReactionUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly reactionRepository: ReactionContractRepository,
     private readonly rowRepository: RowContractRepository,
-    private readonly rowContextService: RowContextContractService,
+    private readonly rowContextBuilder: RowContextBuilderContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -39,6 +38,7 @@ export default class TableRowReactionUseCase {
       const row = await this.rowRepository.findOne({
         table,
         query: { _id: payload._id },
+        populate: false,
       });
 
       if (!row)
@@ -47,9 +47,12 @@ export default class TableRowReactionUseCase {
         );
 
       const fieldValue = row[payload.field];
-      const existingIds: string[] = Array.isArray(fieldValue)
-        ? fieldValue.flatMap((r: { toString(): string }) => r?.toString())
-        : [];
+      let existingIds: string[] = [];
+      if (Array.isArray(fieldValue)) {
+        existingIds = fieldValue.flatMap((r: { toString(): string }) =>
+          r?.toString(),
+        );
+      }
 
       let oldReactionId: string | null = null;
 
@@ -97,7 +100,7 @@ export default class TableRowReactionUseCase {
       }
 
       return right(
-        this.rowContextService.transform(
+        this.rowContextBuilder.transform(
           updatedRow,
           table.fields,
           payload.user,

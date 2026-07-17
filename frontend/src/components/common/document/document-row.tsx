@@ -15,6 +15,7 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { Button } from '@/components/ui/button';
 import {
   Collapsible,
@@ -22,13 +23,15 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { DocBlock } from '@/lib/document-helpers';
 import { getRowLeafId, getStr, headerSorter } from '@/lib/document-helpers';
 import type { IField, IRow } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface DocumentRowProps {
+type DocumentRowProps = {
   row: IRow;
   blocks: Array<DocBlock>;
   indentPx: number;
@@ -36,7 +39,7 @@ interface DocumentRowProps {
   headingLevel?: number;
   categorySlug: string;
   showHeading?: boolean;
-}
+};
 
 function hasFieldValue(field: IField, row: IRow): boolean {
   const value = row[field.slug];
@@ -125,6 +128,13 @@ function renderFieldCell(
           tableSlug={tableSlug}
         />
       );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
+          row={row}
+          field={field}
+        />
+      );
     case E_FIELD_TYPE.USER:
       return (
         <TableRowUserCell
@@ -155,6 +165,7 @@ export function DocumentRow({
 
   const table = useReadTable({ slug });
   const permission = useTablePermission(table.data);
+  const { isFieldVisible } = useFieldVisibility();
 
   const docBlockSlugs = new Set<string>();
   for (const b of blocks) {
@@ -168,12 +179,12 @@ export function DocumentRow({
       (field) =>
         !field.trashed &&
         !field.native &&
-        field.showInDetail &&
+        isFieldVisible(field, 'detail') &&
         !docBlockSlugs.has(field.slug) &&
         field.slug !== categorySlug,
     );
     return fields.sort(headerSorter(table.data.fieldOrderList));
-  }, [table.data, categorySlug, blocks]);
+  }, [table.data, categorySlug, blocks, isFieldVisible]);
 
   return (
     <article
@@ -223,7 +234,7 @@ export function DocumentRow({
                 className="p-0 cursor-pointer"
                 onClick={() => {
                   router.navigate({
-                    to: '/tables/$slug/row/',
+                    to: '/tables/$slug/row',
                     params: { slug },
                     search: { _id: row._id, mode: 'edit' as const },
                   });
@@ -270,7 +281,7 @@ export function DocumentRow({
               return (
                 <div className="mt-2">
                   <span className="text-xs font-medium text-muted-foreground">
-                    {visibleExtra[0].name}
+                    {resolveFieldLabel(visibleExtra[0], 'detail')}
                   </span>
                   {renderFieldCell(visibleExtra[0], row, slug)}
                 </div>
@@ -285,7 +296,7 @@ export function DocumentRow({
                   {visibleExtra.map((field) => (
                     <div key={field._id}>
                       <span className="text-xs font-medium text-muted-foreground">
-                        {field.name}
+                        {resolveFieldLabel(field, 'detail')}
                       </span>
                       {renderFieldCell(field, row, slug)}
                     </div>

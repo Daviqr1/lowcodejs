@@ -10,9 +10,9 @@ import {
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
+import TableMongooseRepository from '@application/repositories/table/table.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
-import UserMongooseRepository from '@application/repositories/user/user-mongoose.repository';
+import UserMongooseRepository from '@application/repositories/user/user.repository';
 import type { PermissionContractService } from '@application/services/permission/permission-contract.service';
 import PermissionService from '@application/services/permission/permission.service';
 
@@ -20,9 +20,9 @@ const ParamsSchema = z.object({
   slug: z.string().trim().min(1).optional(),
 });
 
-interface AccessOptions {
+type AccessOptions = {
   requiredPermission: ValueOf<typeof E_TABLE_PERMISSION>;
-}
+};
 
 /**
  * Middleware de acesso a tabelas.

@@ -3,10 +3,10 @@
 Atualiza um usuario existente com novos dados, incluindo troca de senha opcional.
 
 ## Endpoint
-`PATCH /users/:_id` | Auth: Yes | Permission: -
+`PATCH /users/:_id` | Auth: Yes | Permission: MANAGE_USERS
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 2. Validator: `UserUpdateParamsValidator` - campos: _id (string, required, trim, min 1). `UserUpdateBodyValidator` (extends UserBaseValidator.partial()) - campos: name (string, trim, optional), email (string, email, trim, optional), group (string, min 1, optional), password (string, trim, min 6, regex PASSWORD_REGEX, optional), status (enum ACTIVE/INACTIVE, optional)
 3. UseCase: `UserUpdateUseCase`
    - Busca usuario por _id exato

@@ -49,7 +49,7 @@ export const MenuSendToTrashSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -62,7 +62,7 @@ export const MenuSendToTrashSchema: FastifySchema = {
       description: 'Menu não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Menu not found'] },
+        message: { type: 'string', enum: ['Menu não encontrado'] },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
         errors: {
@@ -75,7 +75,7 @@ export const MenuSendToTrashSchema: FastifySchema = {
       description: 'Menu possui filhos ativos',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Menu has active children'] },
+        message: { type: 'string', enum: ['Menu possui filhos ativos'] },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['MENU_HAS_CHILDREN'] },
         errors: {
@@ -88,7 +88,7 @@ export const MenuSendToTrashSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string', enum: ['Erro interno do servidor'] },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['SEND_TO_TRASH_MENU_ERROR'] },
         errors: {

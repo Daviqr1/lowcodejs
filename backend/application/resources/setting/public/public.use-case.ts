@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -11,6 +10,9 @@ export type PublicSetting = {
   SYSTEM_DESCRIPTION: string;
   LOGO_SMALL_URL: string | null;
   LOGO_LARGE_URL: string | null;
+  LOGO_SMALL_DARK_URL: string | null;
+  LOGO_LARGE_DARK_URL: string | null;
+  LOGIN_BACKGROUND_URL: string | null;
   AI_ASSISTANT_ENABLED: boolean;
   CHAT_HISTORY_ENABLED: boolean;
   SETUP_COMPLETED: boolean;
@@ -24,6 +26,9 @@ const PUBLIC_DEFAULTS: PublicSetting = {
   SYSTEM_DESCRIPTION: 'Plataforma Oficial',
   LOGO_SMALL_URL: null,
   LOGO_LARGE_URL: null,
+  LOGO_SMALL_DARK_URL: null,
+  LOGO_LARGE_DARK_URL: null,
+  LOGIN_BACKGROUND_URL: null,
   AI_ASSISTANT_ENABLED: false,
   CHAT_HISTORY_ENABLED: false,
   SETUP_COMPLETED: false,
@@ -46,6 +51,9 @@ export default class SettingPublicUseCase {
           setting.SYSTEM_DESCRIPTION ?? PUBLIC_DEFAULTS.SYSTEM_DESCRIPTION,
         LOGO_SMALL_URL: setting.LOGO_SMALL_URL ?? null,
         LOGO_LARGE_URL: setting.LOGO_LARGE_URL ?? null,
+        LOGO_SMALL_DARK_URL: setting.LOGO_SMALL_DARK_URL ?? null,
+        LOGO_LARGE_DARK_URL: setting.LOGO_LARGE_DARK_URL ?? null,
+        LOGIN_BACKGROUND_URL: setting.LOGIN_BACKGROUND_URL ?? null,
         AI_ASSISTANT_ENABLED: setting.AI_ASSISTANT_ENABLED ?? false,
         CHAT_HISTORY_ENABLED: setting.CHAT_HISTORY_ENABLED ?? false,
         SETUP_COMPLETED: setting.SETUP_COMPLETED ?? false,

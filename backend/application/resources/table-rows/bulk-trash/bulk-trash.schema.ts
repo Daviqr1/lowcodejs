@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const BulkTrashSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'Bulk send rows to trash',
+  tags: ['Registros'],
+  summary: 'Enviar registros para a lixeira em lote',
   description:
-    'Moves multiple rows to trash by setting trashed=true and trashedAt timestamp. The rows can be restored later or permanently deleted.',
+    'Move múltiplos registros para a lixeira, definindo trashed=true e trashedAt. Os registros podem ser restaurados ou excluídos permanentemente depois.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,8 +12,7 @@ export const BulkTrashSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the rows',
-        examples: ['users', 'products', 'blog-posts'],
+        description: 'Slug da tabela que contém os registros',
       },
     },
     additionalProperties: false,
@@ -26,43 +25,32 @@ export const BulkTrashSchema: FastifySchema = {
         type: 'array',
         items: { type: 'string' },
         minItems: 1,
-        description: 'Array of row IDs to move to trash',
-        examples: [['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012']],
+        description: 'IDs dos registros a enviar para a lixeira',
       },
     },
     additionalProperties: false,
   },
   response: {
     200: {
-      description: 'Rows moved to trash successfully',
+      description: 'Registros enviados para a lixeira com sucesso',
       type: 'object',
       properties: {
         modified: {
           type: 'number',
-          description: 'Number of rows moved to trash',
-        },
-      },
-    },
-    400: {
-      description: 'Bad request - Invalid parameters',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PARAMETERS'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
+          description: 'Quantidade de registros enviados para a lixeira',
         },
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -70,12 +58,24 @@ export const BulkTrashSchema: FastifySchema = {
       },
     },
     403: {
-      description: 'Forbidden - Insufficient permissions',
+      description: 'Acesso negado - Permissões insuficientes',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -83,10 +83,10 @@ export const BulkTrashSchema: FastifySchema = {
       },
     },
     404: {
-      description: 'Not found - Table does not exist',
+      description: 'Tabela não encontrada',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Table not found'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
         errors: {
@@ -96,10 +96,10 @@ export const BulkTrashSchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['BULK_TRASH_ROWS_ERROR'] },
         errors: {

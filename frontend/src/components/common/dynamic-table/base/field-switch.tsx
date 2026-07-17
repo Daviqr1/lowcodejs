@@ -4,13 +4,13 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { E_USER_STATUS } from '@/lib/constant';
 import type { ValueOf } from '@/lib/interfaces';
 
-interface FieldSwitchProps {
+type FieldSwitchProps = {
   label: string;
   description?: string;
   disabled?: boolean;
   activeLabel?: string;
   inactiveLabel?: string;
-}
+};
 
 export function FieldSwitch({
   label,
@@ -25,9 +25,9 @@ export function FieldSwitch({
     <div
       data-slot="field-switch"
       data-test-id="field-switch"
-      className="flex flex-row items-center justify-between rounded-lg border p-3"
+      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3"
     >
-      <div className="space-y-0.5">
+      <div className="min-w-0 space-y-0.5">
         <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
         {description && (
           <p className="text-sm text-muted-foreground">{description}</p>

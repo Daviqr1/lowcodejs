@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -45,12 +44,14 @@ export default class StorageMigrationStartUseCase {
       }
 
       const setting = await this.settingRepository.get();
-      const targetDriver = (setting?.STORAGE_DRIVER ??
-        E_STORAGE_LOCATION.LOCAL) as TStorageLocation;
-      const sourceDriver: TStorageLocation =
-        targetDriver === E_STORAGE_LOCATION.LOCAL
-          ? E_STORAGE_LOCATION.S3
-          : E_STORAGE_LOCATION.LOCAL;
+      let targetDriver: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+      if (setting?.STORAGE_DRIVER === E_STORAGE_LOCATION.S3) {
+        targetDriver = E_STORAGE_LOCATION.S3;
+      }
+      let sourceDriver: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+      if (targetDriver === E_STORAGE_LOCATION.LOCAL) {
+        sourceDriver = E_STORAGE_LOCATION.S3;
+      }
 
       const fileIds: string[] = [];
       let page = 1;

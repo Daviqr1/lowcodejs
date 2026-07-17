@@ -2,10 +2,10 @@ import { MONTHS_SHORT } from './datepicker-utils';
 
 import { cn } from '@/lib/utils';
 
-interface DatepickerMonthsProps {
+type DatepickerMonthsProps = {
   currentMonth: number;
   onSelectMonth: (month: number) => void;
-}
+};
 
 export function DatepickerMonths({
   currentMonth,

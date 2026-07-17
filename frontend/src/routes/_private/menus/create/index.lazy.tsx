@@ -4,6 +4,7 @@ import {
   useRouter,
 } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
+import { toast } from 'sonner';
 
 import { parseMenuPosition } from '../-position';
 
@@ -23,7 +24,6 @@ import type { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ValueOf } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/menus/create/')({
   component: RouteComponent,
@@ -36,7 +36,9 @@ function RouteComponent(): React.JSX.Element {
 
   const _create = useCreateMenu({
     onSuccess() {
-      toastSuccess('Menu criado', 'O menu foi criado com sucesso');
+      toast.success('Menu criado', {
+        description: 'O menu foi criado com sucesso',
+      });
 
       form.reset();
       navigate({ to: '/menus', search: { page: 1, perPage: 50 } });
@@ -70,8 +72,9 @@ function RouteComponent(): React.JSX.Element {
         url: value.url || null,
         icon: value.icon || null,
         order,
-        isInitial: value.type === 'SEPARATOR' ? false : value.isInitial,
+        isInitial: value.type !== 'SEPARATOR' && value.isInitial,
         extension: value.extension ?? null,
+        visibility: value.visibility,
       });
     },
   });
@@ -79,9 +82,10 @@ function RouteComponent(): React.JSX.Element {
   useApiErrorAutoClear(form);
 
   const isPending = _create.status === 'pending';
-  const menuType = useStore(form.store, (state) => state.values.type) as
-    | ValueOf<typeof E_MENU_ITEM_TYPE>
-    | '';
+  const menuType: ValueOf<typeof E_MENU_ITEM_TYPE> | '' = useStore(
+    form.store,
+    (state) => state.values.type,
+  );
 
   const goBack = (): void => {
     sidebar.setOpen(true);
@@ -104,7 +108,7 @@ function RouteComponent(): React.JSX.Element {
       <PageShell.Content>
         <form
           data-test-id="create-menu-form"
-          className="flex-1 flex flex-col min-h-0 overflow-auto"
+          className="flex-1 flex flex-col"
           onSubmit={(e) => {
             e.preventDefault();
             form.handleSubmit();

@@ -7,19 +7,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-interface NodeFormData {
+type NodeFormData = {
   id: string;
   label: string;
   selectable: boolean;
-}
+};
 
-interface AddNodeFormProps {
+type AddNodeFormProps = {
   type: 'root' | 'child';
   parentNodeLabel?: string;
   onSave: (data: NodeFormData) => void;
   onCancel: () => void;
   generateId: () => string;
-}
+};
 
 export const AddNodeForm: React.FC<AddNodeFormProps> = ({
   type,

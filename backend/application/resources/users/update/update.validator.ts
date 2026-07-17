@@ -1,7 +1,7 @@
 import z from 'zod';
 
 import { E_USER_STATUS, Merge } from '@application/core/entity.core';
-import { PASSWORD_REGEX } from '@application/core/util.core';
+import { PASSWORD_REGEX } from '@application/core/field-rules.core';
 
 import { UserBaseValidator } from '../user-base.validator';
 

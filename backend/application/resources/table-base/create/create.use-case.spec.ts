@@ -1,32 +1,31 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_TABLE_STYLE } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableCreateUseCase from './create.use-case';
 
 let fieldInMemoryRepository: FieldInMemoryRepository;
 let tableInMemoryRepository: TableInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let userGroupInMemoryRepository: UserGroupInMemoryRepository;
+let schemaBuilder: InMemorySchemaBuilder;
 let sut: TableCreateUseCase;
 
 describe('Table Create Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     fieldInMemoryRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    userGroupInMemoryRepository = new UserGroupInMemoryRepository();
+    schemaBuilder = new InMemorySchemaBuilder();
 
     sut = new TableCreateUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
-      tableSchemaService,
+      userGroupInMemoryRepository,
+      schemaBuilder,
     );
   });
 
@@ -43,9 +42,9 @@ describe('Table Create Use Case', () => {
     expect(result.value.name).toBe('Clientes');
     expect(result.value.slug).toBe('clientes');
 
-    // Deve criar 5 campos nativos + 1 campo "Nome" padrão
+    // Deve criar 7 campos nativos + 1 campo "Nome" padrão
     const fields = result.value.fields;
-    expect(fields).toHaveLength(6);
+    expect(fields).toHaveLength(8);
 
     const idField = fields.find((f) => f.slug === '_id');
     expect(idField).toBeDefined();
@@ -68,12 +67,26 @@ describe('Table Create Use Case', () => {
     expect(createdAtField.native).toBe(true);
     expect(createdAtField.locked).toBe(true);
 
-    const trashedField = fields.find((f) => f.slug === 'trashed');
-    expect(trashedField).toBeDefined();
-    if (!trashedField) throw new Error('Expected trashedField');
-    expect(trashedField.type).toBe(E_FIELD_TYPE.TRASHED);
-    expect(trashedField.native).toBe(true);
-    expect(trashedField.locked).toBe(true);
+    const updatedAtField = fields.find((f) => f.slug === 'updatedAt');
+    expect(updatedAtField).toBeDefined();
+    if (!updatedAtField) throw new Error('Expected updatedAtField');
+    expect(updatedAtField.type).toBe(E_FIELD_TYPE.UPDATED_AT);
+    expect(updatedAtField.native).toBe(true);
+    expect(updatedAtField.locked).toBe(true);
+
+    const updaterField = fields.find((f) => f.slug === 'updater');
+    expect(updaterField).toBeDefined();
+    if (!updaterField) throw new Error('Expected updaterField');
+    expect(updaterField.type).toBe(E_FIELD_TYPE.UPDATER);
+    expect(updaterField.native).toBe(true);
+    expect(updaterField.locked).toBe(true);
+
+    const statusField = fields.find((f) => f.slug === 'status');
+    expect(statusField).toBeDefined();
+    if (!statusField) throw new Error('Expected statusField');
+    expect(statusField.type).toBe(E_FIELD_TYPE.STATUS);
+    expect(statusField.native).toBe(true);
+    expect(statusField.locked).toBe(true);
 
     const trashedAtField = fields.find((f) => f.slug === 'trashedAt');
     expect(trashedAtField).toBeDefined();
@@ -113,10 +126,7 @@ describe('Table Create Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

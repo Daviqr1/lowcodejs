@@ -1,47 +1,50 @@
-/* eslint-disable no-unused-vars */
 /**
  * Socket.IO handler para o chat com IA.
- * Segue estritamente a mesma lógica do agent/web_app.py:
  * - Uma sessão MCP persistente por conexão
- * - Descoberta dinâmica de tools via MCP
- * - OpenAI API direta (chat.completions.create)
+ * - Provedor LLM configurável (OpenAI, Gemini, Claude, OpenRouter, Ollama)
  * - Protocolo de eventos: status, ready, thinking, tool_call, tool_result, tool_error, message, error
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import { getInstanceByToken } from 'fastify-decorators';
 import * as http from 'node:http';
 import type { Server as HttpServer } from 'node:http';
 import * as https from 'node:https';
-import OpenAI from 'openai';
 import { Server as SocketIOServer } from 'socket.io';
 
 import {
+  E_AREA_CAPABILITY,
   E_CHAT_EVENT,
   E_JWT_TYPE,
-  E_LOGGER_ACTION_TYPE,
-  E_LOGGER_OBJECT_TYPE,
   type IJWTPayload,
+  type Merge,
 } from '@application/core/entity.core';
-import { Logger } from '@application/model/logger.model';
 import { Setting } from '@application/model/setting.model';
+import UserMongooseRepository from '@application/repositories/user/user.repository';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import { resolveLlmConfig } from '@application/services/llm/ai-setting-fields';
+import type { LlmChatMessage } from '@application/services/llm/llm-chat.types';
+import { getLlmProviderLabel } from '@application/services/llm/llm-defaults';
+import { runChatCompletion } from '@application/services/llm/run-chat-completion';
+import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
 import { Env } from '@start/env';
 
 import { getChatSystemPrompt } from './system-prompt';
 
-interface FileData {
+type FileData = {
   type: 'image' | 'pdf';
   filename: string;
   content_type?: string;
   data_uri?: string;
   extracted_text?: string;
   page_count?: number;
-}
+};
 
-interface ClientMessage {
+type ClientMessage = {
   message?: string;
   file?: FileData;
-}
+};
 
 function extractCookieValue(
   cookieHeader: string | undefined,
@@ -60,12 +63,47 @@ function extractCookieValue(
 
 function getErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return String(err);
-  const cause = (err as Error & { cause?: unknown }).cause;
-  const causeMsg = cause instanceof Error ? ` — causa: ${cause.message}` : '';
+  const errWithCause: Merge<Error, { cause?: unknown }> = err;
+  const cause = errWithCause.cause;
+  let causeMsg = '';
+  if (cause instanceof Error) causeMsg = ` — causa: ${cause.message}`;
   return err.message + causeMsg;
 }
 
-// Custom transport using node:http to bypass WHATWG "bad port" restriction
+function formatChatUserError(err: unknown): string {
+  const raw = getErrorMessage(err).toLowerCase();
+
+  if (
+    raw.includes('429') ||
+    raw.includes('quota') ||
+    raw.includes('rate limit')
+  ) {
+    return 'Cota ou limite de requisições da API do provedor LLM esgotado. Aguarde alguns minutos, verifique o billing do provedor ou troque o provedor/modelo em Configurações → Assistente IA.';
+  }
+
+  if (
+    raw.includes('401') ||
+    raw.includes('403') ||
+    raw.includes('invalid api key') ||
+    raw.includes('incorrect api key') ||
+    raw.includes('authentication')
+  ) {
+    return 'Chave da API inválida ou sem permissão. Verifique a chave em Configurações → Assistente IA.';
+  }
+
+  if (
+    raw.includes('timeout') ||
+    raw.includes('econnrefused') ||
+    raw.includes('fetch failed')
+  ) {
+    return 'Não foi possível conectar ao provedor LLM. Verifique URL, rede e se o serviço (ex.: Ollama) está rodando.';
+  }
+
+  const full = getErrorMessage(err);
+  if (full.length > 400) return `${full.slice(0, 400)}…`;
+  return full;
+}
+
 class NodeHttpTransport implements Transport {
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -82,17 +120,18 @@ class NodeHttpTransport implements Transport {
   async start(): Promise<void> {}
 
   async send(message: JSONRPCMessage): Promise<void> {
-    // Notifications have no id — fire-and-forget, server sends no response
     const isNotification = !('id' in message);
     if (isNotification) {
-      this.post(message).catch((err: unknown) =>
-        this.onerror?.(err instanceof Error ? err : new Error(String(err))),
-      );
+      this.post(message).catch((err: unknown) => {
+        let error = new Error(String(err));
+        if (err instanceof Error) error = err;
+        this.onerror?.(error);
+      });
       return;
     }
     const response = await this.post(message);
     if (response !== null && this.onmessage) {
-      this.onmessage(response as JSONRPCMessage);
+      this.onmessage(response);
     }
   }
 
@@ -105,10 +144,12 @@ class NodeHttpTransport implements Transport {
     timeoutMs = 15000,
   ): Promise<JSONRPCMessage | null> {
     return new Promise((resolve, reject) => {
-      const mod = this.url.protocol === 'https:' ? https : http;
+      let mod: typeof http | typeof https = http;
+      if (this.url.protocol === 'https:') mod = https;
       const data = JSON.stringify(body);
-      const port =
-        this.url.port || (this.url.protocol === 'https:' ? '443' : '80');
+      let defaultPort = '80';
+      if (this.url.protocol === 'https:') defaultPort = '443';
+      const port = this.url.port || defaultPort;
 
       const req = mod.request(
         {
@@ -126,7 +167,6 @@ class NodeHttpTransport implements Transport {
         (res) => {
           const ct = res.headers['content-type'] ?? '';
 
-          // SSE response — parse events, call onmessage per event
           if (ct.includes('text/event-stream')) {
             let buf = '';
             res.setEncoding('utf8');
@@ -140,7 +180,7 @@ class NodeHttpTransport implements Transport {
                   eventData += line.slice(6);
                 } else if (line.trim() === '' && eventData) {
                   try {
-                    const msg = JSON.parse(eventData) as JSONRPCMessage;
+                    const msg: JSONRPCMessage = JSON.parse(eventData);
                     this.onmessage?.(msg);
                   } catch {
                     /* ignore */
@@ -153,7 +193,6 @@ class NodeHttpTransport implements Transport {
             return;
           }
 
-          // Regular JSON response
           let chunks = '';
           res.setEncoding('utf8');
           res.on('data', (chunk: string) => {
@@ -165,7 +204,8 @@ class NodeHttpTransport implements Transport {
               return;
             }
             try {
-              resolve(JSON.parse(chunks) as JSONRPCMessage);
+              const parsed: JSONRPCMessage = JSON.parse(chunks);
+              resolve(parsed);
             } catch {
               reject(
                 new Error(`Resposta inválida do MCP: ${chunks.slice(0, 200)}`),
@@ -188,6 +228,7 @@ class NodeHttpTransport implements Transport {
 async function connectMcpClient(
   mcpUrl: string,
   mcpAuthToken: string | null,
+  mcpLowcodeApiUrl: string | null,
   accessToken: string,
 ): Promise<{
   client: Client;
@@ -199,6 +240,11 @@ async function connectMcpClient(
   if (mcpAuthToken) {
     headers['Authorization'] = `Bearer ${mcpAuthToken}`;
   }
+
+  const lowcodeApiUrl =
+    mcpLowcodeApiUrl?.trim().replace(/\/$/, '') ||
+    Env.APP_SERVER_URL.replace(/\/$/, '');
+  headers['X-Lowcode-Api-Url'] = lowcodeApiUrl;
 
   const transport = new NodeHttpTransport(new URL(mcpUrl), headers);
   const client = new Client({ name: 'lowcodejs-chat', version: '1.0.0' });
@@ -220,9 +266,8 @@ export function initChatSocket(
   });
 
   io.on('connection', async (socket) => {
-    // --- Autenticação via cookie (igual AuthenticationMiddleware) ---
     const cookieHeader = socket.handshake.headers.cookie;
-    const accessToken = extractCookieValue(cookieHeader, 'accessToken');
+    const accessToken = extractCookieValue(cookieHeader, ACCESS_TOKEN_COOKIE);
 
     if (!accessToken) {
       socket.emit(E_CHAT_EVENT.ERROR, { message: 'Autenticação necessária.' });
@@ -241,15 +286,33 @@ export function initChatSocket(
 
     const user = decoded;
 
-    // --- Validar configuração (lendo do Setting singleton) ---
+    // Capacidade de chat por grupo (MASTER bypassa). Privilegio MASTER resolvido
+    // pelo fecho de grupos (nao pelo role do JWT). Mantem o chat indisponivel
+    // para grupos sem a permissao, alem do toggle global AI_ASSISTANT_ENABLED.
+    const userRepository = getInstanceByToken(UserMongooseRepository);
+    const groupResolver = getInstanceByToken(GroupResolverService);
+    const fullUser = await userRepository.findById(user.sub);
+
+    if (!(await groupResolver.isMaster(fullUser))) {
+      const capabilities = await groupResolver.resolveCapabilities(fullUser);
+
+      if (!capabilities.has(E_AREA_CAPABILITY.MANAGE_CHAT)) {
+        socket.emit(E_CHAT_EVENT.ERROR, {
+          message: 'Você não tem permissão para usar o assistente de IA.',
+        });
+        socket.disconnect();
+        return;
+      }
+    }
+
     const setting = await Setting.findOne().lean();
     const aiEnabled = Boolean(setting?.AI_ASSISTANT_ENABLED);
-    const openaiKey = setting?.OPENAI_API_KEY ?? null;
     const mcpUrl = setting?.MCP_SERVER_URL ?? null;
     const mcpAuthToken = setting?.MCP_SERVER_TOKEN ?? null;
-    const openaiModel = setting?.OPENAI_MODEL ?? 'gpt-4.1-nano';
+    const mcpLowcodeApiUrl = setting?.MCP_LOWCODE_API_URL ?? null;
+    let llmConfig = resolveLlmConfig(setting);
 
-    if (!aiEnabled || !openaiKey || !mcpUrl) {
+    if (!aiEnabled || !mcpUrl || !llmConfig.isConfigured) {
       socket.emit(E_CHAT_EVENT.ERROR, {
         message: 'Assistente IA não está habilitado ou não está configurado.',
       });
@@ -257,12 +320,9 @@ export function initChatSocket(
       return;
     }
 
-    const openaiClient = new OpenAI({ apiKey: openaiKey });
-
     let mcpClient: Client | null = null;
 
     try {
-      // --- Conectar ao MCP (tenta StreamableHTTP, fallback SSE) ---
       socket.emit(E_CHAT_EVENT.STATUS, {
         message: 'Conectando ao servidor MCP...',
       });
@@ -270,31 +330,23 @@ export function initChatSocket(
       const { client, tools: mcpTools } = await connectMcpClient(
         mcpUrl,
         mcpAuthToken,
+        mcpLowcodeApiUrl,
         accessToken,
       );
       mcpClient = client;
 
-      let openaiTools: OpenAI.ChatCompletionTool[] | undefined;
-      if (mcpTools.length > 0) {
-        openaiTools = mcpTools.map((tool) => ({
-          type: 'function' as const,
-          function: {
-            name: tool.name,
-            description: tool.description || '',
-            parameters: (tool.inputSchema as Record<string, unknown>) || {},
-          },
-        }));
-      }
-
-      // --- Histórico de mensagens in-memory ---
-      const messages: OpenAI.ChatCompletionMessageParam[] = [
+      const messages: Array<LlmChatMessage> = [
         {
           role: 'system',
-          content: getChatSystemPrompt(user.email.split('@')[0], user.email),
+          content: getChatSystemPrompt(
+            user.email.split('@')[0],
+            user.email,
+            llmConfig.provider,
+            llmConfig.model,
+          ),
         },
       ];
 
-      // --- Recebe histórico do frontend (persistência entre reloads) ---
       socket.on(
         E_CHAT_EVENT.HISTORY,
         (data: {
@@ -312,212 +364,73 @@ export function initChatSocket(
         },
       );
 
-      // --- Agente pronto ---
       socket.emit(E_CHAT_EVENT.READY, {
         message: 'Agente pronto! Você pode enviar mensagens.',
         tools_count: mcpTools.length,
+        llm_provider: llmConfig.provider,
+        llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+        llm_model: llmConfig.model,
       });
 
-      // --- Loop de mensagens ---
       socket.on(E_CHAT_EVENT.MESSAGE, async (data: ClientMessage) => {
         try {
-          const userInput = (data.message || '').trim();
+          const latestSetting = await Setting.findOne().lean();
+          llmConfig = resolveLlmConfig(latestSetting);
 
-          if (!userInput && !data.file) return;
-
-          // Construir conteúdo da mensagem (multimodal se houver arquivo)
-          // Igual agent L196-225
-          const fileData = data.file;
-          if (fileData) {
-            const filename = fileData.filename || 'arquivo';
-
-            if (fileData.type === 'image') {
-              // GPT-4o Vision: enviar imagem como content multimodal (igual agent L202-213)
-              const contentParts: OpenAI.ChatCompletionContentPart[] = [];
-              if (userInput) {
-                contentParts.push({ type: 'text', text: userInput });
-              } else {
-                contentParts.push({
-                  type: 'text',
-                  text: `Transcreva e descreva detalhadamente o conteúdo desta imagem (${filename}):`,
-                });
-              }
-              contentParts.push({
-                type: 'image_url',
-                image_url: { url: fileData.data_uri! },
-              });
-              messages.push({ role: 'user', content: contentParts });
-            } else if (fileData.type === 'pdf') {
-              // PDF: incluir texto extraído na mensagem (igual agent L215-221)
-              const extracted = fileData.extracted_text || '';
-              const pageCount = fileData.page_count || 0;
-              const prompt =
-                userInput || 'Transcreva e analise o conteúdo deste PDF:';
-              const fullContent = `${prompt}\n\nPDF: ${filename} (${pageCount} página(s))\n\n${extracted}`;
-              messages.push({ role: 'user', content: fullContent });
-            } else {
-              messages.push({ role: 'user', content: userInput });
-            }
-          } else {
-            messages.push({ role: 'user', content: userInput });
+          const systemPrompt = getChatSystemPrompt(
+            user.email.split('@')[0],
+            user.email,
+            llmConfig.provider,
+            llmConfig.model,
+          );
+          if (messages[0]?.role === 'system') {
+            messages[0] = { role: 'system', content: systemPrompt };
           }
 
-          // Loop de processamento (igual agent L228-293)
-          while (true) {
-            socket.emit(E_CHAT_EVENT.THINKING);
+          socket.emit(E_CHAT_EVENT.LLM_INFO, {
+            llm_provider: llmConfig.provider,
+            llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+            llm_model: llmConfig.model,
+          });
 
-            const response = await openaiClient.chat.completions.create({
-              model: openaiModel,
-              messages,
-              tools: openaiTools,
-            });
+          const { reply } = await runChatCompletion({
+            llmConfig,
+            messages,
+            mcpClient: mcpClient!,
+            mcpTools,
+            socket,
+            userId: user.sub,
+            userInput: (data.message || '').trim(),
+            file: data.file,
+          });
 
-            const msg = response.choices[0].message;
-            messages.push(msg);
-
-            if (msg.tool_calls && msg.tool_calls.length > 0) {
-              for (const toolCall of msg.tool_calls) {
-                if (toolCall.type !== 'function') continue;
-                const toolName = toolCall.function.name;
-                let toolArgs: Record<string, unknown> = {};
-                try {
-                  toolArgs = JSON.parse(toolCall.function.arguments || '{}');
-                } catch {
-                  toolArgs = {};
-                }
-                const toolCallId = toolCall.id;
-
-                socket.emit(E_CHAT_EVENT.TOOL_CALL, {
-                  name: toolName,
-                  args: toolArgs,
-                });
-
-                console.log('[MCP Log] tool_call:', toolName, toolArgs);
-                Logger.create({
-                  url: `mcp://${toolName}`,
-                  user: user.sub,
-                  action: E_LOGGER_ACTION_TYPE.AI_CALL,
-                  object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-                  object_id: toolName,
-                  content: toolArgs,
-                }).catch((err: unknown) =>
-                  console.error('[MCP Log] create error:', err),
-                );
-
-                try {
-                  const result = await mcpClient!.callTool({
-                    name: toolName,
-                    arguments: toolArgs,
-                  });
-
-                  // Extrair content_str (igual agent L255-261)
-                  let contentStr = '';
-                  if (result.content && Array.isArray(result.content)) {
-                    for (const content of result.content as Array<{
-                      type: string;
-                      text?: string;
-                    }>) {
-                      if (content.type === 'text') {
-                        contentStr += content.text || '';
-                      } else {
-                        contentStr += `[${content.type}]`;
-                      }
-                    }
-                  } else {
-                    contentStr = String(result);
-                  }
-
-                  messages.push({
-                    role: 'tool',
-                    tool_call_id: toolCallId,
-                    content: contentStr,
-                  });
-
-                  const preview =
-                    contentStr.length > 150
-                      ? contentStr.slice(0, 150) + '...'
-                      : contentStr;
-
-                  socket.emit(E_CHAT_EVENT.TOOL_RESULT, {
-                    name: toolName,
-                    preview,
-                  });
-
-                  console.log('[MCP Log] tool_result:', toolName, '|', preview);
-                  Logger.create({
-                    url: `mcp://${toolName}/result`,
-                    user: user.sub,
-                    action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
-                    object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-                    object_id: toolName,
-                    content: { preview, length: contentStr.length },
-                  }).catch((err: unknown) =>
-                    console.error('[MCP Log] create error:', err),
-                  );
-                } catch (err) {
-                  const errorMsg =
-                    err instanceof Error ? err.message : String(err);
-
-                  messages.push({
-                    role: 'tool',
-                    tool_call_id: toolCallId,
-                    content: errorMsg,
-                  });
-
-                  socket.emit(E_CHAT_EVENT.TOOL_ERROR, {
-                    name: toolName,
-                    message: errorMsg,
-                  });
-
-                  console.error('[MCP Log] tool_error:', toolName, errorMsg);
-                  Logger.create({
-                    url: `mcp://${toolName}/error`,
-                    user: user.sub,
-                    action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
-                    object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-                    object_id: toolName,
-                    content: { error: errorMsg },
-                  }).catch((err: unknown) =>
-                    console.error('[MCP Log] create error:', err),
-                  );
-                }
-              }
-              // Continua o loop para enviar resultados de volta ao modelo (igual agent L287)
-              continue;
-            } else {
-              // Resposta final (igual agent L288-293)
-              socket.emit(E_CHAT_EVENT.MESSAGE, {
-                content: msg.content || '',
-              });
-              break;
-            }
+          if (reply) {
+            socket.emit(E_CHAT_EVENT.MESSAGE, { content: reply });
           }
         } catch (err) {
-          // Error handling (igual agent L297-308)
           console.error('Erro no processamento:', err);
-          const errorMsg = getErrorMessage(err);
+          const errorMsg = formatChatUserError(err);
           try {
-            socket.emit(E_CHAT_EVENT.ERROR, {
-              message: `Erro no servidor: ${errorMsg}`,
+            socket.emit(E_CHAT_EVENT.MESSAGE, {
+              content: `Não foi possível concluir a resposta: ${errorMsg}`,
+              variant: 'system-warning',
             });
           } catch {
-            // ignore emit errors
+            /* ignore */
           }
         }
       });
 
-      // --- Cleanup na desconexão (igual agent L309-313) ---
       socket.on('disconnect', async () => {
         try {
           if (mcpClient) {
             await mcpClient.close();
           }
         } catch {
-          // ignore close errors
+          /* ignore */
         }
       });
     } catch (err) {
-      // Erro na inicialização (igual agent L297-308)
       console.error('Erro ao inicializar chat socket:', err);
       const errorMsg = getErrorMessage(err);
       try {
@@ -525,14 +438,14 @@ export function initChatSocket(
           message: `Erro no servidor: ${errorMsg}`,
         });
       } catch {
-        // ignore emit errors
+        /* ignore */
       }
       try {
         if (mcpClient) {
           await mcpClient.close();
         }
       } catch {
-        // ignore close errors
+        /* ignore */
       }
       socket.disconnect();
     }

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -16,19 +15,19 @@ import { PasswordContractService } from '@application/services/password/password
 
 import { SETUP_STEPS, nextStep } from '../setup.steps';
 
-interface SetupAdminInput {
+type SetupAdminInput = {
   name: string;
   email: string;
   password: string;
-}
+};
 
-interface SetupAdminOutput {
+type SetupAdminOutput = {
   completed: boolean;
   currentStep: string | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
   user: IUser;
-}
+};
 
 type Response = Either<HTTPException, SetupAdminOutput>;
 

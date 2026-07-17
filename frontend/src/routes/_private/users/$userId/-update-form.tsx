@@ -14,6 +14,7 @@ export type UserUpdateFormValues = {
   password: string;
   status: ValueOf<typeof E_USER_STATUS>;
   group: string;
+  groups: Array<string>;
 };
 
 export const userUpdateFormDefaultValues: UserUpdateFormValues = {
@@ -22,15 +23,18 @@ export const userUpdateFormDefaultValues: UserUpdateFormValues = {
   password: '',
   status: E_USER_STATUS.ACTIVE,
   group: '',
+  groups: [],
 };
 
 export const UpdateUserFormFields = withForm({
   defaultValues: userUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
-    onAllowPasswordChangeChange: () => {},
+    onAllowPasswordChangeChange: (_value: boolean) => {},
   },
   render: function Render({
     form,
@@ -44,7 +48,7 @@ export const UpdateUserFormFields = withForm({
     return (
       <section
         data-test-id="user-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField name="name">
@@ -144,7 +148,7 @@ export const UpdateUserFormFields = withForm({
           )}
         </form.AppField>
 
-        {/* Campo Grupo */}
+        {/* Campo Grupo principal */}
         <form.AppField name="group">
           {(field) => (
             <field.FieldGroupCombobox
@@ -152,6 +156,17 @@ export const UpdateUserFormFields = withForm({
               placeholder="Selecione um grupo..."
               disabled={isDisabled}
               required
+            />
+          )}
+        </form.AppField>
+
+        {/* Campo Grupos adicionais (multi-grupo) */}
+        <form.AppField name="groups">
+          {(field) => (
+            <field.FieldGroupMultiSelect
+              label="Grupos adicionais (opcional)"
+              placeholder="Selecione grupos adicionais..."
+              disabled={isDisabled}
             />
           )}
         </form.AppField>

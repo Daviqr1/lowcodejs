@@ -22,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import type { Merge } from '@/lib/interfaces';
 
 function applyDateMask(value: string, format: string): string {
   let separator = '-';
@@ -73,12 +74,12 @@ function applyRangeMask(
   return start;
 }
 
-export interface DatepickerValue {
+export type DatepickerValue = {
   startDate: Date | null;
   endDate: Date | null;
-}
+};
 
-export interface DatepickerProps {
+export type DatepickerProps = {
   value: DatepickerValue | null;
   onChange: (value: DatepickerValue | null) => void;
   displayFormat?: string;
@@ -93,19 +94,19 @@ export interface DatepickerProps {
   useRange?: boolean; // true = 2 calendars, false = 1 calendar (default: true)
   asSingle?: boolean; // true = single date (start=end), false = range (default: false)
   separator?: string; // separator in input (default: "~")
-}
+};
 
 export type SingleDatepickerProps = Omit<
   DatepickerProps,
   'asSingle' | 'useRange' | 'separator'
 >;
 
-export type RangeDatepickerProps = Omit<
-  DatepickerProps,
-  'asSingle' | 'useRange'
-> & {
-  dualCalendar?: boolean;
-};
+export type RangeDatepickerProps = Merge<
+  Omit<DatepickerProps, 'asSingle' | 'useRange'>,
+  {
+    dualCalendar?: boolean;
+  }
+>;
 
 export function SingleDatepicker(
   props: SingleDatepickerProps,
@@ -383,8 +384,8 @@ export function Datepicker({
             sideOffset={8}
           >
             {useRange && (
-              // Dual calendar layout
-              <div className="flex">
+              // Dual calendar layout — empilha no mobile, lado a lado no sm+
+              <div className="flex flex-col sm:flex-row">
                 {/* Left calendar */}
                 <div className="relative">
                   <DatepickerCalendar
@@ -424,8 +425,8 @@ export function Datepicker({
                   </button>
                 </div>
 
-                {/* Vertical separator */}
-                <div className="w-px bg-border my-2" />
+                {/* Separator — horizontal no mobile, vertical no sm+ */}
+                <div className="h-px w-full bg-border sm:my-2 sm:h-auto sm:w-px" />
 
                 {/* Right calendar */}
                 <div className="relative">

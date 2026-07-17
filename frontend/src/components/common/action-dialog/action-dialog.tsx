@@ -3,6 +3,7 @@ import type { QueryKey } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { LoaderCircleIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,11 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
+import type { Merge } from '@/lib/interfaces';
 import { QueryClient } from '@/lib/query-client';
-import { toastSuccess } from '@/lib/toast';
 
-export interface ActionDialogConfig {
+export type ActionDialogConfig = {
   mutationFn: () => Promise<void>;
   invalidateKeys: Array<QueryKey>;
   toast: { title: string; description: string };
@@ -30,35 +32,41 @@ export interface ActionDialogConfig {
   testId: string;
   confirmTestId?: string;
   cancelTestId?: string;
-}
-
-export type ActionDialogProps = React.ComponentProps<typeof DialogTrigger> & {
-  config: ActionDialogConfig;
 };
+
+export type ActionDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    config: ActionDialogConfig;
+  }
+>;
 
 export function ActionDialog({
   config,
   ...props
 }: ActionDialogProps): React.JSX.Element {
-  const [open, setOpen] = React.useState(false);
+  const { closeRef, close } = useDismissableDialog();
   const navigate = useNavigate();
 
   const mutation = useMutation({
     mutationFn: config.mutationFn,
     onSuccess() {
-      setOpen(false);
+      close();
 
       for (const key of config.invalidateKeys) {
         QueryClient.invalidateQueries({ queryKey: key });
       }
 
-      toastSuccess(config.toast.title, config.toast.description);
+      toast.success(config.toast.title, {
+        description: config.toast.description,
+      });
 
       if (config.navigation) {
         navigate({
           to: config.navigation.to,
           replace: true,
-          search: config.navigation.search as any,
+          // @ts-expect-error navigate nao tipa search com `to` dinamico (string)
+          search: config.navigation.search,
         });
       }
     },
@@ -68,11 +76,7 @@ export function ActionDialog({
   });
 
   return (
-    <Dialog
-      modal
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Dialog modal>
       <DialogTrigger {...props} />
       <DialogContent
         className="py-4 px-6"
@@ -87,6 +91,7 @@ export function ActionDialog({
             <DialogFooter className="inline-flex w-full gap-2 justify-end">
               <DialogClose asChild>
                 <Button
+                  ref={closeRef}
                   className="bg-destructive hover:bg-destructive"
                   data-test-id={config.cancelTestId}
                 >

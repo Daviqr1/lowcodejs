@@ -3,7 +3,7 @@
 Reordena multiplos itens de menu de uma vez.
 
 ## Endpoint
-`PATCH /menu/reorder` | Auth: Yes | Permission: nenhuma especifica
+`PATCH /menu/reorder` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupStatusSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Verificar status do setup wizard',
   description:
     'Retorna se o setup foi concluído, a etapa atual e se já existe um administrador master',
@@ -17,7 +17,15 @@ export const SetupStatusSchema: FastifySchema = {
         currentStep: {
           type: 'string',
           nullable: true,
-          enum: ['admin', 'name', 'logos', 'upload', 'paging', 'email'],
+          enum: [
+            'admin',
+            'name',
+            'storage',
+            'logos',
+            'upload',
+            'paging',
+            'email',
+          ],
           description: 'Etapa atual do setup (null se concluído)',
         },
         hasAdmin: {

@@ -3,6 +3,7 @@ import { ArrowRightIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
 
 import { TableRowActionsMenu } from './table-row-actions-menu';
+import { RowSelectCheckbox } from './use-row-selection';
 
 import { TableRowCategoryCell } from '@/components/common/dynamic-table/table-cells/table-row-category-cell';
 import { TableRowDateCell } from '@/components/common/dynamic-table/table-cells/table-row-date-cell';
@@ -15,29 +16,33 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { FieldTitle } from '@/components/common/field-title';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, ILayoutFields, IRow } from '@/lib/interfaces';
 import { resolveLayoutField } from '@/lib/layout-field-resolver';
-import { HeaderFilter, HeaderSorter } from '@/lib/layout-pickers';
+import { HeaderSorter } from '@/lib/layout-pickers';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface TableGridViewProps {
+type TableGridViewProps = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
   layoutFields?: ILayoutFields | null;
-}
+};
 
-interface RenderGridCellProps {
+type RenderGridCellProps = {
   field: IField;
   row: IRow;
   tableSlug: string;
   isThumb?: boolean;
-}
+};
 
 function RenderGridCell({
   field,
@@ -49,7 +54,7 @@ function RenderGridCell({
     return (
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-medium text-muted-foreground">
-          <FieldTitle value={field.name} />
+          <FieldTitle value={resolveFieldLabel(field)} />
         </span>
         <span className="text-muted-foreground text-sm">-</span>
       </div>
@@ -140,6 +145,13 @@ function RenderGridCell({
             row={row}
           />
         );
+      case E_FIELD_TYPE.USER_GROUP:
+        return (
+          <TableRowUserGroupCell
+            field={field}
+            row={row}
+          />
+        );
       default:
         return <span className="text-muted-foreground text-sm">-</span>;
     }
@@ -148,7 +160,7 @@ function RenderGridCell({
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs font-medium text-muted-foreground">
-        <FieldTitle value={field.name} />
+        <FieldTitle value={resolveFieldLabel(field)} />
       </span>
       {renderContent()}
     </div>
@@ -171,8 +183,12 @@ export function TableGridView({
   const permission = useTablePermission(table.data);
 
   const canCreateRow = permission.can('CREATE_ROW');
+  const canSelect = permission.can('UPDATE_ROW');
+  const { isFieldVisible } = useFieldVisibility();
 
-  const visibleHeaders = headers.filter(HeaderFilter).sort(HeaderSorter(order));
+  const visibleHeaders = headers
+    .filter((header) => isFieldVisible(header, 'list') && !header.trashed)
+    .sort(HeaderSorter(order));
 
   const thumbField = resolveLayoutField(
     visibleHeaders,
@@ -195,42 +211,52 @@ export function TableGridView({
 
   return (
     <div
-      className="p-4"
+      className="@container p-4"
       data-test-id="table-grid-view"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 @md:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4 gap-4">
         {data.map((row) => (
           <Card
             key={row._id}
             className="overflow-hidden p-0"
           >
             <div className="w-full bg-muted aspect-4/3 overflow-hidden">
-              {thumbField ? (
+              {thumbField && (
                 <RenderGridCell
                   field={thumbField}
                   row={row}
                   tableSlug={slug}
                   isThumb
                 />
-              ) : (
+              )}
+              {!thumbField && (
                 <div className="w-full aspect-4/3 flex items-center justify-center text-xs text-muted-foreground">
                   sem imagem
                 </div>
               )}
             </div>
             <CardContent className="p-3 space-y-1">
+              {row.status === 'draft' && (
+                <Badge
+                  variant="outline"
+                  className="text-amber-600 border-amber-400"
+                >
+                  Rascunho
+                </Badge>
+              )}
               <div className="font-semibold leading-tight line-clamp-2">
-                {titleField ? (
+                {titleField && (
                   <RenderGridCell
                     field={titleField}
                     row={row}
                     tableSlug={slug}
                   />
-                ) : (
+                )}
+                {!titleField && (
                   <span className="text-muted-foreground">Sem título</span>
                 )}
               </div>
-              {descField ? (
+              {descField && (
                 <div className="text-sm text-muted-foreground line-clamp-2">
                   <RenderGridCell
                     field={descField}
@@ -238,20 +264,30 @@ export function TableGridView({
                     tableSlug={slug}
                   />
                 </div>
-              ) : null}
+              )}
             </CardContent>
             <CardFooter className="inline-flex justify-between items-center p-1">
-              <TableRowActionsMenu
-                slug={slug}
-                row={row}
-                table={table.data}
-              />
+              <div className="flex items-center gap-1">
+                {canSelect && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center pl-1"
+                  >
+                    <RowSelectCheckbox id={row._id} />
+                  </div>
+                )}
+                <TableRowActionsMenu
+                  slug={slug}
+                  row={row}
+                  table={table.data}
+                />
+              </div>
               <Button
                 variant="ghost"
                 className="p-0"
                 onClick={() => {
                   router.navigate({
-                    to: '/tables/$slug/row/',
+                    to: '/tables/$slug/row',
                     params: { slug },
                     search: { _id: row._id },
                   });

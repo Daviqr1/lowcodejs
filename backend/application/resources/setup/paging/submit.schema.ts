@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupPagingSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Configurar paginação e templates de clone no setup wizard',
   description:
     'Define itens por página e tabelas disponíveis para clone. Etapa 5 do setup wizard.',
@@ -53,7 +53,7 @@ export const SetupPagingSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -66,7 +66,7 @@ export const SetupPagingSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

@@ -50,6 +50,11 @@ export const UserGroupShowSchema: FastifySchema = {
             },
           },
         },
+        encompasses: {
+          type: 'array',
+          description: 'IDs dos grupos englobados',
+          items: { type: 'string' },
+        },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },
@@ -72,7 +77,7 @@ export const UserGroupShowSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {

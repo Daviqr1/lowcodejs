@@ -5,6 +5,8 @@ import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { Env } from '@start/env';
 
+import { TaskLogger } from '../shared/task-logger';
+
 const SALT_ROUNDS = 10;
 
 type DemoUser = {
@@ -72,7 +74,7 @@ async function buildOp(
 
 export default async function Seed(): Promise<void> {
   if (Env.DEMO_MODE !== true) {
-    console.info('🌱 demo users skipped (DEMO_MODE=false)');
+    new TaskLogger('Usuários demo').noop('ignorado (DEMO_MODE=false)');
     return;
   }
 
@@ -98,5 +100,5 @@ export default async function Seed(): Promise<void> {
 
   // @ts-expect-error IUser.group é tipado como IGroup (populado), mas o schema guarda ObjectId
   await User.bulkWrite(ops);
-  console.info('🌱 \x1b[32m demo users \x1b[0m');
+  new TaskLogger('Usuários demo').ok();
 }

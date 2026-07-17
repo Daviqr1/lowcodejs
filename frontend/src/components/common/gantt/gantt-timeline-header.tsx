@@ -6,10 +6,10 @@ import type { ZoomLevel } from './gantt-types';
 
 import { cn } from '@/lib/utils';
 
-interface TimelineMonthHeadersProps {
+type TimelineMonthHeadersProps = {
   days: Array<Date>;
   dayWidth: number;
-}
+};
 
 export function TimelineMonthHeaders({
   days,
@@ -51,12 +51,12 @@ export function TimelineMonthHeaders({
   );
 }
 
-interface GanttTimelineHeaderProps {
+type GanttTimelineHeaderProps = {
   days: Array<Date>;
   dayWidth: number;
   zoom: ZoomLevel;
   headerHeight: number;
-}
+};
 
 export function GanttTimelineHeader({
   days,

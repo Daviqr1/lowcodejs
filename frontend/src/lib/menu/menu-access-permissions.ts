@@ -1,101 +1,55 @@
 import type { LinkProps } from '@tanstack/react-router';
 
-export const ROLE_ROUTES: Record<string, Array<LinkProps['to']>> = {
-  ADMINISTRATOR: [
-    '/e/$package/$id',
-    '/extensions',
-    '/groups',
-    '/groups/create',
-    '/groups/$groupId',
-    '/logs',
-    '/tables',
-    '/tables/$slug',
-    '/menus',
-    '/menus/create',
-    '/menus/$menuId',
-    '/pages/$slug',
-    '/profile',
-    '/notifications',
-    '/tables',
-    '/tools',
-    '/tools/$package/$id',
-    '/users',
-    '/users/create',
-    '/users/$userId',
-  ],
-  MANAGER: ['/e/$package/$id', '/tables', '/tables/$slug', '/pages/$slug'],
-  REGISTERED: ['/e/$package/$id', '/tables', '/tables/$slug', '/pages/$slug'],
-  MASTER: [
-    '/e/$package/$id',
-    '/extensions',
-    '/groups',
-    '/groups/create',
-    '/groups/$groupId',
-    '/logs',
-    '/menus',
-    '/menus/create',
-    '/menus/$menuId',
-    '/notifications',
-    '/pages/$slug',
-    '/profile',
-    '/settings',
-    '/tables',
-    '/tables/$slug',
-    '/tools',
-    '/tools/$package/$id',
-    '/users',
-    '/users/create',
-    '/users/$userId',
-  ],
+import { E_AREA_CAPABILITY } from '@/lib/constant';
+
+// Rotas das areas do sistema -> capacidade exigida. Espelha o enforcement do
+// backend (PermissionMiddleware por capability). Rotas ausentes deste mapa nao
+// exigem capacidade (basta estar autenticado).
+export const AREA_CAPABILITY_BY_ROUTE: Record<string, string> = {
+  '/users': E_AREA_CAPABILITY.MANAGE_USERS,
+  '/groups': E_AREA_CAPABILITY.MANAGE_USER_GROUPS,
+  '/menus': E_AREA_CAPABILITY.MANAGE_MENU,
+  '/settings': E_AREA_CAPABILITY.MANAGE_SETTINGS,
+  '/tools': E_AREA_CAPABILITY.MANAGE_TOOLS,
+  '/extensions': E_AREA_CAPABILITY.MANAGE_TOOLS,
 };
 
+// Rota padrao apos login. Mantida por slug de role para o fluxo de autenticacao;
+// hoje todas apontam para /tables.
 export const ROLE_DEFAULT_ROUTE: Record<string, LinkProps['to']> = {
+  MASTER: '/tables',
   ADMINISTRATOR: '/tables',
   MANAGER: '/tables',
   REGISTERED: '/tables',
-  MASTER: '/tables',
 };
 
-/**
- * Verifica se uma rota real corresponde a um padrão de rota
- * Exemplo: matchRoute('/users/123', '/users/$userId') => true
- */
-function matchRoute(actualRoute: string, routePattern: string): boolean {
-  const actualParts = actualRoute.split('/').filter(Boolean);
-  const patternParts = routePattern.split('/').filter(Boolean);
-
-  if (actualParts.length !== patternParts.length) {
-    return false;
-  }
-
-  return patternParts.every((patternPart, index) => {
-    // Se o segmento do padrão começa com $, é um parâmetro dinâmico
-    if (patternPart.startsWith('$')) {
-      return true;
-    }
-    // Caso contrário, deve corresponder exatamente
-    return patternPart === actualParts[index];
-  });
+export function hasAreaCapability(
+  capabilities: Array<string> | undefined,
+  capability: string,
+): boolean {
+  if (!capabilities) return false;
+  return capabilities.includes(capability);
 }
 
+// Capacidade exigida por uma rota concreta (match exato ou por prefixo de
+// segmento, ex.: '/users/123' herda a regra de '/users'). Retorna null quando a
+// rota nao exige capacidade.
+function requiredCapabilityForRoute(route: string): string | null {
+  for (const pattern of Object.keys(AREA_CAPABILITY_BY_ROUTE)) {
+    if (route === pattern) return AREA_CAPABILITY_BY_ROUTE[pattern];
+    if (route.startsWith(`${pattern}/`))
+      return AREA_CAPABILITY_BY_ROUTE[pattern];
+  }
+  return null;
+}
+
+// Acesso de navegacao por capacidade (nao por role legado). O backend continua
+// sendo a fonte de verdade; isto e o hint client-side da sidebar/guards.
 export function canAccessRoute(
-  role: keyof typeof ROLE_ROUTES,
+  capabilities: Array<string> | undefined,
   route: string,
 ): boolean {
-  const allowedRoutes = ROLE_ROUTES[role];
-
-  // Verifica se a rota corresponde a algum padrão permitido
-  return allowedRoutes.some((allowedRoute) => {
-    // Ignora rotas undefined
-    if (!allowedRoute || typeof allowedRoute !== 'string') {
-      return false;
-    }
-
-    // Se a rota permitida contém parâmetros dinâmicos, usa matching pattern-based
-    if (allowedRoute.includes('$')) {
-      return matchRoute(route, allowedRoute);
-    }
-    // Caso contrário, faz comparação direta
-    return route === allowedRoute;
-  });
+  const required = requiredCapabilityForRoute(route);
+  if (!required) return true;
+  return hasAreaCapability(capabilities, required);
 }

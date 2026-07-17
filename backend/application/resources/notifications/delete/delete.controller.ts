@@ -1,11 +1,12 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 import z from 'zod';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
-import NotificationMongooseRepository from '@application/repositories/notification/notification-mongoose.repository';
+import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
+
+import { NotificationDeleteSchema } from './delete.schema';
 
 const ParamsValidator = z.object({ _id: z.string().trim().min(1) });
 
@@ -23,6 +24,7 @@ export default class {
     url: '/:_id',
     options: {
       onRequest: [AuthenticationMiddleware({ optional: false })],
+      schema: NotificationDeleteSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

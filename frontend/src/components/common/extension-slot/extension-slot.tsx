@@ -19,12 +19,12 @@ function extensionTypeToFolder(type: string): ExtensionEntryType {
  */
 export type ExtensionSlotContext = Record<string, unknown>;
 
-interface ExtensionSlotProps {
+type ExtensionSlotProps = {
   /** Identificador do slot (ex: "table.actions"). O plugin é renderizado se este id estiver em `placement.slots` do manifest. */
   id: string;
   /** Props passadas como spread para o componente da extensão. */
   context?: ExtensionSlotContext;
-}
+};
 
 function isPluginAllowedForTable(
   plugin: IActiveExtension,
@@ -36,11 +36,11 @@ function isPluginAllowedForTable(
   return plugin.tableScope.tableIds.includes(tableId);
 }
 
-interface ExtensionPluginRenderProps {
+type ExtensionPluginRenderProps = {
   plugin: IActiveExtension;
   slot: string;
   context: ExtensionSlotContext;
-}
+};
 
 function ExtensionPluginRender({
   plugin,
@@ -56,8 +56,10 @@ function ExtensionPluginRender({
       );
       if (!Entry) {
         // Manifest registrado mas entry React não existe no bundle. Não quebra
-        // o slot — só não renderiza nada.
-        return { default: (): null => null };
+        // o slot — só não renderiza nada. Mesma assinatura de props do Entry
+        // para o React.lazy resolver um único tipo de componente.
+        const Empty: React.ComponentType<Record<string, unknown>> = () => null;
+        return { default: Empty };
       }
       return { default: Entry };
     });
@@ -86,6 +88,8 @@ export function ExtensionSlot({
   const { data: extensions } = useExtensionsActiveList();
 
   const tableId = ((): string | null => {
+    // context é um saco de props de slot (shape varia por slot) — narrow pontual.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const candidate = (context as { table?: { _id?: string } }).table;
     return candidate?._id ?? null;
   })();

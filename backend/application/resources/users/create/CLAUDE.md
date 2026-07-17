@@ -3,10 +3,10 @@
 Cria um novo usuario com nome, email, senha e grupo.
 
 ## Endpoint
-`POST /users` | Auth: Yes | Permission: -
+`POST /users` | Auth: Yes | Permission: MANAGE_USERS
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 2. Validator: `UserCreateBodyValidator` - campos: name (string, required, trim, min 1), email (string, email, trim), group (string, required, min 1), password (string, trim, min 6, regex PASSWORD_REGEX)
 3. UseCase: `UserCreateUseCase`
    - Valida que `group` foi informado (retorna 400 se ausente)

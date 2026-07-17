@@ -17,11 +17,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ITable } from '@/lib/interfaces';
 
-interface CodeEditorInfoModalProps {
+type CodeEditorInfoModalProps = {
   table?: ITable;
   label?: string;
   hook?: HookType;
-}
+};
 
 export function CodeEditorInfoModal({
   table,

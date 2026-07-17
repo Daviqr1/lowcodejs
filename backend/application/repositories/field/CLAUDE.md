@@ -7,7 +7,7 @@ Repositorio da entidade Field (campos de tabelas dinamicas).
 | Arquivo | Descricao |
 |---------|-----------|
 | `field-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `field-mongoose.repository.ts` | Implementacao com Mongoose |
+| `field.repository.ts` | Implementacao com Mongoose |
 | `field-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos
@@ -28,7 +28,7 @@ Repositorio da entidade Field (campos de tabelas dinamicas).
 
 ## Payloads
 
-- `FieldCreatePayload` - name, slug, type, required, multiple, format, showIn (Filter/Form/Detail/List), widthIn (Form/List/Detail), locked, native, defaultValue, relationship, dropdown, category, group
+- `FieldCreatePayload` - name, slug, type, required, multiple, format, `validations` (opcional, default `[]` — regras de `field.validations[]`), showIn (Filter/Form/Detail/List), widthIn (Form/List/Detail), locked, native, defaultValue, relationship, dropdown, category, group
 
 ## Comportamentos Unicos
 

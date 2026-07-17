@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { E_FIELD_TYPE } from '@application/core/entity.core';
+import type { IFieldValidation, Merge } from '@application/core/entity.core';
 import {
   FIELD_NAME_MAX_LENGTH,
   FIELD_SLUG_MAX_LENGTH,
@@ -20,12 +21,24 @@ export const TableFieldCreateParamsValidator = z.object({
   slug: z.string().trim(),
 });
 
-export type TableFieldCreatePayload = Omit<
-  z.infer<typeof TableFieldCreateBodyValidator>,
-  'allowCustomDropdownOptions' | 'tip' | 'slug'
-> & {
-  slug?: string;
-  tableSlug?: string;
-  allowCustomDropdownOptions?: boolean;
-  tip?: string | null;
-};
+export type TableFieldCreatePayload = Merge<
+  Omit<
+    z.infer<typeof TableFieldCreateBodyValidator>,
+    | 'allowCustomDropdownOptions'
+    | 'fillWithCurrentUserWhenEmpty'
+    | 'tip'
+    | 'htmlContent'
+    | 'slug'
+    | 'validations'
+  >,
+  {
+    slug?: string;
+    tableSlug?: string;
+    allowCustomDropdownOptions?: boolean;
+    fillWithCurrentUserWhenEmpty?: boolean;
+    tip?: string | null;
+    htmlContent?: string | null;
+    // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.
+    validations?: IFieldValidation[];
+  }
+>;

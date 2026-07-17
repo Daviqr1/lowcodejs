@@ -1,0 +1,13 @@
+graph LR
+    UC["Use-cases - enqueue"] --> Q1["Queue email"]
+    UC --> Q2["Queue storage-migration"]
+    HTTPCSV["POST import-csv"] --> Q3["Queue csv-import"]
+    Q1 --> R[("Redis")]
+    Q2 --> R
+    Q3 --> R
+    R --> W1["EmailWorker - concurrency env 5..50"]
+    R --> W2["StorageMigrationWorker - 1 job, fan-out 1..20 arquivos"]
+    R --> W3["CsvImportWorker - concurrency 3"]
+    W1 --> SMTP["Nodemailer SMTP"]
+    W2 --> ST["StorageService local s3"]
+    W3 --> DATA[("Collections dinamicas")]

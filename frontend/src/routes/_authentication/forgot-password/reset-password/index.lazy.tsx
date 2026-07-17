@@ -2,9 +2,9 @@ import { useForm } from '@tanstack/react-form';
 import { Link, createLazyFileRoute, useRouter } from '@tanstack/react-router';
 import { ArrowLeftIcon, EyeClosedIcon, EyeIcon, LockIcon } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import * as z from 'zod';
 
-import { Logo } from '@/components/common/layout/logo';
 import { Button } from '@/components/ui/button';
 import {
   Field,
@@ -24,7 +24,6 @@ import { useAuthenticationResetPassword } from '@/hooks/tanstack-query/use-authe
 import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
 import { applyApiFieldErrors, getFieldInvalidState } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute(
   '/_authentication/forgot-password/reset-password/',
@@ -60,7 +59,9 @@ function RouteComponent(): React.JSX.Element {
 
   const resetPasswordMutation = useAuthenticationResetPassword({
     onSuccess() {
-      toastSuccess('Senha redefinida!', 'Faça login com sua nova senha.');
+      toast.success('Senha redefinida!', {
+        description: 'Faça login com sua nova senha.',
+      });
       router.navigate({ to: '/', replace: true });
     },
     onError(error) {
@@ -92,151 +93,140 @@ function RouteComponent(): React.JSX.Element {
   return (
     <div
       data-test-id="forgot-password-reset-page"
-      className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
+      className="flex flex-col gap-6"
     >
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <form
-            data-test-id="forgot-password-new-password-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
+      <form
+        data-test-id="forgot-password-new-password-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <FieldGroup className="stagger-children">
+          <div className="flex flex-col gap-2 text-left">
+            <h1 className="heading-card">Redefinir senha</h1>
+            <FieldDescription>
+              Crie uma nova senha para sua conta
+            </FieldDescription>
+          </div>
+
+          <form.Field
+            name="password"
+            children={(field) => {
+              const isInvalid = getFieldInvalidState(field.state.meta);
+
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Nova senha</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      data-test-id="forgot-password-password-input"
+                      id={field.name}
+                      name={field.name}
+                      type={(showPassword && 'text') || 'password'}
+                      placeholder="••••••••"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    <InputGroupAddon>
+                      <LockIcon />
+                    </InputGroupAddon>
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        data-test-id="forgot-password-password-toggle-btn"
+                        type="button"
+                        aria-label="toggle password visibility"
+                        title="toggle password visibility"
+                        size="icon-xs"
+                        className="cursor-pointer"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {!showPassword && <EyeIcon />}
+                        {showPassword && <EyeClosedIcon />}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
             }}
-          >
-            <FieldGroup>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <Link
-                  to="/"
-                  className="flex flex-col items-center gap-2 font-medium"
-                >
-                  <Logo className="h-8" />
-                </Link>
-                <FieldDescription>
-                  Crie uma nova senha para sua conta
-                </FieldDescription>
-              </div>
+          />
 
-              <form.Field
-                name="password"
-                children={(field) => {
-                  const isInvalid = getFieldInvalidState(field.state.meta);
+          <form.Field
+            name="confirmPassword"
+            children={(field) => {
+              const isInvalid = getFieldInvalidState(field.state.meta);
 
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Nova senha</FieldLabel>
-                      <InputGroup>
-                        <InputGroupInput
-                          data-test-id="forgot-password-password-input"
-                          id={field.name}
-                          name={field.name}
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                        />
-                        <InputGroupAddon>
-                          <LockIcon />
-                        </InputGroupAddon>
-                        <InputGroupAddon align="inline-end">
-                          <InputGroupButton
-                            data-test-id="forgot-password-password-toggle-btn"
-                            type="button"
-                            aria-label="toggle password visibility"
-                            title="toggle password visibility"
-                            size="icon-xs"
-                            className="cursor-pointer"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {!showPassword && <EyeIcon />}
-                            {showPassword && <EyeClosedIcon />}
-                          </InputGroupButton>
-                        </InputGroupAddon>
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Confirmar nova senha
+                  </FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      data-test-id="forgot-password-confirm-password-input"
+                      id={field.name}
+                      name={field.name}
+                      type={(showConfirmPassword && 'text') || 'password'}
+                      placeholder="••••••••"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    <InputGroupAddon>
+                      <LockIcon />
+                    </InputGroupAddon>
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        data-test-id="forgot-password-confirm-password-toggle-btn"
+                        type="button"
+                        aria-label="toggle confirm password visibility"
+                        title="toggle confirm password visibility"
+                        size="icon-xs"
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      >
+                        {!showConfirmPassword && <EyeIcon />}
+                        {showConfirmPassword && <EyeClosedIcon />}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
 
-              <form.Field
-                name="confirmPassword"
-                children={(field) => {
-                  const isInvalid = getFieldInvalidState(field.state.meta);
+          <Field>
+            <Button
+              data-test-id="forgot-password-submit-btn"
+              type="submit"
+              className="w-full transition-transform hover:-translate-y-px hover:shadow-soft active:translate-y-0"
+              disabled={resetPasswordMutation.status === 'pending'}
+            >
+              {resetPasswordMutation.status === 'pending' && <Spinner />}
+              {!(resetPasswordMutation.status === 'pending') && (
+                <span>Redefinir senha</span>
+              )}
+            </Button>
 
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Confirmar nova senha
-                      </FieldLabel>
-                      <InputGroup>
-                        <InputGroupInput
-                          data-test-id="forgot-password-confirm-password-input"
-                          id={field.name}
-                          name={field.name}
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                        />
-                        <InputGroupAddon>
-                          <LockIcon />
-                        </InputGroupAddon>
-                        <InputGroupAddon align="inline-end">
-                          <InputGroupButton
-                            data-test-id="forgot-password-confirm-password-toggle-btn"
-                            type="button"
-                            aria-label="toggle confirm password visibility"
-                            title="toggle confirm password visibility"
-                            size="icon-xs"
-                            className="cursor-pointer"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                          >
-                            {!showConfirmPassword && <EyeIcon />}
-                            {showConfirmPassword && <EyeClosedIcon />}
-                          </InputGroupButton>
-                        </InputGroupAddon>
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              />
-
-              <Field>
-                <Button
-                  data-test-id="forgot-password-submit-btn"
-                  type="submit"
-                  className="w-full"
-                  disabled={resetPasswordMutation.status === 'pending'}
-                >
-                  {resetPasswordMutation.status === 'pending' && <Spinner />}
-                  <span>Redefinir senha</span>
-                </Button>
-
-                <FieldDescription className="text-center">
-                  <Link
-                    to="/"
-                    className="inline-flex items-center gap-1"
-                  >
-                    <ArrowLeftIcon className="h-3 w-3" />
-                    Voltar para o login
-                  </Link>
-                </FieldDescription>
-              </Field>
-            </FieldGroup>
-          </form>
-        </div>
-      </div>
+            <FieldDescription className="text-center">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1"
+              >
+                <ArrowLeftIcon className="h-3 w-3" />
+                Voltar para o login
+              </Link>
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+      </form>
     </div>
   );
 }

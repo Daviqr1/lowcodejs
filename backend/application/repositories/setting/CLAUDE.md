@@ -7,7 +7,7 @@ Repositorio da entidade Setting (configuracoes globais do sistema).
 | Arquivo | Descricao |
 |---------|-----------|
 | `setting-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `setting-mongoose.repository.ts` | Implementacao com Mongoose |
+| `setting.repository.ts` | Implementacao com Mongoose |
 | `setting-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

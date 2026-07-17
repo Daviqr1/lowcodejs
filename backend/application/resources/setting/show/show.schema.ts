@@ -100,6 +100,24 @@ export const SettingShowSchema: FastifySchema = {
           description: 'URL do logo grande',
           examples: ['/assets/logo-large.webp'],
         },
+        LOGO_SMALL_DARK_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL do logo pequeno para o modo escuro',
+          examples: ['/assets/logo-small-dark.webp'],
+        },
+        LOGO_LARGE_DARK_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL do logo grande para o modo escuro',
+          examples: ['/assets/logo-large-dark.webp'],
+        },
+        LOGIN_BACKGROUND_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL da imagem de fundo da tela de login',
+          examples: ['/assets/login-background.webp'],
+        },
         OPENAI_API_KEY: {
           type: 'string',
           nullable: true,
@@ -123,10 +141,37 @@ export const SettingShowSchema: FastifySchema = {
           nullable: true,
           description: 'Token de autenticação do servidor MCP (Bearer)',
         },
+        MCP_LOWCODE_API_URL: {
+          type: 'string',
+          nullable: true,
+          description:
+            'URL da API LowCodeJS enviada ao MCP no header X-Lowcode-Api-Url',
+        },
         OPENAI_MODEL: {
           type: 'string',
           nullable: true,
-          description: 'Modelo OpenAI usado pelo assistente IA',
+          description: 'Modelo OpenAI usado pelo assistente IA (legado)',
+        },
+        AI_LLM_PROVIDER: {
+          type: 'string',
+          enum: ['openai', 'gemini', 'claude', 'openrouter', 'ollama'],
+          nullable: true,
+          description: 'Provedor LLM do assistente IA',
+        },
+        LLM_API_KEY: {
+          type: 'string',
+          nullable: true,
+          description: 'Chave da API do provedor LLM',
+        },
+        LLM_MODEL: {
+          type: 'string',
+          nullable: true,
+          description: 'Modelo LLM do provedor selecionado',
+        },
+        LLM_BASE_URL: {
+          type: 'string',
+          nullable: true,
+          description: 'URL base do LLM (ex.: Ollama local)',
         },
         SETUP_COMPLETED: {
           type: 'boolean',
@@ -135,7 +180,15 @@ export const SettingShowSchema: FastifySchema = {
         SETUP_CURRENT_STEP: {
           type: 'string',
           nullable: true,
-          enum: ['admin', 'name', 'logos', 'upload', 'paging', 'email'],
+          enum: [
+            'admin',
+            'name',
+            'storage',
+            'logos',
+            'upload',
+            'paging',
+            'email',
+          ],
           description: 'Etapa atual do setup wizard (null se concluído)',
         },
         STORAGE_DRIVER: {
@@ -177,31 +230,24 @@ export const SettingShowSchema: FastifySchema = {
         },
       ],
     },
-    404: {
-      description: 'Arquivo de configurações não encontrado',
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Arquivo não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['SETTINGS_FILE_NOT_FOUND'] },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [401] },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Arquivo não encontrado',
-          code: 404,
-          cause: 'SETTINGS_FILE_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['SETTINGS_READ_ERROR'] },
         errors: {

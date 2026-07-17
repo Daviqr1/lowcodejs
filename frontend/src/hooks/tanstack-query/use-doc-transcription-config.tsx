@@ -5,25 +5,25 @@ import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
 
-export interface IDocResponseField {
+export type IDocResponseField = {
   key: string;
   label: string;
   type: 'string' | 'date' | 'number' | 'boolean';
-}
+};
 
-export interface IDocumentType {
+export type IDocumentType = {
   id: string;
   name: string;
   description: string | null;
   responseFields: Array<IDocResponseField>;
-}
+};
 
-export interface IDocTranscriptionConfig {
+export type IDocTranscriptionConfig = {
   apiUrl: string | null;
   apiKey: string | null;
   model: string | null;
   documentTypes: Array<IDocumentType>;
-}
+};
 
 export function useDocTranscriptionConfig(): UseSuspenseQueryResult<IDocTranscriptionConfig> {
   return useSuspenseQuery({

@@ -2,6 +2,7 @@ import { useParams, useRouter } from '@tanstack/react-router';
 import React from 'react';
 
 import { TableRowActionsMenu } from './table-row-actions-menu';
+import { RowSelectCheckbox } from './use-row-selection';
 
 import { TableRowCategoryCell } from '@/components/common/dynamic-table/table-cells/table-row-category-cell';
 import { TableRowDateCell } from '@/components/common/dynamic-table/table-cells/table-row-date-cell';
@@ -14,25 +15,30 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { FieldTitle } from '@/components/common/field-title';
+import { Badge } from '@/components/ui/badge';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
+import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, ILayoutFields, IRow } from '@/lib/interfaces';
 import { resolveLayoutField } from '@/lib/layout-field-resolver';
-import { HeaderFilter, HeaderSorter } from '@/lib/layout-pickers';
+import { HeaderSorter } from '@/lib/layout-pickers';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
   layoutFields?: ILayoutFields | null;
-}
+};
 
-interface RenderCardCellProps {
+type RenderCardCellProps = {
   field: IField;
   row: IRow;
   tableSlug: string;
-}
+};
 
 function RenderCardCell({
   field,
@@ -43,7 +49,7 @@ function RenderCardCell({
     return (
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-medium text-muted-foreground">
-          <FieldTitle value={field.name} />
+          <FieldTitle value={resolveFieldLabel(field)} />
         </span>
         <span className="text-muted-foreground text-sm">-</span>
       </div>
@@ -133,6 +139,13 @@ function RenderCardCell({
             row={row}
           />
         );
+      case E_FIELD_TYPE.USER_GROUP:
+        return (
+          <TableRowUserGroupCell
+            field={field}
+            row={row}
+          />
+        );
       case E_FIELD_TYPE.IDENTIFIER:
         return (
           <TableRowTextShortCell
@@ -141,6 +154,7 @@ function RenderCardCell({
           />
         );
       case E_FIELD_TYPE.CREATOR:
+      case E_FIELD_TYPE.UPDATER:
         return (
           <TableRowUserCell
             field={field}
@@ -148,6 +162,7 @@ function RenderCardCell({
           />
         );
       case E_FIELD_TYPE.CREATED_AT:
+      case E_FIELD_TYPE.UPDATED_AT:
       case E_FIELD_TYPE.TRASHED_AT:
         return (
           <TableRowDateCell
@@ -155,7 +170,7 @@ function RenderCardCell({
             row={row}
           />
         );
-      case E_FIELD_TYPE.TRASHED:
+      case E_FIELD_TYPE.STATUS:
         return (
           <TableRowTextShortCell
             field={field}
@@ -179,8 +194,13 @@ export function TableCardView({
   const router = useRouter();
   const { slug } = useParams({ from: '/_private/tables/$slug/' });
   const table = useReadTable({ slug });
+  const permission = useTablePermission(table.data);
+  const canSelect = permission.can('UPDATE_ROW');
+  const { isFieldVisible } = useFieldVisibility();
 
-  const visibleHeaders = headers.filter(HeaderFilter).sort(HeaderSorter(order));
+  const visibleHeaders = headers
+    .filter((header) => isFieldVisible(header, 'list') && !header.trashed)
+    .sort(HeaderSorter(order));
 
   const thumbField = resolveLayoutField(
     visibleHeaders,
@@ -212,22 +232,23 @@ export function TableCardView({
           className="py-4 cursor-pointer hover:bg-muted/30 rounded-xl px-2"
           onClick={() => {
             router.navigate({
-              to: '/tables/$slug/row/',
+              to: '/tables/$slug/row',
               params: { slug },
               search: { _id: row._id },
             });
           }}
         >
           <div className="flex gap-4">
-            <div className="w-[200px] shrink-0">
+            <div className="w-32 shrink-0 sm:w-[200px]">
               <div className="w-full overflow-hidden rounded-xl bg-muted aspect-[4/3]">
-                {thumbField ? (
+                {thumbField && (
                   <RenderCardCell
                     field={thumbField}
                     row={row}
                     tableSlug={slug}
                   />
-                ) : (
+                )}
+                {!thumbField && (
                   <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
                     sem imagem
                   </div>
@@ -238,19 +259,28 @@ export function TableCardView({
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1 min-w-0 flex-1">
+                  {row.status === 'draft' && (
+                    <Badge
+                      variant="outline"
+                      className="text-amber-600 border-amber-400"
+                    >
+                      Rascunho
+                    </Badge>
+                  )}
                   <div className="text-base font-semibold truncate">
-                    {titleField ? (
+                    {titleField && (
                       <RenderCardCell
                         field={titleField}
                         row={row}
                         tableSlug={slug}
                       />
-                    ) : (
+                    )}
+                    {!titleField && (
                       <span className="text-muted-foreground">Sem título</span>
                     )}
                   </div>
 
-                  {descField ? (
+                  {descField && (
                     <div className="text-sm text-muted-foreground line-clamp-2">
                       <RenderCardCell
                         field={descField}
@@ -258,13 +288,23 @@ export function TableCardView({
                         tableSlug={slug}
                       />
                     </div>
-                  ) : null}
+                  )}
                 </div>
-                <TableRowActionsMenu
-                  slug={slug}
-                  row={row}
-                  table={table.data}
-                />
+                <div className="flex items-center gap-1">
+                  {canSelect && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center"
+                    >
+                      <RowSelectCheckbox id={row._id} />
+                    </div>
+                  )}
+                  <TableRowActionsMenu
+                    slug={slug}
+                    row={row}
+                    table={table.data}
+                  />
+                </div>
               </div>
             </div>
           </div>

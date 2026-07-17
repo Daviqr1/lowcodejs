@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   FindOptions,
   IStorage,
@@ -7,11 +6,10 @@ import type {
   TStorageMigrationStatus,
 } from '@application/core/entity.core';
 
-export type StorageCreatePayload = Pick<
-  IStorage,
-  'filename' | 'mimetype' | 'originalName' | 'size'
-> &
-  Partial<Pick<IStorage, 'location' | 'migration_status'>>;
+export type StorageCreatePayload = Merge<
+  Pick<IStorage, 'filename' | 'mimetype' | 'originalName' | 'size'>,
+  Partial<Pick<IStorage, 'location' | 'migration_status'>>
+>;
 
 export type StorageUpdatePayload = Merge<
   Pick<IStorage, '_id'>,

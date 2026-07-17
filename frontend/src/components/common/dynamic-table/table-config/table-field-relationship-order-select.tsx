@@ -14,12 +14,12 @@ const ORDER_LIST = [
   { label: 'Descendente', value: 'desc' },
 ];
 
-interface TableFieldRelationshipOrderSelectProps {
+type TableFieldRelationshipOrderSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function TableFieldRelationshipOrderSelect({
   label,

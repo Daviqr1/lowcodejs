@@ -4,6 +4,9 @@ Espelho UI do `backend/extensions/core/`. Contém os entries React (componentes)
 das extensões oficiais. Vive separado de `frontend/src/` mas é incluído no
 projeto TypeScript via `tsconfig.json` (`"include": ["**/*.ts", "**/*.tsx"]`).
 
+> As extensões **opcionais** de configuração de formulários (cascade-dropdown,
+> conditional-fields) ficam no pacote irmão `forms/` — ver `../forms/CLAUDE.md`.
+
 ## Estrutura
 
 ```
@@ -32,14 +35,15 @@ core/
 
 ## Entries
 
-| Tipo      | ID                     | Path                                   | Descrição                                                                                                          |
-| --------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `tools`   | `clone-table`          | `tools/clone-table/index.tsx`          | UI de clonagem de tabelas                                                                                          |
-| `tools`   | `tables-import-export` | `tools/tables-import-export/index.tsx` | Página com seções de Importar e Exportar tabela. Endpoints `POST /tools/export-table` e `POST /tools/import-table` |
-| `tools`   | `doc-transcription`    | `tools/doc-transcription/index.tsx`    | Transcrição de documentos via API externa                                                                          |
-| `plugins` | `print-table`          | `plugins/print-table/index.tsx`        | Botão de impressão na toolbar (slot `table.actions`)                                                               |
-| `plugins` | `copy-record-link`     | `plugins/copy-record-link/index.tsx`   | Item "Copiar link" no dropdown de ações da linha (slot `table.row.actions`) — copia `/tables/<slug>/row/<rowId>`   |
-| `modules` | `welcome`              | `modules/welcome/index.tsx`            | Página de boas-vindas com atalhos (URL `/e/core/welcome`)                                                          |
+| Tipo      | ID                     | Path                                   | Descrição                                                                                                                                                                                                          |
+| --------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tools`   | `clone-table`          | `tools/clone-table/index.tsx`          | UI de clonagem de tabelas                                                                                                                                                                                          |
+| `tools`   | `tables-import-export` | `tools/tables-import-export/index.tsx` | Página com seções de Importar e Exportar tabela. Endpoints `POST /tools/export-table` e `POST /tools/import-table`                                                                                                 |
+| `tools`   | `doc-transcription`    | `tools/doc-transcription/index.tsx`    | Transcrição de documentos via API externa                                                                                                                                                                          |
+| `tools`   | `generate-test-data`   | `tools/generate-test-data/index.tsx`   | Gerador de registros de teste em massa: combobox de tabela + quantidade + etapa de estimativa (real x simulado, tamanho, avisos) antes de confirmar + barra de progresso com polling (`/tools/generate-test-data`) |
+| `plugins` | `print-table`          | `plugins/print-table/index.tsx`        | Botão de impressão na toolbar (slot `table.actions`)                                                                                                                                                               |
+| `plugins` | `copy-record-link`     | `plugins/copy-record-link/index.tsx`   | Item "Copiar link" no dropdown de ações da linha (slot `table.row.actions`) — copia `/tables/<slug>/row/<rowId>`                                                                                                   |
+| `modules` | `welcome`              | `modules/welcome/index.tsx`            | Página de boas-vindas com atalhos (URL `/e/core/welcome`)                                                                                                                                                          |
 
 ## Convenções
 

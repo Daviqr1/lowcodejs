@@ -5,11 +5,17 @@ import {
   useParams,
   useSearch,
 } from '@tanstack/react-router';
-import { PencilIcon } from 'lucide-react';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 
 import { FieldDetailSkeleton } from './-field-detail-skeleton';
-import { FieldUpdateSchema, UpdateFieldFormFields } from './-update-form';
+import {
+  FieldNativeUpdateSchema,
+  FieldUpdateSchema,
+  UpdateFieldFormFields,
+} from './-update-form';
 import { FieldView } from './-view';
 
 import { FormFooter } from '@/components/common/form-footer';
@@ -27,12 +33,28 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
 import { API } from '@/lib/api';
 import type { E_FIELD_FORMAT } from '@/lib/constant';
-import { E_FIELD_TYPE } from '@/lib/constant';
+import { E_FIELD_TYPE, E_PERMISSION_TARGET } from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IField, ITable, Paginated, ValueOf } from '@/lib/interfaces';
+import type {
+  IField,
+  ITable,
+  Merge,
+  Paginated,
+  ValueOf,
+} from '@/lib/interfaces';
+import { isFieldShownInContext } from '@/lib/permission';
 import { QueryClient as queryClient } from '@/lib/query-client';
-import { toastSuccess, toastWarning } from '@/lib/toast';
+
+// Deriva o binding de visibilidade a partir do boolean showIn* legado (usado
+// quando o campo ainda não tem o mapa permissions).
+function bindingFromBool(visible: boolean): {
+  kind: ValueOf<typeof E_PERMISSION_TARGET>;
+  group: string | null;
+} {
+  if (visible) return { kind: E_PERMISSION_TARGET.PUBLIC, group: null };
+  return { kind: E_PERMISSION_TARGET.NOBODY, group: null };
+}
 
 function normalizeDefaultValue(
   type: string,
@@ -42,12 +64,14 @@ function normalizeDefaultValue(
     E_FIELD_TYPE.DROPDOWN,
     E_FIELD_TYPE.CATEGORY,
     E_FIELD_TYPE.USER,
+    E_FIELD_TYPE.USER_GROUP,
     E_FIELD_TYPE.RELATIONSHIP,
   ];
 
   if (arrayTypes.includes(type)) {
     if (Array.isArray(defaultValue)) {
-      return defaultValue.length > 0 ? defaultValue : null;
+      if (defaultValue.length > 0) return defaultValue;
+      return null;
     }
     if (defaultValue) return [defaultValue];
     return null;
@@ -55,14 +79,16 @@ function normalizeDefaultValue(
 
   // TEXT_SHORT, TEXT_LONG, DATE → string
   if (Array.isArray(defaultValue)) {
-    return defaultValue.length > 0 ? defaultValue[0] : null;
+    if (defaultValue.length > 0) return defaultValue[0];
+    return null;
   }
   return defaultValue || null;
 }
 
 function normalizeTip(tip: string): string | null {
   const normalized = tip.trim();
-  return normalized.length > 0 ? normalized : null;
+  if (normalized.length > 0) return normalized;
+  return null;
 }
 
 export const Route = createLazyFileRoute(
@@ -108,24 +134,28 @@ function RouteComponent(): React.JSX.Element {
     });
   };
 
+  let headerTitle = 'Detalhes do campo';
+  if (
+    _read.status === 'success' &&
+    _read.data.type === E_FIELD_TYPE.FIELD_GROUP
+  ) {
+    headerTitle = 'Detalhes do grupo de campos';
+  }
+
   return (
     <PageShell data-test-id="field-detail-page">
       {/* Header */}
       <PageShell.Header borderBottom={false}>
         <PageHeader
           onBack={goBack}
-          title={
-            _read.status === 'success' &&
-            _read.data.type === E_FIELD_TYPE.FIELD_GROUP
-              ? 'Detalhes do grupo de campos'
-              : 'Detalhes do campo'
-          }
+          title={headerTitle}
         >
           {_read.status === 'success' &&
             mode === 'show' &&
             permission.can('UPDATE_FIELD') &&
-            !(_read.data as IField & { trashed?: boolean }).trashed &&
+            !_read.data.trashed &&
             (!_read.data.locked ||
+              _read.data.native ||
               _read.data.type === E_FIELD_TYPE.DROPDOWN) && (
               <Button
                 type="button"
@@ -150,15 +180,31 @@ function RouteComponent(): React.JSX.Element {
             campos".
           </p>
         )}
-      {_read.status === 'success' && _read.data.locked && (
-        <p className="text-sm text-amber-600 px-2 pb-2">
-          Este campo faz parte de uma predefinição e não pode ser alterado ou
-          removido.
+      {_read.status === 'success' &&
+        _read.data.locked &&
+        !_read.data.native && (
+          <p className="text-sm text-amber-600 px-2 pb-2">
+            Este campo faz parte de uma predefinição e não pode ser alterado ou
+            removido.
+          </p>
+        )}
+      {_read.status === 'success' && _read.data.native && (
+        <p className="text-sm text-muted-foreground px-2 pb-2">
+          Campo nativo: você pode personalizar apenas o rótulo de exibição. O
+          nome interno e o identificador permanecem fixos.
         </p>
       )}
+      {_read.status === 'success' &&
+        _read.data.type === E_FIELD_TYPE.RELATIONSHIP &&
+        !_read.data.relationship?.table?._id && (
+          <p className="text-sm text-destructive px-2 pb-2">
+            Relacionamento não configurado: a tabela vinculada foi removida.
+            Este campo pode ser enviado para a lixeira usando o botão abaixo.
+          </p>
+        )}
 
       {/* Content */}
-      <PageShell.Content>
+      <PageShell.Content className="overflow-hidden">
         {_read.status === 'error' && (
           <LoadError
             message="Houve um erro ao buscar dados do campo"
@@ -173,6 +219,7 @@ function RouteComponent(): React.JSX.Element {
         {_read.status === 'success' && (
           <FieldUpdateContent
             data={_read.data}
+            table={table.data}
             slug={slug}
             mode={mode}
             setMode={setMode}
@@ -184,17 +231,19 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface FieldUpdateContentProps {
+type FieldUpdateContentProps = {
   data: IField;
+  table?: ITable;
   slug: string;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
   /** Slug do grupo (quando em contexto de grupo) */
   groupSlug?: string;
-}
+};
 
 function FieldUpdateContent({
   data,
+  table,
   slug,
   mode,
   setMode,
@@ -213,26 +262,23 @@ function FieldUpdateContent({
   };
 
   const handleUpdateSuccess = (response: IField): void => {
-    const wasTrashed = Boolean(
-      (data as IField & { trashed?: boolean }).trashed,
-    );
+    const wasTrashed = Boolean(data.trashed);
     const isTrashed = Boolean(response.trashed);
 
     if (!wasTrashed && isTrashed) {
-      toastWarning(
-        'Campo enviado para lixeira',
-        'O campo foi enviado para a lixeira. Para restaurá-lo, acesse o gerenciamento de campos.',
-      );
+      toast.warning('Campo enviado para lixeira', {
+        description:
+          'O campo foi enviado para a lixeira. Para restaurá-lo, acesse o gerenciamento de campos.',
+      });
     } else if (wasTrashed && !isTrashed) {
-      toastSuccess(
-        'Campo restaurado',
-        'O campo foi restaurado. Para enviá-lo à lixeira, acesse o gerenciamento de campos.',
-      );
+      toast.success('Campo restaurado', {
+        description:
+          'O campo foi restaurado. Para enviá-lo à lixeira, acesse o gerenciamento de campos.',
+      });
     } else {
-      toastSuccess(
-        'Campo atualizado',
-        'Os dados do campo foram atualizados com sucesso',
-      );
+      toast.success('Campo atualizado', {
+        description: 'Os dados do campo foram atualizados com sucesso',
+      });
     }
 
     form.reset();
@@ -246,12 +292,38 @@ function FieldUpdateContent({
     });
   };
 
+  const isBrokenRelationship =
+    data.type === E_FIELD_TYPE.RELATIONSHIP &&
+    !data.relationship?.table?._id &&
+    !data.trashed;
+
+  const _trash = useMutation({
+    mutationFn: async () => {
+      await API.patch(`/tables/${slug}/fields/${data._id}/trash`);
+    },
+    onSuccess() {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tables.detail(slug),
+      });
+      toast.warning('Campo enviado para lixeira', {
+        description: 'O campo foi enviado para a lixeira.',
+      });
+      goBack();
+    },
+    onError(error: Error) {
+      handleApiError(error, { context: 'Erro ao enviar campo para lixeira' });
+    },
+  });
+
   const _update = useMutation({
     mutationFn: async (
-      payload: Partial<IField> & {
-        trashed?: boolean;
-        trashedAt?: string | null;
-      },
+      payload: Merge<
+        Partial<IField>,
+        {
+          trashed?: boolean;
+          trashedAt?: string | null;
+        }
+      >,
     ) => {
       const response = await API.put<IField>(
         `/tables/${slug}/fields/${data._id}`,
@@ -269,9 +341,10 @@ function FieldUpdateContent({
         if (!old) return old;
         return {
           ...old,
-          fields: old.fields.map((f) =>
-            f._id === response._id ? response : f,
-          ),
+          fields: old.fields.map((f) => {
+            if (f._id === response._id) return response;
+            return f;
+          }),
         };
       });
 
@@ -285,9 +358,10 @@ function FieldUpdateContent({
               if (t.slug === slug) {
                 return {
                   ...t,
-                  fields: t.fields.map((f) =>
-                    f._id === response._id ? response : f,
-                  ),
+                  fields: t.fields.map((f) => {
+                    if (f._id === response._id) return response;
+                    return f;
+                  }),
                 };
               }
               return t;
@@ -311,16 +385,29 @@ function FieldUpdateContent({
     onError: handleUpdateError,
   });
 
+  // Campo nativo valida só o rótulo; name/slug/type são fixos e não devem
+  // reprovar o form (slugs nativos não passam na regra de slug de usuário).
+  let validationSchema: z.ZodType = FieldUpdateSchema;
+  if (data.native) validationSchema = FieldNativeUpdateSchema;
+
   const form = useAppForm({
     defaultValues: {
       name: data.name,
       slug: data.slug,
       tip: data.tip ?? '',
+      label: {
+        list: data.label?.list ?? '',
+        filter: data.label?.filter ?? '',
+        form: data.label?.form ?? '',
+        detail: data.label?.detail ?? '',
+      },
       type: data.type,
       format: data.format ?? '',
-      defaultValue: Array.isArray(data.defaultValue)
-        ? (data.defaultValue[0] ?? '')
-        : (data.defaultValue ?? ''),
+      validations: data.validations ?? [],
+      defaultValue: ((): string => {
+        if (Array.isArray(data.defaultValue)) return data.defaultValue[0] ?? '';
+        return data.defaultValue ?? '';
+      })(),
       dropdown: (data.dropdown ?? []).map((d) => ({
         id: d.id,
         label: d.label,
@@ -329,6 +416,7 @@ function FieldUpdateContent({
       allowCustomDropdownOptions: data.allowCustomDropdownOptions ?? false,
       allowCreateRelationshipRecords:
         data.allowCreateRelationshipRecords ?? false,
+      fillWithCurrentUserWhenEmpty: data.fillWithCurrentUserWhenEmpty ?? false,
       relationship: {
         tableId: data.relationship?.table?._id ?? '',
         tableSlug: data.relationship?.table?.slug ?? '',
@@ -338,78 +426,165 @@ function FieldUpdateContent({
         customLabel: data.relationship?.customLabel ?? false,
         labelParts: data.relationship?.labelParts ?? [],
         labelSeparator: data.relationship?.labelSeparator ?? ' - ',
+        sourceVisible: data.relationship?.visible ?? true,
+        mirrorMultiple: data.relationship?.mirror?.multiple ?? false,
+        mirrorVisible: data.relationship?.mirror?.visible ?? false,
+        mirrorLabel: data.relationship?.mirror?.label ?? '',
+        onDelete: data.relationship?.onDelete ?? 'SET_NULL',
+        formMode: data.relationship?.formMode ?? 'select',
+        max: data.relationship?.max ?? null,
       },
       category: data.category ?? [],
       multiple: data.multiple,
       showInFilter: data.showInFilter,
-      showInForm: data.showInForm,
-      showInDetail: data.showInDetail,
-      showInList: data.showInList,
+      showInParentList: data.showInParentList ?? false,
+      permissions: data.permissions ?? {
+        list: bindingFromBool(isFieldShownInContext(data, 'list')),
+        form: bindingFromBool(isFieldShownInContext(data, 'form')),
+        detail: bindingFromBool(isFieldShownInContext(data, 'detail')),
+      },
       required: data.required,
-      trashed: Boolean((data as IField & { trashed?: boolean }).trashed),
+      trashed: Boolean(data.trashed),
       widthInForm: data.widthInForm ?? 50,
       widthInList: data.widthInList ?? 10,
+      htmlContent: data.htmlContent ?? '',
     },
     // @ts-expect-error Zod Standard Schema type inference
-    validators: { onChange: FieldUpdateSchema, onSubmit: FieldUpdateSchema },
+    validators: { onChange: validationSchema, onSubmit: validationSchema },
     onSubmit: async ({ value }) => {
       if (_update.status === 'pending' || _updateGroupField.isPending) return;
 
       const hasRelationship = value.relationship.tableId !== '';
-      const hasDropdown = value.dropdown.length > 0;
-      const hasCategory = value.category.length > 0;
+      const hasDropdown = (value.dropdown?.length ?? 0) > 0;
+      const hasCategory = (value.category?.length ?? 0) > 0;
 
-      const payload: Partial<IField> & {
-        trashed?: boolean;
-        trashedAt?: string | null;
-      } = {
+      let htmlContent: string | undefined;
+      if (value.type === E_FIELD_TYPE.HTML_CONTENT) {
+        htmlContent = value.htmlContent || undefined;
+      }
+
+      // Rótulo por contexto: vazio → null (volta ao name naquele contexto).
+      const labelList = value.label.list?.trim() || null;
+      const labelFilter = value.label.filter?.trim() || null;
+      const labelForm = value.label.form?.trim() || null;
+      const labelDetail = value.label.detail?.trim() || null;
+
+      let nextLabel: {
+        list: string | null;
+        filter: string | null;
+        form: string | null;
+        detail: string | null;
+      } | null = null;
+      if (labelList || labelFilter || labelForm || labelDetail) {
+        nextLabel = {
+          list: labelList,
+          filter: labelFilter,
+          form: labelForm,
+          detail: labelDetail,
+        };
+      }
+
+      let required = value.required;
+      if (value.trashed) required = false;
+
+      // value.format vem do formulário como string; o campo aceita o enum.
+      let format: ValueOf<typeof E_FIELD_FORMAT> | null = null;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      if (value.format) format = value.format as ValueOf<typeof E_FIELD_FORMAT>;
+
+      let dropdown: typeof value.dropdown = [];
+      if (hasDropdown) dropdown = value.dropdown.map((item) => item);
+
+      let allowCustomDropdownOptions = false;
+      if (value.type === E_FIELD_TYPE.DROPDOWN) {
+        allowCustomDropdownOptions = value.allowCustomDropdownOptions;
+      }
+
+      let allowCreateRelationshipRecords = false;
+      if (value.type === E_FIELD_TYPE.RELATIONSHIP) {
+        allowCreateRelationshipRecords = value.allowCreateRelationshipRecords;
+      }
+
+      let fillWithCurrentUserWhenEmpty = false;
+      if (value.type === E_FIELD_TYPE.USER) {
+        fillWithCurrentUserWhenEmpty = value.fillWithCurrentUserWhenEmpty;
+      }
+
+      let relationship: IField['relationship'] = null;
+      if (hasRelationship) {
+        let labelParts: typeof value.relationship.labelParts = [];
+        if (value.relationship.customLabel) {
+          labelParts = value.relationship.labelParts;
+        }
+        relationship = {
+          table: {
+            _id: value.relationship.tableId,
+            slug: value.relationship.tableSlug,
+          },
+          field: {
+            _id: value.relationship.fieldId,
+            slug: value.relationship.fieldSlug,
+          },
+          // order vem do form como string; reduz à união literal.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          order: (value.relationship.order || 'asc') as 'asc' | 'desc',
+          customLabel: value.relationship.customLabel,
+          labelParts,
+          labelSeparator: value.relationship.labelSeparator || ' - ',
+          visible: value.relationship.sourceVisible,
+          onDelete: value.relationship.onDelete,
+          mirror: {
+            multiple: value.relationship.mirrorMultiple,
+            visible: value.relationship.mirrorVisible,
+            label: value.relationship.mirrorLabel || undefined,
+          },
+          formMode: value.relationship.formMode,
+          max: value.relationship.max ?? null,
+        };
+      }
+
+      let category: typeof value.category = [];
+      if (hasCategory) category = value.category;
+
+      let trashedAt: string | null = null;
+      if (value.trashed) trashedAt = new Date().toISOString();
+
+      const payload: Merge<
+        Partial<IField>,
+        {
+          trashed?: boolean;
+          trashedAt?: string | null;
+        }
+      > = {
         name: value.name,
-        slug: value.slug,
         tip: normalizeTip(value.tip),
+        label: nextLabel,
         type: value.type,
-        required: value.trashed ? false : value.required,
+        required,
         multiple: value.multiple,
         showInFilter: value.showInFilter,
-        showInForm: value.showInForm,
-        showInDetail: value.showInDetail,
-        showInList: value.showInList,
+        showInParentList: value.showInParentList,
+        permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
-        format: value.format
-          ? (value.format as ValueOf<typeof E_FIELD_FORMAT>)
-          : null,
+        format,
+        validations: value.validations,
         defaultValue: normalizeDefaultValue(value.type, value.defaultValue),
-        dropdown: hasDropdown ? value.dropdown.map((item) => item) : [],
-        allowCustomDropdownOptions:
-          value.type === E_FIELD_TYPE.DROPDOWN
-            ? value.allowCustomDropdownOptions
-            : false,
-        allowCreateRelationshipRecords:
-          value.type === E_FIELD_TYPE.RELATIONSHIP
-            ? value.allowCreateRelationshipRecords
-            : false,
-        relationship: hasRelationship
-          ? {
-              table: {
-                _id: value.relationship.tableId,
-                slug: value.relationship.tableSlug,
-              },
-              field: {
-                _id: value.relationship.fieldId,
-                slug: value.relationship.fieldSlug,
-              },
-              order: (value.relationship.order || 'asc') as 'asc' | 'desc',
-              customLabel: value.relationship.customLabel,
-              labelParts: value.relationship.customLabel
-                ? value.relationship.labelParts
-                : [],
-              labelSeparator: value.relationship.labelSeparator || ' - ',
-            }
-          : null,
-        category: hasCategory ? value.category : [],
+        dropdown,
+        allowCustomDropdownOptions,
+        allowCreateRelationshipRecords,
+        fillWithCurrentUserWhenEmpty,
+        relationship,
+        category,
+        htmlContent,
         trashed: value.trashed,
-        trashedAt: value.trashed ? new Date().toISOString() : null,
+        trashedAt,
       };
+
+      // slug e a "url"/chave tecnica, editavel so em campos nao-nativos. Campos
+      // nativos tem slug camelCase fixo (ignorado pelo backend) e nao deve ser
+      // enviado para nao reprovar na validacao kebab-case do update.
+      if (!data.native) payload.slug = value.slug;
 
       if (groupSlug) {
         await _updateGroupField.mutateAsync({
@@ -440,6 +615,19 @@ function FieldUpdateContent({
       {mode === 'show' && (
         <PageShell.Footer className="bg-sidebar">
           <div className="flex justify-end gap-2">
+            {isBrokenRelationship && (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="px-2 cursor-pointer max-w-40 w-full"
+                disabled={_trash.status === 'pending'}
+                onClick={() => _trash.mutate()}
+              >
+                <Trash2Icon className="size-4 mr-1" />
+                <span>Enviar para lixeira</span>
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -462,13 +650,17 @@ function FieldUpdateContent({
             form.handleSubmit();
           }}
         >
-          {/* @ts-ignore TanStack Form type depth issue with nested configuration */}
+          {/* @ts-expect-error TanStack Form: profundidade/identidade de tipo do withForm (mesmo problema do create form). */}
           <UpdateFieldFormFields
+            // @ts-expect-error idem — o `form` (ValueOf<E_FIELD_TYPE> em `type`) e o esperado pelo withForm são estruturalmente iguais mas nominalmente distintos.
             form={form}
             isPending={isPending}
             mode={mode}
             tableSlug={slug}
+            table={table}
+            targetField={data}
             isLocked={data.locked ?? false}
+            isNative={data.native ?? false}
             isGroupField={Boolean(groupSlug)}
           />
         </form>

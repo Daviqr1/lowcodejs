@@ -48,13 +48,14 @@ export const CloneTableFormFields = withForm({
   render: function Render({ form, isPending }) {
     const { data: settings, isLoading: isLoadingSettings } = useSettingRead();
 
-    const allowedTables = Array.isArray(settings?.MODEL_CLONE_TABLES)
-      ? settings.MODEL_CLONE_TABLES
-      : [];
+    let allowedTables: NonNullable<typeof settings>['MODEL_CLONE_TABLES'] = [];
+    if (Array.isArray(settings?.MODEL_CLONE_TABLES)) {
+      allowedTables = settings.MODEL_CLONE_TABLES;
+    }
 
     if (isLoadingSettings) {
       return (
-        <section className="space-y-4 p-2">
+        <section className="space-y-4 p-3 sm:p-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </section>
@@ -64,7 +65,7 @@ export const CloneTableFormFields = withForm({
     return (
       <section
         data-test-id="table-clone-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField
@@ -139,7 +140,7 @@ export const CloneTableFormFields = withForm({
   },
 });
 
-interface ModelSelectFieldProps {
+type ModelSelectFieldProps = {
   tables: Array<{
     _id: string;
     name: string;
@@ -147,7 +148,7 @@ interface ModelSelectFieldProps {
     description: string | null;
   }>;
   disabled?: boolean;
-}
+};
 
 function ModelSelectField({
   tables,

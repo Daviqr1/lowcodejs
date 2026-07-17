@@ -32,13 +32,13 @@ import { useTreeEditor } from './use-tree-editor';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface TreeEditorProps {
+type TreeEditorProps = {
   initialData?: Array<TreeNode>;
   onChange?: (data: Array<TreeNode>) => void;
   className?: string;
-}
+};
 
-interface SortableTreeNodeItemProps {
+type SortableTreeNodeItemProps = {
   node: TreeNode;
   level: number;
   parentId: string | null;
@@ -53,7 +53,7 @@ interface SortableTreeNodeItemProps {
   onSaveEdit: (id: string, label: string) => void;
   onCancelEdit: () => void;
   children?: React.ReactNode;
-}
+};
 
 function SortableTreeNodeItem({
   node,
@@ -320,10 +320,8 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
     setActiveDragId(null);
     if (!over || active.id === over.id) return;
 
-    const activeParentId =
-      (active.data.current?.parentId as string | null | undefined) ?? null;
-    const overParentId =
-      (over.data.current?.parentId as string | null | undefined) ?? null;
+    const activeParentId: string | null = active.data.current?.parentId ?? null;
+    const overParentId: string | null = over.data.current?.parentId ?? null;
 
     const activeId = String(active.id);
     const overId = String(over.id);
@@ -367,10 +365,10 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
       return;
     }
 
-    const targetList =
-      overParentId === null
-        ? updated
-        : (findNodeByIdLocal(updated, overParentId)?.children ?? []);
+    let targetList = updated;
+    if (overParentId !== null) {
+      targetList = findNodeByIdLocal(updated, overParentId)?.children ?? [];
+    }
     const insertIndex = targetList.findIndex((item) => item.id === overId);
     let nextIndex = targetList.length;
     if (insertIndex !== -1) {
@@ -523,9 +521,9 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
           <AddNodeForm
             type={addFormType}
             parentNodeLabel={
-              selectedNodeId
-                ? findNodeById(treeData, selectedNodeId)?.label
-                : undefined
+              (selectedNodeId &&
+                findNodeById(treeData, selectedNodeId)?.label) ||
+              undefined
             }
             onSave={handleSaveNewNode}
             onCancel={handleCancelAdd}
@@ -540,7 +538,7 @@ export const TreeEditor: React.FC<TreeEditorProps> = ({
                 className={cn(
                   'overflow-y-auto p-1',
                   expandedView && 'max-h-none',
-                  !expandedView && 'max-h-60',
+                  !expandedView && 'max-h-[50dvh] sm:max-h-60',
                 )}
               >
                 <DndContext

@@ -15,11 +15,11 @@ export function truncateFieldTitle(
   return `${value.slice(0, maxLength).trimEnd()}...`;
 }
 
-interface FieldTitleProps {
+type FieldTitleProps = {
   value: string;
   maxLength?: number;
   className?: string;
-}
+};
 
 export function FieldTitle({
   value,

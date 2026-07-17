@@ -1,19 +1,22 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserDeleteSchema: FastifySchema = {
-  tags: ['Users'],
+  tags: ['Usuários'],
   summary: 'Excluir usuário permanentemente',
+  description:
+    'Exclui permanentemente um usuário que esteja na lixeira (restrito ao perfil MASTER)',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
     required: ['_id'],
     properties: {
-      _id: { type: 'string', minLength: 1 },
+      _id: { type: 'string', minLength: 1, description: 'ID do usuário' },
     },
   },
   response: {
-    200: { type: 'null' },
+    200: { type: 'null', description: 'Usuário excluído permanentemente' },
     401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -23,6 +26,7 @@ export const UserDeleteSchema: FastifySchema = {
       },
     },
     403: {
+      description: 'Proibido - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -32,6 +36,7 @@ export const UserDeleteSchema: FastifySchema = {
       },
     },
     404: {
+      description: 'Usuário não encontrado',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -41,6 +46,7 @@ export const UserDeleteSchema: FastifySchema = {
       },
     },
     409: {
+      description: 'Conflito - Exclusão não permitida',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -53,6 +59,7 @@ export const UserDeleteSchema: FastifySchema = {
       },
     },
     500: {
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
         message: { type: 'string' },

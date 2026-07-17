@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const StorageMigrationStatusSchema: FastifySchema = {
-  tags: ['Migração de Storage'],
+  tags: ['Migração de Armazenamento'],
   summary: 'Status atual da migração de arquivos',
   description:
     'Retorna a quantidade de arquivos por driver, status de migração por arquivo e se um job está em andamento. Restrito ao usuário MASTER.',
@@ -41,20 +41,32 @@ export const StorageMigrationStatusSchema: FastifySchema = {
       },
     },
     401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
         message: { type: 'string' },
-        code: { type: 'number' },
-        cause: { type: 'string' },
+        code: { type: 'number', enum: [401] },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     403: {
+      description: 'Acesso negado - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
-        code: { type: 'number' },
-        cause: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
+        errors: { type: 'object', additionalProperties: { type: 'string' } },
+      },
+    },
+    500: {
+      description: 'Erro interno do servidor',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [500] },
+        cause: { type: 'string', enum: ['SERVER_ERROR'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },

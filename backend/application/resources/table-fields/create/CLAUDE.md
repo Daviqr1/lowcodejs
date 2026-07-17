@@ -7,7 +7,7 @@ Cria um novo campo em uma tabela existente.
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (required), TableAccessMiddleware (CREATE_FIELD)
-2. Validator: TableFieldCreateBodyValidator - campos: name (string, trim), type (E_FIELD_TYPE enum) + TableFieldBaseSchema (required, multiple, format, showInFilter, showInForm, showInDetail, showInList, widthInForm, widthInList, widthInDetail, locked, defaultValue, relationship, dropdown, category, group). TableFieldCreateParamsValidator - campos: slug (string, trim)
+2. Validator: TableFieldCreateBodyValidator - campos: name (string, trim), type (E_FIELD_TYPE enum) + TableFieldBaseSchema (required, multiple, format, permissions ({list,form,detail} → binding), showInFilter (sidebar de filtros), widthInForm, widthInList, widthInDetail, locked, defaultValue, relationship, dropdown, category, group). TableFieldCreateParamsValidator - campos: slug (string, trim)
 3. UseCase:
    - Busca tabela por slug exato
    - Gera slug do campo via slugify

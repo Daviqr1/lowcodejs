@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableRowUpdateSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'Update row',
+  tags: ['Registros'],
+  summary: 'Atualizar registro',
   description:
-    'Updates an existing row in a table with dynamic schema based on table fields. Handles FIELD_GROUP types by updating nested table entries.',
+    'Atualiza um registro existente em uma tabela com schema dinâmico baseado nos campos da tabela. Permite atualização parcial (campos não enviados mantêm o valor atual).',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,12 +12,12 @@ export const TableRowUpdateSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the row',
+        description: 'Slug da tabela que contém o registro',
         examples: ['users', 'products', 'blog-posts'],
       },
       _id: {
         type: 'string',
-        description: 'Row ID to update',
+        description: 'ID do registro a ser atualizado',
         examples: ['507f1f77bcf86cd799439011'],
       },
     },
@@ -26,7 +26,7 @@ export const TableRowUpdateSchema: FastifySchema = {
   body: {
     type: 'object',
     description:
-      'Dynamic row data based on table fields. Keys correspond to field slugs, values depend on field types.',
+      'Dados dinâmicos do registro baseados nos campos da tabela. As chaves correspondem aos slugs dos campos e os valores dependem dos tipos dos campos.',
     additionalProperties: true,
     examples: [
       {
@@ -39,82 +39,67 @@ export const TableRowUpdateSchema: FastifySchema = {
         related_products: ['507f1f77bcf86cd799439015'],
       },
     ],
-    properties: {
-      field_slug_example: {
-        anyOf: [
-          {
-            type: 'string',
-            description: 'For TEXT_SHORT, TEXT_LONG, DROPDOWN fields',
-          },
-          { type: 'number', description: 'For number-based fields' },
-          { type: 'boolean', description: 'For boolean fields' },
-          {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'For multiple values or FILE, RELATIONSHIP fields',
-          },
-          {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                _id: {
-                  type: 'string',
-                  description: 'Optional ID for FIELD_GROUP items',
-                },
-              },
-              additionalProperties: true,
-            },
-            description: 'For FIELD_GROUP fields - array of nested objects',
-          },
-          { type: 'object', description: 'For complex field types' },
-        ],
-      },
-    },
   },
   response: {
     200: {
-      description: 'Row updated successfully with populated relationships',
+      description:
+        'Registro atualizado com sucesso com relacionamentos populados',
       type: 'object',
       properties: {
-        _id: { type: 'string', description: 'Row ID' },
-        trashed: { type: 'boolean', description: 'Is row in trash' },
+        _id: { type: 'string', description: 'ID do registro' },
+        status: {
+          type: 'string',
+          enum: ['draft', 'published'],
+          description: 'Estado de rascunho',
+        },
+        draftAt: {
+          type: 'string',
+          nullable: true,
+          description: 'Quando o registro foi salvo como rascunho',
+        },
         trashedAt: {
           type: 'string',
           format: 'date-time',
           nullable: true,
-          description: 'When row was trashed',
+          description: 'Quando o registro foi enviado para a lixeira',
         },
         createdAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Creation timestamp',
+          description: 'Data de criação',
         },
         updatedAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Last update timestamp',
+          description: 'Data da última atualização',
         },
       },
       additionalProperties: true,
     },
     400: {
-      description:
-        'Bad request - Validation error or field requirements not met',
+      description: 'Requisição inválida - Falha na validação dos campos',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Validation failed',
-            'Required field missing',
-            'Invalid field type',
-          ],
-        },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [400] },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        errors: {
+          type: 'object',
+          description:
+            'Objeto com erros de validação por campo. A chave é o slug do campo e o valor é a mensagem de erro.',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Mensagem de erro' },
+        code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
-          enum: ['INVALID_PARAMETERS', 'VALIDATION_ERROR'],
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
         },
         errors: {
           type: 'object',
@@ -122,13 +107,25 @@ export const TableRowUpdateSchema: FastifySchema = {
         },
       },
     },
-    401: {
-      description: 'Unauthorized - Authentication required',
+    403: {
+      description: 'Acesso negado - Permissões insuficientes',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        message: { type: 'string', description: 'Mensagem de erro' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -136,13 +133,10 @@ export const TableRowUpdateSchema: FastifySchema = {
       },
     },
     404: {
-      description: 'Not found - Table or row does not exist',
+      description: 'Não encontrado - Tabela ou registro não existe',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Table not found', 'Row not found'],
-        },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [404] },
         cause: {
           type: 'string',
@@ -153,21 +147,14 @@ export const TableRowUpdateSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Row not found',
-          code: 404,
-          cause: 'ROW_NOT_FOUND',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_ROW_ERROR'] },
+        cause: { type: 'string', enum: ['UPDATE_ROW_TABLE_ERROR'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

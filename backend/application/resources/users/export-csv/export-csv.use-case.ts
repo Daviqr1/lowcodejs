@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
@@ -30,8 +29,14 @@ const FIELDS: CsvField[] = [
 ];
 
 function toCsvRow(user: IUser): Record<string, string> {
-  const groupName =
-    typeof user.group === 'object' && user.group?.name ? user.group.name : '';
+  let groupName = '';
+  if (typeof user.group === 'object' && user.group?.name) {
+    groupName = user.group.name;
+  }
+  let createdAt = '';
+  if (user.createdAt) createdAt = new Date(user.createdAt).toISOString();
+  let updatedAt = '';
+  if (user.updatedAt) updatedAt = new Date(user.updatedAt).toISOString();
 
   return {
     _id: user._id,
@@ -39,8 +44,8 @@ function toCsvRow(user: IUser): Record<string, string> {
     email: user.email ?? '',
     group: groupName,
     status: user.status ?? '',
-    createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : '',
-    updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : '',
+    createdAt,
+    updatedAt,
   };
 }
 

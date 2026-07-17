@@ -6,15 +6,17 @@ import type { IDocTranscriptionConfig } from './use-doc-transcription-config';
 
 import { API } from '@/lib/api';
 
-interface UpdateConfigPayload {
+type UpdateConfigPayload = {
   apiUrl?: string | null;
+  apiKey?: string | null;
+  model?: string | null;
   documentTypes?: IDocTranscriptionConfig['documentTypes'];
-}
+};
 
-interface Options {
+type Options = {
   onSuccess?: (data: IDocTranscriptionConfig) => void;
   onError?: (error: unknown) => void;
-}
+};
 
 export function useDocTranscriptionConfigUpdate(
   options?: Options,

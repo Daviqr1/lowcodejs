@@ -10,6 +10,7 @@ import { TableRowRelationshipCell } from '../table-cells/table-row-relationship-
 import { TableRowTextLongCell } from '../table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '../table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '../table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '../table-cells/table-row-user-group-cell';
 
 import { GroupFieldManagementSheet } from './group-field-management-sheet';
 import { GroupRowDeleteDialog } from './group-row-delete-dialog';
@@ -19,6 +20,7 @@ import { Pagination } from '@/components/common/pagination';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { groupRowListPaginatedOptions } from '@/hooks/tanstack-query/_query-options';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type {
   IField,
@@ -26,14 +28,22 @@ import type {
   IRow,
   ITable,
 } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface GroupRowsDataTableProps {
+// Largura da coluna a partir de widthInList (px), seguindo a mesma semântica do
+// `size` da lista normal. Sem valor → coluna dimensionada pelo conteúdo.
+function columnWidth(field: IField): string | undefined {
+  if (!field.widthInList) return undefined;
+  return `${field.widthInList}px`;
+}
+
+type GroupRowsDataTableProps = {
   tableSlug: string;
   rowId: string;
   field: IField;
   table: ITable;
   canManage?: boolean;
-}
+};
 
 export function GroupRowsDataTable({
   tableSlug,
@@ -48,12 +58,10 @@ export function GroupRowsDataTable({
     (g) => g?.slug === groupSlug,
   );
 
-  const [formOpen, setFormOpen] = React.useState(false);
-  const [editItem, setEditItem] = React.useState<IRow | null>(null);
-  const [deleteItem, setDeleteItem] = React.useState<IRow | null>(null);
-  const [managementOpen, setManagementOpen] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(6);
+
+  const { isFieldVisible } = useFieldVisibility();
 
   const { data, status } = useQuery(
     groupRowListPaginatedOptions(tableSlug, rowId, groupSlug ?? '', {
@@ -78,7 +86,7 @@ export function GroupRowsDataTable({
           !!f &&
           f.type !== E_FIELD_TYPE.FIELD_GROUP &&
           f.type !== E_FIELD_TYPE.IDENTIFIER &&
-          f.type !== E_FIELD_TYPE.TRASHED &&
+          f.type !== E_FIELD_TYPE.STATUS &&
           f.type !== E_FIELD_TYPE.TRASHED_AT &&
           !f.trashed,
       ),
@@ -91,7 +99,7 @@ export function GroupRowsDataTable({
         (f): f is IField =>
           !!f &&
           f.type !== E_FIELD_TYPE.FIELD_GROUP &&
-          f.type !== E_FIELD_TYPE.TRASHED &&
+          f.type !== E_FIELD_TYPE.STATUS &&
           f.type !== E_FIELD_TYPE.TRASHED_AT &&
           !f.trashed,
       ),
@@ -99,11 +107,11 @@ export function GroupRowsDataTable({
   );
 
   const columnFields = React.useMemo(() => {
-    const visible = displayableFields.filter((f) => f.showInList);
+    const visible = displayableFields.filter((f) => isFieldVisible(f, 'list'));
     const hasAnyUserField = displayableFields.some((f) => !f.native);
     if (hasAnyUserField) return visible;
     return formFields;
-  }, [displayableFields, formFields]);
+  }, [displayableFields, formFields, isFieldVisible]);
 
   if (!groupSlug || !group) {
     return <span className="text-muted-foreground text-sm">-</span>;
@@ -124,32 +132,44 @@ export function GroupRowsDataTable({
       className="space-y-2"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium ml-2">{field.name}</span>
+        <span className="text-sm font-medium ml-2">
+          {resolveFieldLabel(field)}
+        </span>
         <div className="inline-flex items-center gap-2">
           {canManage && (
+            <GroupFieldManagementSheet
+              asChild
+              table={table}
+              groupSlug={groupSlug}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+              >
+                <Settings2Icon className="size-4" />
+                <span>Gerenciar campos</span>
+              </Button>
+            </GroupFieldManagementSheet>
+          )}
+          <GroupRowFormDialog
+            asChild
+            tableSlug={tableSlug}
+            rowId={rowId}
+            groupSlug={groupSlug}
+            groupFields={formFields}
+            editItem={null}
+          >
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => setManagementOpen(true)}
+              disabled={field.multiple === false && meta.total >= 1}
             >
-              <Settings2Icon className="size-4" />
-              <span>Gerenciar campos</span>
+              <PlusIcon className="size-4" />
+              <span>Adicionar item</span>
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditItem(null);
-              setFormOpen(true);
-            }}
-            disabled={field.multiple === false && meta.total >= 1}
-          >
-            <PlusIcon className="size-4" />
-            <span>Adicionar item</span>
-          </Button>
+          </GroupRowFormDialog>
         </div>
       </div>
 
@@ -161,6 +181,7 @@ export function GroupRowsDataTable({
                 <th
                   key={gf._id}
                   className="px-4 py-2 text-left text-xs font-medium text-muted-foreground"
+                  style={{ width: columnWidth(gf) }}
                 >
                   {gf.name}
                 </th>
@@ -182,54 +203,15 @@ export function GroupRowsDataTable({
               </tr>
             )}
             {items.map((item) => (
-              <tr
+              <GroupRowItem
                 key={item._id}
-                className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => {
-                  setEditItem(item);
-                  setFormOpen(true);
-                }}
-              >
-                {columnFields.map((gf) => (
-                  <td
-                    key={gf._id}
-                    className="px-4 py-2"
-                  >
-                    <RenderGroupCell
-                      field={gf}
-                      row={item}
-                    />
-                  </td>
-                ))}
-                <td
-                  className="w-20 px-4 py-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditItem(item);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <PencilIcon className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteItem(item);
-                      }}
-                    >
-                      <TrashIcon className="size-3.5" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+                item={item}
+                columnFields={columnFields}
+                formFields={formFields}
+                tableSlug={tableSlug}
+                rowId={rowId}
+                groupSlug={groupSlug}
+              />
             ))}
           </tbody>
         </table>
@@ -247,42 +229,83 @@ export function GroupRowsDataTable({
           }}
         />
       )}
-
-      <GroupRowFormDialog
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setEditItem(null);
-        }}
-        tableSlug={tableSlug}
-        rowId={rowId}
-        groupSlug={groupSlug}
-        groupFields={formFields}
-        editItem={editItem}
-      />
-
-      {deleteItem && (
-        <GroupRowDeleteDialog
-          open={Boolean(deleteItem)}
-          onOpenChange={(open) => {
-            if (!open) setDeleteItem(null);
-          }}
-          tableSlug={tableSlug}
-          rowId={rowId}
-          groupSlug={groupSlug}
-          itemId={deleteItem._id}
-        />
-      )}
-
-      {canManage && (
-        <GroupFieldManagementSheet
-          open={managementOpen}
-          onOpenChange={setManagementOpen}
-          table={table}
-          groupSlug={groupSlug}
-        />
-      )}
     </div>
+  );
+}
+
+type GroupRowItemProps = {
+  item: IRow;
+  columnFields: Array<IField>;
+  formFields: Array<IField>;
+  tableSlug: string;
+  rowId: string;
+  groupSlug: string;
+};
+
+function GroupRowItem({
+  item,
+  columnFields,
+  formFields,
+  tableSlug,
+  rowId,
+  groupSlug,
+}: GroupRowItemProps): React.JSX.Element {
+  const editTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  return (
+    <tr
+      className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={() => editTriggerRef.current?.click()}
+    >
+      {columnFields.map((gf) => (
+        <td
+          key={gf._id}
+          className="px-4 py-2"
+        >
+          <RenderGroupCell
+            field={gf}
+            row={item}
+          />
+        </td>
+      ))}
+      <td
+        className="w-20 px-4 py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-1">
+          <GroupRowFormDialog
+            ref={editTriggerRef}
+            asChild
+            tableSlug={tableSlug}
+            rowId={rowId}
+            groupSlug={groupSlug}
+            groupFields={formFields}
+            editItem={item}
+          >
+            <Button
+              variant="ghost"
+              size="icon-sm"
+            >
+              <PencilIcon className="size-3.5" />
+            </Button>
+          </GroupRowFormDialog>
+          <GroupRowDeleteDialog
+            asChild
+            tableSlug={tableSlug}
+            rowId={rowId}
+            groupSlug={groupSlug}
+            itemId={item._id}
+          >
+            <Button
+              variant="ghost"
+              size="icon-sm"
+            >
+              <TrashIcon className="size-3.5" />
+            </Button>
+          </GroupRowDeleteDialog>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -349,8 +372,16 @@ function RenderGroupCell({
       );
     case E_FIELD_TYPE.USER:
     case E_FIELD_TYPE.CREATOR:
+    case E_FIELD_TYPE.UPDATER:
       return (
         <TableRowUserCell
+          field={field}
+          row={row}
+        />
+      );
+    case E_FIELD_TYPE.USER_GROUP:
+      return (
+        <TableRowUserGroupCell
           field={field}
           row={row}
         />
@@ -363,6 +394,7 @@ function RenderGroupCell({
         />
       );
     case E_FIELD_TYPE.CREATED_AT:
+    case E_FIELD_TYPE.UPDATED_AT:
       return (
         <TableRowDateCell
           field={field}

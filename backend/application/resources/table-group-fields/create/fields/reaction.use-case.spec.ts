@@ -1,38 +1,34 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import GroupFieldCreateUseCase from '../create.use-case';
 
 let tableRepository: TableInMemoryRepository;
 let fieldRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: GroupFieldCreateUseCase;
 
 const TABLE_DEFAULTS = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
 
 const FIELD_PAYLOAD_BASE = {
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -53,12 +49,14 @@ describe('Group Field Create - REACTION', () => {
   beforeEach(async () => {
     tableRepository = new TableInMemoryRepository();
     fieldRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new GroupFieldCreateUseCase(
       tableRepository,
       fieldRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
     );
 
     await tableRepository.create({

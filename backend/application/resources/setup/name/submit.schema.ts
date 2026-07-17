@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupNameSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Configurar nome do sistema e locale no setup wizard',
   description: 'Define o nome do sistema e o idioma. Etapa 2 do setup wizard.',
   security: [{ cookieAuth: [] }],
@@ -53,7 +53,7 @@ export const SetupNameSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -66,7 +66,7 @@ export const SetupNameSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

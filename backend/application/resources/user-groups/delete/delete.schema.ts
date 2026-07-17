@@ -1,8 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserGroupDeleteSchema: FastifySchema = {
-  tags: ['User Groups'],
+  tags: ['Grupos de Usuários'],
   summary: 'Excluir grupo permanentemente',
+  description:
+    'Exclui permanentemente um grupo que esteja na lixeira. Bloqueia grupos do sistema e grupos com usuários atribuídos. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -10,7 +12,10 @@ export const UserGroupDeleteSchema: FastifySchema = {
     properties: { _id: { type: 'string', minLength: 1 } },
   },
   response: {
-    200: { type: 'null' },
+    200: {
+      description: 'Grupo excluído permanentemente com sucesso',
+      type: 'null',
+    },
     401: {
       type: 'object',
       properties: {

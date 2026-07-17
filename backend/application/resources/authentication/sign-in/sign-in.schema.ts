@@ -2,9 +2,9 @@ import type { FastifySchema } from 'fastify';
 
 export const SignInSchema: FastifySchema = {
   tags: ['Autenticação'],
-  summary: 'User authentication sign in',
+  summary: 'Autenticar usuário (login)',
   description:
-    'Authenticates a user with email and password, returning JWT tokens as HTTP-only cookies',
+    'Autentica um usuário com email e senha. Em caso de sucesso, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e retorna 200 sem corpo. Rota pública',
   body: {
     type: 'object',
     required: ['email', 'password'],
@@ -12,6 +12,7 @@ export const SignInSchema: FastifySchema = {
       email: {
         type: 'string',
         format: 'email',
+        description: 'Email do usuário',
         errorMessage: {
           type: 'O email deve ser um texto',
           format: 'Digite um email válido',
@@ -20,6 +21,7 @@ export const SignInSchema: FastifySchema = {
       password: {
         type: 'string',
         minLength: 1,
+        description: 'Senha do usuário',
         errorMessage: {
           type: 'A senha deve ser um texto',
           minLength: 'A senha é obrigatória',
@@ -38,49 +40,45 @@ export const SignInSchema: FastifySchema = {
   response: {
     200: {
       description:
-        'Successful authentication - Sets httpOnly cookies for accessToken and refreshToken',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Authentication successful'] },
-      },
-      headers: {
-        'Set-Cookie': {
-          type: 'string',
-          description: 'Authentication cookies (accessToken, refreshToken)',
-        },
-      },
+        'Autenticação bem-sucedida - define os cookies httpOnly accessToken e refreshToken',
+      type: 'null',
     },
     400: {
-      description: 'Bad request - Validation failed',
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Invalid request'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [400] },
         cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
         },
       },
     },
     401: {
-      description: 'Unauthorized - Invalid credentials or inactive user',
+      description: 'Não autorizado - Credenciais inválidas ou usuário inativo',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Credenciais invalidas', 'Usuário inativo'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
-          enum: [
-            'INVALID_CREDENTIALS',
-            'USER_INACTIVE',
-            'AUTHENTICATION_REQUIRED',
-          ],
+          enum: ['INVALID_CREDENTIALS', 'USER_INACTIVE'],
         },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    409: {
+      description: 'Conflito - Limite de contas simultâneas atingido',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [409] },
+        cause: { type: 'string', enum: ['MULTI_ACCOUNT_LIMIT_REACHED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -88,10 +86,10 @@ export const SignInSchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['SIGN_IN_ERROR'] },
         errors: {

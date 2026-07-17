@@ -3,10 +3,10 @@
 Busca um usuario especifico por ID (senha excluida da resposta).
 
 ## Endpoint
-`GET /users/:_id` | Auth: Yes | Permission: -
+`GET /users/:_id` | Auth: Yes | Permission: MANAGE_USERS
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 2. Validator: `UserShowParamValidator` - campos: _id (string, required, trim, min 1)
 3. UseCase: `UserShowUseCase`
    - Busca usuario por _id exato no repositorio

@@ -10,6 +10,7 @@ import {
 import React from 'react';
 
 import { GroupRowsDataTable } from '@/components/common/dynamic-table/group-rows';
+import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { FileUploadWithStorage } from '@/components/common/file-upload/file-upload-with-storage';
 import { Button } from '@/components/ui/button';
 import { E_FIELD_TYPE } from '@/lib/constant';
@@ -23,8 +24,13 @@ import type {
 } from '@/lib/interfaces';
 import { normalizeIdList } from '@/lib/kanban-helpers';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface KanbanFieldGroupEditorProps {
+// Item de grupo é dado dinâmico do low-code (valor por slug é any via IRow).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type GroupRow = Record<string, any>;
+
+type KanbanFieldGroupEditorProps = {
   row: IRow;
   field: IField;
   table: ITable;
@@ -34,29 +40,30 @@ interface KanbanFieldGroupEditorProps {
     mutateAsync: (params: {
       slug: string;
       rowId: string;
-      data: Record<string, any>;
-    }) => Promise<any>;
+      data: GroupRow;
+    }) => Promise<unknown>;
     status: string;
   };
-}
+};
 
 function normalizeGroupRow(
-  groupRow: Record<string, any>,
+  groupRow: GroupRow,
   groupFields: Array<IField>,
-): Record<string, any> {
-  const normalized: Record<string, any> = {};
+): GroupRow {
+  const normalized: GroupRow = {};
   for (const gf of groupFields) {
     const value = groupRow[gf.slug];
     switch (gf.type) {
       case E_FIELD_TYPE.FILE:
       case E_FIELD_TYPE.USER:
+      case E_FIELD_TYPE.USER_GROUP:
       case E_FIELD_TYPE.RELATIONSHIP:
         normalized[gf.slug] = normalizeIdList(value);
         break;
       case E_FIELD_TYPE.DROPDOWN:
       case E_FIELD_TYPE.CATEGORY:
         {
-          let dropdownValue: Array<any> = [];
+          let dropdownValue: Array<unknown> = [];
           if (Array.isArray(value)) {
             dropdownValue = value;
           } else if (value) {
@@ -84,17 +91,17 @@ function isAttachmentMode(groupFields: Array<IField>): boolean {
 }
 
 function getStoragesFromGroupRow(
-  groupRow: Record<string, any>,
+  groupRow: GroupRow,
   fileField: IField,
 ): Array<IStorage> {
   const raw = groupRow[fileField.slug];
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (item: any) => item && typeof item === 'object' && item.url,
-  ) as Array<IStorage>;
+    (item): item is IStorage => item && typeof item === 'object' && item.url,
+  );
 }
 
-function getAuthorFromGroupRow(groupRow: Record<string, any>): IUser | null {
+function getAuthorFromGroupRow(groupRow: GroupRow): IUser | null {
   const raw = groupRow['autor'];
   if (Array.isArray(raw)) {
     const first = raw[0];
@@ -109,8 +116,14 @@ function getAuthorFromGroupRow(groupRow: Record<string, any>): IUser | null {
   return null;
 }
 
-function formatAttachmentDate(dateValue: any): string | null {
-  if (!dateValue) return null;
+function formatAttachmentDate(dateValue: unknown): string | null {
+  if (
+    typeof dateValue !== 'string' &&
+    typeof dateValue !== 'number' &&
+    !(dateValue instanceof Date)
+  ) {
+    return null;
+  }
   try {
     return format(new Date(dateValue), "HH:mm 'de' dd/MM/yyyy", {
       locale: ptBR,
@@ -121,47 +134,37 @@ function formatAttachmentDate(dateValue: any): string | null {
 }
 
 function renderAttachmentThumbnail(storage: IStorage): React.JSX.Element {
+  let preview = (
+    <div className="size-9 rounded border bg-muted flex items-center justify-center">
+      <FileIcon className="size-4 text-muted-foreground" />
+    </div>
+  );
   if (storage.mimetype?.includes('image')) {
-    return (
-      <a
-        href={storage.url}
-        target="_blank"
-        rel="noreferrer"
-        className="shrink-0"
-      >
-        <img
-          src={storage.url}
-          alt={storage.originalName}
-          className="size-9 rounded object-cover border"
-        />
-      </a>
+    preview = (
+      <img
+        src={storage.url}
+        alt={storage.originalName}
+        className="size-9 rounded object-cover border"
+      />
     );
-  }
-  if (storage.mimetype === 'application/pdf') {
-    return (
-      <a
-        href={storage.url}
-        target="_blank"
-        rel="noreferrer"
-        className="shrink-0"
-      >
-        <div className="size-9 rounded border bg-muted flex items-center justify-center">
-          <FileTextIcon className="size-4 text-muted-foreground" />
-        </div>
-      </a>
+  } else if (storage.mimetype === 'application/pdf') {
+    preview = (
+      <div className="size-9 rounded border bg-muted flex items-center justify-center">
+        <FileTextIcon className="size-4 text-muted-foreground" />
+      </div>
     );
   }
   return (
-    <a
-      href={storage.url}
-      target="_blank"
-      rel="noreferrer"
-      className="shrink-0"
-    >
-      <div className="size-9 rounded border bg-muted flex items-center justify-center">
-        <FileIcon className="size-4 text-muted-foreground" />
-      </div>
-    </a>
+    <AttachmentContextMenu storage={storage}>
+      <a
+        href={storage.url}
+        target="_blank"
+        rel="noreferrer"
+        className="shrink-0"
+      >
+        {preview}
+      </a>
+    </AttachmentContextMenu>
   );
 }
 
@@ -174,7 +177,7 @@ export function KanbanFieldGroupEditor({
   updateRow,
 }: KanbanFieldGroupEditorProps): React.JSX.Element {
   const [isAdding, setIsAdding] = React.useState(false);
-  const [newItem, setNewItem] = React.useState<Record<string, any>>({});
+  const [newItem, setNewItem] = React.useState<GroupRow>({});
   const [uploadFiles, setUploadFiles] = React.useState<Array<File>>([]);
   const [uploadStorages, setUploadStorages] = React.useState<Array<IStorage>>(
     [],
@@ -191,9 +194,14 @@ export function KanbanFieldGroupEditor({
       (f) => f.type !== E_FIELD_TYPE.FIELD_GROUP && !f.trashed && !f.native,
     ) ?? [];
 
-  const groupData: Array<Record<string, any>> = Array.isArray(row[field.slug])
-    ? (row[field.slug] as Array<Record<string, any>>)
-    : [];
+  // Dados dinâmicos do grupo: itens são sub-rows (objetos) do FIELD_GROUP.
+  const rawGroup = row[field.slug];
+  const groupData: Array<GroupRow> = [];
+  if (Array.isArray(rawGroup)) {
+    for (const item of rawGroup) {
+      if (typeof item === 'object' && item !== null) groupData.push(item);
+    }
+  }
 
   const isSaving = updateRow.status === 'pending';
   const attachmentMode = isAttachmentMode(groupFields);
@@ -221,16 +229,18 @@ export function KanbanFieldGroupEditor({
   const handleAddSave = async (): Promise<void> => {
     if (isSaving) return;
 
-    const itemPayload: Record<string, any> = {};
+    const itemPayload: GroupRow = {};
 
     if (attachmentMode) {
       for (const gf of groupFields) {
         if (gf.type === E_FIELD_TYPE.FILE) {
           itemPayload[gf.slug] = uploadStorages.map((s) => s._id);
         } else if (gf.type === E_FIELD_TYPE.USER && gf.slug === 'autor') {
-          itemPayload[gf.slug] = currentUserId
-            ? normalizeIdList(currentUserId)
-            : [];
+          if (currentUserId) {
+            itemPayload[gf.slug] = normalizeIdList(currentUserId);
+          } else {
+            itemPayload[gf.slug] = [];
+          }
         } else if (gf.type === E_FIELD_TYPE.DATE && gf.slug === 'data') {
           itemPayload[gf.slug] = new Date().toISOString();
         } else {
@@ -275,7 +285,9 @@ export function KanbanFieldGroupEditor({
         className="space-y-2"
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">{field.name}</h3>
+          <h3 className="text-sm font-semibold">
+            {resolveFieldLabel(field, 'detail')}
+          </h3>
           <Button
             type="button"
             variant="outline"
@@ -295,9 +307,11 @@ export function KanbanFieldGroupEditor({
               return (
                 <ul className="space-y-2">
                   {groupData.map((groupRow, index) => {
-                    const storages = fileField
-                      ? getStoragesFromGroupRow(groupRow, fileField)
-                      : [];
+                    let storages: ReturnType<typeof getStoragesFromGroupRow> =
+                      [];
+                    if (fileField) {
+                      storages = getStoragesFromGroupRow(groupRow, fileField);
+                    }
                     const author = getAuthorFromGroupRow(groupRow);
                     const dateStr = formatAttachmentDate(groupRow['data']);
 
@@ -332,14 +346,16 @@ export function KanbanFieldGroupEditor({
                         <div className="flex min-w-0 items-center gap-2 flex-1">
                           {renderAttachmentThumbnail(storage)}
                           <div className="min-w-0 flex-1">
-                            <a
-                              href={storage.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm text-primary underline underline-offset-2 truncate block"
-                            >
-                              {storage.originalName}
-                            </a>
+                            <AttachmentContextMenu storage={storage}>
+                              <a
+                                href={storage.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm text-primary underline underline-offset-2 truncate block"
+                              >
+                                {storage.originalName}
+                              </a>
+                            </AttachmentContextMenu>
                             {(author || dateStr) && (
                               <p className="text-xs text-muted-foreground truncate">
                                 {((): string => {

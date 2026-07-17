@@ -3,7 +3,7 @@
 Envia um menu para a lixeira (soft delete).
 
 ## Endpoint
-`PATCH /menu/:_id/trash` | Auth: Yes | Permission: nenhuma especifica
+`PATCH /menu/:_id/trash` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

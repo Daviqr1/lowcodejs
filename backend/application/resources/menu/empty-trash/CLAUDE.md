@@ -8,8 +8,8 @@ Remove permanentemente todos os menus que estão na lixeira.
 
 ## Middleware
 
-1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER])`
+1. `AuthenticationMiddleware({ optional: false })` — roda primeiro
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Response
 
@@ -28,5 +28,5 @@ Remove permanentemente todos os menus que estão na lixeira.
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Não é MASTER |
+| 403 | FORBIDDEN | Sem a capacidade MANAGE_MENU |
 | 500 | EMPTY_TRASH_MENUS_ERROR | Erro interno |

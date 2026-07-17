@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE } from '@application/core/entity.core';
+import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
+import RelationshipLinkInMemoryRepository from '@application/repositories/relationship-link/relationship-link-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import RelationshipDeletionService from '@application/services/relationship/relationship-deletion.service';
+import RelationshipService from '@application/services/relationship/relationship.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 
 import TableRowDeleteUseCase from './delete.use-case';
 
@@ -18,7 +20,23 @@ describe('Table Row Delete Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
-    sut = new TableRowDeleteUseCase(tableInMemoryRepository, rowRepository);
+    const linkRepository = new RelationshipLinkInMemoryRepository();
+    const definitionRepository = new RelationshipDefinitionInMemoryRepository();
+    const fieldRepository = new FieldInMemoryRepository();
+    const relationshipDeletion = new RelationshipDeletionService(
+      new RelationshipService(linkRepository, fieldRepository),
+      definitionRepository,
+      linkRepository,
+      fieldRepository,
+      tableInMemoryRepository,
+      rowRepository,
+    );
+    sut = new TableRowDeleteUseCase(
+      tableInMemoryRepository,
+      rowRepository,
+      relationshipDeletion,
+      new InMemoryRowAccessGuardService(),
+    );
     vi.clearAllMocks();
   });
 
@@ -29,10 +47,7 @@ describe('Table Row Delete Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

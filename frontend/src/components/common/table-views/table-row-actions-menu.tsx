@@ -14,11 +14,11 @@ import {
 import { useTablePermission } from '@/hooks/use-table-permission';
 import type { IRow, ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   slug: string;
   row: IRow;
   table?: ITable;
-}
+};
 
 export function TableRowActionsMenu({
   slug,
@@ -27,7 +27,7 @@ export function TableRowActionsMenu({
 }: Props): React.JSX.Element {
   const router = useRouter();
   const permission = useTablePermission(table);
-  const canEdit = permission.can('UPDATE_ROW') && !row.trashed;
+  const canEdit = permission.can('UPDATE_ROW') && row.trashedAt == null;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -47,7 +47,7 @@ export function TableRowActionsMenu({
             className="inline-flex space-x-1 w-full cursor-pointer"
             onClick={(): void => {
               void router.navigate({
-                to: '/tables/$slug/row/',
+                to: '/tables/$slug/row',
                 params: { slug },
                 search: { _id: row._id },
               });
@@ -62,7 +62,7 @@ export function TableRowActionsMenu({
               className="inline-flex space-x-1 w-full cursor-pointer"
               onClick={(): void => {
                 void router.navigate({
-                  to: '/tables/$slug/row/',
+                  to: '/tables/$slug/row',
                   params: { slug },
                   search: { _id: row._id, mode: 'edit' as const },
                 });

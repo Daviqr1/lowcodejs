@@ -10,7 +10,6 @@ import {
 import React, { useState } from 'react';
 import * as z from 'zod';
 
-import { Logo } from '@/components/common/layout/logo';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -95,7 +94,7 @@ function RouteComponent(): React.JSX.Element {
 
   const signUpMutation = useAuthenticationSignUp({
     onSuccess() {
-      router.navigate({ to: '/', replace: true });
+      router.navigate({ to: '/sign-up/success' });
     },
     onError(error) {
       handleApiError(error, {
@@ -114,225 +113,208 @@ function RouteComponent(): React.JSX.Element {
   return (
     <div
       data-test-id="sign-up-page"
-      className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
+      className="flex flex-col gap-6"
     >
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
+      <Card className="border-0 shadow-none">
+        <CardHeader>
+          <CardTitle className="heading-card">Cadastro</CardTitle>
+          <CardDescription className="text-pretty">
+            Crie sua conta para acessar a plataforma
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form
+            data-test-id="sign-up-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup className="stagger-children">
+              <form.Field
+                name="name"
+                children={(field) => {
+                  const isInvalid = getFieldInvalidState(field.state.meta);
+
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          data-test-id="sign-up-name-input"
+                          id={field.name}
+                          name={field.name}
+                          type="text"
+                          placeholder="Seu nome completo"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        <InputGroupAddon>
+                          <UserIcon />
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+              <form.Field
+                name="email"
+                children={(field) => {
+                  const isInvalid = getFieldInvalidState(field.state.meta);
+
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>E-mail</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          data-test-id="sign-up-email-input"
+                          id={field.name}
+                          name={field.name}
+                          type="email"
+                          placeholder="exemplo@mail.com"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        <InputGroupAddon>
+                          <MailIcon />
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+              <form.Field
+                name="password"
+                children={(field) => {
+                  const isInvalid = getFieldInvalidState(field.state.meta);
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          data-test-id="sign-up-password-input"
+                          id={field.name}
+                          name={field.name}
+                          type={(showPassword && 'text') || 'password'}
+                          placeholder="••••••••"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        <InputGroupAddon>
+                          <LockIcon />
+                        </InputGroupAddon>
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupButton
+                            data-test-id="sign-up-password-toggle-btn"
+                            type="button"
+                            aria-label="toggle password visibility"
+                            title="toggle password visibility"
+                            size="icon-xs"
+                            className="cursor-pointer"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {!showPassword && <EyeIcon />}
+                            {showPassword && <EyeClosedIcon />}
+                          </InputGroupButton>
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+              <form.Field
+                name="confirmPassword"
+                children={(field) => {
+                  const isInvalid = getFieldInvalidState(field.state.meta);
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Confirmar Senha
+                      </FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          data-test-id="sign-up-confirm-password-input"
+                          id={field.name}
+                          name={field.name}
+                          type={(showConfirmPassword && 'text') || 'password'}
+                          placeholder="••••••••"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        <InputGroupAddon>
+                          <LockIcon />
+                        </InputGroupAddon>
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupButton
+                            data-test-id="sign-up-confirm-password-toggle-btn"
+                            type="button"
+                            aria-label="toggle password visibility"
+                            title="toggle password visibility"
+                            size="icon-xs"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                          >
+                            {!showConfirmPassword && <EyeIcon />}
+                            {showConfirmPassword && <EyeClosedIcon />}
+                          </InputGroupButton>
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+              <Field>
+                <Button
+                  data-test-id="sign-up-submit-btn"
+                  type="submit"
+                  className="w-full transition-transform hover:-translate-y-px hover:shadow-soft active:translate-y-0"
+                  disabled={signUpMutation.status === 'pending'}
+                >
+                  {signUpMutation.status === 'pending' && <Spinner />}
+                  {!(signUpMutation.status === 'pending') && (
+                    <span>Criar conta</span>
+                  )}
+                </Button>
+              </Field>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="text-center text-sm">
+        <FieldDescription>
+          Já possui uma conta?{' '}
           <Link
             to="/"
-            className="flex flex-col items-center gap-2 font-medium"
+            data-test-id="sign-in-link"
+            className="underline underline-offset-2"
           >
-            <Logo className="h-8" />
+            Faça login
           </Link>
-
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl font-semibold">Cadastro</CardTitle>
-              <CardDescription>
-                Crie sua conta para acessar a plataforma
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent>
-              <form
-                data-test-id="sign-up-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  form.handleSubmit();
-                }}
-              >
-                <FieldGroup>
-                  <form.Field
-                    name="name"
-                    children={(field) => {
-                      const isInvalid = getFieldInvalidState(field.state.meta);
-
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                          <InputGroup>
-                            <InputGroupInput
-                              data-test-id="sign-up-name-input"
-                              id={field.name}
-                              name={field.name}
-                              type="text"
-                              placeholder="Seu nome completo"
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value)
-                              }
-                              aria-invalid={isInvalid}
-                            />
-                            <InputGroupAddon>
-                              <UserIcon />
-                            </InputGroupAddon>
-                          </InputGroup>
-                          {isInvalid && (
-                            <FieldError errors={field.state.meta.errors} />
-                          )}
-                        </Field>
-                      );
-                    }}
-                  />
-                  <form.Field
-                    name="email"
-                    children={(field) => {
-                      const isInvalid = getFieldInvalidState(field.state.meta);
-
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>E-mail</FieldLabel>
-                          <InputGroup>
-                            <InputGroupInput
-                              data-test-id="sign-up-email-input"
-                              id={field.name}
-                              name={field.name}
-                              type="email"
-                              placeholder="exemplo@mail.com"
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value)
-                              }
-                              aria-invalid={isInvalid}
-                            />
-                            <InputGroupAddon>
-                              <MailIcon />
-                            </InputGroupAddon>
-                          </InputGroup>
-                          {isInvalid && (
-                            <FieldError errors={field.state.meta.errors} />
-                          )}
-                        </Field>
-                      );
-                    }}
-                  />
-                  <form.Field
-                    name="password"
-                    children={(field) => {
-                      const isInvalid = getFieldInvalidState(field.state.meta);
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
-                          <InputGroup>
-                            <InputGroupInput
-                              data-test-id="sign-up-password-input"
-                              id={field.name}
-                              name={field.name}
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="••••••••"
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value)
-                              }
-                              aria-invalid={isInvalid}
-                            />
-                            <InputGroupAddon>
-                              <LockIcon />
-                            </InputGroupAddon>
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupButton
-                                data-test-id="sign-up-password-toggle-btn"
-                                type="button"
-                                aria-label="toggle password visibility"
-                                title="toggle password visibility"
-                                size="icon-xs"
-                                className="cursor-pointer"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {!showPassword && <EyeIcon />}
-                                {showPassword && <EyeClosedIcon />}
-                              </InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                          {isInvalid && (
-                            <FieldError errors={field.state.meta.errors} />
-                          )}
-                        </Field>
-                      );
-                    }}
-                  />
-                  <form.Field
-                    name="confirmPassword"
-                    children={(field) => {
-                      const isInvalid = getFieldInvalidState(field.state.meta);
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Confirmar Senha
-                          </FieldLabel>
-                          <InputGroup>
-                            <InputGroupInput
-                              data-test-id="sign-up-confirm-password-input"
-                              id={field.name}
-                              name={field.name}
-                              type={showConfirmPassword ? 'text' : 'password'}
-                              placeholder="••••••••"
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value)
-                              }
-                              aria-invalid={isInvalid}
-                            />
-                            <InputGroupAddon>
-                              <LockIcon />
-                            </InputGroupAddon>
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupButton
-                                data-test-id="sign-up-confirm-password-toggle-btn"
-                                type="button"
-                                aria-label="toggle password visibility"
-                                title="toggle password visibility"
-                                size="icon-xs"
-                                className="cursor-pointer"
-                                onClick={() =>
-                                  setShowConfirmPassword(!showConfirmPassword)
-                                }
-                              >
-                                {!showConfirmPassword && <EyeIcon />}
-                                {showConfirmPassword && <EyeClosedIcon />}
-                              </InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                          {isInvalid && (
-                            <FieldError errors={field.state.meta.errors} />
-                          )}
-                        </Field>
-                      );
-                    }}
-                  />
-                  <Field>
-                    <Button
-                      data-test-id="sign-up-submit-btn"
-                      type="submit"
-                      className="w-full"
-                      disabled={signUpMutation.status === 'pending'}
-                    >
-                      {signUpMutation.status === 'pending' && <Spinner />}
-                      <span>Criar conta</span>
-                    </Button>
-                  </Field>
-                </FieldGroup>
-              </form>
-            </CardContent>
-          </Card>
-
-          <div className="text-center text-sm">
-            <FieldDescription>
-              Já possui uma conta?{' '}
-              <Link
-                to="/"
-                data-test-id="sign-in-link"
-                className="underline underline-offset-2"
-              >
-                Faça login
-              </Link>
-            </FieldDescription>
-          </div>
-        </div>
+        </FieldDescription>
       </div>
     </div>
   );

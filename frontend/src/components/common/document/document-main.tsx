@@ -11,7 +11,7 @@ import type { DocBlock } from '@/lib/document-helpers';
 import { getRowLeafId } from '@/lib/document-helpers';
 import type { IRow } from '@/lib/interfaces';
 
-interface DocumentMainProps {
+type DocumentMainProps = {
   rows: Array<IRow>;
   total: number;
   filterLabel?: string | null;
@@ -21,7 +21,7 @@ interface DocumentMainProps {
   getHeadingLevel: (row: IRow) => number;
   categorySlug: string;
   selectedCategoryId?: string | null;
-}
+};
 
 export function DocumentMain({
   rows,
@@ -94,7 +94,7 @@ export function DocumentMain({
               id={`sec-${selectedCategoryId}`}
               level={2}
               actions={
-                permission.can('CREATE_ROW') ? (
+                permission.can('CREATE_ROW') && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -110,7 +110,7 @@ export function DocumentMain({
                   >
                     <PlusIcon className="size-4" />
                   </Button>
-                ) : undefined
+                )
               }
             >
               {filterLabel}

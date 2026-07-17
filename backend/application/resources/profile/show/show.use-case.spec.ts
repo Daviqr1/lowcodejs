@@ -1,16 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 
 import ProfileShowUseCase from './show.use-case';
 
 let userInMemoryRepository: UserInMemoryRepository;
+let groupResolver: GroupResolverService;
 let sut: ProfileShowUseCase;
 
 describe('Profile Show Use Case', () => {
   beforeEach(() => {
     userInMemoryRepository = new UserInMemoryRepository();
-    sut = new ProfileShowUseCase(userInMemoryRepository);
+    groupResolver = new GroupResolverService(new UserGroupInMemoryRepository());
+    sut = new ProfileShowUseCase(userInMemoryRepository, groupResolver);
   });
 
   it('deve retornar o perfil do usuario existente', async () => {
@@ -29,6 +33,7 @@ describe('Profile Show Use Case', () => {
     expect(result.value._id).toBe(created._id);
     expect(result.value.name).toBe('John Doe');
     expect(result.value.email).toBe('john@example.com');
+    expect(Array.isArray(result.value.capabilities)).toBe(true);
   });
 
   it('deve retornar erro USER_NOT_FOUND quando usuario nao existe', async () => {

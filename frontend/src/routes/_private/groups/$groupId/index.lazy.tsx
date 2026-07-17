@@ -3,9 +3,11 @@ import {
   createLazyFileRoute,
   useParams,
   useRouter,
+  useSearch,
 } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import type { GroupUpdateFormValues } from './-update-form';
 import { GroupUpdateSchema, UpdateGroupFormFields } from './-update-form';
@@ -22,7 +24,6 @@ import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IGroup } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/groups/$groupId/')({
   component: RouteComponent,
@@ -38,7 +39,10 @@ function RouteComponent(): React.JSX.Element {
 
   const { data } = useSuspenseQuery(groupDetailOptions(groupId));
 
-  const [mode, setMode] = React.useState<'show' | 'edit'>('show');
+  const search = useSearch({ from: '/_private/groups/$groupId/' });
+  let initialMode: 'show' | 'edit' = 'show';
+  if (search.mode === 'edit') initialMode = 'edit';
+  const [mode, setMode] = React.useState<'show' | 'edit'>(initialMode);
 
   const goBack = (): void => {
     sidebar.setOpen(true);
@@ -80,11 +84,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface GroupUpdateContentProps {
+type GroupUpdateContentProps = {
   data: IGroup;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function GroupUpdateContent({
   data,
@@ -105,10 +109,9 @@ function GroupUpdateContent({
 
   const _update = useUpdateGroup({
     onSuccess() {
-      toastSuccess(
-        'Grupo atualizado',
-        'Os dados do grupo foram atualizados com sucesso',
-      );
+      toast.success('Grupo atualizado', {
+        description: 'Os dados do grupo foram atualizados com sucesso',
+      });
 
       form.reset();
       setMode('show');
@@ -127,6 +130,7 @@ function GroupUpdateContent({
       name: data.name,
       description: data.description ?? '',
       permissions: data.permissions.map((p) => p._id),
+      encompasses: data.encompasses ?? [],
     } satisfies GroupUpdateFormValues,
     // @ts-expect-error Zod Standard Schema type inference
     validators: { onChange: GroupUpdateSchema, onSubmit: GroupUpdateSchema },
@@ -173,7 +177,7 @@ function GroupUpdateContent({
         <PageShell.Content>
           <form
             data-test-id="group-update-form"
-            className="flex-1 flex flex-col min-h-0 overflow-auto"
+            className="flex-1 flex flex-col"
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -184,6 +188,7 @@ function GroupUpdateContent({
               isPending={isPending}
               mode={mode}
               slug={data.slug}
+              groupId={data._id}
             />
           </form>
         </PageShell.Content>

@@ -5,16 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { E_ROLE, PERMISSION_LABEL_MAPPER } from '@/lib/constant';
 import type { IGroup } from '@/lib/interfaces';
 
-const RoleMapper = {
+const RoleMapper: Record<string, string> = {
   [E_ROLE.ADMINISTRATOR]: 'Administrador',
   [E_ROLE.REGISTERED]: 'Registrado',
   [E_ROLE.MANAGER]: 'Gerente',
   [E_ROLE.MASTER]: 'Dono',
 };
 
-interface GroupViewProps {
+type GroupViewProps = {
   data: IGroup;
-}
+};
 
 function renderPermissions(
   permissions: IGroup['permissions'],
@@ -58,9 +58,7 @@ export function GroupView({ data }: GroupViewProps): React.JSX.Element {
               Slug (identificador)
             </p>
             <p className="text-sm font-medium">
-              {RoleMapper[data.slug as keyof typeof RoleMapper] ||
-                data.slug ||
-                '-'}
+              {RoleMapper[data.slug] || data.slug || '-'}
             </p>
           </div>
 

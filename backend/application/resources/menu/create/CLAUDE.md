@@ -3,7 +3,7 @@
 Cria um novo item de menu.
 
 ## Endpoint
-`POST /menu` | Auth: Yes | Permission: nenhuma especifica
+`POST /menu` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

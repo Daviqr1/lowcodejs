@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableDeleteSchema: FastifySchema = {
-  tags: ['Tables'],
-  summary: 'Delete table',
+  tags: ['Tabelas'],
+  summary: 'Excluir tabela permanentemente',
   description:
-    'Permanently delete a table and all its associated data. This action cannot be undone.',
+    'Exclui permanentemente uma tabela, seus campos e a coleção dinâmica de registros. Esta ação não pode ser desfeita.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,7 +12,7 @@ export const TableDeleteSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug identifier',
+        description: 'Identificador slug da tabela',
         examples: ['users', 'products', 'blog-posts'],
       },
     },
@@ -20,17 +20,43 @@ export const TableDeleteSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'Table deleted successfully',
+      description: 'Tabela excluída permanentemente com sucesso',
       type: 'object',
       properties: {},
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autenticado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    403: {
+      description: 'Acesso negado - Permissão insuficiente',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -38,10 +64,10 @@ export const TableDeleteSchema: FastifySchema = {
       },
     },
     404: {
-      description: 'Not found - Table with specified slug does not exist',
+      description: 'Tabela não encontrada',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Table not found'] },
+        message: { type: 'string', enum: ['Tabela não encontrada'] },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
         errors: {
@@ -49,19 +75,12 @@ export const TableDeleteSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Table not found',
-          code: 404,
-          cause: 'TABLE_NOT_FOUND',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['DELETE_TABLE_ERROR'] },
         errors: {

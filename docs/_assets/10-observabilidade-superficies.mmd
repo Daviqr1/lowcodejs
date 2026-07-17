@@ -1,0 +1,30 @@
+graph TD
+    subgraph App["Backend Fastify (api:3000)"]
+        HTTP["Camada HTTP<br/>controllers + use-cases"]
+        HOOK["LoggerUserActionHook<br/>(hook onResponse)"]
+        CHAT["chat.socket.ts<br/>(WebSocket /chat)"]
+        HEALTH["GET /health-check"]
+        STDOUT["console.* -> stdout/stderr<br/>(Fastify logger: false)"]
+    end
+
+    subgraph WS["Namespaces Socket.IO (mesmo HTTP server)"]
+        NS_CHAT["/chat<br/>status, ready, thinking,<br/>tool_call, tool_result, tool_error,<br/>message, error, history"]
+        NS_NOTIF["/notifications<br/>notification:created,<br/>notification:read, read_all"]
+        NS_MIG["/storage-migration<br/>progress, file_migrated,<br/>file_failed, completed, error"]
+        NS_CSV["/csv-import<br/>progresso de importacao"]
+    end
+
+    subgraph Store["MongoDB system (DB_DATABASE)"]
+        LOGS[("collection logs<br/>model Logger<br/>SEM soft-delete")]
+    end
+
+    HTTP --> HOOK
+    HOOK -->|"CREATE/UPDATE/DELETE auditavel"| LOGS
+    CHAT -->|"AI_CALL / AI_RESPONSE (AI_TOOL)"| LOGS
+    HTTP --> STDOUT
+    CHAT --> NS_CHAT
+    App --> NS_NOTIF
+    App --> NS_MIG
+    App --> NS_CSV
+    LOGS -->|"GET /logs/paginated"| Reader["UI: historico de acoes"]
+    HEALTH --> Probe["Probe externo / orquestrador<br/>{ status: ok, timestamp }"]

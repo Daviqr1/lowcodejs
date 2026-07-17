@@ -2,8 +2,9 @@ import {
   E_ROLE,
   type FindOptions,
   type IGroup,
-  type IPermission,
 } from '@application/core/entity.core';
+
+import { makePermission } from '../entity-fixtures';
 
 import type {
   UserGroupContractRepository,
@@ -34,7 +35,9 @@ export default class UserGroupInMemoryRepository implements UserGroupContractRep
       ...payload,
       _id: crypto.randomUUID(),
       description: payload.description ?? null,
-      permissions: payload.permissions.map((p) => ({ _id: p }) as IPermission),
+      // Double de teste: refs populadas de permissão com defaults inertes.
+      permissions: payload.permissions.map((p) => makePermission(p)),
+      encompasses: payload.encompasses ?? [],
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,
@@ -77,7 +80,9 @@ export default class UserGroupInMemoryRepository implements UserGroupContractRep
       filtered = filtered.filter((g) => !g.trashed);
     }
 
-    if (payload?.user?.role === E_ROLE.ADMINISTRATOR) {
+    // Esconde o grupo MASTER pela flag resolvida pelo fecho de grupos
+    // (shouldHideMaster), nao mais pelo role do JWT — alinhado ao repo mongoose.
+    if (payload?.hideMaster) {
       filtered = filtered.filter((g) => g.slug !== E_ROLE.MASTER);
     }
 

@@ -3,10 +3,10 @@
 Lista grupos de usuarios com paginacao, busca e ordenacao.
 
 ## Endpoint
-`GET /user-group/paginated` | Auth: Yes | Permission: -
+`GET /user-group/paginated` | Auth: Yes | Permission: MANAGE_USER_GROUPS
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS)`
 2. Validator: `UserGroupPaginatedQueryValidator` - campos: page (number, min 1, default 1), perPage (number, min 1, max 100, default 50), search (string, trim, optional), order-name (enum asc/desc, optional), order-description (enum asc/desc, optional), order-created-at (enum asc/desc, optional)
 3. UseCase: `UserGroupPaginatedUseCase`
    - Monta objeto `sort` a partir dos parametros order-*

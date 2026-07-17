@@ -17,13 +17,13 @@ import {
 } from '@/components/ui/select';
 import type { Meta } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   meta: Meta;
   page?: number;
   perPage?: number;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
-}
+};
 
 export function Pagination({
   meta,

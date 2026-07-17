@@ -1,0 +1,587 @@
+// =============================================================================
+// LowCodeJS — Diagrama de Dados (DBML para dbdiagram.io)
+// =============================================================================
+// Projeto : LowCodeJS — plataforma low-code (tabelas dinamicas, formularios,
+//           dashboards, automacoes).
+// Fonte   : backend/application/model/*.model.ts (14 schemas Mongoose) +
+//           backend/application/core/entity.core.ts (enums) +
+//           backend/application/core/builders/model-builder.ts (buildTable).
+// Branch  : develop.
+//
+// NOTAS DE MODELAGEM (MongoDB -> DBML):
+//  - O backend usa MongoDB/Mongoose. Todo ObjectId esta representado aqui como
+//    String (DBML/SQL nao possui tipo ObjectId nativo). As refs sao logicas.
+//  - DUAS CONEXOES MongoDB:
+//      (1) SYSTEM (DB_DATABASE, default 'lowcodejs') — os 14 models nativos
+//          abaixo, abertos via mongoose.connect().
+//      (2) DATA   (DB_DATA_DATABASE, default 'lowcodejs_data') — collections
+//          DINAMICAS das tabelas low-code, sem model fixo. Cada table.slug vira
+//          uma collection criada em runtime por buildTable() (model-builder.ts).
+//  - Soft-delete: todos os models tem trashed:Boolean + trashedAt:Date, EXCETO
+//    Logger (unico sem soft-delete).
+//  - timestamps: todos geram createdAt/updatedAt automaticamente.
+//  - Nenhum campo escalar declara unique no schema; unicidade so existe via
+//    indice composto unico de Extension (pkg,type,extensionId). Email do User
+//    NAO tem unique no schema (garantido em use-case).
+//  - Refs Field.relationship.* e Field.group._id NAO usam ref Mongoose
+//    (ObjectId logico em subdoc, sem populate); modeladas como Ref logica.
+// =============================================================================
+
+Project lowcodejs {
+  database_type: 'MongoDB'
+  Note: 'LowCodeJS — 14 models de sistema (conexao system) + collection dinamica representativa (conexao data). ObjectId representado como String.'
+}
+
+// =============================================================================
+// ENUMS (backend/application/core/entity.core.ts)
+// =============================================================================
+
+Enum E_ROLE {
+  MASTER
+  ADMINISTRATOR
+  MANAGER
+  REGISTERED
+}
+
+Enum E_USER_STATUS {
+  ACTIVE
+  INACTIVE
+}
+
+Enum E_TOKEN_STATUS {
+  REQUESTED
+  EXPIRED
+  VALIDATED
+}
+
+Enum E_FIELD_TYPE {
+  TEXT_SHORT
+  TEXT_LONG
+  DROPDOWN
+  DATE
+  RELATIONSHIP
+  FILE
+  FIELD_GROUP
+  REACTION
+  EVALUATION
+  CATEGORY
+  USER
+  CREATOR
+  IDENTIFIER
+  CREATED_AT
+  TRASHED
+  TRASHED_AT
+}
+
+Enum E_FIELD_FORMAT {
+  ALPHA_NUMERIC
+  INTEGER
+  DECIMAL
+  URL
+  EMAIL
+  PASSWORD
+  PHONE
+  CNPJ
+  CPF
+  RICH_TEXT
+  PLAIN_TEXT
+  "dd/MM/yyyy"
+  "MM/dd/yyyy"
+  "yyyy/MM/dd"
+  "dd/MM/yyyy HH:mm:ss"
+  "MM/dd/yyyy HH:mm:ss"
+  "yyyy/MM/dd HH:mm:ss"
+  "dd-MM-yyyy"
+  "MM-dd-yyyy"
+  "yyyy-MM-dd"
+  "dd-MM-yyyy HH:mm:ss"
+  "MM-dd-yyyy HH:mm:ss"
+  "yyyy-MM-dd HH:mm:ss"
+}
+
+Enum E_TABLE_TYPE {
+  TABLE
+  FIELD_GROUP
+}
+
+Enum E_TABLE_STYLE {
+  LIST
+  GALLERY
+  DOCUMENT
+  CARD
+  MOSAIC
+  KANBAN
+  FORUM
+  CALENDAR
+  GANTT
+}
+
+Enum E_TABLE_VISIBILITY {
+  PUBLIC
+  RESTRICTED
+  OPEN
+  FORM
+  PRIVATE
+}
+
+Enum E_TABLE_COLLABORATION {
+  OPEN
+  RESTRICTED
+}
+
+Enum E_MENU_ITEM_TYPE {
+  TABLE
+  PAGE
+  FORM
+  EXTERNAL
+  SEPARATOR
+  EXTENSION_MODULE
+}
+
+Enum E_STORAGE_LOCATION {
+  local
+  s3
+}
+
+Enum E_STORAGE_MIGRATION_STATUS {
+  idle
+  pending
+  in_progress
+  failed
+}
+
+Enum E_REACTION_TYPE {
+  LIKE
+  UNLIKE
+}
+
+Enum E_NOTIFICATION_TYPE {
+  FORUM_MENTION
+  KANBAN_COMMENT_MENTION
+  ROW_MEMBER_ASSIGNED
+  GENERIC
+}
+
+Enum E_EXTENSION_TYPE {
+  PLUGIN
+  MODULE
+  TOOL
+}
+
+Enum E_LOGGER_ACTION_TYPE {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  AI_CALL
+  AI_RESPONSE
+}
+
+Enum E_LOGGER_OBJECT_TYPE {
+  TABLE
+  FIELD
+  ROW
+  MENU
+  USER
+  EXTENSION
+  GROUP_FIELD
+  GROUP_ROW
+  PAGE
+  PERMISSION
+  PROFILE
+  SETTING
+  SETUP
+  STORAGE
+  USER_GROUP
+  AI_TOOL
+}
+
+// Enums inline (declarados como literais nos schemas, nao como const exportado)
+Enum E_STORAGE_DRIVER_INLINE {
+  local
+  s3
+}
+
+Enum E_SETUP_STEP_INLINE {
+  admin
+  name
+  storage
+  logos
+  upload
+  paging
+  email
+}
+
+// =============================================================================
+// TABLES DE SISTEMA (conexao SYSTEM — database 'lowcodejs')
+// =============================================================================
+
+Table users {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  name String [not null]
+  email String [not null, note: 'sem unique no schema; unicidade no use-case']
+  password String [not null, note: 'hash']
+  status E_USER_STATUS [not null, default: 'INACTIVE']
+  group String [note: 'ref -> user_groups.id (ObjectId, sem required)']
+  notificationsEnabled Boolean [not null, default: true]
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: users. Senha hasheada. status default INACTIVE (ativado via validation-token).'
+}
+
+Table user_groups {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  name String [not null]
+  slug String [not null]
+  description String [note: 'undefined por default']
+  permissions String [note: 'array de refs -> permissions.id (ObjectId[])']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: user-groups. Role RBAC com lista de permissoes. 4 grupos seedados (MASTER, ADMINISTRATOR, MANAGER, REGISTERED).'
+}
+
+Table permissions {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  name String [not null]
+  slug String [not null]
+  description String [note: 'default null']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: permissions. 12 permissoes seedadas (CREATE/UPDATE/REMOVE/VIEW x TABLE/FIELD/ROW). Upsert por slug.'
+}
+
+Table tables {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  _schema Json [note: 'Mixed; definicao do schema dinamico (ITableSchema) usada por buildTable()']
+  name String [not null]
+  description String [note: 'default null']
+  logo String [note: 'ref -> storage.id (ObjectId, default null)']
+  slug String [not null]
+  fields String [note: 'array de refs -> fields.id (ObjectId[])']
+  type E_TABLE_TYPE [not null, default: 'TABLE']
+  style E_TABLE_STYLE [not null, default: 'LIST']
+  visibility E_TABLE_VISIBILITY [not null, default: 'RESTRICTED']
+  collaboration E_TABLE_COLLABORATION [not null, default: 'RESTRICTED']
+  administrators String [note: 'array de refs -> users.id (ObjectId[])']
+  owner String [not null, note: 'ref -> users.id (ObjectId, required)']
+  fieldOrderList String [note: 'String[] default []']
+  fieldOrderForm String [note: 'String[] default []']
+  fieldOrderFilter String [note: 'String[] default []']
+  fieldOrderDetail String [note: 'String[] default []']
+  methods Json [note: 'subdoc Methods (_id:false): onLoad/beforeSave/afterSave.code:String|null']
+  groups Json [note: 'subdoc[] GroupConfiguration (_id:true, timestamps): slug, name, fields:[ref fields.id], _schema:Mixed']
+  order Json [note: 'subdoc inline: field:String|null, direction enum[asc,desc]|null']
+  layoutFields Json [note: 'subdoc LayoutFields (_id:false): title/description/cover/category/startDate/endDate/color/participants/reminder -> String|null']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: tables. Definicao de tabela dinamica low-code. _schema (Mixed) convertido em runtime por buildTable(). Subdocs embutidos: methods, groups, order, layoutFields.'
+}
+
+Table fields {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  name String [not null]
+  slug String [note: 'sem required, sem default']
+  type E_FIELD_TYPE [not null, default: 'TEXT_SHORT']
+  required Boolean [not null, default: false]
+  multiple Boolean [not null, default: false]
+  format E_FIELD_FORMAT [note: 'default null']
+  showInFilter Boolean [not null, default: false]
+  showInForm Boolean [not null, default: false]
+  showInDetail Boolean [not null, default: false]
+  showInList Boolean [not null, default: false]
+  widthInForm Number [not null, default: 50]
+  widthInList Number [not null, default: 10]
+  widthInDetail Number [not null, default: 50]
+  locked Boolean [not null, default: false]
+  native Boolean [not null, default: false]
+  defaultValue Json [note: 'Mixed (default null); o tipo TS declara string|string[]|null']
+  tip String [note: 'default null']
+  relationship Json [note: 'subdoc Relationship (_id:false): table{_id,slug}, field{_id,slug}, order, customLabel, labelParts[], labelSeparator. default null']
+  dropdown Json [note: 'subdoc[] Dropdown (_id:false): id, label, color. default function -> null']
+  allowCustomDropdownOptions Boolean [not null, default: false]
+  allowCreateRelationshipRecords Boolean [not null, default: false]
+  category Json [note: 'subdoc[] Category (_id:false) recursivo: id, label, children[]. default function -> null']
+  group Json [note: 'subdoc Group (_id:false): _id:ObjectId (ref logica fields.id), slug. default null']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: fields. Definicao de campo de tabela. Subdocs: relationship (com labelParts), group, dropdown[], category[] (recursiva). toJSON forca dropdown/category=null quando undefined.'
+}
+
+Table storage {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  filename String [not null]
+  mimetype String [not null]
+  size Number [not null]
+  originalName String [not null]
+  location E_STORAGE_LOCATION [not null, note: 'default dinamico = getStorageDriver()']
+  migration_status E_STORAGE_MIGRATION_STATUS [not null, default: 'idle']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+  url String [note: 'VIRTUAL (nao persistido): APP_SERVER_URL + /storage/ + filename']
+
+  Note: 'Collection: storage. Arquivo armazenado (local ou S3). Virtual url. location default = driver atual via getStorageDriver().'
+}
+
+Table validation_tokens {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  user String [not null, note: 'ref -> users.id (ObjectId, required)']
+  code String [not null]
+  status E_TOKEN_STATUS [not null, default: 'REQUESTED']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: validation-tokens. Token de validacao de conta/reset (codigo). status default REQUESTED.'
+}
+
+Table menus {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  name String [not null]
+  slug String [not null]
+  type E_MENU_ITEM_TYPE [not null, default: 'SEPARATOR']
+  table String [note: 'ref -> tables.id (ObjectId, nullable)']
+  parent String [note: 'ref -> menus.id (auto-referencia, nullable)']
+  html String [note: 'default null']
+  url String [note: 'default null']
+  icon String [note: 'default null']
+  extension Json [note: 'subdoc inline: pkg, extensionId (apenas type=EXTENSION_MODULE). default null']
+  owner String [note: 'ref -> users.id (ObjectId, nullable)']
+  order Number [not null, default: 0]
+  isInitial Boolean [not null, default: false]
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Indexes {
+    (parent, order) [name: 'parent_order_idx']
+    isInitial [name: 'is_initial_idx']
+  }
+
+  Note: 'Collection: menus. Item de menu hierarquico (auto-referencia via parent). type default SEPARATOR. extension ref para EXTENSION_MODULE.'
+}
+
+Table reactions {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  user String [note: 'ref -> users.id (ObjectId, sem required)']
+  type E_REACTION_TYPE [not null, default: 'LIKE']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: reactions. Reacao (curtida) de usuario em row. type default LIKE.'
+}
+
+Table evaluations {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  user String [note: 'ref -> users.id (ObjectId, sem required)']
+  value Number [not null, default: 0]
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: evaluations. Avaliacao numerica de usuario em row.'
+}
+
+Table settings {
+  id String [pk, note: 'ObjectId (_id, auto sem declaracao explicita)']
+  SYSTEM_NAME String [default: 'LowCodeJs']
+  SYSTEM_DESCRIPTION String [default: 'Plataforma Oficial']
+  LOCALE String [default: 'pt-br']
+  STORAGE_DRIVER E_STORAGE_DRIVER_INLINE [default: 'local']
+  STORAGE_ENDPOINT String [note: 'sem default']
+  STORAGE_REGION String [default: 'us-east-1']
+  STORAGE_BUCKET String [note: 'sem default']
+  STORAGE_ACCESS_KEY String [note: 'sem default']
+  STORAGE_SECRET_KEY String [note: 'sem default']
+  FILE_UPLOAD_MAX_SIZE Number [default: 10485760]
+  FILE_UPLOAD_ACCEPTED String [default: 'jpg;jpeg;png;pdf']
+  FILE_UPLOAD_MAX_FILES_PER_UPLOAD Number [default: 10]
+  PAGINATION_PER_PAGE Number [default: 20]
+  MODEL_CLONE_TABLES String [note: 'array de refs -> tables.id (ObjectId[])']
+  LOGO_SMALL_URL String [note: 'default null']
+  LOGO_LARGE_URL String [note: 'default null']
+  EMAIL_PROVIDER_HOST String [note: 'default null']
+  EMAIL_PROVIDER_PORT Number [note: 'default null']
+  EMAIL_PROVIDER_USER String [note: 'default null']
+  EMAIL_PROVIDER_PASSWORD String [note: 'default null']
+  EMAIL_PROVIDER_FROM String [note: 'default null']
+  OPENAI_API_KEY String [note: 'default null']
+  AI_ASSISTANT_ENABLED Boolean [not null, default: false]
+  CHAT_HISTORY_ENABLED Boolean [not null, default: false]
+  MCP_SERVER_URL String [note: 'default null']
+  MCP_SERVER_TOKEN String [note: 'default null']
+  OPENAI_MODEL String [default: 'gpt-4.1-nano']
+  SETUP_COMPLETED Boolean [not null, default: false]
+  SETUP_CURRENT_STEP E_SETUP_STEP_INLINE [default: 'admin', note: 'enum inline + null']
+  MIGRATION_DUAL_CONNECTION_AT Date [note: 'default null']
+  MIGRATION_DUAL_CONNECTION_DROPPED_AT Date [note: 'default null']
+  MIGRATION_STORAGE_LOCATION_AT Date [note: 'default null']
+  STORAGE_MIGRATION_LAST_RUN_AT Date [note: 'default null']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: settings. Singleton de configuracao global (editado via UI /settings por MASTER). STORAGE_DRIVER e SETUP_CURRENT_STEP com enums inline.'
+}
+
+Table notifications {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  userId String [not null, note: 'ref -> users.id (ObjectId, required)']
+  type E_NOTIFICATION_TYPE [not null, default: 'GENERIC']
+  title String [not null]
+  body String [note: 'default null']
+  action Json [note: 'subdoc (_id:false): type enum[route,url], href, label. default null']
+  source Json [note: 'subdoc (_id:false): pkg, tableSlug, rowId, anchorId. default null']
+  actorUserId String [note: 'ref -> users.id (ObjectId, nullable)']
+  read Boolean [not null, default: false]
+  readAt Date [note: 'default null']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Indexes {
+    (userId, read, createdAt) [name: 'user_read_created_idx']
+    (userId, trashed, createdAt) [name: 'user_trashed_created_idx']
+  }
+
+  Note: 'Collection: notifications. Notificacao por usuario. type default GENERIC. Subdocs action e source (_id:false). Indices compostos por userId.'
+}
+
+Table extensions {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  pkg String [not null, note: 'parte da chave unica (pkg,type,extensionId)']
+  type E_EXTENSION_TYPE [not null, note: 'parte da chave unica']
+  extensionId String [not null, note: 'parte da chave unica']
+  name String [not null]
+  description String [note: 'default null']
+  version String [not null]
+  author String [note: 'default null']
+  icon String [note: 'default null']
+  image String [note: 'default null']
+  slots String [note: 'String[] default []']
+  route String [note: 'default null']
+  configRoute String [note: 'default null']
+  submenu String [note: 'default null']
+  enabled Boolean [not null, default: false]
+  available Boolean [not null, default: true]
+  tableScope Json [note: 'subdoc inline: mode enum[all,specific] default all, tableIds:String[] default []']
+  manifestSnapshot Json [note: 'Mixed default {}']
+  requires Json [note: 'Mixed default {}']
+  permissions Json [note: 'subdoc inline: view:String[] default []']
+  trashed Boolean [not null, default: false]
+  trashedAt Date [note: 'default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Indexes {
+    (pkg, type, extensionId) [unique, name: 'pkg_type_extid_unique_idx']
+    (enabled, type) [name: 'enabled_type_idx']
+    (slots, enabled) [name: 'slots_enabled_idx']
+  }
+
+  Note: 'Collection: extensions. Extensao registrada (plugin/module/tool). Chave unica (pkg,type,extensionId). enabled default false, available default true.'
+}
+
+Table logs {
+  id String [pk, note: 'ObjectId (_id, auto:true)']
+  url String [not null]
+  user String [note: 'ref -> users.id (ObjectId, nullable)']
+  action E_LOGGER_ACTION_TYPE [not null]
+  object E_LOGGER_OBJECT_TYPE [not null, note: 'required:true PORÉM default:null (contradicao no schema)']
+  object_id String [note: 'default null']
+  content Json [note: 'Mixed default null']
+  createdAt Date [note: 'auto (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+
+  Note: 'Collection: logs. Log de auditoria. UNICO model SEM soft-delete (sem trashed/trashedAt) e SEM id:false. user nullable. action/object enums.'
+}
+
+// =============================================================================
+// COLLECTION DINAMICA (conexao DATA — database 'lowcodejs_data')
+// =============================================================================
+// Esta tabela NAO existe como model fixo. E criada em runtime por buildTable()
+// (backend/application/core/builders/model-builder.ts) a partir de table._schema,
+// com o nome da collection = table.slug. Os campos de negocio sao definidos pelo
+// usuario no low-code; abaixo apenas os 5 campos NATIVOS injetados em toda tabela
+// (FIELD_NATIVE_LIST em entity.core.ts) + a forma generica dos campos dinamicos.
+// -----------------------------------------------------------------------------
+
+Table DynamicRow_slug {
+  id String [pk, note: 'ObjectId (_id, IDENTIFIER nativo, locked)']
+  creator String [note: 'ObjectId (CREATOR nativo) -> users.id logico; nao ha ref Mongoose']
+  createdAt Date [note: 'CREATED_AT nativo (timestamps)']
+  updatedAt Date [note: 'auto (timestamps)']
+  trashed Boolean [note: 'TRASHED nativo, default false']
+  trashedAt Date [note: 'TRASHED_AT nativo, default null']
+  dynamic_fields Json [note: 'GERADO EM RUNTIME: cada Field vira uma coluna tipada via buildSchema(). Tipos por E_SCHEMA_TYPE (String/Number/Date/Boolean/ObjectId). FIELD_GROUP vira subdoc[]; RELATIONSHIP/FILE/USER guardam ObjectId(s).']
+
+  Note: 'REPRESENTATIVA — collection dinamica (conexao DATA). Uma por table.slug, criada por buildTable(). Sem model fixo; schema definido pelos Fields da tabela.'
+}
+
+// =============================================================================
+// REFERENCIAS (Refs logicas — ObjectId. No MongoDB nao ha FK fisica)
+// =============================================================================
+
+// User
+Ref: users.group > user_groups.id [delete: set null]
+
+// UserGroup (array de refs)
+Ref: user_groups.permissions > permissions.id [delete: cascade]
+
+// Table
+Ref: tables.logo > storage.id [delete: set null]
+Ref: tables.fields > fields.id [delete: cascade]
+Ref: tables.administrators > users.id [delete: cascade]
+Ref: tables.owner > users.id [delete: restrict]
+
+// Field — refs logicas em subdoc (sem ref Mongoose / sem populate)
+Ref: fields.relationship > tables.id [delete: set null]
+Ref: fields.group > fields.id [delete: set null]
+
+// ValidationToken
+Ref: validation_tokens.user > users.id [delete: cascade]
+
+// Menu
+Ref: menus.table > tables.id [delete: set null]
+Ref: menus.parent > menus.id [delete: set null]
+Ref: menus.owner > users.id [delete: set null]
+
+// Reaction / Evaluation
+Ref: reactions.user > users.id [delete: cascade]
+Ref: evaluations.user > users.id [delete: cascade]
+
+// Setting (array de refs)
+Ref: settings.MODEL_CLONE_TABLES > tables.id [delete: set null]
+
+// Notification
+Ref: notifications.userId > users.id [delete: cascade]
+Ref: notifications.actorUserId > users.id [delete: set null]
+
+// Logger
+Ref: logs.user > users.id [delete: set null]
+
+// DynamicRow (logico — creator aponta para users)
+Ref: DynamicRow_slug.creator > users.id [delete: set null]

@@ -42,12 +42,12 @@ import {
 } from '@/lib/kanban-helpers';
 import type { FieldMap } from '@/lib/kanban-types';
 
-interface Props {
+type Props = {
   data: Array<IRow>;
   headers: Array<IField>;
   tableSlug: string;
   table: ITable;
-}
+};
 
 export function TableGanttView({
   data,
@@ -57,6 +57,8 @@ export function TableGanttView({
 }: Props): React.JSX.Element {
   const [rowsState, setRowsState] = React.useState<Array<IRow>>(data);
   const [activeRow, setActiveRow] = React.useState<IRow | null>(null);
+  const [rowNonce, setRowNonce] = React.useState(0);
+  const rowTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const [zoom, setZoom] = React.useState<ZoomLevel>('week');
   const [viewStart, setViewStart] = React.useState<Date>(() =>
     startOfMonth(new Date()),
@@ -74,10 +76,22 @@ export function TableGanttView({
     setRowsState(data);
   }, [data]);
 
+  React.useEffect(() => {
+    if (rowNonce > 0) rowTriggerRef.current?.click();
+  }, [rowNonce]);
+
+  const openRow = React.useCallback((row: IRow) => {
+    setActiveRow(row);
+    setRowNonce((value) => value + 1);
+  }, []);
+
   const updateRow = useUpdateTableRow({
     onSuccess(updatedRow) {
       setRowsState((prev) =>
-        prev.map((r) => (r._id === updatedRow._id ? updatedRow : r)),
+        prev.map((r) => {
+          if (r._id === updatedRow._id) return updatedRow;
+          return r;
+        }),
       );
     },
     onError() {
@@ -88,7 +102,7 @@ export function TableGanttView({
   const createRow = useCreateTableRow({
     onSuccess(newRow) {
       setRowsState((prev) => [newRow, ...prev]);
-      setActiveRow(newRow);
+      openRow(newRow);
       toast.success('Tarefa criada');
     },
     onError() {
@@ -161,17 +175,21 @@ export function TableGanttView({
       if (dependencyField) {
         const raw = row[dependencyField.slug];
         if (Array.isArray(raw)) {
-          dependencyIds = raw.map((item: any) =>
-            typeof item === 'object' && item !== null
-              ? (item._id ?? String(item))
-              : String(item),
-          );
+          dependencyIds = raw.map((item) => {
+            if (typeof item === 'object' && item !== null) {
+              return item._id ?? String(item);
+            }
+            return String(item);
+          });
         } else if (raw && typeof raw === 'object' && '_id' in raw) {
           dependencyIds = [raw._id];
         }
       }
 
-      const end = fields.dueDate ? parseDate(row[fields.dueDate.slug]) : null;
+      let end = null;
+      if (fields.dueDate) end = parseDate(row[fields.dueDate.slug]);
+      let start = null;
+      if (fields.startDate) start = parseDate(row[fields.startDate.slug]);
       const status = getStatusLabel(row, fields.list);
       const lastOptionId = listOptions[listOptions.length - 1]?.id;
       const isOverdue =
@@ -182,7 +200,7 @@ export function TableGanttView({
       return {
         row,
         title: getTitleValue(row, fields.title),
-        start: fields.startDate ? parseDate(row[fields.startDate.slug]) : null,
+        start,
         end,
         status,
         members: getMembersFromRow(row, fields.members),
@@ -251,7 +269,8 @@ export function TableGanttView({
 
   const dayWidth = DAY_WIDTH[zoom];
   const totalWidth = days.length * dayWidth;
-  const headerHeight = zoom === 'month' ? 28 : 48;
+  let headerHeight = 48;
+  if (zoom === 'month') headerHeight = 28;
 
   // Posição das barras helper
   const computeBarStyle = React.useCallback(
@@ -276,11 +295,15 @@ export function TableGanttView({
 
   // --- Navegação ---
   const handlePrev = (): void => {
-    const amount = zoom === 'day' ? 7 : zoom === 'week' ? 30 : 90;
+    let amount = 90;
+    if (zoom === 'day') amount = 7;
+    if (zoom === 'week') amount = 30;
     setViewStart((d) => subDays(d, amount));
   };
   const handleNext = (): void => {
-    const amount = zoom === 'day' ? 7 : zoom === 'week' ? 30 : 90;
+    let amount = 90;
+    if (zoom === 'day') amount = 7;
+    if (zoom === 'week') amount = 30;
     setViewStart((d) => addDays(d, amount));
   };
   const handleToday = (): void => setViewStart(startOfMonth(new Date()));
@@ -319,11 +342,9 @@ export function TableGanttView({
   // Altura total do conteúdo
   const totalContentHeight = React.useMemo(() => {
     return groupedRows.reduce((acc, g) => {
-      return (
-        acc +
-        ROW_HEIGHT +
-        (collapsedGroups.has(g.option.id) ? 0 : g.rows.length * ROW_HEIGHT)
-      );
+      let groupBodyHeight = g.rows.length * ROW_HEIGHT;
+      if (collapsedGroups.has(g.option.id)) groupBodyHeight = 0;
+      return acc + ROW_HEIGHT + groupBodyHeight;
     }, 0);
   }, [groupedRows, collapsedGroups]);
 
@@ -441,7 +462,7 @@ export function TableGanttView({
             groupedRows={groupedRows}
             collapsedGroups={collapsedGroups}
             onToggleGroup={toggleGroup}
-            onRowClick={setActiveRow}
+            onRowClick={openRow}
             headerHeight={headerHeight}
           />
         </div>
@@ -477,8 +498,9 @@ export function TableGanttView({
               )}
 
               {/* Listras de fim de semana */}
-              {days.map((day, i) =>
-                isWeekend(day) ? (
+              {days.map((day, i) => {
+                if (!isWeekend(day)) return null;
+                return (
                   <div
                     key={i}
                     className="absolute top-0 bg-muted/20"
@@ -488,8 +510,8 @@ export function TableGanttView({
                       height: totalContentHeight || 200,
                     }}
                   />
-                ) : null,
-              )}
+                );
+              })}
 
               {/* Setas de dependência (SVG) */}
               <svg
@@ -572,10 +594,13 @@ export function TableGanttView({
                       group.rows.map((ganttRow) => {
                         const isDragging =
                           dragState?.rowId === ganttRow.row._id;
-                        const bar = isDragging
-                          ? getDraggedBarStyle(ganttRow)
-                          : computeBarStyle(ganttRow.start, ganttRow.end);
+                        let bar = computeBarStyle(ganttRow.start, ganttRow.end);
+                        if (isDragging) bar = getDraggedBarStyle(ganttRow);
                         const barColor = ganttRow.status?.color ?? '#6b7280';
+                        let cursor: string | undefined;
+                        if (createDrag && !isDragging) cursor = 'crosshair';
+                        let dragOffsetY = 0;
+                        if (isDragging) dragOffsetY = dragDeltaY;
 
                         return (
                           <div
@@ -583,16 +608,13 @@ export function TableGanttView({
                             className="relative border-b"
                             style={{
                               height: ROW_HEIGHT,
-                              cursor:
-                                createDrag && !isDragging
-                                  ? 'crosshair'
-                                  : undefined,
+                              cursor,
                             }}
                             onMouseDown={(e) =>
                               handleTimelineMouseDown(e, group.option.id)
                             }
                           >
-                            {bar ? (
+                            {bar && (
                               <GanttBar
                                 ganttRow={ganttRow}
                                 bar={bar}
@@ -600,11 +622,12 @@ export function TableGanttView({
                                 dayWidth={dayWidth}
                                 rowHeight={ROW_HEIGHT}
                                 isDragging={isDragging}
-                                dragOffsetY={isDragging ? dragDeltaY : 0}
+                                dragOffsetY={dragOffsetY}
                                 onBarMouseDown={handleBarMouseDown}
-                                onBarClick={() => setActiveRow(ganttRow.row)}
+                                onBarClick={() => openRow(ganttRow.row)}
                               />
-                            ) : (
+                            )}
+                            {!bar && (
                               <div className="flex h-full items-center px-2">
                                 <span className="text-[10px] text-muted-foreground italic">
                                   Sem datas
@@ -624,11 +647,15 @@ export function TableGanttView({
 
       {/* Dialog de edição (reutiliza do Kanban) */}
       <KanbanRowDialog
+        key={rowNonce}
+        ref={rowTriggerRef}
         row={activeRow}
-        onClose={() => setActiveRow(null)}
         onRowUpdated={(updatedRow) => {
           setRowsState((prev) =>
-            prev.map((r) => (r._id === updatedRow._id ? updatedRow : r)),
+            prev.map((r) => {
+              if (r._id === updatedRow._id) return updatedRow;
+              return r;
+            }),
           );
           setActiveRow(updatedRow);
         }}

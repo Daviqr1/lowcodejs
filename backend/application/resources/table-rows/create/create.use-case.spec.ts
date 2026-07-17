@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_TABLE_STYLE } from '@application/core/entity.core';
+import { makeField } from '@application/repositories/entity-fixtures';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import FieldValidationService from '@application/services/field-validation/field-validation.service';
+import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
@@ -37,6 +37,9 @@ describe('Table Row Create Use Case', () => {
       rowPasswordService,
       scriptExecutionService,
       new InMemoryRowMemberNotificationService(),
+      new InMemoryFieldVisibilityService(),
+      new FieldValidationService(rowRepository, userRepository),
+      new InMemoryRowAccessGuardService(),
     );
   });
 
@@ -47,10 +50,7 @@ describe('Table Row Create Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -63,6 +63,70 @@ describe('Table Row Create Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value._id).toBeDefined();
+    }
+  });
+
+  async function createTableWithUserField(
+    fillWithCurrentUserWhenEmpty: boolean,
+  ): Promise<void> {
+    const userField = {
+      ...makeField('responsavel'),
+      type: E_FIELD_TYPE.USER,
+      fillWithCurrentUserWhenEmpty,
+    };
+
+    const table = await tableInMemoryRepository.create({
+      name: 'Tarefas',
+      slug: 'tarefas',
+      _schema: {},
+      fields: [],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: [],
+      fieldOrderForm: [],
+    });
+
+    table.fields = [userField];
+  }
+
+  it('deve gravar o usuario logado no campo USER com fillWithCurrentUserWhenEmpty quando nenhum id vem no payload', async () => {
+    const creator = '507f1f77bcf86cd799439011';
+    await createTableWithUserField(true);
+
+    const result = await sut.execute({ slug: 'tarefas', creator });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.responsavel).toEqual([creator]);
+    }
+  });
+
+  it('deve respeitar os ids enviados no campo USER com fillWithCurrentUserWhenEmpty', async () => {
+    const creator = '507f1f77bcf86cd799439011';
+    const enviado = '507f1f77bcf86cd799439022';
+    await createTableWithUserField(true);
+
+    const result = await sut.execute({
+      slug: 'tarefas',
+      creator,
+      responsavel: [enviado],
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.responsavel).toEqual([enviado]);
+    }
+  });
+
+  it('nao deve preencher o campo USER quando fillWithCurrentUserWhenEmpty esta desligado', async () => {
+    const creator = '507f1f77bcf86cd799439011';
+    await createTableWithUserField(false);
+
+    const result = await sut.execute({ slug: 'tarefas', creator });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.responsavel).toBeUndefined();
     }
   });
 

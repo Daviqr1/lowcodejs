@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserCreateSchema: FastifySchema = {
-  tags: ['Users'],
-  summary: 'Create a new user',
+  tags: ['Usuários'],
+  summary: 'Criar novo usuário',
   description:
-    'Creates a new user account with name, email, password and assigns to a group',
+    'Cria uma nova conta de usuário com nome, email, senha e atribui a um grupo',
   security: [{ cookieAuth: [] }],
   body: {
     type: 'object',
@@ -13,7 +13,7 @@ export const UserCreateSchema: FastifySchema = {
       name: {
         type: 'string',
         minLength: 1,
-        description: 'User full name',
+        description: 'Nome completo do usuário',
         errorMessage: {
           type: 'O nome deve ser um texto',
           minLength: 'O nome é obrigatório',
@@ -22,7 +22,7 @@ export const UserCreateSchema: FastifySchema = {
       email: {
         type: 'string',
         format: 'email',
-        description: 'User email address',
+        description: 'Endereço de email do usuário',
         errorMessage: {
           type: 'O email deve ser um texto',
           format: 'Digite um email válido',
@@ -32,7 +32,7 @@ export const UserCreateSchema: FastifySchema = {
         type: 'string',
         minLength: 6,
         pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
-        description: 'User password',
+        description: 'Senha do usuário',
         errorMessage: {
           type: 'A senha deve ser um texto',
           minLength: 'A senha deve ter no mínimo 6 caracteres',
@@ -43,10 +43,18 @@ export const UserCreateSchema: FastifySchema = {
       group: {
         type: 'string',
         minLength: 1,
-        description: 'User group ID',
+        description: 'ID do grupo do usuário',
         errorMessage: {
           type: 'O grupo deve ser um texto',
           minLength: 'O grupo é obrigatório',
+        },
+      },
+      groups: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'IDs dos grupos adicionais do usuário',
+        errorMessage: {
+          type: 'Grupos deve ser uma lista',
         },
       },
     },
@@ -63,26 +71,26 @@ export const UserCreateSchema: FastifySchema = {
   },
   response: {
     201: {
-      description: 'User created successfully with populated group information',
+      description: 'Usuário criado com sucesso (grupo populado)',
       type: 'object',
       properties: {
-        _id: { type: 'string', description: 'User ID' },
-        name: { type: 'string', description: 'User full name' },
+        _id: { type: 'string', description: 'ID do usuário' },
+        name: { type: 'string', description: 'Nome completo do usuário' },
         email: {
           type: 'string',
           format: 'email',
-          description: 'User email',
+          description: 'Email do usuário',
         },
         group: {
           type: 'object',
-          description: 'User group details (populated)',
+          description: 'Detalhes do grupo do usuário (populado)',
           properties: {
-            _id: { type: 'string', description: 'Group ID' },
-            name: { type: 'string', description: 'Group name' },
-            slug: { type: 'string', description: 'Group slug' },
+            _id: { type: 'string', description: 'ID do grupo' },
+            name: { type: 'string', description: 'Nome do grupo' },
+            slug: { type: 'string', description: 'Slug do grupo' },
             description: {
               type: 'string',
-              description: 'Group description',
+              description: 'Descrição do grupo',
             },
             permissions: {
               type: 'array',
@@ -101,7 +109,7 @@ export const UserCreateSchema: FastifySchema = {
         status: {
           type: 'string',
           enum: ['ACTIVE', 'INACTIVE'],
-          description: 'User status',
+          description: 'Status do usuário',
         },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
@@ -109,12 +117,12 @@ export const UserCreateSchema: FastifySchema = {
     },
     400: {
       description:
-        'Bad request - Missing group parameter or Zod validation failed',
+        'Requisição inválida - Grupo não informado ou falha na validação',
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          description: 'Specific validation error',
+          description: 'Mensagem de erro de validação',
         },
         code: { type: 'number', enum: [400] },
         cause: {
@@ -124,22 +132,15 @@ export const UserCreateSchema: FastifySchema = {
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
+          description: 'Erros de validação por campo',
         },
       },
-      examples: [
-        {
-          message: 'Group not informed',
-          code: 400,
-          cause: 'GROUP_NOT_INFORMED',
-        },
-      ],
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -149,10 +150,10 @@ export const UserCreateSchema: FastifySchema = {
       },
     },
     409: {
-      description: 'Conflict - User with this email already exists',
+      description: 'Conflito - Já existe usuário com este email',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['User already exists'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['USER_ALREADY_EXISTS'] },
         errors: {
@@ -162,10 +163,10 @@ export const UserCreateSchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['CREATE_USER_ERROR'] },
         errors: {

@@ -45,9 +45,9 @@ import {
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 
-interface EditorToolbarProps {
+type EditorToolbarProps = {
   editor: Editor;
-}
+};
 
 export function EditorToolbar({
   editor,
@@ -216,6 +216,7 @@ export function EditorToolbar({
 
       {/* Image */}
       <ImageUpload
+        asChild
         onUpload={(url) => editor.chain().focus().setImage({ src: url }).run()}
       >
         <div>
@@ -265,9 +266,9 @@ export function EditorToolbar({
   );
 }
 
-interface HeadingDropdownProps {
+type HeadingDropdownProps = {
   editor: Editor;
-}
+};
 
 function HeadingDropdown({ editor }: HeadingDropdownProps): React.JSX.Element {
   let current = 'Texto';
@@ -327,9 +328,9 @@ function HeadingDropdown({ editor }: HeadingDropdownProps): React.JSX.Element {
   );
 }
 
-interface LinkPopoverProps {
+type LinkPopoverProps = {
   editor: Editor;
-}
+};
 
 function LinkPopover({ editor }: LinkPopoverProps): React.JSX.Element {
   return (

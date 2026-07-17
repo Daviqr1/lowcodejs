@@ -30,8 +30,6 @@ describe('E2E Clone Table Controller', () => {
         slug: 'tabela-original',
         type: 'TABLE',
         owner: user._id,
-        visibility: 'RESTRICTED',
-        collaboration: 'RESTRICTED',
         style: 'LIST',
         fieldOrderList: [],
         fieldOrderForm: [],
@@ -63,6 +61,32 @@ describe('E2E Clone Table Controller', () => {
 
       expect(response.statusCode).toBe(404);
       expect(response.body.cause).toBe('TABLE_NOT_FOUND');
+    });
+
+    it('deve retornar 409 quando ja existe tabela com o mesmo slug', async () => {
+      const { cookies, user } = await createAuthenticatedUser();
+
+      await Table.create({
+        name: 'Tabela Existente',
+        slug: 'tabela-existente',
+        type: 'TABLE',
+        owner: user._id,
+        style: 'LIST',
+        fieldOrderList: [],
+        fieldOrderForm: [],
+      });
+
+      const response = await supertest(kernel.server)
+        .post('/tools/clone-table')
+        .set('Cookie', cookies)
+        .send({
+          baseTableId: '507f1f77bcf86cd799439011',
+          name: 'Tabela Existente',
+        });
+
+      expect(response.statusCode).toBe(409);
+      expect(response.body.cause).toBe('TABLE_ALREADY_EXISTS');
+      expect(response.body.errors?.name).toBeDefined();
     });
 
     it('deve retornar 401 quando nao autenticado', async () => {

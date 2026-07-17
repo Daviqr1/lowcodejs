@@ -7,10 +7,12 @@ import {
   EyeIcon,
   HouseIcon,
   LoaderCircleIcon,
+  PencilIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 
 import { ActionDialog } from '@/components/common/action-dialog';
 import { BulkActionBar } from '@/components/common/bulk-action-bar';
@@ -31,6 +33,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -42,23 +45,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useSidebar } from '@/components/ui/sidebar';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useMenuBulkDelete } from '@/hooks/tanstack-query/use-menu-bulk-delete';
 import { useMenuBulkRestore } from '@/hooks/tanstack-query/use-menu-bulk-restore';
 import { useMenuBulkTrash } from '@/hooks/tanstack-query/use-menu-bulk-trash';
 import { useUpdateMenu } from '@/hooks/tanstack-query/use-menu-update';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { API } from '@/lib/api';
-import { E_MENU_ITEM_TYPE, E_ROLE } from '@/lib/constant';
+import { E_MENU_ITEM_TYPE } from '@/lib/constant';
 import { formatDate } from '@/lib/format-date';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IMenu } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import type { IMenu, Merge } from '@/lib/interfaces';
+import { isMaster, isPrivileged } from '@/lib/permission';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/menus/';
 
-const TypeMapper = {
+const TypeMapper: Record<string, string> = {
   [E_MENU_ITEM_TYPE.PAGE]: 'Página',
   [E_MENU_ITEM_TYPE.TABLE]: 'Tabela',
   [E_MENU_ITEM_TYPE.FORM]: 'Formulário',
@@ -82,7 +87,10 @@ function sortByPosition(
 ): Array<IMenu> {
   return [...menus].sort((a, b) => {
     const orderDiff = (a.order ?? 0) - (b.order ?? 0);
-    if (orderDiff !== 0) return direction === 'asc' ? orderDiff : -orderDiff;
+    if (orderDiff !== 0) {
+      if (direction === 'asc') return orderDiff;
+      return -orderDiff;
+    }
     return a.name.localeCompare(b.name);
   });
 }
@@ -96,7 +104,8 @@ function buildMenuPositionLabels(
 
   for (const menu of data) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -112,9 +121,9 @@ function buildMenuPositionLabels(
     );
 
     siblings.forEach((menu, index) => {
-      const label = parentLabel
-        ? parentLabel.concat('.').concat(String(index + 1))
-        : String(menu.order ?? index);
+      let label = String(menu.order ?? index);
+      if (parentLabel)
+        label = parentLabel.concat('.').concat(String(index + 1));
 
       labels.set(menu._id, label);
       appendLabels(menu._id, label);
@@ -136,7 +145,8 @@ function sortMenuDataByHierarchy(
 
   for (const menu of data) {
     const parentId = getParentId(menu);
-    const groupKey = parentId && menuIds.has(parentId) ? parentId : null;
+    let groupKey: string | null = null;
+    if (parentId && menuIds.has(parentId)) groupKey = parentId;
     const siblings = childrenByParent.get(groupKey) ?? [];
 
     siblings.push(menu);
@@ -169,50 +179,64 @@ function getCheckboxState(
   return false;
 }
 
-type ConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  testId?: string;
-};
+type ConfirmDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+    testId?: string;
+  }
+>;
 
-function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element {
+function ConfirmDialog({
+  ref,
+  title,
+  description,
+  confirmLabel,
+  isPending,
+  onConfirm,
+  testId,
+  ...rest
+}: ConfirmDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="py-4 px-6"
-        data-test-id={props.testId}
+        data-test-id={testId}
       >
         <DialogHeader>
-          <DialogTitle>{props.title}</DialogTitle>
-          <DialogDescription>{props.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               variant="outline"
-              disabled={props.isPending}
+              disabled={isPending}
             >
               Cancelar
             </Button>
           </DialogClose>
           <Button
             type="button"
-            disabled={props.isPending}
-            onClick={props.onConfirm}
+            disabled={isPending}
+            onClick={() => {
+              if (isPending) return;
+              onConfirm(close);
+            }}
           >
-            {props.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            {!props.isPending && <span>{props.confirmLabel}</span>}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <span>{confirmLabel}</span>}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -234,10 +258,9 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
 
   const setInitialMutation = useUpdateMenu({
     onSuccess() {
-      toastSuccess(
-        'Página inicial atualizada',
-        'Este menu será carregado ao acessar o sistema',
-      );
+      toast.success('Página inicial atualizada', {
+        description: 'Este menu será carregado ao acessar o sistema',
+      });
       router.invalidate();
     },
     onError(error) {
@@ -296,6 +319,23 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <span>Visualizar</span>
           </DropdownMenuItem>
 
+          {!props.menu.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => {
+                sidebar.setOpen(false);
+                router.navigate({
+                  to: '/menus/$menuId',
+                  params: { menuId: props.menu._id },
+                  search: { mode: 'edit' },
+                });
+              }}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
+
           {!props.menu.trashed &&
             props.menu.type !== E_MENU_ITEM_TYPE.SEPARATOR && (
               <DropdownMenuItem
@@ -308,9 +348,8 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
               >
                 <HouseIcon className="size-4" />
                 <span>
-                  {props.menu.isInitial
-                    ? 'Página inicial atual'
-                    : 'Definir como página inicial'}
+                  {props.menu.isInitial && 'Página inicial atual'}
+                  {!props.menu.isInitial && 'Definir como página inicial'}
                 </span>
               </DropdownMenuItem>
             )}
@@ -397,8 +436,8 @@ function buildColumns(params: {
   isMaster: boolean;
   getPositionLabel: (menu: IMenu) => string;
   onPermanentDelete: (menu: IMenu) => void;
-}): Array<ColumnDef<IMenu, any>> {
-  const cols: Array<ColumnDef<IMenu, any>> = [];
+}): Array<ColumnDef<IMenu>> {
+  const cols: Array<ColumnDef<IMenu>> = [];
 
   if (params.canTrash) {
     cols.push({
@@ -460,8 +499,10 @@ function buildColumns(params: {
       ),
       cell: ({ row, getValue }) => {
         const positionLabel = params.getPositionLabel(row.original);
+        let parentDepth = 0;
+        if (hasParent(row.original)) parentDepth = 1;
         const depth = Math.max(
-          hasParent(row.original) ? 1 : 0,
+          parentDepth,
           positionLabel.split('.').length - 1,
         );
 
@@ -482,7 +523,7 @@ function buildColumns(params: {
                 ))}
               </span>
             )}
-            {getValue() as string}
+            {getValue<string>()}
             {row.original.isInitial && (
               <Badge className="ml-1 gap-1 border-transparent bg-primary/10 text-primary hover:bg-primary/10">
                 <HouseIcon className="size-3" />
@@ -505,7 +546,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }) => (
-        <span className="text-muted-foreground">{getValue() as string}</span>
+        <span className="text-muted-foreground">{getValue<string>()}</span>
       ),
     },
     {
@@ -520,7 +561,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }): React.ReactElement => {
-        const type = getValue() as string;
+        const type = getValue<string>();
         return (
           <Badge
             className={cn(
@@ -537,7 +578,7 @@ function buildColumns(params: {
                 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
             )}
           >
-            {TypeMapper[type as keyof typeof TypeMapper] || 'N/A'}
+            {TypeMapper[type] || 'N/A'}
           </Badge>
         );
       },
@@ -555,7 +596,7 @@ function buildColumns(params: {
       meta: { label: 'Criado por' },
       cell: ({ getValue }) => (
         <span className="text-sm text-muted-foreground">
-          {getValue() as string}
+          {getValue<string>()}
         </span>
       ),
     },
@@ -571,7 +612,7 @@ function buildColumns(params: {
         />
       ),
       cell: ({ getValue }): React.ReactElement => {
-        const date = getValue() as string | undefined;
+        const date = getValue<string | undefined>();
         return (
           <span className="text-sm text-muted-foreground">
             {formatDate(date)}
@@ -597,10 +638,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface TableMenusProps {
+type TableMenusProps = {
   data: Array<IMenu>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableMenus({
   data,
@@ -611,17 +652,30 @@ export function TableMenus({
   const auth = useAuthStore();
   const search = useSearch({ from: '/_private/menus/' });
 
-  const role = auth.user?.group?.slug;
-  const isMaster = role === E_ROLE.MASTER;
-  const canTrash = role === E_ROLE.MASTER || role === E_ROLE.ADMINISTRATOR;
+  // Hard-delete é MASTER-only; trash/restore libera para privilegiados. Ambos
+  // resolvidos pelo fecho de grupos (não apenas o grupo principal).
+  const groups = useGroupReadList();
+  const master = isMaster(auth.user, groups.data ?? []);
+  const canTrash = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
 
-  const [singleDeleteMenu, setSingleDeleteMenu] = React.useState<IMenu | null>(
-    null,
+  const bulkTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    menu: IMenu;
+    nonce: number;
+  } | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
   );
-  const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
-  const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
 
   const tableRef = React.useRef<Table<IMenu> | null>(null);
 
@@ -644,11 +698,9 @@ export function TableMenus({
 
   const singleDelete = useMenuBulkDelete({
     onSuccess() {
-      setSingleDeleteMenu(null);
-      toastSuccess(
-        'Menu excluído permanentemente!',
-        'O menu foi excluído permanentemente',
-      );
+      toast.success('Menu excluído permanentemente!', {
+        description: 'O menu foi excluído permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -659,13 +711,14 @@ export function TableMenus({
 
   const bulkTrash = useMenuBulkTrash({
     onSuccess(result) {
-      setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 menu enviado para lixeira!'
-          : result.modified.toString().concat(' menus enviados para lixeira!');
-      toastSuccess(message, 'Os menus foram movidos para a lixeira');
+      let message = result.modified
+        .toString()
+        .concat(' menus enviados para lixeira!');
+      if (result.modified === 1) message = '1 menu enviado para lixeira!';
+      toast.success(message, {
+        description: 'Os menus foram movidos para a lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao enviar menus para lixeira' });
@@ -674,13 +727,12 @@ export function TableMenus({
 
   const bulkRestore = useMenuBulkRestore({
     onSuccess(result) {
-      setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 menu restaurado!'
-          : result.modified.toString().concat(' menus restaurados!');
-      toastSuccess(message, 'Os menus foram restaurados da lixeira');
+      let message = result.modified.toString().concat(' menus restaurados!');
+      if (result.modified === 1) message = '1 menu restaurado!';
+      toast.success(message, {
+        description: 'Os menus foram restaurados da lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao restaurar menus' });
@@ -689,15 +741,14 @@ export function TableMenus({
 
   const bulkDelete = useMenuBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 menu excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' menus excluídos permanentemente!');
-      toastSuccess(message, 'Os menus foram excluídos permanentemente');
+      let message = result.deleted
+        .toString()
+        .concat(' menus excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 menu excluído permanentemente!';
+      toast.success(message, {
+        description: 'Os menus foram excluídos permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -710,12 +761,16 @@ export function TableMenus({
     () =>
       buildColumns({
         canTrash,
-        isMaster,
+        isMaster: master,
         getPositionLabel: (menu) =>
           positionLabels.get(menu._id) ?? String(menu.order ?? 0),
-        onPermanentDelete: (menu) => setSingleDeleteMenu(menu),
+        onPermanentDelete: (menu) =>
+          setSingleDeleteTarget((previous) => ({
+            menu,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
       }),
-    [canTrash, isMaster, positionLabels],
+    [canTrash, master, positionLabels],
   );
 
   const leftPinning: Array<string> = [];
@@ -762,62 +817,67 @@ export function TableMenus({
         <BulkActionBar
           selectedCount={selectedCount}
           isTrashView={isTrashView}
-          canDelete={isMaster}
+          canDelete={master}
           onClear={() => table.resetRowSelection()}
-          onTrash={() => setBulkTrashOpen(true)}
-          onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onTrash={() => bulkTrashTriggerRef.current?.click()}
+          onRestore={() => bulkRestoreTriggerRef.current?.click()}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
         />
       )}
 
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteMenu !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteMenu(null);
-        }}
-        title="Excluir menu permanentemente"
-        description="Essa ação é irreversível. O menu será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={singleDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteMenu) return;
-          singleDelete.mutate({ ids: [singleDeleteMenu._id] });
-        }}
-        testId="delete-menu-dialog"
-      />
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          title="Excluir menu permanentemente"
+          description="Essa ação é irreversível. O menu será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={singleDelete.isPending}
+          onConfirm={(close) => {
+            singleDelete.mutateAsync(
+              { ids: [singleDeleteTarget.menu._id] },
+              { onSuccess: close },
+            );
+          }}
+          testId="delete-menu-dialog"
+        />
+      )}
 
       <ConfirmDialog
-        open={bulkTrashOpen}
-        onOpenChange={setBulkTrashOpen}
+        ref={bulkTrashTriggerRef}
         title="Enviar menus para a lixeira"
         description="Os menus selecionados serão enviados para a lixeira."
         confirmLabel="Enviar para lixeira"
         isPending={bulkTrash.isPending}
-        onConfirm={() => bulkTrash.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkTrash.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-trash-menus-dialog"
       />
 
       <ConfirmDialog
-        open={bulkRestoreOpen}
-        onOpenChange={setBulkRestoreOpen}
+        ref={bulkRestoreTriggerRef}
         title="Restaurar menus da lixeira"
         description="Os menus selecionados serão restaurados da lixeira."
         confirmLabel="Restaurar"
         isPending={bulkRestore.isPending}
-        onConfirm={() => bulkRestore.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkRestore.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-restore-menus-dialog"
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
         title="Excluir menus permanentemente"
         description="Essa ação é irreversível. Os menus selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkDelete.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-delete-menus-dialog"
       />
     </>

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import { makeDropdownField } from '@test/helpers/field-factory.helper';
+import { groupItems, lastItemId } from '@test/helpers/row-data.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
 import GroupRowUpdateUseCase from '../update.use-case';
@@ -21,24 +23,24 @@ let sut: GroupRowUpdateUseCase;
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function createRowWithGroupItem(
-  table: Record<string, unknown>,
+  table: ITable,
   groupSlug: string,
   itemData: Record<string, unknown>,
 ) {
   const row = await rowRepository.create({
-    table: table as any,
+    table,
     data: { [groupSlug]: [] },
   });
 
   const rowWithItem = await rowRepository.addGroupItem({
-    table: table as any,
+    table,
     rowId: row._id,
     groupFieldSlug: groupSlug,
     data: itemData,
   });
 
-  const items = rowWithItem[groupSlug] as Array<Record<string, unknown>>;
-  const itemId = items[items.length - 1]._id as string;
+  const items = groupItems(rowWithItem, groupSlug);
+  const itemId = lastItemId(items);
 
   return { row, rowWithItem, itemId };
 }
@@ -57,7 +59,7 @@ describe('Group Row Update - DROPDOWN', () => {
   });
 
   it('deve atualizar item com array de strings valido', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -67,7 +69,7 @@ describe('Group Row Update - DROPDOWN', () => {
     );
 
     const { row, itemId } = await createRowWithGroupItem(table, 'itens', {
-      status: ['Ativo'],
+      situacao: ['Ativo'],
     });
 
     const result = await sut.execute({
@@ -75,16 +77,16 @@ describe('Group Row Update - DROPDOWN', () => {
       rowId: row._id,
       groupSlug: 'itens',
       itemId,
-      status: ['Inativo'],
+      situacao: ['Inativo'],
     });
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.status).toEqual(['Inativo']);
+    expect(result.value.situacao).toEqual(['Inativo']);
   });
 
   it('deve rejeitar quando valor nao e array', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -94,7 +96,7 @@ describe('Group Row Update - DROPDOWN', () => {
     );
 
     const { row, itemId } = await createRowWithGroupItem(table, 'itens', {
-      status: ['Ativo'],
+      situacao: ['Ativo'],
     });
 
     const result = await sut.execute({
@@ -102,7 +104,7 @@ describe('Group Row Update - DROPDOWN', () => {
       rowId: row._id,
       groupSlug: 'itens',
       itemId,
-      status: 'Inativo',
+      situacao: 'Inativo',
     });
 
     expect(result.isLeft()).toBe(true);
@@ -111,7 +113,7 @@ describe('Group Row Update - DROPDOWN', () => {
   });
 
   it('deve rejeitar quando itens nao sao strings', async () => {
-    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'status' });
+    const field = makeDropdownField(DROPDOWN_OPTIONS, { slug: 'situacao' });
     const table = await makeTableWithGroup(
       tableRepository,
       'itens',
@@ -121,7 +123,7 @@ describe('Group Row Update - DROPDOWN', () => {
     );
 
     const { row, itemId } = await createRowWithGroupItem(table, 'itens', {
-      status: ['Ativo'],
+      situacao: ['Ativo'],
     });
 
     const result = await sut.execute({
@@ -129,7 +131,7 @@ describe('Group Row Update - DROPDOWN', () => {
       rowId: row._id,
       groupSlug: 'itens',
       itemId,
-      status: [123, 456],
+      situacao: [123, 456],
     });
 
     expect(result.isLeft()).toBe(true);
@@ -139,7 +141,7 @@ describe('Group Row Update - DROPDOWN', () => {
 
   it('deve permitir update parcial sem campo obrigatorio (skipMissing)', async () => {
     const statusField = makeDropdownField(DROPDOWN_OPTIONS, {
-      slug: 'status',
+      slug: 'situacao',
       required: true,
     });
     const prioridadeField = makeDropdownField(
@@ -155,7 +157,7 @@ describe('Group Row Update - DROPDOWN', () => {
     );
 
     const { row, itemId } = await createRowWithGroupItem(table, 'itens', {
-      status: ['Ativo'],
+      situacao: ['Ativo'],
       prioridade: ['Alta'],
     });
 
@@ -164,7 +166,7 @@ describe('Group Row Update - DROPDOWN', () => {
       rowId: row._id,
       groupSlug: 'itens',
       itemId,
-      status: ['Pendente'],
+      situacao: ['Pendente'],
     });
 
     expect(result.isRight()).toBe(true);

@@ -4,24 +4,19 @@ export const RefreshTokenSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Renovar tokens de autenticação',
   description:
-    'Renova os tokens de acesso e refresh usando o token de refresh atual dos cookies. Requer cookie de refresh token válido',
-  security: [{ cookieAuth: [] }],
+    'Renova os tokens de acesso e refresh a partir do cookie refreshToken. A autenticação se dá pela posse do refresh token (não pelo access token). Em caso de sucesso, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e retorna 200 sem corpo. Rota pública',
   response: {
     200: {
-      description: 'Tokens renovados com sucesso',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: ['Tokens renovados com sucesso'],
-        },
-      },
+      description:
+        'Tokens renovados com sucesso - define os cookies httpOnly accessToken e refreshToken',
+      type: 'null',
     },
     401: {
-      description: 'Não autorizado - Refresh token ausente ou inválido',
+      description:
+        'Não autorizado - Refresh token ausente, inválido ou expirado',
       type: 'object',
       properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
@@ -32,24 +27,12 @@ export const RefreshTokenSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Refresh token ausente',
-          code: 401,
-          cause: 'MISSING_REFRESH_TOKEN',
-        },
-        {
-          message: 'Refresh token inválido ou expirado',
-          code: 401,
-          cause: 'INVALID_REFRESH_TOKEN',
-        },
-      ],
     },
     404: {
       description: 'Não encontrado - Usuário não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Usuário não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
         errors: {
@@ -57,19 +40,12 @@ export const RefreshTokenSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Usuário não encontrado',
-          code: 404,
-          cause: 'USER_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['REFRESH_TOKEN_ERROR'] },
         errors: {
@@ -77,13 +53,6 @@ export const RefreshTokenSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Erro interno do servidor',
-          code: 500,
-          cause: 'REFRESH_TOKEN_ERROR',
-        },
-      ],
     },
   },
 };

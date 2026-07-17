@@ -1,28 +1,39 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserRemoveFromTrashSchema: FastifySchema = {
-  tags: ['Users'],
+  tags: ['Usuários'],
   summary: 'Restaurar usuário da lixeira',
+  description:
+    'Restaura um usuário da lixeira. Apenas usuários que estão na lixeira (trashed) podem ser restaurados.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
     required: ['_id'],
     properties: {
-      _id: { type: 'string', minLength: 1 },
+      _id: {
+        type: 'string',
+        minLength: 1,
+        description: 'ID do usuário a ser restaurado da lixeira',
+      },
     },
   },
   response: {
-    200: { type: 'null' },
+    200: {
+      type: 'null',
+      description: 'Usuário restaurado da lixeira com sucesso',
+    },
     401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     403: {
+      description: 'Acesso negado - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -32,6 +43,7 @@ export const UserRemoveFromTrashSchema: FastifySchema = {
       },
     },
     404: {
+      description: 'Usuário não encontrado',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -41,6 +53,7 @@ export const UserRemoveFromTrashSchema: FastifySchema = {
       },
     },
     409: {
+      description: 'Conflito - Usuário não está na lixeira',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -50,6 +63,7 @@ export const UserRemoveFromTrashSchema: FastifySchema = {
       },
     },
     500: {
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
         message: { type: 'string' },

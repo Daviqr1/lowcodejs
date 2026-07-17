@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserUpdateSchema: FastifySchema = {
-  tags: ['Users'],
-  summary: 'Update user',
+  tags: ['Usuários'],
+  summary: 'Atualizar usuário',
   description:
-    'Updates an existing user with new information including optional password change',
+    'Atualiza um usuário existente com novos dados, incluindo troca de senha opcional',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,7 +12,7 @@ export const UserUpdateSchema: FastifySchema = {
     properties: {
       _id: {
         type: 'string',
-        description: 'User ID',
+        description: 'ID do usuário',
         errorMessage: {
           type: 'O ID deve ser um texto',
         },
@@ -30,7 +30,7 @@ export const UserUpdateSchema: FastifySchema = {
       name: {
         type: 'string',
         minLength: 1,
-        description: 'Updated user full name',
+        description: 'Nome completo do usuário atualizado',
         errorMessage: {
           type: 'O nome deve ser um texto',
           minLength: 'O nome é obrigatório',
@@ -39,7 +39,7 @@ export const UserUpdateSchema: FastifySchema = {
       email: {
         type: 'string',
         format: 'email',
-        description: 'Updated user email address',
+        description: 'Endereço de email do usuário atualizado',
         errorMessage: {
           type: 'O email deve ser um texto',
           format: 'Digite um email válido',
@@ -48,17 +48,25 @@ export const UserUpdateSchema: FastifySchema = {
       group: {
         type: 'string',
         minLength: 1,
-        description: 'Updated user group ID',
+        description: 'ID do grupo do usuário atualizado',
         errorMessage: {
           type: 'O grupo deve ser um texto',
           minLength: 'O grupo é obrigatório',
+        },
+      },
+      groups: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'IDs dos grupos adicionais do usuário',
+        errorMessage: {
+          type: 'Grupos deve ser uma lista',
         },
       },
       password: {
         type: 'string',
         minLength: 6,
         pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
-        description: 'New password (optional)',
+        description: 'Nova senha (opcional)',
         errorMessage: {
           type: 'A senha deve ser um texto',
           minLength: 'A senha deve ter no mínimo 6 caracteres',
@@ -69,7 +77,7 @@ export const UserUpdateSchema: FastifySchema = {
       status: {
         type: 'string',
         enum: ['ACTIVE', 'INACTIVE'],
-        description: 'User status',
+        description: 'Status do usuário',
         errorMessage: {
           type: 'O status deve ser um texto',
           enum: 'O status deve ser ACTIVE ou INACTIVE',
@@ -83,7 +91,7 @@ export const UserUpdateSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'User updated successfully',
+      description: 'Usuário atualizado com sucesso',
       type: 'object',
       properties: {
         _id: { type: 'string' },
@@ -103,34 +111,30 @@ export const UserUpdateSchema: FastifySchema = {
       },
     },
     400: {
-      description: 'Bad request - Validation error',
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          description: 'Validation error message',
+          description: 'Mensagem de erro de validação',
         },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        cause: {
+          type: 'string',
+          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
+          description: 'Erros de validação por campo',
         },
       },
-      examples: [
-        {
-          message: 'Validation failed',
-          code: 400,
-          cause: 'INVALID_PAYLOAD_FORMAT',
-        },
-      ],
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -138,19 +142,12 @@ export const UserUpdateSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Unauthorized',
-          code: 401,
-          cause: 'AUTHENTICATION_REQUIRED',
-        },
-      ],
     },
     404: {
-      description: 'User not found',
+      description: 'Usuário não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['User not found'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
         errors: {
@@ -158,19 +155,12 @@ export const UserUpdateSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'User not found',
-          code: 404,
-          cause: 'USER_NOT_FOUND',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['UPDATE_USER_ERROR'] },
         errors: {
@@ -178,13 +168,6 @@ export const UserUpdateSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Internal server error',
-          code: 500,
-          cause: 'UPDATE_USER_ERROR',
-        },
-      ],
     },
   },
 };

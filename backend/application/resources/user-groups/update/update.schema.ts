@@ -58,6 +58,14 @@ export const UserGroupUpdateSchema: FastifySchema = {
           type: 'Permissões deve ser uma lista',
         },
       },
+      encompasses: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Lista atualizada de IDs de grupos englobados',
+        errorMessage: {
+          type: 'Grupos englobados deve ser uma lista',
+        },
+      },
     },
   },
   response: {
@@ -85,6 +93,11 @@ export const UserGroupUpdateSchema: FastifySchema = {
             },
           },
         },
+        encompasses: {
+          type: 'array',
+          description: 'IDs dos grupos englobados',
+          items: { type: 'string' },
+        },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },
@@ -98,7 +111,15 @@ export const UserGroupUpdateSchema: FastifySchema = {
           description: 'Mensagem de erro de validação',
         },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        cause: {
+          type: 'string',
+          enum: [
+            'INVALID_PAYLOAD_FORMAT',
+            'INVALID_PARAMETERS',
+            'GROUP_SELF_REFERENCE',
+            'GROUP_CYCLE_DETECTED',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -110,7 +131,7 @@ export const UserGroupUpdateSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {

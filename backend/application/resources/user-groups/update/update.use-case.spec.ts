@@ -51,6 +51,26 @@ describe('UserGroup Update Use Case', () => {
     expect(result.value.message).toBe('Grupo de usuários não encontrado');
   });
 
+  it('deve retornar SYSTEM_GROUP_PROTECTED ao editar grupo do sistema', async () => {
+    const created = await userGroupInMemoryRepository.create({
+      name: 'Master',
+      slug: 'MASTER',
+      permissions: ['permission-1'],
+    });
+
+    const result = await sut.execute({
+      _id: created._id,
+      name: 'Renomeado',
+      permissions: ['permission-1'],
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+
+    expect(result.value.code).toBe(403);
+    expect(result.value.cause).toBe('SYSTEM_GROUP_PROTECTED');
+  });
+
   it('deve retornar erro quando nao informar permissoes', async () => {
     const created = await userGroupInMemoryRepository.create({
       name: 'Grupo',
@@ -71,6 +91,74 @@ describe('UserGroup Update Use Case', () => {
     expect(result.value.message).toBe(
       'Ao menos uma permissão deve ser informada para o grupo de usuários',
     );
+  });
+
+  it('deve retornar GROUP_SELF_REFERENCE quando o grupo engloba a si mesmo', async () => {
+    const created = await userGroupInMemoryRepository.create({
+      name: 'Vendas',
+      slug: 'vendas',
+      permissions: ['permission-1'],
+    });
+
+    const result = await sut.execute({
+      _id: created._id,
+      encompasses: [created._id],
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+
+    expect(result.value.code).toBe(400);
+    expect(result.value.cause).toBe('GROUP_SELF_REFERENCE');
+  });
+
+  it('deve retornar GROUP_CYCLE_DETECTED quando criar ciclo transitivo', async () => {
+    const groupA = await userGroupInMemoryRepository.create({
+      name: 'Grupo A',
+      slug: 'grupo-a',
+      permissions: ['permission-1'],
+    });
+    const groupB = await userGroupInMemoryRepository.create({
+      name: 'Grupo B',
+      slug: 'grupo-b',
+      permissions: ['permission-1'],
+      encompasses: [groupA._id],
+    });
+
+    // A passa a englobar B, que ja engloba A -> ciclo A -> B -> A.
+    const result = await sut.execute({
+      _id: groupA._id,
+      encompasses: [groupB._id],
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+
+    expect(result.value.code).toBe(400);
+    expect(result.value.cause).toBe('GROUP_CYCLE_DETECTED');
+  });
+
+  it('deve aceitar encompasses sem ciclo', async () => {
+    const registered = await userGroupInMemoryRepository.create({
+      name: 'Registered',
+      slug: 'registered-custom',
+      permissions: ['permission-1'],
+    });
+    const manager = await userGroupInMemoryRepository.create({
+      name: 'Gerentes',
+      slug: 'gerentes',
+      permissions: ['permission-1'],
+    });
+
+    const result = await sut.execute({
+      _id: manager._id,
+      encompasses: [registered._id],
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+
+    expect(result.value.encompasses).toEqual([registered._id]);
   });
 
   it('deve retornar erro UPDATE_USER_GROUP_ERROR quando houver falha', async () => {

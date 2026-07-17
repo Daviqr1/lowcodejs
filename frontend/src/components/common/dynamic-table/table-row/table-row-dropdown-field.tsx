@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Loader2Icon, PlusIcon } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import { getDropdownContrastStyle } from '../table-cells/utils';
 
@@ -27,20 +28,20 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { API } from '@/lib/api';
 import { getNextDropdownOptionColor } from '@/lib/dropdown-colors';
 import type { IDropdown, IField, ITable, Paginated } from '@/lib/interfaces';
-import { toastError } from '@/lib/toast';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowDropdownFieldProps {
+type TableRowDropdownFieldProps = {
   field: IField;
   disabled?: boolean;
   tableSlug?: string;
   groupSlug?: string;
-}
+};
 
-interface DropdownOption {
+type DropdownOption = {
   value: string;
   label: string;
   color?: string | null;
-}
+};
 
 function normalizeDropdownLabel(label: string): string {
   return label.trim().toLowerCase();
@@ -75,15 +76,27 @@ function buildFieldUpdatePayload(
   field: IField,
   dropdown: Array<IDropdown>,
 ): Record<string, unknown> {
+  let relationship = null;
+  if (field.relationship) {
+    relationship = {
+      table: {
+        _id: field.relationship.table._id,
+        slug: field.relationship.table.slug,
+      },
+      field: {
+        _id: field.relationship.field._id,
+        slug: field.relationship.field.slug,
+      },
+      order: field.relationship.order,
+    };
+  }
   return {
     name: field.name,
     type: field.type,
     required: field.required,
     multiple: field.multiple,
     showInFilter: field.showInFilter,
-    showInForm: field.showInForm,
-    showInDetail: field.showInDetail,
-    showInList: field.showInList,
+    permissions: field.permissions,
     widthInForm: field.widthInForm,
     widthInList: field.widthInList,
     widthInDetail: field.widthInDetail,
@@ -94,19 +107,7 @@ function buildFieldUpdatePayload(
     allowCustomDropdownOptions: field.allowCustomDropdownOptions ?? false,
     allowCreateRelationshipRecords:
       field.allowCreateRelationshipRecords ?? false,
-    relationship: field.relationship
-      ? {
-          table: {
-            _id: field.relationship.table._id,
-            slug: field.relationship.table.slug,
-          },
-          field: {
-            _id: field.relationship.field._id,
-            slug: field.relationship.field.slug,
-          },
-          order: field.relationship.order,
-        }
-      : null,
+    relationship,
     group: field.group,
     category: field.category ?? [],
     trashed: field.trashed,
@@ -119,9 +120,9 @@ function getCustomOptionErrorMessage(error: unknown): string {
     return 'Erro ao criar nova opção do dropdown';
   }
 
-  const data = error.response?.data as
+  const data:
     | { message?: string; errors?: Record<string, string> }
-    | undefined;
+    | undefined = error.response?.data;
 
   return (
     data?.errors?.dropdown ??
@@ -138,24 +139,25 @@ function replaceFieldInTable(
   if (groupSlug) {
     return {
       ...table,
-      groups: (table.groups ?? []).map((group) =>
-        group.slug === groupSlug
-          ? {
-              ...group,
-              fields: (group.fields ?? []).map((groupField) =>
-                groupField._id === field._id ? field : groupField,
-              ),
-            }
-          : group,
-      ),
+      groups: (table.groups ?? []).map((group) => {
+        if (group.slug !== groupSlug) return group;
+        return {
+          ...group,
+          fields: (group.fields ?? []).map((groupField) => {
+            if (groupField._id === field._id) return field;
+            return groupField;
+          }),
+        };
+      }),
     };
   }
 
   return {
     ...table,
-    fields: (table.fields ?? []).map((tableField) =>
-      tableField._id === field._id ? field : tableField,
-    ),
+    fields: (table.fields ?? []).map((tableField) => {
+      if (tableField._id === field._id) return field;
+      return tableField;
+    }),
   };
 }
 
@@ -240,21 +242,28 @@ export function TableRowDropdownField({
 
       const nextDropdown = appendUniqueDropdownOption(localDropdown, newOption);
       const data = buildFieldUpdatePayload(field, nextDropdown);
-      const route = groupSlug
-        ? `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`
-        : `/tables/${tableSlug}/fields/${field._id}`;
+      let route = `/tables/${tableSlug}/fields/${field._id}`;
+      if (groupSlug) {
+        route = `/tables/${tableSlug}/groups/${groupSlug}/fields/${field._id}`;
+      }
       const response = await API.put<IField>(route, data);
       return response.data;
     },
     onSuccess(response) {
       setLocalDropdown(response.dropdown ?? []);
 
-      queryClient.setQueryData<IField>(
-        groupSlug
-          ? queryKeys.groupFields.detail(tableSlug!, groupSlug, response._id)
-          : queryKeys.fields.detail(tableSlug!, response._id),
-        response,
-      );
+      let detailKey:
+        | ReturnType<typeof queryKeys.fields.detail>
+        | ReturnType<typeof queryKeys.groupFields.detail> =
+        queryKeys.fields.detail(tableSlug!, response._id);
+      if (groupSlug) {
+        detailKey = queryKeys.groupFields.detail(
+          tableSlug!,
+          groupSlug,
+          response._id,
+        );
+      }
+      queryClient.setQueryData<IField>(detailKey, response);
 
       queryClient.setQueryData<ITable>(
         queryKeys.tables.detail(tableSlug!),
@@ -283,7 +292,7 @@ export function TableRowDropdownField({
       });
     },
     onError(error) {
-      toastError(getCustomOptionErrorMessage(error));
+      toast.error(getCustomOptionErrorMessage(error));
     },
   });
 
@@ -345,27 +354,31 @@ export function TableRowDropdownField({
     void createCustomOption();
   };
 
-  const createOptionContent = canCreateCustomOption ? (
-    <div className="p-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start gap-2"
-        disabled={createCustomOptionMutation.isPending}
-        onClick={() => void createCustomOption()}
-      >
-        {createCustomOptionMutation.isPending ? (
-          <Loader2Icon className="size-4 animate-spin" />
-        ) : (
-          <PlusIcon className="size-4" />
-        )}
-        <span>Criar "{customLabel}"</span>
-      </Button>
-    </div>
-  ) : (
+  let createOptionContent = (
     <ComboboxEmpty>Nenhuma opção encontrada</ComboboxEmpty>
   );
+  if (canCreateCustomOption) {
+    createOptionContent = (
+      <div className="p-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2"
+          disabled={createCustomOptionMutation.isPending}
+          onClick={() => void createCustomOption()}
+        >
+          {createCustomOptionMutation.isPending && (
+            <Loader2Icon className="size-4 animate-spin" />
+          )}
+          {!createCustomOptionMutation.isPending && (
+            <PlusIcon className="size-4" />
+          )}
+          <span>Criar "{customLabel}"</span>
+        </Button>
+      </div>
+    );
+  }
 
   if (isMultiple) {
     return (
@@ -393,7 +406,7 @@ export function TableRowDropdownField({
           <ComboboxChips ref={anchorRef}>
             <ComboboxValue>
               {(values: Array<DropdownOption>): React.ReactNode => {
-                let chipsPlaceholder = `Selecione ${field.name.toLowerCase()}`;
+                let chipsPlaceholder = `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`;
                 if (values.length > 0) {
                   chipsPlaceholder = '';
                 }
@@ -468,7 +481,8 @@ export function TableRowDropdownField({
       >
         <ComboboxInput
           placeholder={
-            selectedOptions[0]?.label || `Selecione ${field.name.toLowerCase()}`
+            selectedOptions[0]?.label ||
+            `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`
           }
           showClear={selectedOptions.length > 0}
           onKeyDown={handleInputKeyDown}

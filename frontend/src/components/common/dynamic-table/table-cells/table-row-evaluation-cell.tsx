@@ -7,14 +7,14 @@ import { handleApiError } from '@/lib/handle-api-error';
 import type { IEvaluationSummary, IField, IRow } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableRowEvaluationCellProps {
+type TableRowEvaluationCellProps = {
   size?: number;
   disabled?: boolean;
   className?: string;
   row: IRow;
   field: IField;
   tableSlug: string;
-}
+};
 
 const MAX_RATING = 5;
 
@@ -26,7 +26,14 @@ export function TableRowEvaluationCell({
   field,
   tableSlug,
 }: TableRowEvaluationCellProps): React.JSX.Element {
-  const summary = (row[field.slug] ?? {}) as IEvaluationSummary;
+  const rawSummary = row[field.slug];
+  let summary: IEvaluationSummary = {
+    _average: 0,
+    _count: 0,
+    _userValue: null,
+  };
+  if (rawSummary && typeof rawSummary === 'object' && '_average' in rawSummary)
+    summary = rawSummary;
   const average = summary._average ?? 0;
   const userValue = summary._userValue ?? null;
   const hasEvaluated = userValue !== null;

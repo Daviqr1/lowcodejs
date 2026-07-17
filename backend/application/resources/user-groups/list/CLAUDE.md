@@ -3,10 +3,17 @@
 Lista todos os grupos de usuarios sem paginacao.
 
 ## Endpoint
-`GET /user-group` | Auth: Yes | Permission: -
+`GET /user-group` | Auth: Yes | Permission: nenhuma (somente auth)
+
+> Diferente das demais operacoes de `user-groups/`, este endpoint **nao** usa
+> `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS)` — fica apenas
+> atras de `AuthenticationMiddleware`. Intencional: alimenta os pickers de
+> vinculo de permissao, os multi-selects de grupo e o `use-field-visibility`
+> para todo usuario autenticado; gatear por MANAGE_USER_GROUPS quebraria esses
+> fluxos para quem nao tem essa capability.
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` (sem `PermissionMiddleware` — ver nota acima)
 2. Validator: nenhum (sem parametros de entrada)
 3. UseCase: `UserGroupListUseCase`
    - Passa user._id e user.role do token JWT para o repositorio

@@ -17,8 +17,9 @@ export function normalizeId(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'object' && value !== null) {
-    const item = value as { _id?: string; id?: string; value?: string };
-    return item._id ?? item.id ?? item.value ?? null;
+    if ('_id' in value && value._id != null) return String(value._id);
+    if ('id' in value && value.id != null) return String(value.id);
+    if ('value' in value && value.value != null) return String(value.value);
   }
   return null;
 }
@@ -27,15 +28,18 @@ export function normalizeIdList(value: unknown): Array<string> {
   if (Array.isArray(value)) {
     return value
       .map((item) => normalizeId(item))
-      .filter(Boolean) as Array<string>;
+      .filter((id): id is string => id !== null);
   }
   const id = normalizeId(value);
-  return id ? [id] : [];
+  if (id) return [id];
+  return [];
 }
 
 export function normalizeUserList(value: unknown): Array<IUser | string> {
-  if (Array.isArray(value)) return value as Array<IUser | string>;
+  if (Array.isArray(value)) return value;
   if (!value) return [];
+  // Valor único dinâmico: em runtime é um IUser populado ou um id string.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return [value as IUser | string];
 }
 
@@ -52,11 +56,12 @@ export function normalizeStorageList(value: unknown): Array<IStorage> {
 
 export function parseReactions(value: unknown): Array<ReactionEntry> {
   if (!value) return [];
-  if (Array.isArray(value)) return value as Array<ReactionEntry>;
+  if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
     try {
       const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
+      if (Array.isArray(parsed)) return parsed;
+      return [];
     } catch (_error) {
       return [];
     }
@@ -85,15 +90,20 @@ export function normalizeGroupFieldValue(
     }
     case E_FIELD_TYPE.DROPDOWN:
     case E_FIELD_TYPE.CATEGORY: {
-      const items = Array.isArray(value) ? value : value ? [value] : [];
+      let items: Array<unknown> = [];
+      if (Array.isArray(value)) items = value;
+      if (!Array.isArray(value) && value) items = [value];
       const values = items.map((item) => String(item));
-      return field.multiple ? values : values.slice(0, 1);
+      if (field.multiple) return values;
+      return values.slice(0, 1);
     }
     case E_FIELD_TYPE.USER:
+    case E_FIELD_TYPE.USER_GROUP:
     case E_FIELD_TYPE.FILE:
     case E_FIELD_TYPE.RELATIONSHIP: {
       const ids = normalizeIdList(value);
-      return field.multiple ? ids : ids.slice(0, 1);
+      if (field.multiple) return ids;
+      return ids.slice(0, 1);
     }
     default:
       return value ?? null;

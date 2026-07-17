@@ -1,7 +1,23 @@
 import slugify from 'slugify';
 import z from 'zod';
 
-import { E_MENU_ITEM_TYPE } from '@application/core/entity.core';
+import {
+  E_MENU_ITEM_TYPE,
+  E_PERMISSION_TARGET,
+} from '@application/core/entity.core';
+
+// Visibilidade da opção de menu (Grupo|Public|Nobody).
+export const MenuVisibilityValidator = z
+  .object({
+    kind: z.enum([
+      E_PERMISSION_TARGET.PUBLIC,
+      E_PERMISSION_TARGET.NOBODY,
+      E_PERMISSION_TARGET.GROUP,
+    ]),
+    group: z.string().trim().nullable().default(null),
+  })
+  .nullable()
+  .optional();
 
 export const MenuCreateBodyValidator = z
   .object({
@@ -36,6 +52,7 @@ export const MenuCreateBodyValidator = z
       })
       .nullable()
       .optional(),
+    visibility: MenuVisibilityValidator,
   })
   .transform((payload) => {
     return {

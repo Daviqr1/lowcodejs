@@ -11,15 +11,16 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import type { IField } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface FieldComboboxProps {
+type FieldComboboxProps = {
   value?: string;
   onValueChange?: (value: string, slug?: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   tableSlug: string;
-}
+};
 
 export function FieldCombobox({
   value = '',
@@ -46,11 +47,13 @@ export function FieldCombobox({
       onValueChange={(field: IField | null) => {
         onValueChange?.(field?._id ?? '', field?.slug);
       }}
-      itemToStringLabel={(field: IField) => field.name}
+      itemToStringLabel={(field: IField) => resolveFieldLabel(field)}
       disabled={disabled}
     >
       <ComboboxInput
-        placeholder={selectedField?.name || placeholder}
+        placeholder={
+          (selectedField && resolveFieldLabel(selectedField)) || placeholder
+        }
         showClear={!!selectedField}
         className={className}
       />
@@ -69,7 +72,9 @@ export function FieldCombobox({
                 value={field}
               >
                 <div className="flex flex-col">
-                  <span className="font-medium">{field.name}</span>
+                  <span className="font-medium">
+                    {resolveFieldLabel(field)}
+                  </span>
                   <span className="text-muted-foreground text-xs">
                     {field.slug}
                   </span>

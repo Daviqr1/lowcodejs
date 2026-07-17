@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor U as Cliente
+    participant K as Fastify (kernel.ts)
+    participant SI as SignInUseCase
+    participant PW as BcryptPasswordService
+    participant JWT as jwt.util / @fastify/jwt
+    participant CK as cookies.util
+
+    U->>K: POST /authentication/sign-in {email, password}
+    K->>SI: execute(payload)
+    SI->>SI: findByEmail(email)
+    alt usuario inexistente ou INACTIVE
+        SI-->>K: Left(401 INVALID_CREDENTIALS / USER_INACTIVE)
+        K-->>U: 401
+    else credenciais validas
+        SI->>PW: compare(plain, hash) (bcrypt)
+        PW-->>SI: true
+        SI-->>K: Right(IUser)
+        K->>JWT: createTokens(user) - RS256
+        JWT-->>K: {accessToken 24h, refreshToken 7d}
+        K->>CK: clearCookieTokens + setCookieTokens
+        CK-->>U: Set-Cookie accessToken, refreshToken (httpOnly)
+        K-->>U: 200
+    end
+
+    Note over U,K: Requisicoes subsequentes
+    U->>K: GET /rota-protegida (Cookie: accessToken=...)
+    K->>K: AuthenticationMiddleware
+    K->>K: extractLastCookieValue(header) ?? request.cookies.accessToken
+    K->>JWT: jwt.decode(accessToken)
+    alt token ausente / type != ACCESS
+        K-->>U: 401 AUTHENTICATION_REQUIRED
+    else token valido
+        K->>K: request.user = {sub, email, role, type}
+        K-->>U: 200 (handler)
+    end

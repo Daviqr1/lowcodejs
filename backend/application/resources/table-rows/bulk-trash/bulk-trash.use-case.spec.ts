@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 
 import BulkTrashUseCase from './bulk-trash.use-case';
 
@@ -20,10 +17,7 @@ const TABLE_PAYLOAD = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -32,7 +26,11 @@ describe('Bulk Trash Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
-    sut = new BulkTrashUseCase(tableInMemoryRepository, rowInMemoryRepository);
+    sut = new BulkTrashUseCase(
+      tableInMemoryRepository,
+      rowInMemoryRepository,
+      new InMemoryRowAccessGuardService(),
+    );
     vi.clearAllMocks();
   });
 
@@ -74,9 +72,9 @@ describe('Bulk Trash Use Case', () => {
       table,
       query: { _id: row3._id },
     });
-    expect(trashed1?.trashed).toBe(true);
-    expect(trashed2?.trashed).toBe(true);
-    expect(trashed3?.trashed).toBe(true);
+    expect(trashed1?.trashedAt).not.toBeNull();
+    expect(trashed2?.trashedAt).not.toBeNull();
+    expect(trashed3?.trashedAt).not.toBeNull();
   });
 
   it('deve retornar TABLE_NOT_FOUND quando tabela nao existe', async () => {

@@ -1,11 +1,7 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
-import {
-  clearCookieTokens,
-  setCookieTokens,
-} from '@application/utils/cookies.util';
+import { setActiveSession } from '@application/utils/cookies.util';
 import { createTokens } from '@application/utils/jwt.util';
 
 import { ValidateCodeSchema } from './validate-code.schema';
@@ -46,8 +42,9 @@ export default class {
 
     const tokens = await createTokens(result.value.user, response);
 
-    clearCookieTokens(response);
-    setCookieTokens(response, { ...tokens });
+    setActiveSession(response, result.value.user._id.toString(), {
+      ...tokens,
+    });
 
     return response.status(200).send(result.value);
   }

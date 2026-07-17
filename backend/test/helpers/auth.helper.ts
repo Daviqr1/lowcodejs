@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import supertest from 'supertest';
 
 import {
+  E_AREA_CAPABILITY,
   E_TABLE_PERMISSION,
   E_USER_STATUS,
 } from '@application/core/entity.core';
@@ -10,11 +11,11 @@ import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { kernel } from '@start/kernel';
 
-export interface AuthenticatedUser {
+export type AuthenticatedUser = {
   user: { _id: string; email: string; name: string };
   cookies: string[];
   permissions: string[];
-}
+};
 
 export async function createAuthenticatedUser(
   overrides?: Partial<{ email: string; password: string; name: string }>,
@@ -86,6 +87,36 @@ export async function createAuthenticatedUser(
       slug: E_TABLE_PERMISSION.VIEW_ROW,
       description: 'Allows viewing and listening rows from an existing table.',
     },
+    {
+      name: 'Gerenciar usuários',
+      slug: E_AREA_CAPABILITY.MANAGE_USERS,
+      description: 'Gerencia a área de usuários',
+    },
+    {
+      name: 'Gerenciar menu',
+      slug: E_AREA_CAPABILITY.MANAGE_MENU,
+      description: 'Gerencia a área de menu',
+    },
+    {
+      name: 'Gerenciar grupos de usuários',
+      slug: E_AREA_CAPABILITY.MANAGE_USER_GROUPS,
+      description: 'Gerencia a área de grupos de usuários',
+    },
+    {
+      name: 'Gerenciar configurações',
+      slug: E_AREA_CAPABILITY.MANAGE_SETTINGS,
+      description: 'Gerencia a área de configurações',
+    },
+    {
+      name: 'Gerenciar ferramentas',
+      slug: E_AREA_CAPABILITY.MANAGE_TOOLS,
+      description: 'Gerencia a área de ferramentas',
+    },
+    {
+      name: 'Gerenciar plugins',
+      slug: E_AREA_CAPABILITY.MANAGE_PLUGINS,
+      description: 'Gerencia a área de plugins',
+    },
   ]);
 
   if (!group) {
@@ -102,6 +133,7 @@ export async function createAuthenticatedUser(
     password: hashedPassword,
     status: E_USER_STATUS.ACTIVE,
     group: group._id,
+    groups: [group._id],
   });
 
   const response = await supertest(kernel.server)
@@ -109,17 +141,83 @@ export async function createAuthenticatedUser(
     .send({ email: user.email, password });
 
   const setCookie = response.headers['set-cookie'];
-  const cookies = Array.isArray(setCookie)
-    ? setCookie
-    : setCookie
-      ? [setCookie]
-      : [];
+  let cookies: string[] = [];
+  if (Array.isArray(setCookie)) cookies = setCookie;
+  if (!Array.isArray(setCookie) && setCookie) cookies = [setCookie];
 
   return {
     user: { _id: user._id.toString(), email: user.email, name: user.name },
     cookies,
     permissions: permissions.map((p) => p._id.toString()),
   };
+}
+
+type GroupUserOptions = {
+  groupSlug: string;
+  groupName: string;
+  permissionSlugs: string[];
+  email?: string;
+  password?: string;
+  name?: string;
+};
+
+// Cria um usuario autenticado num grupo nao-MASTER com um conjunto explicito de
+// permissoes. Usado pelos testes de NEGACAO (403): o slug do grupo deriva o
+// `role` no JWT (jwt.util: group.slug.toUpperCase()), e `permissionSlugs` define
+// as capacidades no fecho. Permissoes sao upsertadas por slug para nao duplicar.
+export async function createAuthenticatedUserInGroup(
+  options: GroupUserOptions,
+): Promise<AuthenticatedUser> {
+  const password = options.password ?? 'password123';
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const permissionIds: string[] = [];
+  for (const slug of options.permissionSlugs) {
+    let permission = await Permission.findOne({ slug });
+    if (!permission) {
+      permission = await Permission.create({
+        name: slug,
+        slug,
+        description: slug,
+      });
+    }
+    permissionIds.push(permission._id.toString());
+  }
+
+  const group = await UserGroup.create({
+    name: options.groupName,
+    slug: options.groupSlug,
+    permissions: permissionIds,
+  });
+
+  const user = await User.create({
+    name: options.name ?? 'Restricted User',
+    email: options.email ?? `restricted-${Date.now()}@example.com`,
+    password: hashedPassword,
+    status: E_USER_STATUS.ACTIVE,
+    group: group._id,
+    groups: [group._id],
+  });
+
+  const response = await supertest(kernel.server)
+    .post('/authentication/sign-in')
+    .send({ email: user.email, password });
+
+  const cookies = normalizeSetCookie(response.headers['set-cookie']);
+
+  return {
+    user: { _id: user._id.toString(), email: user.email, name: user.name },
+    cookies,
+    permissions: permissionIds,
+  };
+}
+
+function normalizeSetCookie(
+  setCookie: string | string[] | undefined,
+): string[] {
+  if (Array.isArray(setCookie)) return setCookie;
+  if (setCookie) return [setCookie];
+  return [];
 }
 
 export async function cleanDatabase(): Promise<void> {

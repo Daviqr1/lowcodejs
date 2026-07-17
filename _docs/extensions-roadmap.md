@@ -63,7 +63,9 @@ Será criada na Fase 5. Vai:
 ### Implicações
 
 - **Sem sandbox**: não há wrapper de segurança nos controllers de extensão. Eles
-  usam `@Controller`/`@Inject` igual ao core, podem importar repos via DI, etc.
+  usam `@Controller` igual ao core e acessam repos/services via
+  `getInstanceByToken` ou, em classes `@Service`, por constructor injection
+  (nunca `@Inject`).
 - **Por-tabela**: model `Extension` tem campo `tableScope: { mode, tableIds }`.
   Endpoint `PATCH /extensions/:_id/table-scope` para configurar
 - **Sem configSchema**: manifest é puro metadado + placement. Sem form

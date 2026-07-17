@@ -1,6 +1,6 @@
 export type HookType = 'onLoad' | 'beforeSave' | 'afterSave';
 
-interface TutorialSection {
+type TutorialSection = {
   title: string;
   description: string;
   examples: Array<{
@@ -8,13 +8,13 @@ interface TutorialSection {
     code: string;
     description: string;
   }>;
-}
+};
 
-interface TutorialContent {
+type TutorialContent = {
   title: string;
   subtitle: string;
   sections: Array<TutorialSection>;
-}
+};
 
 /**
  * Returns tutorial content specific to each hook type

@@ -8,12 +8,17 @@ import { relationshipRowsInfiniteOptions } from './_query-options';
 
 import type { IRow, Paginated } from '@/lib/interfaces';
 
-interface UseRelationshipRowsReadPaginatedInfiniteParams {
+type UseRelationshipRowsReadPaginatedInfiniteParams = {
   tableSlug: string;
   fieldSlug: string;
   search?: string;
   perPage?: number;
-}
+  excludeLinked?: boolean;
+  relationshipId?: string;
+  excludeSide?: 'source' | 'target';
+  excludeForRecordId?: string;
+  excludeSelfId?: string;
+};
 
 export function useRelationshipRowsReadPaginatedInfinite(
   params: UseRelationshipRowsReadPaginatedInfiniteParams,

@@ -5,15 +5,14 @@ type Theme = 'dark' | 'light';
 export function useTheme(): { theme: Theme; toggleTheme: () => void } {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem(
-        'theme-preference',
-      ) as Theme | null;
-      if (savedTheme) {
+      const savedTheme = localStorage.getItem('theme-preference');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
         return savedTheme;
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+      return 'light';
     }
     return 'light'; // Default for SSR
   });
@@ -26,7 +25,10 @@ export function useTheme(): { theme: Theme; toggleTheme: () => void } {
   }, [theme]);
 
   const toggleTheme = (): void => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => {
+      if (prev === 'dark') return 'light';
+      return 'dark';
+    });
   };
 
   return { theme, toggleTheme };

@@ -7,13 +7,13 @@ import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
 
-interface TableRowFieldGroupCellProps {
+type TableRowFieldGroupCellProps = {
   row: IRow;
   field: IField;
   tableSlug: string;
   table?: ITable;
   variant?: 'cell' | 'detail';
-}
+};
 
 export function TableRowFieldGroupCell({
   field,

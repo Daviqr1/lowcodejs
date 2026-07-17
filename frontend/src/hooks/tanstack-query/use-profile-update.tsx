@@ -8,24 +8,27 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
-import type { IUser } from '@/lib/interfaces';
+import type { IUser, Merge } from '@/lib/interfaces';
 import type { ProfileUpdatePayload } from '@/lib/payloads';
 import { useAuthStore } from '@/stores/authentication';
 
-type UseProfileUpdateProps = Pick<
-  Omit<
-    UseMutationOptions<
-      IUser,
-      AxiosError | Error,
-      ProfileUpdatePayload,
-      unknown
+type UseProfileUpdateProps = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        IUser,
+        AxiosError | Error,
+        ProfileUpdatePayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: IUser, variables: ProfileUpdatePayload) => void;
-};
+  {
+    onSuccess?: (data: IUser, variables: ProfileUpdatePayload) => void;
+  }
+>;
 
 export function useUpdateProfile(
   props: UseProfileUpdateProps,

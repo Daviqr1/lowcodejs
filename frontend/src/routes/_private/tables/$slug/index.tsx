@@ -11,33 +11,15 @@ import type { ISetting } from '@/lib/interfaces';
 import { createRouteHead } from '@/lib/seo';
 import { useAuthStore } from '@/stores/authentication';
 
-const defaultSearch = { page: 1, perPage: 50 };
+const defaultSearch = { page: 1 };
 
 export const Route = createFileRoute('/_private/tables/$slug/')({
-  beforeLoad: async ({ context, location }) => {
-    const hasExplicitPerPage = location.searchStr.includes('perPage');
-    if (!hasExplicitPerPage) {
-      const settings = context.queryClient.getQueryData<ISetting>(
-        queryKeys.settings.all,
-      );
-      if (settings && settings.PAGINATION_PER_PAGE !== 50) {
-        const { redirect } = await import('@tanstack/react-router');
-        throw redirect({
-          search: (prev) => ({
-            ...prev,
-            perPage: settings.PAGINATION_PER_PAGE,
-          }),
-          replace: true,
-        });
-      }
-    }
-  },
   head: createRouteHead({ title: 'Tabela' }),
   pendingComponent: () => <TableSkeleton />,
   validateSearch: z
     .object({
       page: z.coerce.number().default(1),
-      perPage: z.coerce.number().default(50),
+      perPage: z.coerce.number().optional(),
       trashed: z
         .preprocess(
           (v) => {
@@ -52,14 +34,27 @@ export const Route = createFileRoute('/_private/tables/$slug/')({
       z.union([z.enum(['asc', 'desc']).optional(), z.string().optional()]),
     ),
   search: {
-    middlewares: [stripSearchParams(defaultSearch)],
+    middlewares: [
+      // @ts-expect-error O `.catchall` (params dinâmicos order-<slug>) cria um
+      // índice string que faz o stripSearchParams exigir `page: string`; aqui é
+      // number. Limitação da combinação Zod catchall + stripSearchParams.
+      stripSearchParams(defaultSearch),
+    ],
   },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const isAuthenticated = Boolean(useAuthStore.getState().user);
     if (!isAuthenticated) return;
 
+    // Paginação padrão vem da configuração global (Setting.PAGINATION_PER_PAGE),
+    // não da URL nem de configuração por tabela.
+    const settings = context.queryClient.getQueryData<ISetting>(
+      queryKeys.settings.all,
+    );
+
     context.queryClient.prefetchQuery(tableDetailOptions(params.slug));
-    context.queryClient.prefetchQuery(rowListOptions(params.slug, deps));
+    context.queryClient.prefetchQuery(
+      rowListOptions(params.slug, deps, settings?.PAGINATION_PER_PAGE),
+    );
   },
 });

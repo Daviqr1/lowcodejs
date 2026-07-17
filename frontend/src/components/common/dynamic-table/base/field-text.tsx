@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/input-group';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 
-interface FieldTextProps {
+type FieldTextProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
@@ -14,7 +14,7 @@ interface FieldTextProps {
   required?: boolean;
   description?: string;
   onChangeTransform?: (value: string) => string;
-}
+};
 
 export function FieldText({
   label,

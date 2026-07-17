@@ -8,12 +8,11 @@ export const UserGroupCreateSchema: FastifySchema = {
   security: [{ cookieAuth: [] }],
   body: {
     type: 'object',
-    required: ['name', 'description', 'permissions'],
+    required: ['name', 'permissions'],
     additionalProperties: false,
     errorMessage: {
       required: {
         name: 'O nome é obrigatório',
-        description: 'A descrição é obrigatória',
         permissions: 'Pelo menos uma permissão é obrigatória',
       },
       additionalProperties: 'Campos extras não são permitidos',
@@ -40,10 +39,23 @@ export const UserGroupCreateSchema: FastifySchema = {
         type: 'array',
         minItems: 1,
         items: { type: 'string' },
-        description: 'Lista de IDs de permissões',
+        description:
+          'IDs das permissões globais do grupo (12 de tabela + 7 de área). ' +
+          'Capacidades de área liberam as áreas do sistema; as permissões de ' +
+          'tabela compõem a regra de interseção com os bindings da tabela.',
         errorMessage: {
           type: 'Permissões deve ser uma lista',
           minItems: 'Pelo menos uma permissão é obrigatória',
+        },
+      },
+      encompasses: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'IDs dos grupos englobados (Engloba). O grupo herda as permissões ' +
+          'de tudo que engloba (fecho transitivo).',
+        errorMessage: {
+          type: 'Grupos englobados deve ser uma lista',
         },
       },
     },
@@ -85,6 +97,11 @@ export const UserGroupCreateSchema: FastifySchema = {
             },
           },
         },
+        encompasses: {
+          type: 'array',
+          description: 'IDs dos grupos englobados',
+          items: { type: 'string' },
+        },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },
@@ -98,7 +115,10 @@ export const UserGroupCreateSchema: FastifySchema = {
           description: 'Mensagem de erro de validação',
         },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        cause: {
+          type: 'string',
+          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -110,7 +130,7 @@ export const UserGroupCreateSchema: FastifySchema = {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -123,7 +143,7 @@ export const UserGroupCreateSchema: FastifySchema = {
       description: 'Conflito - Grupo já existe',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Group already exists'] },
+        message: { type: 'string', enum: ['Grupo já existe'] },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['GROUP_EXISTS'] },
         errors: {

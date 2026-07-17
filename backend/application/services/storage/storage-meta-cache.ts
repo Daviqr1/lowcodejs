@@ -1,15 +1,15 @@
 import type { TStorageLocation } from '@application/core/entity.core';
 
-export interface StorageMeta {
+export type StorageMeta = {
   originalName: string;
   mimetype: string;
   location: TStorageLocation;
-}
+};
 
-interface CacheEntry {
+type CacheEntry = {
   meta: StorageMeta | null;
   expiresAt: number;
-}
+};
 
 const TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();

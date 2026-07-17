@@ -32,7 +32,6 @@ export const TableRowAutoSaveBodyValidator = z.record(
       .object({
         // _id: z.string().trim().optional(),
         creator: z.string().trim(),
-        // trashed: z.boolean(),
       })
       .loose(),
   ]),

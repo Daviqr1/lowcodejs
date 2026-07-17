@@ -8,7 +8,7 @@ dinamicas (campos com `format=PASSWORD`).
 | Arquivo | Descricao |
 |---------|-----------|
 | `row-password-contract.service.ts` | Abstract class: `hash`, `mask`, `stripMasked` |
-| `bcrypt-row-password.service.ts` | Implementacao default usando bcrypt |
+| `row-password.service.ts` | Implementacao default usando bcrypt |
 | `in-memory-row-password.service.ts` | Mock para testes |
 
 ## Contrato

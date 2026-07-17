@@ -12,10 +12,7 @@ type Response = Either<HTTPException, Paginated<INotification>>;
 
 @Service()
 export default class NotificationPaginatedUseCase {
-  constructor(
-    // eslint-disable-next-line no-unused-vars
-    private readonly repository: NotificationContractRepository,
-  ) {}
+  constructor(private readonly repository: NotificationContractRepository) {}
 
   async execute(payload: NotificationPaginatedPayload): Promise<Response> {
     try {

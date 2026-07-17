@@ -2,25 +2,26 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
+  buildFieldPermissions,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableFieldCreateUseCase from '../create.use-case';
 
 let tableRepository: TableInMemoryRepository;
 let fieldRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: TableFieldCreateUseCase;
 
 const BASE_PAYLOAD = {
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -41,12 +42,21 @@ describe('Table Field Create - EVALUATION', () => {
   beforeEach(async () => {
     tableRepository = new TableInMemoryRepository();
     fieldRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new TableFieldCreateUseCase(
       tableRepository,
       fieldRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
+      new RelationshipMaterializationService(
+        fieldRepository,
+        tableRepository,
+        new RelationshipDefinitionInMemoryRepository(),
+        schemaBuilder,
+        modelBuilder,
+      ),
     );
 
     await tableRepository.create({
@@ -55,10 +65,7 @@ describe('Table Field Create - EVALUATION', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

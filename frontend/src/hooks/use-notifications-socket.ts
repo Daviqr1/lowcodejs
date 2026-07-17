@@ -62,22 +62,23 @@ export function useNotificationsSocket(args: {
         if (onNotificationsPage) return;
 
         const action = notification.action;
+        let toastAction: { label: string; onClick: () => void } | undefined;
+        if (action && action.href) {
+          toastAction = {
+            label: action.label ?? 'Abrir',
+            onClick: (): void => {
+              if (action.type === 'url') {
+                window.location.href = action.href;
+                return;
+              }
+              navigate({ to: action.href });
+            },
+          };
+        }
         toast(notification.title, {
           description: notification.body ?? undefined,
           closeButton: true,
-          action:
-            action && action.href
-              ? {
-                  label: action.label ?? 'Abrir',
-                  onClick: (): void => {
-                    if (action.type === 'url') {
-                      window.location.href = action.href;
-                      return;
-                    }
-                    navigate({ to: action.href });
-                  },
-                }
-              : undefined,
+          action: toastAction,
         });
       },
     );

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 
 import type {
   RowBulkDeletePayload,
@@ -11,9 +12,54 @@ import type {
   RowGroupItemPayload,
   RowSetFieldPayload,
   RowTableContext,
+  RowUpdateManyPayload,
   RowUpdatePayload,
 } from './row-contract.repository';
 import { RowContractRepository } from './row-contract.repository';
+
+/**
+ * Aplica um fragmento de guardQuery sobre um item da colecao in-memory.
+ * Suporta operadores basicos usados pelo RowAccessGuard: $in, $and, $or.
+ * Para testes: nao precisa cobrir todo o MongoDB query DSL.
+ */
+function matchesGuardQuery(
+  row: Record<string, unknown>,
+  query: Record<string, unknown>,
+): boolean {
+  if (!query || Object.keys(query).length === 0) return true;
+
+  for (const [key, condition] of Object.entries(query)) {
+    if (key === '$and') {
+      if (!Array.isArray(condition)) continue;
+      if (!condition.every((part) => matchesGuardQuery(row, part)))
+        return false;
+      continue;
+    }
+    if (key === '$or') {
+      if (!Array.isArray(condition)) continue;
+      if (!condition.some((part) => matchesGuardQuery(row, part))) return false;
+      continue;
+    }
+
+    const fieldVal = row[key];
+    if (
+      condition !== null &&
+      typeof condition === 'object' &&
+      !Array.isArray(condition)
+    ) {
+      if ('$in' in condition) {
+        const allowed = condition['$in'];
+        let rowValue = fieldVal;
+        if (Array.isArray(fieldVal)) rowValue = fieldVal[0];
+        if (Array.isArray(allowed) && !allowed.includes(rowValue)) return false;
+      }
+    } else {
+      if (fieldVal !== condition) return false;
+    }
+  }
+
+  return true;
+}
 
 export default class RowInMemoryRepository implements RowContractRepository {
   private collections = new Map<string, IRow[]>();
@@ -48,13 +94,14 @@ export default class RowInMemoryRepository implements RowContractRepository {
     const collection = this.getCollection(payload.table.slug);
 
     const row: IRow = {
-      _id: randomUUID(),
-      trashed: false,
+      status: 'published',
+      draftAt: null,
       trashedAt: null,
       ...payload.data,
+      _id: randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as IRow;
+    };
 
     collection.push(row);
     return { ...row };
@@ -65,7 +112,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const row = collection.find((item) => {
       for (const [key, value] of Object.entries(payload.query)) {
-        if ((item as Record<string, unknown>)[key] !== value) return false;
+        if (item[key] !== value) return false;
       }
       return true;
     });
@@ -79,8 +126,8 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const rawFilters = payload.rawFilters ?? {};
     const result = collection.filter((item) => {
-      const row = item as Record<string, unknown>;
-      if (row['trashed'] === true) return false;
+      const row = item;
+      if (row['trashedAt'] != null) return false;
       for (const [key, value] of Object.entries(rawFilters)) {
         if (
           key === 'page' ||
@@ -89,30 +136,57 @@ export default class RowInMemoryRepository implements RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'excludeLinked' ||
+          key === 'relationshipId' ||
+          key === 'excludeSide' ||
+          key === 'excludeForRecordId' ||
+          key === 'excludeSelfId' ||
           String(key).startsWith('order-')
         ) {
           continue;
         }
         if (row[key] !== value) return false;
       }
+      // Aplica o fragmento de guardQuery (row-access-guard)
+      if (payload.guardQuery && Object.keys(payload.guardQuery).length > 0) {
+        if (!matchesGuardQuery(row, payload.guardQuery)) return false;
+      }
       return true;
     });
 
-    return result
-      .slice(payload.skip, payload.skip + payload.limit)
-      .map((r) => ({ ...r }));
+    let filtered = result;
+    if (payload.excludeIds && payload.excludeIds.length > 0) {
+      const excludeSet = new Set(payload.excludeIds);
+      filtered = result.filter((row) => !excludeSet.has(String(row._id)));
+    }
+
+    // limit <= 0 significa "sem limite" (busca todos), espelhando o
+    // comportamento do Mongoose .limit(0).
+    let sliced: IRow[];
+    if (payload.limit <= 0) {
+      sliced = filtered.slice(payload.skip);
+    } else {
+      sliced = filtered.slice(payload.skip, payload.skip + payload.limit);
+    }
+
+    return sliced.map((r) => ({ ...r }));
   }
 
   async count(
     table: RowTableContext,
     rawFilters?: Record<string, unknown>,
+    guardQuery?: Record<string, unknown>,
+    excludeIds?: string[],
   ): Promise<number> {
     const collection = this.getCollection(table.slug);
     const filters = rawFilters ?? {};
+    let excludeSet: Set<string> | null = null;
+    if (excludeIds && excludeIds.length > 0) excludeSet = new Set(excludeIds);
 
     return collection.filter((item) => {
-      const row = item as Record<string, unknown>;
-      if (row['trashed'] === true) return false;
+      const row = item;
+      if (row['trashedAt'] != null) return false;
+      if (excludeSet && excludeSet.has(String(row['_id']))) return false;
       for (const [key, value] of Object.entries(filters)) {
         if (
           key === 'page' ||
@@ -121,27 +195,54 @@ export default class RowInMemoryRepository implements RowContractRepository {
           key === 'public' ||
           key === 'search' ||
           key === 'trashed' ||
+          key === 'excludeLinked' ||
+          key === 'relationshipId' ||
+          key === 'excludeSide' ||
+          key === 'excludeForRecordId' ||
+          key === 'excludeSelfId' ||
           String(key).startsWith('order-')
         ) {
           continue;
         }
         if (row[key] !== value) return false;
       }
+      if (guardQuery && Object.keys(guardQuery).length > 0) {
+        if (!matchesGuardQuery(row, guardQuery)) return false;
+      }
       return true;
     }).length;
   }
 
-  async update(payload: RowUpdatePayload): Promise<IRow> {
+  async countFieldValue(
+    table: RowTableContext,
+    fieldSlug: string,
+    value: unknown,
+    excludeRowId: string | null = null,
+  ): Promise<number> {
+    const collection = this.getCollection(table.slug);
+
+    return collection.filter((row) => {
+      if (row.trashedAt != null) return false;
+      if (excludeRowId && row._id === excludeRowId) return false;
+      const current = row[fieldSlug];
+      // Campo multiplo (array): match se contiver o valor (semantica mongo).
+      if (Array.isArray(current)) return current.includes(value);
+      return current === value;
+    }).length;
+  }
+
+  async update(payload: RowUpdatePayload): Promise<IRow | null> {
     const collection = this.getCollection(payload.table.slug);
     const index = collection.findIndex((item) => item._id === payload._id);
 
-    // if (index === -1) return null;
+    if (index === -1) return null;
 
     collection[index] = {
       ...collection[index],
       ...payload.data,
+      _id: collection[index]._id,
       updatedAt: new Date(),
-    } as IRow;
+    };
 
     return { ...collection[index] };
   }
@@ -156,6 +257,22 @@ export default class RowInMemoryRepository implements RowContractRepository {
     return true;
   }
 
+  async listSlugs(
+    table: RowTableContext,
+    excludeId?: string,
+  ): Promise<string[]> {
+    const collection = this.getCollection(table.slug);
+
+    const slugs: string[] = [];
+    for (const item of collection) {
+      if (excludeId && item._id === excludeId) continue;
+      const value = item.sharedRowSlug;
+      if (typeof value === 'string' && value.length > 0) slugs.push(value);
+    }
+
+    return slugs;
+  }
+
   // ── Trash (bulk) ──────────────────────────────────────────
 
   async bulkTrash(payload: RowBulkUpdatePayload): Promise<number> {
@@ -163,8 +280,12 @@ export default class RowInMemoryRepository implements RowContractRepository {
     let count = 0;
 
     for (const row of collection) {
-      if (payload.ids.includes(row._id) && !row.trashed) {
-        row.trashed = true;
+      if (
+        payload.creatorId &&
+        resolveCreatorId(row.creator) !== payload.creatorId
+      )
+        continue;
+      if (payload.ids.includes(row._id) && row.trashedAt == null) {
         row.trashedAt = new Date();
         count++;
       }
@@ -178,8 +299,12 @@ export default class RowInMemoryRepository implements RowContractRepository {
     let count = 0;
 
     for (const row of collection) {
-      if (payload.ids.includes(row._id) && row.trashed) {
-        row.trashed = false;
+      if (
+        payload.creatorId &&
+        resolveCreatorId(row.creator) !== payload.creatorId
+      )
+        continue;
+      if (payload.ids.includes(row._id) && row.trashedAt != null) {
         row.trashedAt = null;
         count++;
       }
@@ -194,7 +319,14 @@ export default class RowInMemoryRepository implements RowContractRepository {
     const remaining: IRow[] = [];
 
     for (const row of collection) {
-      if (payload.ids.includes(row._id) && row.trashed) {
+      const ownedByOther =
+        !!payload.creatorId &&
+        resolveCreatorId(row.creator) !== payload.creatorId;
+      if (
+        !ownedByOther &&
+        payload.ids.includes(row._id) &&
+        row.trashedAt != null
+      ) {
         count++;
       } else {
         remaining.push(row);
@@ -205,9 +337,17 @@ export default class RowInMemoryRepository implements RowContractRepository {
     return count;
   }
 
-  async emptyTrash(table: RowTableContext): Promise<number> {
+  async emptyTrash(
+    table: RowTableContext,
+    creatorId?: string,
+  ): Promise<number> {
     const collection = this.getCollection(table.slug);
-    const remaining = collection.filter((item) => !item.trashed);
+    const remaining = collection.filter((item) => {
+      if (item.trashedAt == null) return true;
+      if (creatorId && resolveCreatorId(item.creator) !== creatorId)
+        return true;
+      return false;
+    });
     const count = collection.length - remaining.length;
 
     this.collections.set(table.slug, remaining);
@@ -222,7 +362,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     if (!row) throw new Error('Row not found');
 
-    (row as Record<string, unknown>)[payload.field] = payload.value;
+    row[payload.field] = payload.value;
     row.updatedAt = new Date();
 
     return { ...row };
@@ -231,39 +371,39 @@ export default class RowInMemoryRepository implements RowContractRepository {
   // ── Group rows (subdocumentos) ────────────────────────────
 
   async addGroupItem(
-    payload: RowGroupItemPayload & { data: Record<string, unknown> },
+    payload: Merge<RowGroupItemPayload, { data: Record<string, unknown> }>,
   ): Promise<IRow> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);
 
     if (!row) throw new Error('Row not found');
 
-    const currentItems = (row as Record<string, unknown>)[
-      payload.groupFieldSlug
-    ];
-    const groupData: Record<string, unknown>[] = Array.isArray(currentItems)
-      ? [...currentItems]
-      : [];
+    const currentItems = row[payload.groupFieldSlug];
+    let groupData: Record<string, unknown>[] = [];
+    if (Array.isArray(currentItems)) groupData = [...currentItems];
 
     groupData.push({ _id: randomUUID(), ...payload.data });
-    (row as Record<string, unknown>)[payload.groupFieldSlug] = groupData;
+    row[payload.groupFieldSlug] = groupData;
     row.updatedAt = new Date();
 
-    return JSON.parse(JSON.stringify(row)) as IRow;
+    return JSON.parse(JSON.stringify(row));
   }
 
   async updateGroupItem(
-    payload: RowGroupItemPayload & {
-      itemId: string;
-      data: Record<string, unknown>;
-    },
+    payload: Merge<
+      RowGroupItemPayload,
+      {
+        itemId: string;
+        data: Record<string, unknown>;
+      }
+    >,
   ): Promise<IRow> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);
 
     if (!row) throw new Error('Row not found');
 
-    const items = (row as Record<string, unknown>)[payload.groupFieldSlug];
+    const items = row[payload.groupFieldSlug];
     if (!Array.isArray(items)) throw new Error('Group field not found');
 
     const item = items.find(
@@ -278,14 +418,14 @@ export default class RowInMemoryRepository implements RowContractRepository {
   }
 
   async deleteGroupItem(
-    payload: RowGroupItemPayload & { itemId: string },
+    payload: Merge<RowGroupItemPayload, { itemId: string }>,
   ): Promise<boolean> {
     const collection = this.getCollection(payload.table.slug);
     const row = collection.find((item) => item._id === payload.rowId);
 
     if (!row) return false;
 
-    const items = (row as Record<string, unknown>)[payload.groupFieldSlug];
+    const items = row[payload.groupFieldSlug];
     if (!Array.isArray(items)) return false;
 
     const index = items.findIndex(
@@ -299,7 +439,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     return true;
   }
 
-  // ── Atomic update (forum-message) ─────────────────────────
+  // ── Atomic update (forum-message / backfill) ──────────────
 
   async findOneAndUpdate(
     table: RowTableContext,
@@ -310,22 +450,67 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     const row = collection.find((item) => {
       for (const [key, value] of Object.entries(filter)) {
-        if ((item as Record<string, unknown>)[key] !== value) return false;
+        if (item[key] !== value) return false;
       }
       return true;
     });
 
     if (!row) return null;
 
-    const setData = (update as { $set?: Record<string, unknown> }).$set;
-    if (setData) {
+    const setData = update['$set'];
+    if (setData && typeof setData === 'object') {
       for (const [key, value] of Object.entries(setData)) {
-        (row as Record<string, unknown>)[key] = value;
+        row[key] = value;
       }
     }
 
     row.updatedAt = new Date();
     return { ...row };
+  }
+
+  async updateMany(payload: RowUpdateManyPayload): Promise<number> {
+    const collection = this.getCollection(payload.table.slug);
+    let count = 0;
+
+    for (const row of collection) {
+      const record = row;
+      let matches = true;
+      for (const [key, condition] of Object.entries(payload.filter)) {
+        if (
+          condition !== null &&
+          typeof condition === 'object' &&
+          !Array.isArray(condition)
+        ) {
+          if ('$exists' in condition) {
+            const shouldExist = Boolean(condition['$exists']);
+            const fieldExists = key in record && record[key] !== undefined;
+            if (shouldExist !== fieldExists) {
+              matches = false;
+              break;
+            }
+          }
+        } else {
+          if (record[key] !== condition) {
+            matches = false;
+            break;
+          }
+        }
+      }
+
+      if (!matches) continue;
+
+      const setData = payload.update['$set'];
+      if (setData && typeof setData === 'object') {
+        for (const [key, value] of Object.entries(setData)) {
+          record[key] = value;
+        }
+      }
+
+      row.updatedAt = new Date();
+      count++;
+    }
+
+    return count;
   }
 
   // ── Infrastructure-level ops (table/import/export tools) ──
@@ -337,7 +522,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
   ): Promise<void> {
     const collection = this.getCollection(table.slug);
     for (const row of collection) {
-      const record = row as Record<string, unknown>;
+      const record = row;
       if (Object.prototype.hasOwnProperty.call(record, oldSlug)) {
         record[newSlug] = record[oldSlug];
         delete record[oldSlug];
@@ -348,8 +533,8 @@ export default class RowInMemoryRepository implements RowContractRepository {
   async findAllRaw(table: RowTableContext): Promise<Record<string, unknown>[]> {
     const collection = this.getCollection(table.slug);
     return collection
-      .filter((row) => !row.trashed)
-      .map((row) => ({ ...row })) as Record<string, unknown>[];
+      .filter((row) => row.trashedAt == null)
+      .map((row) => ({ ...row }));
   }
 
   // ── Resolver helpers (csv-import) ─────────────────────────
@@ -366,7 +551,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
 
     return collection
       .filter((row) => {
-        if (row.trashed) return false;
+        if (row.trashedAt != null) return false;
         for (const slug of fieldSlugs) {
           const fieldValue = row[slug];
           if (typeof fieldValue === 'string' && valueSet.has(fieldValue)) {
@@ -392,7 +577,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     let count = 0;
 
     for (const row of collection) {
-      const record = row as Record<string, unknown>;
+      const record = row;
       const value = record[fieldSlug];
       if (!Array.isArray(value)) continue;
 
@@ -402,6 +587,24 @@ export default class RowInMemoryRepository implements RowContractRepository {
         row.updatedAt = new Date();
         count++;
       }
+    }
+
+    return count;
+  }
+
+  async clearFieldValue(
+    table: RowTableContext,
+    fieldSlug: string,
+    value: string,
+  ): Promise<number> {
+    const collection = this.getCollection(table.slug);
+    let count = 0;
+
+    for (const row of collection) {
+      if (Reflect.get(row, fieldSlug) !== value) continue;
+      Reflect.set(row, fieldSlug, null);
+      row.updatedAt = new Date();
+      count++;
     }
 
     return count;
@@ -419,14 +622,15 @@ export default class RowInMemoryRepository implements RowContractRepository {
     delete data.createdAt;
     delete data.updatedAt;
     const newRow: IRow = {
-      _id: randomUUID(),
       ...data,
+      _id: randomUUID(),
       creator: creator ?? null,
-      trashed: false,
+      status: 'published',
+      draftAt: null,
       trashedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as IRow;
+    };
     collection.push(newRow);
     return { ...newRow };
   }

@@ -13,7 +13,6 @@ import { ProfileUpdateBodyValidator } from './update.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: ProfileUpdateUseCase = getInstanceByToken(
       ProfileUpdateUseCase,
     ),

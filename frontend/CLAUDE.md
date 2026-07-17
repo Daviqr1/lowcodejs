@@ -93,28 +93,36 @@ frontend/
 │   │       └── extensions/         # Workshop de extensoes (MASTER)
 │   │
 │   ├── components/
-│   │   ├── ui/                     # Design system (34 componentes shadcn/Radix)
-│   │   └── common/                 # Componentes de negocio (16 subdiretorios)
+│   │   ├── ui/                     # Design system (36 componentes shadcn/Radix)
+│   │   └── common/                 # Componentes de negocio (24 subdiretorios)
 │   │       ├── dynamic-table/      # Sistema central de tabelas dinamicas (9 subdirs)
+│   │       ├── action-dialog/      # Dialog de acao reutilizavel
+│   │       ├── auth-shell/         # Shell das telas de autenticacao
+│   │       ├── bulk-action-bar/    # Barra de acoes em lote
 │   │       ├── calendar/           # Visualizacao calendario
 │   │       ├── chat/               # Chat em tempo real
 │   │       ├── code-editor/        # Monaco Editor wrapper
 │   │       ├── data-table/         # Tabela generica TanStack Table
 │   │       ├── datepicker/         # Seletor de data
 │   │       ├── document/           # Visualizacao documento
+│   │       ├── extension-slot/     # Slot de renderizacao de extensoes
 │   │       ├── file-upload/        # Upload de arquivos
 │   │       ├── filters/            # Filtros laterais
+│   │       ├── form-footer/        # Rodape de formulario
 │   │       ├── forum/              # Forum com canais
 │   │       ├── gantt/              # Grafico de Gantt
 │   │       ├── layout/             # Header, Sidebar, Logo
+│   │       ├── page-shell/         # Shell de pagina
+│   │       ├── permanent-delete-confirm-dialog/ # Confirmacao de exclusao definitiva
 │   │       ├── rich-editor/        # Tiptap WYSIWYG
 │   │       ├── route-status/       # Telas de erro/loading
 │   │       ├── selectors/          # Comboboxes de dominio
+│   │       ├── table-views/        # Visualizacoes de tabela
 │   │       └── tree-editor/        # Editor de arvore
 │   │
 │   ├── hooks/                      # Custom React hooks
-│   │   ├── use-*.ts               # 11 hooks de dominio
-│   │   └── tanstack-query/         # 46+ hooks de API por recurso
+│   │   ├── use-*.ts               # 16 hooks de dominio
+│   │   └── tanstack-query/         # 110 hooks de API por recurso
 │   │       ├── _query-keys.ts      # Factory de query keys hierarquicas
 │   │       └── _query-options.ts   # Query options reutilizaveis
 │   │
@@ -137,7 +145,7 @@ frontend/
 │   │
 │   └── integrations/               # Configuracoes de integracao
 │       ├── tanstack-query/         # QueryClientProvider + devtools
-│       └── tanstack-form/          # createFormHook + 40 field components
+│       └── tanstack-form/          # createFormHook + 45 field components
 │
 ├── extensions/                     # Codigo UI das extensoes — ver extensions/CLAUDE.md
 ├── vite.config.ts                  # Vite + Nitro + TanStack Start + Tailwind
@@ -235,36 +243,43 @@ capturar erros de queries e permitir retry.
 
 ## Sistema de Permissoes (RBAC)
 
-| Role          | Acesso                                              |
-| ------------- | --------------------------------------------------- |
-| MASTER        | Tudo (dashboard, settings, tools, todas as tabelas) |
-| ADMINISTRATOR | Tabelas, menus, usuarios                            |
-| MANAGER       | Tabelas (respeita ownership)                        |
-| REGISTERED    | Tabelas (VIEW + CREATE_ROW apenas)                  |
+O modelo foi reescrito: o acesso e governado por **grupos custom + capacidades
+de area + bindings por acao**, nao mais por 4 roles fixos. Roles continuam no
+JWT apenas para compat. O backend e a fonte de verdade — resolve os grupos do
+usuario (incluindo o fecho `encompasses[]`) a cada request.
+
+- **Capacidades de area** (`E_AREA_CAPABILITY`: MANAGE_USERS, MANAGE_MENU,
+  MANAGE_USER_GROUPS, MANAGE_SETTINGS, MANAGE_TOOLS, MANAGE_PLUGINS, MANAGE_CHAT
+  — 7 capacidades) liberam o acesso as areas do sistema; sao atribuiveis a
+  qualquer grupo.
+- **Bindings por acao** (`{ kind, group }` com `kind ∈ PUBLIC|NOBODY|GROUP`)
+  controlam tabela (`table.permissions`), visibilidade de campo
+  (`field.permissions.{list,form,detail}`) e menu (`menu.visibility`). Para
+  acoes de tabela o acesso e a **intersecao**: o grupo precisa da permissao
+  global da acao (`resolveUserCapabilities`) E o binding precisa liberar.
+  PUBLIC, dono e membros nao passam pela intersecao.
+- **Membros da tabela** (`table.members[]` com perfis owner/admin/editor/
+  contributor/viewer). Nao existe mais `administrators[]`.
+
+O modelo legado (`table.visibility`/`collaboration`/`administrators`,
+`field.showInList/showInForm/showInDetail`) foi removido — nao ha fallback. O
+backend e a fonte de verdade do enforcement.
 
 Implementado em:
 
-- `lib/menu/menu-access-permissions.ts`: ROLE_ROUTES (rotas por role),
-  ROLE_DEFAULT_ROUTE (redirect pos-login), canAccessRoute(role, route)
-- `lib/menu/menu.ts`: getStaticMenusByRole(role) retorna menus before/after
+- `lib/menu/menu-access-permissions.ts`: rotas permitidas resolvidas pelas
+  capacidades do usuario, `ROLE_DEFAULT_ROUTE` (redirect pos-login),
+  `canAccessRoute(...)`
+- `lib/menu/menu.ts`: monta os menus before/after a partir das capacidades
 - `hooks/use-table-permission.ts`: verifica permissoes granulares
-  (VIEW/CREATE/UPDATE/REMOVE para TABLE/FIELD/ROW)
-
-Visibilidade de tabela (para visitantes nao autenticados):
-
-| Visibilidade | Comportamento                |
-| ------------ | ---------------------------- |
-| PUBLIC       | Visualizacao liberada        |
-| FORM         | Criacao de registro liberada |
-| OPEN         | VIEW + CREATE_ROW            |
-| RESTRICTED   | VIEW only                    |
-| PRIVATE      | Bloqueado                    |
+  (VIEW/CREATE/UPDATE/REMOVE para TABLE/FIELD/ROW) avaliando os bindings de
+  `table.permissions` + perfil de membro + dono (binding-aware)
 
 ## Formularios
 
 Sistema central em `integrations/tanstack-form/`:
 
-- `form-hook.ts`: createFormHook registra 40 field components - exporta
+- `form-hook.ts`: createFormHook registra 45 field components - exporta
   useAppForm + withForm
 - `form-context.ts`: createFormHookContexts - fieldContext, formContext
 - `use-field-validation.ts`: hook retorna { field, isInvalid, errors }
@@ -274,22 +289,22 @@ Sistema central em `integrations/tanstack-form/`:
 
 | Categoria      | Arquivo                | Quantidade | Exemplos                                                        |
 | -------------- | ---------------------- | ---------- | --------------------------------------------------------------- |
-| Base (leves)   | fields/base.ts         | 14         | FieldText, FieldEmail, FieldSwitch, FieldFileUpload             |
+| Base (leves)   | fields/base.ts         | 16         | FieldText, FieldEmail, FieldSwitch, FieldFileUpload             |
 | Rich (pesados) | fields/rich.ts         | 2          | FieldCodeEditor (Monaco), FieldEditor (Tiptap)                  |
-| Table Config   | fields/table-config.ts | 14         | TableFieldTypeSelect, TableFieldDropdownOptions                 |
-| Table Row      | fields/table-row.ts    | 10         | TableRowTextField, TableRowDateField, TableRowRelationshipField |
+| Table Config   | fields/table-config.ts | 18         | TableFieldTypeSelect, TableFieldDropdownOptions                 |
+| Table Row      | fields/table-row.ts    | 9          | TableRowTextField, TableRowDateField, TableRowRelationshipField |
 
 Componentes pesados (Monaco ~2MB, Tiptap ~500KB) usam React.lazy para nao
 impactar bundle inicial.
 
 ## Tipos e Interfaces
 
-| Arquivo             | Conteudo                                                                                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/constant.ts`   | Enums: E_FIELD_TYPE (14 tipos), E_FIELD_FORMAT (15 formatos), E_ROLE (4), E_TABLE_TYPE (2), E_TABLE_STYLE (9 visualizacoes), E_TABLE_VISIBILITY (5), E_TABLE_COLLABORATION (2), E_TABLE_PERMISSION (12) |
-| `lib/interfaces.ts` | Tipos: IUser, ITable, IField, IRow, IMenu, IPermission, ISetting, Meta (paginacao), etc.                                                                                                                |
-| `lib/schemas.ts`    | Zod schemas compartilhados entre formularios                                                                                                                                                            |
-| `lib/payloads.ts`   | DTOs tipados para requisicoes API                                                                                                                                                                       |
+| Arquivo             | Conteudo                                                                                                                                                                                                                                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/constant.ts`   | Enums: E*FIELD_TYPE (14 tipos), E_FIELD_FORMAT (15 formatos), E_ROLE (4), E_TABLE_TYPE (2), E_TABLE_STYLE (9 visualizacoes), E_TABLE_PERMISSION (12), E_PERMISSION_TARGET (PUBLIC/NOBODY/GROUP), E_TABLE_PROFILE (owner/admin/editor/contributor/viewer), E_AREA_CAPABILITY (7: MANAGE*\*, inclui MANAGE_CHAT) |
+| `lib/interfaces.ts` | Tipos: IUser, ITable, IField, IRow, IMenu, IPermission, ISetting, Meta (paginacao), etc.                                                                                                                                                                                                                       |
+| `lib/schemas.ts`    | Zod schemas compartilhados entre formularios                                                                                                                                                                                                                                                                   |
+| `lib/payloads.ts`   | DTOs tipados para requisicoes API                                                                                                                                                                                                                                                                              |
 
 ## Build & Deploy
 
@@ -324,7 +339,7 @@ documento Setting do MongoDB e sao carregados em runtime via server function
 
 ## Componentes UI (Design System)
 
-34 componentes em `components/ui/` baseados em Radix UI + shadcn pattern.
+36 componentes em `components/ui/` baseados em Radix UI + shadcn pattern.
 
 Padroes:
 
@@ -336,7 +351,7 @@ Padroes:
 
 ## Componentes de Negocio
 
-16 subdiretorios em `components/common/`. O mais importante e `dynamic-table/`
+24 subdiretorios em `components/common/`. O mais importante e `dynamic-table/`
 (9 subdirs) que implementa o sistema central de tabelas dinamicas do low-code.
 
 Cada subdiretorio tem seu proprio CLAUDE.md com documentacao detalhada.
@@ -375,3 +390,121 @@ Tipos em `IExtension` (lib/interfaces.ts), enum `E_EXTENSION_TYPE`
 | Utilitario         | kebab-case.ts                | `handle-api-error.ts`        |
 | Store              | kebab-case.ts                | `authentication.ts`          |
 | Tipo/Interface     | I{Nome} ou E\_{NOME}         | `IUser`, `E_ROLE`            |
+
+## Convencoes de Codigo
+
+As 6 regras do code-pattern, **enforçadas pelo ESLint** em todo o `src/` e
+`extensions/` (excecoes: `routeTree.gen.ts` gerado, `components/ui/**` shadcn e
+`*.d.ts` de augmentation). Regras 1–3 via regras nativas (`no-ternary`,
+`consistent-type-assertions: never`, `no-explicit-any`); regra 4 via
+`consistent-type-definitions: type`; regras 5 e 6 via plugin local `lowcodejs/*`
+(`no-type-intersection`, `prefer-lookup-object`) em `eslint-local-rules/` na
+raiz do monorepo. `npm run lint` falha em qualquer nova violacao.
+
+### 1. Sem ternario de atribuicao/controle
+
+Nao usar ternario para atribuir valor ou escolher fluxo. Preferir `if` classico.
+Manter `??`, `?.` e `&&`/`||` short-circuit (nao sao ternario).
+
+```ts
+// Evitar
+const status = active ? 'on' : 'off';
+
+// Preferir
+let status = 'off';
+if (active) status = 'on';
+```
+
+Em JSX, renderizar cada caso com seu proprio short-circuit:
+
+```tsx
+// Evitar
+{
+  isOpen ? <Panel /> : <Placeholder />;
+}
+
+// Preferir
+{
+  isOpen && <Panel />;
+}
+{
+  !isOpen && <Placeholder />;
+}
+```
+
+Para props que exigem um de dois valores nao-booleanos, usar short-circuit
+`(cond && 'a') || 'b'` (ex.: `type={(show && 'text') || 'password'}`) ou
+precomputar com `let` + `if` antes do JSX.
+
+### 2. Sem `any` desnecessario
+
+Preferir `type` proprio, inferencia ou `unknown` + narrow. Os **render props do
+TanStack Form nao usam mais `any`**: forms dinamicos passam por `withForm` (o
+`form` chega tipado, o `field` do `AppField` infere sozinho) e validators tipam
+`value` com `FieldValue | undefined` (o que `buildFieldValidator` espera). `any`
+so permanece em boundary genuino (dados dinamicos de row `Record<string, any>`,
+API do sandbox, helper de render de campo cujo tipo a lib nao exporta), sempre
+com comentario curto justificando. O `IRow` **nao** e mais `any`: o indice
+`[slug]` e tipado por `RowResultValue`; ao ler `row[slug]` faca narrow explicito
+(type guard / `if`), nunca `as`.
+
+### 3. Sem `as` (preferir `satisfies`)
+
+`as const` e permitido. Para o resto, preferir `satisfies` ou corrigir o tipo na
+origem. Onde a lib genuinamente forca (dados dinamicos de runtime), manter o
+minimo com comentario; nunca introduzir `as`/`any` novo.
+
+### 4. Sempre `type`, nunca `interface`
+
+Modelar tipos com `type` (objeto, uniao, mapeado). `interface` so em _module
+augmentation_ (`declare module`), onde o TS exige merging (ex.:
+`lib/tanstack-table.d.ts` e `interface Register` do router). Ver o skill
+`code-pattern`.
+
+### 5. Combinar tipos com `Merge`, nao `&`
+
+Para juntar dois tipos-objeto, usar `Merge<A, B>` (de `lib/interfaces.ts`) no
+lugar da intersecao `A & B` — mostra o tipo final flat no editor. 3+ partes
+aninham: `Merge<Merge<A, B>, C>`.
+
+```ts
+// Evitar
+type Props = Pick<Omit<UseMutationOptions<…>, …>, 'onError'> & { onSuccess?: … };
+// Preferir
+type Props = Merge<Pick<Omit<UseMutationOptions<…>, …>, 'onError'>, { onSuccess?: … }>;
+```
+
+Excecao: intersecao com `Array<T>` mantem `&`; uniao no operando esquerdo (ex.:
+`MenuItem & { … }` onde `MenuItem` e uniao) tambem fica `&` — `Merge` mapeia
+`keyof` e destroi a uniao discriminada.
+
+### 6. Lookup object no lugar de if/else-if 3+
+
+Quando mapeia um discriminante (chave/`type`/enum) para um valor ou handler em
+**3+ casos**, usar um lookup object no lugar da cadeia de `if`/`else if`. 1–2
+casos mantem `if`; logica booleana/narrowing (`Array.isArray`, `typeof`) fica
+`if`.
+
+```ts
+// Preferir
+const SETTINGS_BY_MODE: Record<Mode, Settings> = { off: …, sliding: …, fixed: … };
+onChange(SETTINGS_BY_MODE[mode]);
+```
+
+### Tipagem de registros (rows)
+
+Apesar de dinamicas, as rows tem contrato fechado por tipo de campo, em
+`lib/interfaces.ts`:
+
+- **Envio** (`RowPayload` = `Record<string, RowPayloadValue>`): TEXT/DATE →
+  `string|null`; DROPDOWN/CATEGORY/FILE/USER/RELATIONSHIP → ids
+  (`Array<string>`).
+- **Resposta** (`IRow` = `RowResult`): nativos tipados (`RowNative`: creator/
+  updater = ref `IUser`, status, datas) + indice `RowResultValue` (FILE →
+  `IStorage[]`, USER → `IUser[]`, RELATIONSHIP → `IRow[]`, REACTION/EVALUATION →
+  summary).
+- `RowFieldValueMap` mapeia tipo-de-campo → valor (lookup, sem conditional
+  type); `Row<TFields>` deriva a row exata quando os fields sao `const`
+  (templates).
+
+Commits: Conventional Commits atomicos em pt-BR (`refactor(escopo): ...`).

@@ -12,7 +12,7 @@ CRUD de itens (rows) embedded dentro de um campo FIELD_GROUP de uma row pai.
 |----------|--------|------|-----------|
 | create | POST | `/:slug/rows/:rowId/groups/:groupSlug` | CREATE_ROW |
 | list | GET | `/:slug/rows/:rowId/groups/:groupSlug` | VIEW_ROW |
-| export-csv | GET | `/:slug/rows/:rowId/groups/:groupSlug/exports/csv` | MASTER/ADMINISTRATOR + VIEW_ROW |
+| export-csv | GET | `/:slug/rows/:rowId/groups/:groupSlug/exports/csv` | VIEW_ROW (interseção grupo+tabela) |
 | show | GET | `/:slug/rows/:rowId/groups/:groupSlug/:itemId` | VIEW_ROW |
 | update | PATCH | `/:slug/rows/:rowId/groups/:groupSlug/:itemId` | UPDATE_ROW |
 | delete | DELETE | `/:slug/rows/:rowId/groups/:groupSlug/:itemId` | REMOVE_ROW |

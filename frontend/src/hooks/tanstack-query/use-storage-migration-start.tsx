@@ -8,6 +8,7 @@ import type { AxiosError } from 'axios';
 import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
+import type { Merge } from '@/lib/interfaces';
 
 export type StorageMigrationStartPayload = {
   concurrency?: number;
@@ -21,20 +22,23 @@ export type StorageMigrationStartResponse = {
 
 type Response = { data: StorageMigrationStartResponse };
 
-type Props = Pick<
-  Omit<
-    UseMutationOptions<
-      StorageMigrationStartResponse,
-      AxiosError | Error,
-      StorageMigrationStartPayload,
-      unknown
+type Props = Merge<
+  Pick<
+    Omit<
+      UseMutationOptions<
+        StorageMigrationStartResponse,
+        AxiosError | Error,
+        StorageMigrationStartPayload,
+        unknown
+      >,
+      'mutationFn' | 'onSuccess'
     >,
-    'mutationFn' | 'onSuccess'
+    'onError'
   >,
-  'onError'
-> & {
-  onSuccess?: (data: StorageMigrationStartResponse) => void;
-};
+  {
+    onSuccess?: (data: StorageMigrationStartResponse) => void;
+  }
+>;
 
 export function useStorageMigrationStart(
   props: Props = {},

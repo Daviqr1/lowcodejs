@@ -1,0 +1,24 @@
+graph TD
+    subgraph host["Host / Docker Engine"]
+        subgraph net["Rede bridge low-code-js-network"]
+            APP["app frontend SSR React 19 TanStack Start Nitro host 5173 to container 5173"]
+            API["api backend Fastify 5 Socket.IO host 3000 to container 3000"]
+            MCP["mcp profile ai MCP Server host 3001 to container 3000"]
+            MONGO[("mongo latest 27017 DB system e DB data")]
+            REDIS[("redis 7 alpine 6379 cache e BullMQ")]
+        end
+        VOLM[("mongo-volume")]
+        VOLR[("redis-volume")]
+        STO[("_storage bind mount backend _storage")]
+    end
+
+    Browser["Navegador cliente HTTP"] -->|HTTP WS| APP
+    Browser -->|HTTP WS direto| API
+    APP -->|SERVER_API_URL http api 3000| API
+    API -->|DATABASE_URL mongodb mongo 27017| MONGO
+    API -->|REDIS_URL redis redis 6379| REDIS
+    API -->|MCP_SERVER_URL http mcp 3000 mcp| MCP
+    MCP -->|LOWCODE_API_URL http api 3000| API
+    MONGO --- VOLM
+    REDIS --- VOLR
+    API --- STO

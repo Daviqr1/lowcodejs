@@ -9,7 +9,8 @@ MASTER ativa em `/extensions` quando quer usar.
 ```
 apps/
 └── modules/
-    └── dashboard/                ← Painel administrativo com dados reais (MODULE)
+    ├── dashboard/                ← Painel administrativo com dados reais (MODULE)
+    └── senhas/                   ← Cofre de senhas cifrado, canais privados (MODULE)
 ```
 
 ## Modules
@@ -17,6 +18,7 @@ apps/
 | ID          | URL default          | Permissões | Descrição |
 |-------------|----------------------|------------|-----------|
 | `dashboard` | `/e/apps/dashboard`  | MASTER, ADMINISTRATOR | Estatísticas reais do sistema (totais, gráfico mensal, atividades recentes). Endpoint próprio `GET /e/apps/dashboard/stats` blindado por `ExtensionActiveMiddleware` |
+| `senhas`    | `/e/apps/senhas`     | Qualquer autenticado | Cofre de senhas inspirado no passbolt, modelado no Forum: canais privados por padrão e segredos cifrados em repouso (AES-256-GCM). Models Mongoose dedicados (`password_channels`, `password_entries`), 8 rotas REST. Ver `modules/senhas/CLAUDE.md` |
 
 ## Convenção de pacote
 

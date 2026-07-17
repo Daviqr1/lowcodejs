@@ -3,10 +3,17 @@
 Lista usuarios com paginacao, busca e ordenacao.
 
 ## Endpoint
-`GET /users/paginated` | Auth: Yes | Permission: -
+`GET /users/paginated` | Auth: Yes | Permission: nenhuma (somente auth)
+
+> Diferente das demais operacoes de `users/`, este endpoint **nao** usa
+> `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)` — fica apenas atras de
+> `AuthenticationMiddleware`. Intencional: alimenta os pickers de campos USER
+> de toda a aplicacao, members de tabela e selects de forum; gatear por
+> MANAGE_USERS quebraria a edicao normal de registros para quem nao tem essa
+> capability.
 
 ## Fluxo
-1. Middleware: `AuthenticationMiddleware({ optional: false })`
+1. Middleware: `AuthenticationMiddleware({ optional: false })` (sem `PermissionMiddleware` — ver nota acima)
 2. Validator: `UserPaginatedQueryValidator` - campos: page (number, min 1, default 1), perPage (number, min 1, max 100, default 50), search (string, trim, optional), order-name (enum asc/desc, optional), order-email (enum asc/desc, optional), order-group (enum asc/desc, optional), order-status (enum asc/desc, optional), order-created-at (enum asc/desc, optional)
 3. UseCase: `UserPaginatedUseCase`
    - Monta objeto `sort` a partir dos parametros order-*

@@ -1,25 +1,30 @@
 /* eslint-disable import/order */
+import 'reflect-metadata';
+
 import { getInstanceByToken } from 'fastify-decorators';
 
 import type { IJWTPayload } from '@application/core/entity.core';
 import { Setting } from '@application/model/setting.model';
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
-import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
+import StorageMongooseRepository from '@application/repositories/storage/storage.repository';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initNotificationsSocket } from '@application/resources/notifications/notifications.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import { startEmailWorker } from '@application/services/email-queue/worker';
+import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bootstrap';
+import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
 import { EmailContractService } from '@application/services/email/email-contract.service';
-import NodemailerEmailService from '@application/services/email/nodemailer-email.service';
+import NodemailerEmailService from '@application/services/email/email.service';
 import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
 import { initCsvImportSocket } from '@application/resources/table-rows/import-csv/import-csv.socket';
+import { initTableImportSocket } from '@extensions/core/tools/tables-import-export/import-table.socket';
 import { startCsvImportWorker } from '@application/services/csv-import/worker';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import RowMongooseRepository from '@application/repositories/row/row-mongoose.repository';
+import RowMongooseRepository from '@application/repositories/row/row.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table-mongoose.repository';
+import TableMongooseRepository from '@application/repositories/table/table.repository';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
-import BcryptRowPasswordService from '@application/services/row-password/bcrypt-row-password.service';
+import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import StorageService from '@application/services/storage/storage.service';
 import { MongooseConnect } from '@config/database.config';
 import { syncStorageEnv } from '@config/setting-env-sync';
@@ -47,7 +52,7 @@ async function loadStorageConfig(): Promise<void> {
   const setting = await Setting.findOne().lean();
 
   if (setting) {
-    syncStorageEnv(setting as never);
+    syncStorageEnv(setting);
     console.info(`[Storage] Driver: ${setting.STORAGE_DRIVER ?? 'local'}`);
   } else {
     console.info('[Storage] Nenhum Setting encontrado, usando driver local');
@@ -55,11 +60,12 @@ async function loadStorageConfig(): Promise<void> {
 }
 
 async function syncSettingsFromDatabase(): Promise<void> {
-  const settings = await Setting.findOne().lean();
+  const settings: Record<string, unknown> | null =
+    await Setting.findOne().lean();
   if (!settings) return;
 
   for (const key of SETTING_SYNC_KEYS) {
-    const value = (settings as Record<string, unknown>)[key];
+    const value = settings[key];
     if (value !== undefined && value !== null) {
       process.env[key] = String(value);
     }
@@ -82,7 +88,21 @@ async function sweepStaleMigrations(): Promise<void> {
 async function start(): Promise<void> {
   try {
     await loadStorageConfig();
+
+    // Agendamentos: o hook de limpeza precisa ser registrado ANTES do ready()
+    // (Fastify trava addHook depois disso). O bootstrap em si roda após o ready()
+    // e preenche o orchestrator lido pelo hook no shutdown.
+    let schedulerOrchestrator: SchedulerOrchestrator | undefined = undefined;
+    kernel.addHook('onClose', async () => {
+      schedulerOrchestrator?.clearAll();
+    });
+
     await kernel.ready();
+
+    if (Env.SCHEDULER_ENABLED) {
+      schedulerOrchestrator = bootstrapSchedules();
+      console.info('Scheduler started');
+    }
 
     await kernel.listen({ port: Env.PORT, host: '0.0.0.0' });
     console.info(`HTTP Server running on http://localhost:${Env.PORT}`);
@@ -99,6 +119,9 @@ async function start(): Promise<void> {
 
     initNotificationsSocket(io, jwtDecode);
     console.info('Socket.IO notifications namespace initialized');
+
+    initTableImportSocket(io, jwtDecode);
+    console.info('Socket.IO table-import namespace initialized');
 
     await sweepStaleMigrations();
 
@@ -141,6 +164,11 @@ async function start(): Promise<void> {
       rowPasswordService: csvRowPasswordService,
     });
     console.info('CSV import worker started');
+
+    // RowAccessGuard: deps e registro do guard fluem por DI (@Service +
+    // di-registry). O RowAccessControlGuard recebe repos/builders por
+    // constructor injection e o RowAccessGuardService o registra ao ser
+    // instanciado — sem wiring manual aqui.
   } catch (err) {
     console.error('Error starting server:', err);
     process.exit(1);

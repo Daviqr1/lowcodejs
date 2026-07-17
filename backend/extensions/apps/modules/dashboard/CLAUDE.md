@@ -33,7 +33,7 @@ Middlewares:
 ## Cálculo
 
 - **Totais**: `tableRepository.findMany({})` + `userRepository.findMany({})`
-- **records**: para cada tabela ativa, `getDataConnection().collection(slug).countDocuments({ trashed: { $ne: true } })` em paralelo via `Promise.all`. Tabelas sem collection ainda retornam 0
+- **records**: para cada tabela ativa, `getDataConnection().collection(slug).countDocuments({ trashedAt: null })` em paralelo via `Promise.all` (exclui rows na lixeira; rascunhos contam). Tabelas sem collection ainda retornam 0
 - **tablesPerMonth**: agrupa `tables.createdAt` por mês nos últimos 6 meses, label em PT-BR
 - **usersByStatus**: 2 entradas (ativos/inativos) com `var(--chart-1/2)` para cor consistente com tema
 - **recentActivity**: top 5 tabelas + top 5 usuários por `createdAt` desc, mesclados e cortados em 10

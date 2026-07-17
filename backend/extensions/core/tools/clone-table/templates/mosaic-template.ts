@@ -2,10 +2,8 @@ import slugify from 'slugify';
 
 import { right } from '@application/core/either.core';
 import {
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   FIELD_NATIVE_LIST,
   type IField,
 } from '@application/core/entity.core';
@@ -35,10 +33,7 @@ export async function createMosaicTemplate(
   const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
   const nativeFieldIds = nativeFields.map((field) => field._id);
 
-  const _schema = deps.tableSchemaService.computeSchema([
-    ...nativeFields,
-    ...fields,
-  ]);
+  const _schema = deps.schemaBuilder.build([...nativeFields, ...fields]);
 
   const createPayload: TableCreatePayload = {
     _schema,
@@ -49,9 +44,6 @@ export async function createMosaicTemplate(
     logo: null,
     fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
     style: E_TABLE_STYLE.MOSAIC,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
-    administrators: [],
     owner: payload.ownerId,
     fieldOrderList: [...nativeFieldIds, ...orderList],
     fieldOrderForm: [...nativeFieldIds, ...orderForm],

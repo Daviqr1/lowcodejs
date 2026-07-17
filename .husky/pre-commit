@@ -1,2 +1,11 @@
+prefix=$(git rev-parse --show-prefix)
+case "$prefix" in
+  backend/*|frontend/*)
+    echo "❌ Faça o commit a partir da raiz do projeto (./), não de dentro de $prefix"
+    echo "   Pode usar 'cd' à vontade, mas o commit deve sair da raiz."
+    exit 1
+    ;;
+esac
+
 npm run lint:backend
 npm run lint:frontend

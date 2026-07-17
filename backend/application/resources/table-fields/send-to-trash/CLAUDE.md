@@ -14,7 +14,7 @@ Envia um campo para a lixeira (soft delete), desabilitando visibilidade.
    - Valida que campo nao e nativo
    - Valida que campo nao e locked
    - Valida que campo nao esta ja na lixeira
-   - Atualiza campo: showInList=false, showInForm=false, showInDetail=false, showInFilter=false, required=false, trashed=true, trashedAt=new Date()
+   - Atualiza campo: `permissions=buildFieldPermissions(false,false,false)` (oculta em list/form/detail), showInFilter=false, required=false, trashed=true, trashedAt=new Date()
    - Reconstroi lista de fields e _schema da tabela
    - Atualiza tabela
    - Retorna campo atualizado

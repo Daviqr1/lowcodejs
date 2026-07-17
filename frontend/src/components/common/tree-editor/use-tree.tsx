@@ -1,18 +1,20 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { useCallback, useMemo, useState } from 'react';
 
-export interface TreeNode {
+import type { Merge } from '@/lib/interfaces';
+
+export type TreeNode = {
   id: string;
   label: string;
   children?: Array<TreeNode>;
-}
+};
 
-export interface UseTreeSelectProps {
+export type UseTreeSelectProps = {
   data: Array<TreeNode>;
   isMulti: boolean;
   value: string | Array<string> | null;
   enableSearch: boolean;
-}
+};
 
 export function useTreeSelect({
   data,
@@ -29,8 +31,8 @@ export function useTreeSelect({
     (
       nodes: Array<TreeNode>,
       level = 0,
-    ): Array<TreeNode & { level: number }> => {
-      return nodes.reduce(
+    ): Array<Merge<TreeNode, { level: number }>> => {
+      return nodes.reduce<Array<Merge<TreeNode, { level: number }>>>(
         (acc, node) => {
           acc.push({ ...node, level });
           if (node.children) {
@@ -38,7 +40,7 @@ export function useTreeSelect({
           }
           return acc;
         },
-        [] as Array<TreeNode & { level: number }>,
+        [],
       );
     },
     [],

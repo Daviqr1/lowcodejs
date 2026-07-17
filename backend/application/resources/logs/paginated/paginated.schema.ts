@@ -7,9 +7,9 @@ import {
 
 export const LoggerPaginatedSchema: FastifySchema = {
   tags: ['Logs'],
-  summary: 'List logs with pagination',
+  summary: 'Listar logs com paginação',
   description:
-    'Retrieves a paginated list of log entries with optional search and filtering functionality',
+    'Retorna uma lista paginada de registros de log com busca e filtro de lixeira opcionais',
   security: [{ cookieAuth: [] }],
   querystring: {
     type: 'object',
@@ -18,7 +18,7 @@ export const LoggerPaginatedSchema: FastifySchema = {
         type: 'number',
         minimum: 1,
         default: 1,
-        description: 'Page number (starts from 1)',
+        description: 'Número da página (começa em 1)',
         examples: [1, 2, 5],
       },
       perPage: {
@@ -26,22 +26,27 @@ export const LoggerPaginatedSchema: FastifySchema = {
         minimum: 1,
         maximum: 100,
         default: 50,
-        description: 'Number of items per page (max 100)',
+        description: 'Quantidade de itens por página (máx 100)',
         examples: [10, 25, 50, 100],
       },
       search: {
         type: 'string',
         minLength: 1,
         description:
-          'Search term for filtering logs by URL or object ID (optional)',
+          'Termo de busca para filtrar logs por URL ou ID de objeto (opcional)',
         examples: ['/api/users', 'CREATE', '507f1f77bcf86cd799439011'],
       },
+      trashed: {
+        type: 'string',
+        enum: ['true', 'false'],
+        description: 'Filtrar logs na lixeira (opcional, default: ativos)',
+        examples: ['true', 'false'],
+      },
     },
-    additionalProperties: false,
   },
   response: {
     200: {
-      description: 'Paginated list of log entries',
+      description: 'Lista paginada de registros de log',
       type: 'object',
       properties: {
         data: {
@@ -52,12 +57,12 @@ export const LoggerPaginatedSchema: FastifySchema = {
               _id: { type: 'string' },
               url: {
                 type: 'string',
-                description: 'The URL that triggered the log entry',
+                description: 'URL que originou o registro de log',
               },
               user: {
                 type: 'object',
                 nullable: true,
-                description: 'User who performed the action (nullable)',
+                description: 'Usuário que executou a ação (nullable)',
                 properties: {
                   _id: { type: 'string' },
                   name: { type: 'string' },
@@ -66,22 +71,56 @@ export const LoggerPaginatedSchema: FastifySchema = {
               },
               action: {
                 type: 'string',
-                description: 'Type of action performed',
+                description: 'Tipo de ação executada',
                 examples: Object.values(E_LOGGER_ACTION_TYPE),
               },
               object: {
                 type: 'string',
-                description: 'Type of object affected by the action',
+                description: 'Tipo de objeto afetado pela ação',
                 examples: Object.values(E_LOGGER_OBJECT_TYPE),
               },
               object_id: {
                 type: ['string', 'null'],
-                description: 'ID of the affected object (nullable)',
+                description: 'ID do objeto afetado (nullable)',
               },
               content: {
                 description:
-                  'Additional content/payload of the log entry (nullable, any type)',
+                  'Conteúdo/payload adicional do registro (nullable, qualquer tipo)',
                 nullable: true,
+              },
+              creator: {
+                type: 'object',
+                nullable: true,
+                description:
+                  'Usuário que criou o registro referenciado (nullable)',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+              updater: {
+                type: 'object',
+                nullable: true,
+                description:
+                  'Usuário que modificou por último o registro referenciado (nullable)',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+              objectCreatedAt: {
+                type: ['string', 'null'],
+                format: 'date-time',
+                description:
+                  'Quando o registro referenciado foi criado (nullable)',
+              },
+              objectUpdatedAt: {
+                type: ['string', 'null'],
+                format: 'date-time',
+                description:
+                  'Quando o registro referenciado foi modificado por último (nullable)',
               },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
@@ -101,10 +140,10 @@ export const LoggerPaginatedSchema: FastifySchema = {
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -112,33 +151,19 @@ export const LoggerPaginatedSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Unauthorized',
-          code: 401,
-          cause: 'AUTHENTICATION_REQUIRED',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['LIST_LOGGER_PAGINATED_ERROR'] },
+        cause: { type: 'string', enum: ['LIST_LOG_PAGINATED_ERROR'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Internal server error',
-          code: 500,
-          cause: 'LIST_LOGGER_PAGINATED_ERROR',
-        },
-      ],
     },
   },
 };

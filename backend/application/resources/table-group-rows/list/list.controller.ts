@@ -13,7 +13,6 @@ import { GroupRowListParamsValidator } from './list.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: GroupRowListUseCase = getInstanceByToken(
       GroupRowListUseCase,
     ),

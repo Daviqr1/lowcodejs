@@ -9,7 +9,7 @@ import {
 
 import { cn } from '@/lib/utils';
 
-interface DatepickerDaysProps {
+type DatepickerDaysProps = {
   currentMonth: Date;
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
@@ -21,7 +21,7 @@ interface DatepickerDaysProps {
   hoverDate?: Date | null;
   onDateHover?: (date: Date | null) => void;
   isRangeMode?: boolean;
-}
+};
 
 export function DatepickerDays({
   currentMonth,

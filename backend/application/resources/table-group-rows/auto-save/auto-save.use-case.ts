@@ -1,31 +1,27 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField } from '@application/core/entity.core';
-import { E_FIELD_TYPE } from '@application/core/entity.core';
+import type { IField, Merge } from '@application/core/entity.core';
+import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { validateRowPayload } from '@application/core/row-payload-validator.core';
+import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { DraftTable } from '@application/resources/table-rows/auto-save/draft-table';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
-type Payload = Record<string, unknown> & {
-  slug: string;
-  rowId: string;
-  groupSlug: string;
-  _id?: string;
-  creator?: string | null;
-};
-
-type DraftPayload = Record<string, unknown>;
-
-type TrashState = {
-  trashed: boolean;
-  trashedAt: string | null;
-};
+type Payload = Merge<
+  Record<string, unknown>,
+  {
+    slug: string;
+    rowId: string;
+    groupSlug: string;
+    _id?: string;
+    creator?: string | null;
+  }
+>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -72,13 +68,9 @@ export default class GroupRowAutoSaveUseCase {
 
       const groupFields: IField[] = group.fields || [];
 
-      const isIncomplete = this.isIncomplete({ fields: groupFields, body });
-
-      const draft = this.drafting({ fields: groupFields, body });
-
-      // Valida apenas formato/tipo dos campos que possuem valor real.
-      // A ausencia de obrigatorios NAO rejeita: vira sinal de rascunho
-      // (trashed=true), igual ao auto-save do registro principal.
+      // Valida apenas formato/tipo dos campos que possuem valor real. O
+      // auto-save de grupo NUNCA bloqueia por obrigatorio ausente: o item e
+      // persistido como rascunho (status='draft') com os dados parciais reais.
       const fieldsWithValue = groupFields.filter((field) => {
         return (
           !field.native &&
@@ -88,7 +80,11 @@ export default class GroupRowAutoSaveUseCase {
         );
       });
 
-      const errors = validateRowPayload(draft, fieldsWithValue, table.groups);
+      const errors = RowPayloadValidator.validate(
+        body,
+        fieldsWithValue,
+        table.groups,
+      );
 
       if (errors) {
         return left(
@@ -100,27 +96,27 @@ export default class GroupRowAutoSaveUseCase {
         );
       }
 
-      let trashed: TrashState = {
-        trashed: true,
-        trashedAt: new Date().toISOString(),
+      const draftState = {
+        status: E_ROW_STATUS.DRAFT,
+        draftAt: new Date(),
       };
 
-      if (!isIncomplete)
-        trashed = {
-          trashed: false,
-          trashedAt: null,
-        };
+      // Schema dedicado com todos os campos opcionais: addGroupItem/
+      // updateGroupItem usam row.save(), que roda os validators do subdoc. O
+      // core nao e tocado; a tabela original segue exigindo required nas ops
+      // normais.
+      const draftTable = DraftTable.from(table);
 
-      await this.rowPasswordService.hash(draft, groupFields);
+      await this.rowPasswordService.hash(body, groupFields);
 
       if (!itemId) {
         const row = await this.rowRepository.addGroupItem({
-          table,
+          table: draftTable,
           rowId,
           groupFieldSlug: groupField.slug,
           data: {
-            ...draft,
-            ...trashed,
+            ...body,
+            ...draftState,
             creator: creator || null,
           },
         });
@@ -151,13 +147,13 @@ export default class GroupRowAutoSaveUseCase {
         );
 
       const row = await this.rowRepository.updateGroupItem({
-        table,
+        table: draftTable,
         rowId,
         groupFieldSlug: groupField.slug,
         itemId,
         data: {
-          ...draft,
-          ...trashed,
+          ...body,
+          ...draftState,
         },
       });
 
@@ -180,66 +176,11 @@ export default class GroupRowAutoSaveUseCase {
     }
   }
 
-  private drafting(data: {
-    fields: IField[];
-    body: DraftPayload;
-  }): DraftPayload {
-    const FIELD_DEFAULT_MAPPER: Record<string, string | string[]> = {
-      [E_FIELD_TYPE.TEXT_SHORT]: '-',
-      [E_FIELD_TYPE.TEXT_LONG]: '-',
-      [E_FIELD_TYPE.DROPDOWN]: [],
-      [E_FIELD_TYPE.DATE]: new Date().toISOString(),
-      [E_FIELD_TYPE.RELATIONSHIP]: [],
-      [E_FIELD_TYPE.FILE]: [],
-      [E_FIELD_TYPE.CATEGORY]: [],
-      [E_FIELD_TYPE.USER]: [],
-    };
-
-    return data.fields.reduce(
-      (accumulator, field) => {
-        if (field.native) return accumulator;
-        if (field.trashed) return accumulator;
-
-        const fallback = FIELD_DEFAULT_MAPPER[field.type];
-        if (fallback === undefined) return accumulator;
-
-        // Campo AUSENTE do payload: preenche com o default do tipo.
-        if (!(field.slug in accumulator)) {
-          accumulator[field.slug] = fallback;
-          return accumulator;
-        }
-
-        // Campo presente-porém-vazio E obrigatório: preenche placeholder para
-        // passar no `required` do schema Mongoose. O rascunho permanece
-        // trashed:true via isIncomplete — só evita a falha de validação.
-        if (field.required && !this.hasValue(accumulator[field.slug])) {
-          accumulator[field.slug] = fallback;
-        }
-
-        return accumulator;
-      },
-      { ...data.body },
-    );
-  }
-
   private hasValue(value: unknown): boolean {
     if (value === null || value === undefined) return false;
     if (typeof value === 'string') return value.trim().length > 0;
     if (Array.isArray(value)) return value.length > 0;
     return true;
-  }
-
-  private isIncomplete(data: {
-    fields: IField[];
-    body: DraftPayload;
-  }): boolean {
-    return data.fields.some((field) => {
-      if (field.native) return false;
-      if (field.trashed) return false;
-      if (!field.required) return false;
-
-      return !this.hasValue(data.body[field.slug]);
-    });
   }
 
   private lastItem(items: unknown): Record<string, unknown> | undefined {

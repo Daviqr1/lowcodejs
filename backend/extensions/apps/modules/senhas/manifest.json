@@ -1,0 +1,13 @@
+{
+  "id": "senhas",
+  "type": "MODULE",
+  "name": "Senhas",
+  "description": "Cofre de senhas com canais privados por padrão e segredos criptografados (AES-256-GCM) em repouso. Inspirado no passbolt.",
+  "version": "1.0.0",
+  "author": "LowcodeJS",
+  "icon": "KeyRoundIcon",
+  "route": "/e/apps/senhas",
+  "requires": {
+    "lowcodejs": ">=1.0.0"
+  }
+}

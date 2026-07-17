@@ -20,9 +20,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const Permission = (mongoose?.models?.Permission ||
-  mongoose.model<Entity>(
-    'Permission',
-    Schema,
-    'permissions',
-  )) as mongoose.Model<Entity>;
+export const Permission: mongoose.Model<Entity> =
+  mongoose?.models?.Permission ||
+  mongoose.model<Entity>('Permission', Schema, 'permissions');

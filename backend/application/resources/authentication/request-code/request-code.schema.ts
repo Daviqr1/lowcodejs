@@ -4,7 +4,7 @@ export const RequestCodeSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Solicitar código de recuperação de senha',
   description:
-    'Envia um código de recuperação de senha para o endereço de email especificado',
+    'Gera um código de recuperação de senha e o enfileira para envio por email ao endereço informado (efeito colateral). Retorna 200 sem corpo. Rota pública',
   body: {
     type: 'object',
     required: ['email'],
@@ -29,37 +29,27 @@ export const RequestCodeSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'Código de recuperação enviado com sucesso',
+      description: 'Código de recuperação enfileirado com sucesso',
+      type: 'null',
+    },
+    400: {
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
         message: { type: 'string' },
-      },
-    },
-    400: {
-      description: 'Requisição inválida - Email inválido ou erro de validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Formato de email inválido'] },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PARAMETERS'] },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Formato de email inválido',
-          code: 400,
-          cause: 'INVALID_PARAMETERS',
-        },
-      ],
     },
     404: {
-      description: 'Email não encontrado',
+      description: 'Não encontrado - Email não cadastrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Email não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['EMAIL_NOT_FOUND'] },
         errors: {
@@ -67,33 +57,19 @@ export const RequestCodeSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Email não encontrado',
-          code: 404,
-          cause: 'EMAIL_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['INTERNAL_SERVER_ERROR'] },
+        cause: { type: 'string', enum: ['REQUEST_CODE_ERROR'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Erro interno do servidor',
-          code: 500,
-          cause: 'INTERNAL_SERVER_ERROR',
-        },
-      ],
     },
   },
 };

@@ -8,6 +8,6 @@ type Response = Either<HTTPException, { message: string }>;
 @Service()
 export default class SignOutUseCase {
   async execute(): Promise<Response> {
-    return right({ message: 'Successfully signed out' });
+    return right({ message: 'Logout realizado com sucesso' });
   }
 }

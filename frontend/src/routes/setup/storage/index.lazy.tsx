@@ -1,8 +1,7 @@
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router';
 import { EyeClosedIcon, EyeIcon, HardDriveIcon } from 'lucide-react';
 import React, { useState } from 'react';
-
-import { Stepper } from '../-stepper';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +20,6 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { useSetupSubmitStorage } from '@/hooks/tanstack-query/use-setup-submit-storage';
-import { toastError, toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/setup/storage/')({
   component: SetupStoragePage,
@@ -42,7 +40,7 @@ function SetupStoragePage(): React.JSX.Element {
 
   const mutation = useSetupSubmitStorage({
     onSuccess: (data) => {
-      toastSuccess('Etapa concluída');
+      toast.success('Etapa concluída');
       if (data.completed) {
         router.navigate({ to: '/' });
       } else if (data.currentStep) {
@@ -50,7 +48,7 @@ function SetupStoragePage(): React.JSX.Element {
       }
     },
     onError: () => {
-      toastError('Erro ao salvar');
+      toast.error('Erro ao salvar');
     },
   });
 
@@ -58,7 +56,7 @@ function SetupStoragePage(): React.JSX.Element {
     e.preventDefault();
 
     if (isS3 && (!endpoint || !bucket || !accessKey || !secretKey)) {
-      toastError('Preencha todos os campos obrigatórios do S3');
+      toast.error('Preencha todos os campos obrigatórios do S3');
       return;
     }
 
@@ -75,165 +73,154 @@ function SetupStoragePage(): React.JSX.Element {
   }
 
   return (
-    <>
-      <Stepper currentStep="storage" />
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HardDriveIcon className="size-5" />
-            Armazenamento
-          </CardTitle>
-          <CardDescription>
-            Configure onde os arquivos serão armazenados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
-            <Field>
-              <FieldLabel>Habilitar S3</FieldLabel>
-              <div className="text-sm text-muted-foreground mb-2">
-                Ativa o armazenamento remoto via S3. Quando desativado, os
-                arquivos são salvos no filesystem local do servidor.
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
-                  {isS3 ? 'Ativo' : 'Inativo'}
-                </span>
-                <Switch
-                  checked={isS3}
-                  onCheckedChange={(checked) =>
-                    setDriver(checked ? 's3' : 'local')
-                  }
-                />
-              </div>
-            </Field>
+    <Card className="border-0 shadow-none">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <HardDriveIcon className="size-5" />
+          Armazenamento
+        </CardTitle>
+        <CardDescription className="text-pretty">
+          Configure onde os arquivos serão armazenados
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 stagger-children"
+        >
+          <Field>
+            <FieldLabel>Habilitar S3</FieldLabel>
+            <div className="text-sm text-muted-foreground mb-2">
+              Ativa o armazenamento remoto via S3. Quando desativado, os
+              arquivos são salvos no filesystem local do servidor.
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {isS3 && 'Ativo'}
+                {!isS3 && 'Inativo'}
+              </span>
+              <Switch
+                checked={isS3}
+                onCheckedChange={(checked) => {
+                  if (checked) setDriver('s3');
+                  else setDriver('local');
+                }}
+              />
+            </div>
+          </Field>
 
-            {isS3 && (
-              <div className="space-y-4 border-t pt-4">
-                <Field>
-                  <FieldLabel htmlFor="STORAGE_ENDPOINT">Endpoint</FieldLabel>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    URL do endpoint S3
-                  </div>
-                  <InputGroup>
-                    <InputGroupInput
-                      id="STORAGE_ENDPOINT"
-                      type="text"
-                      value={endpoint}
-                      onChange={(e) => setEndpoint(e.target.value)}
-                      placeholder="https://s3.amazonaws.com"
-                      required
-                    />
-                  </InputGroup>
-                </Field>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field>
-                    <FieldLabel htmlFor="STORAGE_REGION">Região</FieldLabel>
-                    <InputGroup>
-                      <InputGroupInput
-                        id="STORAGE_REGION"
-                        type="text"
-                        value={region}
-                        onChange={(e) => setRegion(e.target.value)}
-                        placeholder="us-east-1"
-                      />
-                    </InputGroup>
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="STORAGE_BUCKET">Bucket</FieldLabel>
-                    <InputGroup>
-                      <InputGroupInput
-                        id="STORAGE_BUCKET"
-                        type="text"
-                        value={bucket}
-                        onChange={(e) => setBucket(e.target.value)}
-                        placeholder="my-bucket"
-                        required
-                      />
-                    </InputGroup>
-                  </Field>
+          {isS3 && (
+            <div className="space-y-4 border-t pt-4">
+              <Field>
+                <FieldLabel htmlFor="STORAGE_ENDPOINT">Endpoint</FieldLabel>
+                <div className="text-sm text-muted-foreground mb-2">
+                  URL do endpoint S3
                 </div>
+                <InputGroup>
+                  <InputGroupInput
+                    id="STORAGE_ENDPOINT"
+                    type="text"
+                    value={endpoint}
+                    onChange={(e) => setEndpoint(e.target.value)}
+                    placeholder="https://s3.amazonaws.com"
+                    required
+                  />
+                </InputGroup>
+              </Field>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel htmlFor="STORAGE_ACCESS_KEY">
-                    Access Key
-                  </FieldLabel>
+                  <FieldLabel htmlFor="STORAGE_REGION">Região</FieldLabel>
                   <InputGroup>
                     <InputGroupInput
-                      id="STORAGE_ACCESS_KEY"
-                      type={showAccessKey ? 'text' : 'password'}
-                      value={accessKey}
-                      onChange={(e) => setAccessKey(e.target.value)}
-                      placeholder="AKIAIOSFODNN7EXAMPLE"
-                      required
+                      id="STORAGE_REGION"
+                      type="text"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      placeholder="us-east-1"
                     />
-                    <InputGroupButton
-                      type="button"
-                      onClick={() => setShowAccessKey(!showAccessKey)}
-                      aria-label={
-                        showAccessKey
-                          ? 'Ocultar access key'
-                          : 'Mostrar access key'
-                      }
-                    >
-                      {showAccessKey ? (
-                        <EyeClosedIcon className="size-4" />
-                      ) : (
-                        <EyeIcon className="size-4" />
-                      )}
-                    </InputGroupButton>
                   </InputGroup>
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="STORAGE_SECRET_KEY">
-                    Secret Key
-                  </FieldLabel>
+                  <FieldLabel htmlFor="STORAGE_BUCKET">Bucket</FieldLabel>
                   <InputGroup>
                     <InputGroupInput
-                      id="STORAGE_SECRET_KEY"
-                      type={showSecretKey ? 'text' : 'password'}
-                      value={secretKey}
-                      onChange={(e) => setSecretKey(e.target.value)}
-                      placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                      id="STORAGE_BUCKET"
+                      type="text"
+                      value={bucket}
+                      onChange={(e) => setBucket(e.target.value)}
+                      placeholder="my-bucket"
                       required
                     />
-                    <InputGroupButton
-                      type="button"
-                      onClick={() => setShowSecretKey(!showSecretKey)}
-                      aria-label={
-                        showSecretKey
-                          ? 'Ocultar secret key'
-                          : 'Mostrar secret key'
-                      }
-                    >
-                      {showSecretKey ? (
-                        <EyeClosedIcon className="size-4" />
-                      ) : (
-                        <EyeIcon className="size-4" />
-                      )}
-                    </InputGroupButton>
                   </InputGroup>
                 </Field>
               </div>
-            )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={mutation.status === 'pending'}
-            >
-              {mutation.status === 'pending' && <Spinner />}
-              Salvar e continuar
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </>
+              <Field>
+                <FieldLabel htmlFor="STORAGE_ACCESS_KEY">Access Key</FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id="STORAGE_ACCESS_KEY"
+                    type={(showAccessKey && 'text') || 'password'}
+                    value={accessKey}
+                    onChange={(e) => setAccessKey(e.target.value)}
+                    placeholder="AKIAIOSFODNN7EXAMPLE"
+                    required
+                  />
+                  <InputGroupButton
+                    type="button"
+                    onClick={() => setShowAccessKey(!showAccessKey)}
+                    aria-label={
+                      (showAccessKey && 'Ocultar access key') ||
+                      'Mostrar access key'
+                    }
+                  >
+                    {showAccessKey && <EyeClosedIcon className="size-4" />}
+                    {!showAccessKey && <EyeIcon className="size-4" />}
+                  </InputGroupButton>
+                </InputGroup>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="STORAGE_SECRET_KEY">Secret Key</FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id="STORAGE_SECRET_KEY"
+                    type={(showSecretKey && 'text') || 'password'}
+                    value={secretKey}
+                    onChange={(e) => setSecretKey(e.target.value)}
+                    placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                    required
+                  />
+                  <InputGroupButton
+                    type="button"
+                    onClick={() => setShowSecretKey(!showSecretKey)}
+                    aria-label={
+                      (showSecretKey && 'Ocultar secret key') ||
+                      'Mostrar secret key'
+                    }
+                  >
+                    {showSecretKey && <EyeClosedIcon className="size-4" />}
+                    {!showSecretKey && <EyeIcon className="size-4" />}
+                  </InputGroupButton>
+                </InputGroup>
+              </Field>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full transition-transform hover:-translate-y-px hover:shadow-soft active:translate-y-0"
+            disabled={mutation.status === 'pending'}
+          >
+            {mutation.status === 'pending' && <Spinner />}
+            {!(mutation.status === 'pending') && (
+              <span>Salvar e continuar</span>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

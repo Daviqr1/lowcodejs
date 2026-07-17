@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   ExecutionContext,
   ExecutionResult,
@@ -7,7 +6,7 @@ import type {
 
 export type ScriptExecutionInput = {
   code: string;
-  doc: Record<string, any>;
+  doc: Record<string, unknown>;
   tableSlug: string;
   fields: FieldDefinition[];
   context: ExecutionContext;

@@ -38,25 +38,22 @@ async function seed(): Promise<void> {
     const seeders = await discoverSeeders();
     validateFilenames(seeders);
 
-    console.info('🌱 Seeding...\n');
-
     let ok = 0;
 
     for (const seederPath of seeders) {
-      console.info(`🌱 Seeding ${seederPath}`);
       try {
         const { default: run } = await import(seederPath);
         await run();
         ok++;
       } catch (err) {
-        console.error(`\n❌ Seeder failed: ${seederPath}`);
+        console.error(`  ✗ ${path.basename(seederPath)} — falhou`);
         console.error(err);
         throw err;
       }
     }
 
     const elapsed = Date.now() - started;
-    console.info(`\n✅ ${ok}/${seeders.length} seeders in ${elapsed}ms`);
+    console.info(`✓ ${ok}/${seeders.length} seeders em ${elapsed}ms`);
   } finally {
     await mongoose.disconnect();
   }

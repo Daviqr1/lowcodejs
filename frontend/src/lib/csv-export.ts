@@ -42,12 +42,15 @@ export async function downloadCsvFromApi(
     responseType: 'blob',
   });
 
-  const headerValue =
-    typeof response.headers?.get === 'function'
-      ? (response.headers.get('content-disposition') as string | null)
-      : ((response.headers as Record<string, string>)?.[
-          'content-disposition'
-        ] ?? null);
+  let headerValue: string | null = null;
+  const headers = response.headers;
+  if (typeof headers?.get === 'function') {
+    const raw = headers.get('content-disposition');
+    if (typeof raw === 'string') headerValue = raw;
+  } else if (headers && typeof headers === 'object') {
+    const raw = headers['content-disposition'];
+    if (typeof raw === 'string') headerValue = raw;
+  }
 
   const filename =
     extractFilenameFromContentDisposition(headerValue) ?? fallbackFilename;

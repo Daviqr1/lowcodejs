@@ -3,6 +3,7 @@ import {
   useParams,
   useRouter,
 } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import {
   MethodsFormFields,
@@ -23,7 +24,6 @@ import { useTablePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import type { ITable } from '@/lib/interfaces';
 import { QueryClient as queryClient } from '@/lib/query-client';
-import { toastError, toastInfo } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/tables/$slug/methods')({
   component: RouteComponent,
@@ -72,7 +72,7 @@ function RouteComponent(): React.JSX.Element {
       </PageShell.Header>
 
       {/* Content */}
-      <PageShell.Content>
+      <PageShell.Content className="overflow-hidden">
         {table.status === 'error' && (
           <LoadError
             message="Erro ao buscar dados da tabela"
@@ -90,10 +90,10 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface MethodsFormContentProps {
+type MethodsFormContentProps = {
   data: ITable;
   tableSlug: string;
-}
+};
 
 function MethodsFormContent({
   data,
@@ -110,16 +110,14 @@ function MethodsFormContent({
         response,
       );
 
-      toastInfo(
-        'Métodos atualizados',
-        'Os métodos da tabela foram atualizados com sucesso',
-      );
+      toast.info('Métodos atualizados', {
+        description: 'Os métodos da tabela foram atualizados com sucesso',
+      });
     },
     onError() {
-      toastError(
-        'Erro ao atualizar métodos',
-        'Não foi possível atualizar os métodos da tabela',
-      );
+      toast.error('Erro ao atualizar métodos', {
+        description: 'Não foi possível atualizar os métodos da tabela',
+      });
     },
   });
 
@@ -139,9 +137,6 @@ function MethodsFormContent({
         description: data.description,
         logo: data.logo?._id ?? null,
         style: data.style,
-        visibility: data.visibility,
-        collaboration: data.collaboration,
-        administrators: data.administrators.flatMap((a) => a._id),
         fieldOrderList: data.fieldOrderList,
         fieldOrderForm: data.fieldOrderForm,
         fieldOrderFilter: data.fieldOrderFilter,

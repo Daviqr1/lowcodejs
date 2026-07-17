@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-interface DataTableColumnToggleProps<TData> {
+type DataTableColumnToggleProps<TData> = {
   table: TanstackTable<TData>;
-}
+};
 
 export function DataTableColumnToggle<TData>({
   table,

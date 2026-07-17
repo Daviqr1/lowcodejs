@@ -1,10 +1,10 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
@@ -12,7 +12,14 @@ import type { TableRowSendToTrashPayload } from './send-to-trash.validator';
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = TableRowSendToTrashPayload;
+type Payload = Merge<
+  TableRowSendToTrashPayload,
+  {
+    __actorUserId?: string;
+    // Convidado contributor: só pode enviar para lixeira os próprios registros.
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowSendToTrashUseCase {
@@ -43,7 +50,20 @@ export default class TableRowSendToTrashUseCase {
         );
       }
 
-      if (row.trashed) {
+      // Convidado contributor só envia para lixeira o que criou.
+      if (payload.__ownOnly) {
+        const creatorId = resolveCreatorId(row.creator);
+        if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
+          return left(
+            HTTPException.Forbidden(
+              'Você só pode remover os seus próprios registros',
+              'OWN_ROW_ONLY',
+            ),
+          );
+        }
+      }
+
+      if (row.trashedAt) {
         return left(
           HTTPException.Conflict(
             'Registro já está na lixeira',
@@ -55,7 +75,7 @@ export default class TableRowSendToTrashUseCase {
       const updated = await this.rowRepository.update({
         table,
         _id: payload._id,
-        data: { trashed: true, trashedAt: new Date() },
+        data: { trashedAt: new Date() },
       });
 
       if (!updated) {

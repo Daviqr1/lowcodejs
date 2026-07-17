@@ -1,31 +1,27 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import GroupFieldRemoveFromTrashUseCase from './remove-from-trash.use-case';
 
 let tableRepository: TableInMemoryRepository;
 let fieldRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
 let sut: GroupFieldRemoveFromTrashUseCase;
 
 const TABLE_DEFAULTS = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -34,9 +30,7 @@ const FIELD_CREATE_PAYLOAD = {
   name: 'Rua',
   slug: 'rua',
   type: E_FIELD_TYPE.TEXT_SHORT,
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: true,
   locked: false,
   native: false,
@@ -57,12 +51,12 @@ describe('Group Field Remove From Trash Use Case', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     fieldRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
 
     sut = new GroupFieldRemoveFromTrashUseCase(
       tableRepository,
       fieldRepository,
-      tableSchemaService,
+      schemaBuilder,
     );
   });
 
@@ -74,9 +68,7 @@ describe('Group Field Remove From Trash Use Case', () => {
       _id: field._id,
       trashed: true,
       trashedAt: new Date(),
-      showInList: false,
-      showInForm: false,
-      showInDetail: false,
+      permissions: buildFieldPermissions(false, false, false),
       showInFilter: false,
       required: false,
     });
@@ -105,9 +97,9 @@ describe('Group Field Remove From Trash Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value.trashed).toBe(false);
     expect(result.value.trashedAt).toBeNull();
-    expect(result.value.showInList).toBe(true);
-    expect(result.value.showInForm).toBe(true);
-    expect(result.value.showInDetail).toBe(true);
+    expect(result.value.permissions?.list.kind).toBe('PUBLIC');
+    expect(result.value.permissions?.form.kind).toBe('PUBLIC');
+    expect(result.value.permissions?.detail.kind).toBe('PUBLIC');
     expect(result.value.showInFilter).toBe(true);
     expect(result.value.required).toBe(false);
   });

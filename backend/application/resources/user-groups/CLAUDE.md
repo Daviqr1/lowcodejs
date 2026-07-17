@@ -23,4 +23,15 @@ Gerenciamento de grupos de usuarios com permissoes (CRUD + listagem).
 
 ## Auth
 
-Todas as operacoes exigem autenticacao (`AuthenticationMiddleware({ optional: false })`).
+Todas as operacoes rodam primeiro `AuthenticationMiddleware({ optional: false })`
+(autenticacao obrigatoria) e, em seguida,
+`PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USER_GROUPS)` — ou seja, exigem a
+capability MANAGE_USER_GROUPS. Isso vale para create, update, show, paginated,
+bulk-trash, bulk-restore, bulk-delete, send-to-trash, remove-from-trash,
+empty-trash, delete e export-csv.
+
+**Excecao — `list`**: permanece apenas autenticada (somente
+`AuthenticationMiddleware`, sem `PermissionMiddleware`). Isso e intencional:
+o endpoint alimenta os pickers de vinculo de permissao, os multi-selects de
+grupo e o `use-field-visibility` para todo usuario autenticado; gatear este
+endpoint quebraria esses fluxos para usuarios sem MANAGE_USER_GROUPS.

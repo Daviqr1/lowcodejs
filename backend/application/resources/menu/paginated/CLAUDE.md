@@ -3,7 +3,7 @@
 Lista menus com paginacao, busca e ordenacao.
 
 ## Endpoint
-`GET /menu/paginated` | Auth: Yes | Permission: nenhuma especifica
+`GET /menu/paginated` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

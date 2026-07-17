@@ -3,25 +3,26 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
+  buildFieldPermissions,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
+import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableFieldCreateUseCase from '../create.use-case';
 
 let tableRepository: TableInMemoryRepository;
 let fieldRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: TableFieldCreateUseCase;
 
 const BASE_PAYLOAD = {
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: false,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -45,10 +46,7 @@ async function createTable(repo: TableInMemoryRepository, slug = 'clientes') {
     _schema: {},
     fields: [],
     owner: 'owner-id',
-    administrators: [],
     style: E_TABLE_STYLE.LIST,
-    visibility: E_TABLE_VISIBILITY.RESTRICTED,
-    collaboration: E_TABLE_COLLABORATION.RESTRICTED,
     fieldOrderList: [],
     fieldOrderForm: [],
   });
@@ -58,12 +56,21 @@ describe('Table Field Create - TEXT_SHORT', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     fieldRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new TableFieldCreateUseCase(
       tableRepository,
       fieldRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
+      new RelationshipMaterializationService(
+        fieldRepository,
+        tableRepository,
+        new RelationshipDefinitionInMemoryRepository(),
+        schemaBuilder,
+        modelBuilder,
+      ),
     );
   });
 
@@ -259,17 +266,15 @@ describe('Table Field Create - TEXT_SHORT', () => {
       name: 'Campo Interno',
       type: E_FIELD_TYPE.TEXT_SHORT,
       format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-      showInList: false,
-      showInForm: true,
-      showInDetail: false,
+      permissions: buildFieldPermissions(false, true, false),
       showInFilter: true,
     });
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.showInList).toBe(false);
-    expect(result.value.showInForm).toBe(true);
-    expect(result.value.showInDetail).toBe(false);
+    expect(result.value.permissions?.list.kind).toBe('NOBODY');
+    expect(result.value.permissions?.form.kind).toBe('PUBLIC');
+    expect(result.value.permissions?.detail.kind).toBe('NOBODY');
     expect(result.value.showInFilter).toBe(true);
   });
 

@@ -1,7 +1,9 @@
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   type IField,
+  type IFieldPermissions,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 
@@ -23,9 +25,7 @@ export async function buildSimpleMediaFields(
     required: boolean;
     multiple: boolean;
     format: IField['format'];
-    showInList: boolean;
-    showInForm: boolean;
-    showInDetail: boolean;
+    permissions: IFieldPermissions;
     showInFilter: boolean;
     defaultValue: IField['defaultValue'];
     locked: boolean;
@@ -51,9 +51,7 @@ export async function buildSimpleMediaFields(
     required: true,
     multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
     defaultValue: null,
     locked: false,
@@ -73,9 +71,7 @@ export async function buildSimpleMediaFields(
     required: false,
     multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
-    showInList: false,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(false, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,
@@ -95,9 +91,7 @@ export async function buildSimpleMediaFields(
     required: false,
     multiple: false,
     format: null,
-    showInList: true,
-    showInForm: true,
-    showInDetail: true,
+    permissions: buildFieldPermissions(true, true, true),
     showInFilter: false,
     defaultValue: null,
     locked: false,

@@ -10,9 +10,9 @@ import { InputSearch } from '@/components/common/input-search';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuthStore } from '@/stores/authentication';
 
-interface HeaderProps {
+type HeaderProps = {
   routesWithoutSearchInput: Array<string | RegExp>;
-}
+};
 
 export function Header({
   routesWithoutSearchInput,

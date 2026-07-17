@@ -28,6 +28,7 @@ frontend-next
 docker-compose.override.yml
 
 # Claude Code local settings (machine-specific permissions)
+.claude/settings.json
 .claude/settings.local.json
 
 !backend/application/resources/logs/

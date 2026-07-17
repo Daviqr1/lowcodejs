@@ -9,13 +9,14 @@ import {
 } from '@/components/ui/tooltip';
 import type { ITable } from '@/lib/interfaces';
 
-interface Props {
+type Props = {
   /** Tabela em foco. Recebida via context do `<ExtensionSlot id="table.actions">`. */
   table?: ITable;
-}
+};
 
 export default function PrintTablePlugin({ table }: Props): React.JSX.Element {
-  const label = table ? `Imprimir ${table.name}` : 'Imprimir';
+  let label = 'Imprimir';
+  if (table) label = `Imprimir ${table.name}`;
 
   return (
     <Tooltip>

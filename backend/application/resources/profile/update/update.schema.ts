@@ -55,6 +55,10 @@ export const ProfileUpdateSchema: FastifySchema = {
             'A nova senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
         },
       },
+      notificationsEnabled: {
+        type: 'boolean',
+        description: 'Habilitar notificações in-app para o usuário',
+      },
     },
     additionalProperties: false,
     errorMessage: {
@@ -131,23 +135,13 @@ export const ProfileUpdateSchema: FastifySchema = {
           description: 'Erros de validação por campo',
         },
       },
-      examples: [
-        {
-          message: 'Formato de payload inválido',
-          code: 400,
-          cause: 'INVALID_PAYLOAD_FORMAT',
-        },
-      ],
     },
     401: {
       description:
         'Não autorizado - Autenticação necessária ou senha atual inválida',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Não autorizado', 'Credenciais inválidas'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
@@ -158,19 +152,12 @@ export const ProfileUpdateSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Credenciais inválidas',
-          code: 401,
-          cause: 'INVALID_CREDENTIALS',
-        },
-      ],
     },
     404: {
       description: 'Usuário não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Usuário não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
         errors: {
@@ -183,7 +170,7 @@ export const ProfileUpdateSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['UPDATE_USER_PROFILE_ERROR'] },
         errors: {

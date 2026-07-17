@@ -21,7 +21,7 @@ const DEFAULT_IIFE_TEMPLATE = `(async () => {
   
 })();`;
 
-interface CodeEditorProps {
+type CodeEditorProps = {
   value: string;
   onChange: (value: string) => void;
   label?: string;
@@ -29,7 +29,7 @@ interface CodeEditorProps {
   hook?: HookType;
   readOnly?: boolean;
   height?: string;
-}
+};
 
 export function CodeEditor({
   value,

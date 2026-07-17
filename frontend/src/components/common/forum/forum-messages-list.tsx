@@ -9,6 +9,7 @@ import React from 'react';
 
 import type { ForumMessage } from './forum-types';
 
+import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { ContentViewer } from '@/components/common/rich-editor';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ import { getUserInitials } from '@/lib/kanban-helpers';
 import { getStorageDownloadUrl } from '@/lib/storage-url';
 import { cn } from '@/lib/utils';
 
-interface ForumMessagesListProps {
+type ForumMessagesListProps = {
   messages: Array<ForumMessage>;
   currentUserId: string;
   endRef: React.RefObject<HTMLDivElement | null>;
@@ -32,7 +33,7 @@ interface ForumMessagesListProps {
   scrollToMessageTick?: number;
   highlightedMessageId?: string | null;
   highlightedMessageTick?: number;
-}
+};
 
 export function ForumMessagesList({
   messages,
@@ -87,7 +88,8 @@ export function ForumMessagesList({
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          const messageId = (entry.target as HTMLElement).dataset.messageId;
+          if (!(entry.target instanceof HTMLElement)) continue;
+          const messageId = entry.target.dataset.messageId;
           if (!messageId || !trackedSet.has(messageId)) continue;
           onMentionMessageVisible(messageId);
         }
@@ -226,17 +228,19 @@ export function ForumMessagesList({
                         key={file._id}
                         className="flex items-center gap-2 rounded-md border p-2 text-xs hover:bg-muted/40"
                       >
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-2 min-w-0"
-                        >
-                          {filePreview}
-                          <span className="max-w-[160px] truncate">
-                            {file.originalName}
-                          </span>
-                        </a>
+                        <AttachmentContextMenu storage={file}>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 min-w-0"
+                          >
+                            {filePreview}
+                            <span className="max-w-[160px] truncate">
+                              {file.originalName}
+                            </span>
+                          </a>
+                        </AttachmentContextMenu>
                         <a
                           href={getStorageDownloadUrl(file)}
                           aria-label={`Baixar ${file.originalName}`}

@@ -9,3 +9,4 @@ Arquivos de configuracao de infraestrutura.
 | `setting-env-sync.ts` | Sincroniza campos STORAGE_* do Setting (MongoDB) para `process.env`. Chamado no boot e apos atualizacoes |
 | `redis.config.ts` | Cliente ioredis a partir de `REDIS_URL`. Log de erros de conexao |
 | `email.config.ts` | Transporter Nodemailer: host, port, secure (465), requireTLS, auth |
+| `util.config.ts` | `isPasswordMatch({ plain, hashed })` — compara senha via bcrypt |

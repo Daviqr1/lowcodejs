@@ -2,9 +2,9 @@ import type { Header } from '@tanstack/react-table';
 
 import { cn } from '@/lib/utils';
 
-interface DataTableResizeHandleProps<TData> {
+type DataTableResizeHandleProps<TData> = {
   header: Header<TData, unknown>;
-}
+};
 
 export function DataTableResizeHandle<TData>({
   header,

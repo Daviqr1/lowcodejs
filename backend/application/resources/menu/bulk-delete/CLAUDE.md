@@ -8,8 +8,8 @@ Exclui permanentemente múltiplos menus que já estejam na lixeira.
 
 ## Middleware
 
-1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER])`
+1. `AuthenticationMiddleware({ optional: false })` — roda primeiro
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Body
 
@@ -34,5 +34,5 @@ Exclui permanentemente múltiplos menus que já estejam na lixeira.
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Não é MASTER |
+| 403 | FORBIDDEN | Sem a capacidade MANAGE_MENU |
 | 500 | BULK_DELETE_MENUS_ERROR | Erro interno |

@@ -1,9 +1,8 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import { E_ROLE } from '@application/core/entity.core';
+import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
@@ -11,13 +10,6 @@ import { UserGroupContractRepository } from '@application/repositories/user-grou
 import type { UserGroupDeletePayload } from './delete.validator';
 
 type Response = Either<HTTPException, null>;
-
-const SYSTEM_SLUGS = new Set<string>([
-  E_ROLE.MASTER,
-  E_ROLE.ADMINISTRATOR,
-  E_ROLE.MANAGER,
-  E_ROLE.REGISTERED,
-]);
 
 @Service()
 export default class UserGroupDeleteUseCase {
@@ -41,7 +33,7 @@ export default class UserGroupDeleteUseCase {
         );
       }
 
-      if (SYSTEM_SLUGS.has(group.slug)) {
+      if (SYSTEM_GROUP_SLUGS.has(group.slug)) {
         return left(
           HTTPException.Forbidden(
             'Grupos do sistema não podem ser excluídos',

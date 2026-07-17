@@ -1,11 +1,59 @@
 import type { FastifySchema } from 'fastify';
 
-const errorBlock = {
+const badRequestBlock = {
+  description: 'Requisição inválida',
   type: 'object',
   properties: {
     message: { type: 'string' },
-    code: { type: 'number' },
-    cause: { type: 'string' },
+    code: { type: 'number', enum: [400] },
+    cause: {
+      type: 'string',
+      enum: ['TABLE_SCOPE_NOT_APPLICABLE', 'INVALID_PAYLOAD_FORMAT'],
+    },
+    errors: { type: 'object', additionalProperties: { type: 'string' } },
+  },
+} as const;
+
+const unauthorizedBlock = {
+  description: 'Não autorizado - Autenticação necessária',
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    code: { type: 'number', enum: [401] },
+    cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+    errors: { type: 'object', additionalProperties: { type: 'string' } },
+  },
+} as const;
+
+const forbiddenBlock = {
+  description: 'Acesso negado - Permissão insuficiente',
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    code: { type: 'number', enum: [403] },
+    cause: { type: 'string', enum: ['FORBIDDEN'] },
+    errors: { type: 'object', additionalProperties: { type: 'string' } },
+  },
+} as const;
+
+const notFoundBlock = {
+  description: 'Extensão não encontrada',
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    code: { type: 'number', enum: [404] },
+    cause: { type: 'string', enum: ['EXTENSION_NOT_FOUND'] },
+    errors: { type: 'object', additionalProperties: { type: 'string' } },
+  },
+} as const;
+
+const serverErrorBlock = {
+  description: 'Erro interno do servidor',
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    code: { type: 'number', enum: [500] },
+    cause: { type: 'string', enum: ['CONFIGURE_TABLE_SCOPE_ERROR'] },
     errors: { type: 'object', additionalProperties: { type: 'string' } },
   },
 } as const;
@@ -45,10 +93,10 @@ export const ExtensionConfigureTableScopeSchema: FastifySchema = {
       },
       additionalProperties: true,
     },
-    400: errorBlock,
-    401: errorBlock,
-    403: errorBlock,
-    404: errorBlock,
-    500: errorBlock,
+    400: badRequestBlock,
+    401: unauthorizedBlock,
+    403: forbiddenBlock,
+    404: notFoundBlock,
+    500: serverErrorBlock,
   },
 };

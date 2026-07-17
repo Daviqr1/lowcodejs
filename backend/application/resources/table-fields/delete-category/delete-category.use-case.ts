@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -27,7 +26,7 @@ type Payload = TableFieldDeleteCategoryPayload;
 
 function collectIds(node: ICategory): Array<string> {
   const ids = [node.id];
-  const children = (node.children ?? []) as Array<ICategory>;
+  const children = node.children ?? [];
   for (const child of children) {
     ids.push(...collectIds(child));
   }
@@ -51,10 +50,7 @@ function removeCategoryNode(
     .map((node) => {
       if (!node.children?.length) return node;
 
-      const result = removeCategoryNode(
-        node.children as Array<ICategory>,
-        categoryId,
-      );
+      const result = removeCategoryNode(node.children, categoryId);
       if (result.removedIds.length) {
         removedIds = result.removedIds;
         return { ...node, children: result.updated };
@@ -106,7 +102,7 @@ export default class TableFieldDeleteCategoryUseCase {
 
       let existingCategories: Array<ICategory> = [];
       if (Array.isArray(field.category)) {
-        existingCategories = field.category as Array<ICategory>;
+        existingCategories = field.category;
       }
 
       const { updated, removedIds } = removeCategoryNode(

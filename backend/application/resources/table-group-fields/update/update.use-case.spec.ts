@@ -1,31 +1,29 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import GroupFieldUpdateUseCase from './update.use-case';
 
 let tableRepository: TableInMemoryRepository;
 let fieldRepository: FieldInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
+let modelBuilder: InMemoryModelBuilder;
 let sut: GroupFieldUpdateUseCase;
 
 const TABLE_DEFAULTS = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -34,9 +32,7 @@ const FIELD_CREATE_PAYLOAD = {
   name: 'Rua',
   slug: 'rua',
   type: E_FIELD_TYPE.TEXT_SHORT,
-  showInList: true,
-  showInForm: true,
-  showInDetail: true,
+  permissions: buildFieldPermissions(true, true, true),
   showInFilter: true,
   locked: false,
   allowCreateRelationshipRecords: false,
@@ -58,12 +54,14 @@ describe('Group Field Update Use Case', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     fieldRepository = new FieldInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
+    modelBuilder = new InMemoryModelBuilder();
 
     sut = new GroupFieldUpdateUseCase(
       tableRepository,
       fieldRepository,
-      tableSchemaService,
+      schemaBuilder,
+      modelBuilder,
     );
   });
 
@@ -90,9 +88,7 @@ describe('Group Field Update Use Case', () => {
       fieldId: field._id,
       name: 'Avenida',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -109,6 +105,7 @@ describe('Group Field Update Use Case', () => {
       widthInDetail: null,
       trashed: false,
       trashedAt: null,
+      htmlContent: null,
     });
 
     expect(result.isRight()).toBe(true);
@@ -121,6 +118,61 @@ describe('Group Field Update Use Case', () => {
     expect(updatedField?.slug).toBe('avenida');
   });
 
+  it('deve persistir as flags de exibicao na listagem geral (campo-filho)', async () => {
+    const field = await fieldRepository.create(FIELD_CREATE_PAYLOAD);
+
+    await tableRepository.create({
+      ...TABLE_DEFAULTS,
+      name: 'Clientes',
+      slug: 'clientes',
+      groups: [
+        {
+          slug: 'endereco',
+          name: 'Endereco',
+          fields: [field],
+          _schema: {},
+        },
+      ],
+    });
+
+    const result = await sut.execute({
+      slug: 'clientes',
+      groupSlug: 'endereco',
+      fieldId: field._id,
+      name: 'Rua',
+      type: E_FIELD_TYPE.TEXT_SHORT,
+      permissions: buildFieldPermissions(true, true, true),
+      showInFilter: true,
+      showInParentList: true,
+      visibleInParentList: true,
+      locked: false,
+      allowCreateRelationshipRecords: false,
+      required: false,
+      category: [],
+      dropdown: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.ALPHA_NUMERIC,
+      group: null,
+      multiple: false,
+      relationship: null,
+      widthInForm: 50,
+      widthInList: 10,
+      widthInDetail: null,
+      trashed: false,
+      trashedAt: null,
+      htmlContent: null,
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+    expect(result.value.showInParentList).toBe(true);
+    expect(result.value.visibleInParentList).toBe(true);
+
+    const updatedField = await fieldRepository.findById(field._id);
+    expect(updatedField?.showInParentList).toBe(true);
+    expect(updatedField?.visibleInParentList).toBe(true);
+  });
+
   it('deve retornar TABLE_NOT_FOUND quando tabela nao existe', async () => {
     const result = await sut.execute({
       slug: 'inexistente',
@@ -128,9 +180,7 @@ describe('Group Field Update Use Case', () => {
       fieldId: 'field-id',
       name: 'Rua',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -147,6 +197,7 @@ describe('Group Field Update Use Case', () => {
       widthInDetail: null,
       trashed: false,
       trashedAt: null,
+      htmlContent: null,
     });
 
     expect(result.isLeft()).toBe(true);
@@ -170,9 +221,7 @@ describe('Group Field Update Use Case', () => {
       fieldId: 'field-id',
       name: 'Rua',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -189,6 +238,7 @@ describe('Group Field Update Use Case', () => {
       widthInDetail: null,
       trashed: false,
       trashedAt: null,
+      htmlContent: null,
     });
 
     expect(result.isLeft()).toBe(true);
@@ -219,9 +269,7 @@ describe('Group Field Update Use Case', () => {
       fieldId: 'campo-inexistente',
       name: 'Rua',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -238,6 +286,7 @@ describe('Group Field Update Use Case', () => {
       widthInDetail: null,
       trashed: false,
       trashedAt: null,
+      htmlContent: null,
     });
 
     expect(result.isLeft()).toBe(true);
@@ -256,9 +305,7 @@ describe('Group Field Update Use Case', () => {
       fieldId: 'field-id',
       name: 'Rua',
       type: E_FIELD_TYPE.TEXT_SHORT,
-      showInList: true,
-      showInForm: true,
-      showInDetail: true,
+      permissions: buildFieldPermissions(true, true, true),
       showInFilter: true,
       locked: false,
       allowCreateRelationshipRecords: false,
@@ -275,6 +322,7 @@ describe('Group Field Update Use Case', () => {
       widthInDetail: null,
       trashed: false,
       trashedAt: null,
+      htmlContent: null,
     });
 
     expect(result.isLeft()).toBe(true);

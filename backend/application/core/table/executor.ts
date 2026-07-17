@@ -107,15 +107,17 @@ export async function execute(
     }
 
     return { success: true, logs };
-  } catch (error: any) {
-    const errorType = getErrorType(error);
-    const errorInfo = parseErrorInfo(error);
+  } catch (error: unknown) {
+    let err: Error = new Error(String(error));
+    if (error instanceof Error) err = error;
+    const errorType = getErrorType(err);
+    const errorInfo = parseErrorInfo(err);
 
     return {
       success: false,
       error: {
         type: errorType,
-        message: errorInfo.message ?? error.message ?? 'Unknown error',
+        message: errorInfo.message ?? err.message ?? 'Unknown error',
         line: errorInfo.line,
         column: errorInfo.column,
       },
@@ -136,11 +138,13 @@ export function validateSyntax(code: string): ExecutionError | null {
     // Validate code syntax as-is (must be in IIFE format)
     new vm.Script(code);
     return null;
-  } catch (error: any) {
-    const errorInfo = parseErrorInfo(error);
+  } catch (error: unknown) {
+    let err: Error = new Error(String(error));
+    if (error instanceof Error) err = error;
+    const errorInfo = parseErrorInfo(err);
     return {
       type: 'syntax',
-      message: errorInfo.message ?? error.message ?? 'Syntax error',
+      message: errorInfo.message ?? err.message ?? 'Syntax error',
       line: errorInfo.line,
       column: errorInfo.column,
     };

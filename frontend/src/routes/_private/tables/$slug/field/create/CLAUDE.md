@@ -31,8 +31,10 @@ Formulario para criacao de novo campo em uma tabela.
 - `dropdown`: array de IDropdown (para tipo DROPDOWN)
 - `relationship`: objeto com tableId, fieldId, order (para tipo RELATIONSHIP)
 - `category`: array de TreeNode (para tipo CATEGORY)
-- Flags: `multiple`, `showInFilter`, `showInForm`, `showInDetail`, `showInList`,
-  `required`
+- `permissions`: visibilidade por contexto `{ list, form, detail }`, cada um um
+  binding (Grupo/Publico/Ninguem) — novo modelo
+- Flags `multiple`, `required` e `showInFilter` (controla apenas a sidebar de
+  filtros — nao e permissao)
 - `widthInForm`, `widthInList`: numeros para largura
 
 ## Fluxo

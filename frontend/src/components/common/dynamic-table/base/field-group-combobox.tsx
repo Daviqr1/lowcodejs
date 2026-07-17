@@ -3,12 +3,12 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface FieldGroupComboboxProps {
+type FieldGroupComboboxProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function FieldGroupCombobox({
   label,

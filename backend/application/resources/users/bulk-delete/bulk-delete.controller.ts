@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
-import { E_ROLE } from '@application/core/entity.core';
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { UserBulkDeleteSchema } from './bulk-delete.schema';
 import UserBulkDeleteUseCase from './bulk-delete.use-case';
@@ -14,7 +14,6 @@ import { UserBulkDeleteBodyValidator } from './bulk-delete.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserBulkDeleteUseCase = getInstanceByToken(
       UserBulkDeleteUseCase,
     ),
@@ -25,7 +24,7 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER]),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS),
       ],
       schema: UserBulkDeleteSchema,
     },

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -54,12 +53,14 @@ export default class StorageMigrationCleanupUseCase {
       }
 
       const setting = await this.settingRepository.get();
-      const currentDriver = (setting?.STORAGE_DRIVER ??
-        E_STORAGE_LOCATION.LOCAL) as TStorageLocation;
-      const driverToClear: TStorageLocation =
-        currentDriver === E_STORAGE_LOCATION.LOCAL
-          ? E_STORAGE_LOCATION.S3
-          : E_STORAGE_LOCATION.LOCAL;
+      let currentDriver: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+      if (setting?.STORAGE_DRIVER === E_STORAGE_LOCATION.S3) {
+        currentDriver = E_STORAGE_LOCATION.S3;
+      }
+      let driverToClear: TStorageLocation = E_STORAGE_LOCATION.LOCAL;
+      if (currentDriver === E_STORAGE_LOCATION.LOCAL) {
+        driverToClear = E_STORAGE_LOCATION.S3;
+      }
 
       const failedCount = await this.storageRepository.countByMigrationStatus(
         E_STORAGE_MIGRATION_STATUS.FAILED,

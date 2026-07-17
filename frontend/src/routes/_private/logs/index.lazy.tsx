@@ -7,42 +7,37 @@ import { format } from 'date-fns';
 import {
   ActivityIcon,
   CalendarClockIcon,
-  DownloadIcon,
   PencilIcon,
   PlusIcon,
   UserIcon,
 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
-import {
-  ACTION_OPTIONS,
-  OBJECT_OPTIONS,
-  ROUTE_ID,
-  parseCsvList,
-} from './-constants';
 import type { ActionType } from './-constants';
+import { ACTION_OPTIONS, OBJECT_OPTIONS, ROUTE_ID } from './-constants';
 import { downloadCsv, entriesToCsv } from './-csv';
 import { JsonDialog } from './-json-dialog';
 import { StatCard } from './-stat-card';
 import { TableHistory } from './-table-history';
 
+import { CsvDropdown } from '@/components/common/csv-dropdown';
 import { FilterSidebar, FilterTrigger } from '@/components/common/filters';
 import { InputSearch } from '@/components/common/input-search';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
 import { Pagination } from '@/components/common/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useLoggerReadPaginated } from '@/hooks/tanstack-query/use-logger-read-paginated';
 import { useFilterSidebar } from '@/hooks/use-filter-sidebar';
 import {
   E_FIELD_TYPE,
-  E_ROLE,
   LOGGER_ACTION_LABEL,
   LOGGER_OBJECT_LABEL,
   MetaDefault,
 } from '@/lib/constant';
 import type { IFilterField, ILogger } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import { isPrivileged } from '@/lib/permission';
 import { useAuthStore } from '@/stores/authentication';
 
 export const Route = createLazyFileRoute('/_private/logs/')({
@@ -53,11 +48,27 @@ function RouteComponent(): React.JSX.Element {
   const navigate = useNavigate({ from: '/logs/' });
   const search = useSearch({ from: ROUTE_ID });
   const auth = useAuthStore();
-  const role = auth.user?.group?.slug?.toUpperCase();
-  const isPrivileged = role === E_ROLE.MASTER || role === E_ROLE.ADMINISTRATOR;
+  const groups = useGroupReadList();
+  const privileged = isPrivileged(auth.user, groups.data ?? []);
 
   const filterSidebar = useFilterSidebar();
-  const [jsonEntry, setJsonEntry] = React.useState<ILogger | null>(null);
+  // alvo do modal de JSON: entrada + nonce (reabre o dialog uncontrolled via ref).
+  const [jsonTarget, setJsonTarget] = React.useState<{
+    entry: ILogger;
+    nonce: number;
+  } | null>(null);
+  const jsonTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openJsonDialog() {
+      if (jsonTarget) jsonTriggerRef.current?.click();
+    },
+    [jsonTarget],
+  );
+
+  const openJson = React.useCallback((entry: ILogger) => {
+    setJsonTarget((previous) => ({ entry, nonce: (previous?.nonce ?? 0) + 1 }));
+  }, []);
   const [toolbarNode, setToolbarNode] = React.useState<HTMLDivElement | null>(
     null,
   );
@@ -168,10 +179,9 @@ function RouteComponent(): React.JSX.Element {
     if (entries.length === 1) {
       plural = '';
     }
-    toastSuccess(
-      'CSV exportado',
-      `${entries.length} registro${plural} no arquivo`,
-    );
+    toast.success('CSV exportado', {
+      description: `${entries.length} registro${plural} no arquivo`,
+    });
   };
 
   return (
@@ -193,23 +203,18 @@ function RouteComponent(): React.JSX.Element {
             <InputSearch />
           </div>
 
-          <div className="inline-flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <div ref={setToolbarNode} />
             <FilterTrigger
               activeFiltersCount={activeFilterCount}
               onClick={() => filterSidebar.onOpenChange(!filterSidebar.open)}
               isOpen={filterSidebar.open}
             />
-            <Button
-              variant="outline"
-              onClick={handleExport}
+            <CsvDropdown
+              testId="history-csv"
               disabled={entries.length === 0}
-              data-test-id="history-export-btn"
-              className="cursor-pointer"
-            >
-              <DownloadIcon className="size-4" />
-              <span>Exportar CSV</span>
-            </Button>
+              onExport={handleExport}
+            />
           </div>
         </div>
 
@@ -239,7 +244,7 @@ function RouteComponent(): React.JSX.Element {
           />
         </div>
 
-        {!isPrivileged && (
+        {!privileged && (
           <div className="text-xs text-muted-foreground">
             <UserIcon className="inline size-3 mr-1" />
             Você está visualizando apenas as suas próprias ações.
@@ -257,7 +262,7 @@ function RouteComponent(): React.JSX.Element {
           <TableHistory
             data={entries}
             toolbarPortal={toolbarNode}
-            onOpenJson={setJsonEntry}
+            onOpenJson={openJson}
             isLoading={isLoading}
           />
         </PageShell.Content>
@@ -277,10 +282,13 @@ function RouteComponent(): React.JSX.Element {
         />
       </PageShell.Footer>
 
-      <JsonDialog
-        entry={jsonEntry}
-        onClose={() => setJsonEntry(null)}
-      />
+      {jsonTarget && (
+        <JsonDialog
+          key={jsonTarget.nonce}
+          ref={jsonTriggerRef}
+          entry={jsonTarget.entry}
+        />
+      )}
     </PageShell>
   );
 }

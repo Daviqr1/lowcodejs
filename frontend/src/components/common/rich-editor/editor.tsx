@@ -47,9 +47,9 @@ const MODE_LABELS: Record<EditorMode, string> = {
 
 // --- Composable subcomponents ---
 
-interface EditorCharCountProps {
+type EditorCharCountProps = {
   editor: TiptapEditor;
-}
+};
 
 export function EditorCharCount({
   editor,
@@ -66,9 +66,9 @@ export function EditorCharCount({
   );
 }
 
-interface EditorBubbleProps {
+type EditorBubbleProps = {
   editor: TiptapEditor;
-}
+};
 
 export function EditorBubble({ editor }: EditorBubbleProps): React.JSX.Element {
   return (
@@ -86,11 +86,11 @@ export { EditorToolbar } from './toolbar';
 
 // --- Mode Tabs ---
 
-interface EditorModeTabsProps {
+type EditorModeTabsProps = {
   mode: EditorMode;
   availableModes: Array<EditorMode>;
   onChange: (mode: EditorMode) => void;
-}
+};
 
 function EditorModeTabs({
   mode,
@@ -110,9 +110,8 @@ function EditorModeTabs({
           className={cn(
             'px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors',
             'hover:text-foreground',
-            m === mode
-              ? 'text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground',
+            m === mode && 'text-foreground border-b-2 border-primary',
+            m !== mode && 'text-muted-foreground',
           )}
         >
           {MODE_LABELS[m]}
@@ -124,10 +123,10 @@ function EditorModeTabs({
 
 // --- Markdown Textarea ---
 
-interface MarkdownTextareaProps {
+type MarkdownTextareaProps = {
   value: string;
   onChange: (value: string) => void;
-}
+};
 
 function MarkdownTextarea({
   value,
@@ -147,10 +146,10 @@ function MarkdownTextarea({
 
 // --- HTML Textarea ---
 
-interface HtmlTextareaProps {
+type HtmlTextareaProps = {
   value: string;
   onChange: (value: string) => void;
-}
+};
 
 function HtmlTextarea({
   value,
@@ -210,6 +209,9 @@ function HtmlFooter(): React.JSX.Element {
 // --- Helpers ---
 
 function getMarkdownFromEditor(editor: TiptapEditor): string {
+  // tiptap-markdown injeta `markdown` no storage em runtime sem augmentar o tipo
+  // `Storage` do Tiptap; o acesso e lib-forced (por isso o `as any` pontual).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/consistent-type-assertions
   const md = (editor.storage as any).markdown?.getMarkdown?.();
   if (md !== undefined) {
     return md;
@@ -263,7 +265,7 @@ async function uploadAndInsertImages(
 
 // --- Main Editor ---
 
-export interface EditorProps {
+export type EditorProps = {
   value?: string;
   onChange?: (markdown: string) => void;
   placeholder?: string;
@@ -281,8 +283,11 @@ export interface EditorProps {
   availableModes?: Array<EditorMode>;
   mentions?: MentionConfig;
   onEditorReady?: (editor: TiptapEditor) => void;
-}
+};
 
+// Array<any> nos args e o idiom para restringir T a qualquer funcao (unknown[]
+// rejeitaria funcoes com parametros concretos por contravariancia).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function debounce<T extends (...args: Array<any>) => void>(
   func: T,
   wait: number,
@@ -458,38 +463,45 @@ export function Editor({
     (newMode: EditorMode) => {
       if (!ed || newMode === mode) return;
 
-      // Sync content FROM current mode before switching
-      if (mode === 'rich') {
-        const md = getMarkdownFromEditor(ed);
-        if (newMode === 'markdown') {
-          setRawMd(md);
-        } else if (newMode === 'html') {
-          setRawHtml(ed.getHTML());
-        }
-      } else if (mode === 'markdown') {
-        if (newMode === 'rich') {
-          ed.commands.setContent(rawMd, { emitUpdate: false });
-          if (isControlledRef.current) {
-            const normalized = getMarkdownFromEditor(ed);
-            onChangeRef.current?.(normalized);
+      // Sync content FROM the current mode before switching — despacho por modo
+      // (code-style regra 6). `preview` → qualquer: restaura sem efeitos.
+      const editor = ed;
+      const syncFromMode: Record<EditorMode, (target: EditorMode) => void> = {
+        rich: (target) => {
+          const md = getMarkdownFromEditor(editor);
+          if (target === 'markdown') {
+            setRawMd(md);
+          } else if (target === 'html') {
+            setRawHtml(editor.getHTML());
           }
-        } else if (newMode === 'html') {
-          ed.commands.setContent(rawMd, { emitUpdate: false });
-          setRawHtml(ed.getHTML());
-        }
-      } else if (mode === 'html') {
-        if (newMode === 'rich') {
-          ed.commands.setContent(rawHtml, { emitUpdate: false });
-          if (isControlledRef.current) {
-            const normalized = getMarkdownFromEditor(ed);
-            onChangeRef.current?.(normalized);
+        },
+        markdown: (target) => {
+          if (target === 'rich') {
+            editor.commands.setContent(rawMd, { emitUpdate: false });
+            if (isControlledRef.current) {
+              const normalized = getMarkdownFromEditor(editor);
+              onChangeRef.current?.(normalized);
+            }
+          } else if (target === 'html') {
+            editor.commands.setContent(rawMd, { emitUpdate: false });
+            setRawHtml(editor.getHTML());
           }
-        } else if (newMode === 'markdown') {
-          ed.commands.setContent(rawHtml, { emitUpdate: false });
-          setRawMd(getMarkdownFromEditor(ed));
-        }
-      }
-      // preview → any: restore without side effects
+        },
+        html: (target) => {
+          if (target === 'rich') {
+            editor.commands.setContent(rawHtml, { emitUpdate: false });
+            if (isControlledRef.current) {
+              const normalized = getMarkdownFromEditor(editor);
+              onChangeRef.current?.(normalized);
+            }
+          } else if (target === 'markdown') {
+            editor.commands.setContent(rawHtml, { emitUpdate: false });
+            setRawMd(getMarkdownFromEditor(editor));
+          }
+        },
+        preview: () => {},
+      };
+      syncFromMode[mode](newMode);
 
       previousModeRef.current = mode;
       setMode(newMode);

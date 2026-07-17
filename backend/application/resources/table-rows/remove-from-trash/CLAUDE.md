@@ -13,8 +13,8 @@ Restaura um registro da lixeira.
    - Constroi modelo dinamico via buildTable
    - Constroi populate via buildPopulate
    - Busca registro por _id via findOne
-   - Verifica se esta na lixeira (trashed deve ser true)
-   - Atualiza trashed=false e trashedAt=null via row.set().save()
+   - Verifica se esta na lixeira (trashedAt deve estar preenchido)
+   - Atualiza trashedAt=null via update
    - Popula o registro
    - Retorna registro atualizado com _id como string
 4. Repository: TableContractRepository.findBy, colecao dinamica via buildTable().findOne, row.set().save()

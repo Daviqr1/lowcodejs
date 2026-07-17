@@ -1,22 +1,27 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import slugify from 'slugify';
 
 import { left, right } from '@application/core/either.core';
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
   E_MENU_ITEM_TYPE,
   FIELD_GROUP_NATIVE_LIST,
   FIELD_NATIVE_LIST,
   type IField,
+  type IFieldPermissions,
+  type IFieldValidation,
   type IGroupConfiguration,
   type ILayoutFields,
   type ITable,
+  type Merge,
+  type ValueOf,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {
   FIELD_NAME_MAX_LENGTH,
-  getFieldSlugError,
+  FIELD_SLUG_MIN_LENGTH,
+  FieldSlug,
 } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
@@ -25,25 +30,44 @@ import {
   TableContractRepository,
   type TableCreatePayload,
 } from '@application/repositories/table/table-contract.repository';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
+import {
+  emitTableImportEvent,
+  TABLE_IMPORT_EVENT,
+  type TableImportPhase,
+} from './import-table.socket';
 import type {
   ImportedTableSummary,
   ImportTableResponse,
   ImportTableUseCasePayload,
 } from './import-table.types';
 
+/**
+ * Converte um valor de JSON externo (shapeless) num Record tipado. A asserção
+ * interna é segura porque guardada por checagem de objeto — evita espalhar
+ * `as` pelos acessos ao pacote importado.
+ */
+function toRecord(value: unknown): Record<string, unknown> {
+  if (value !== null && typeof value === 'object') {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
 type ExportedField = {
   name: string;
   slug: string;
-  type: string;
+  type: IField['type'];
   required: boolean;
   multiple: boolean;
-  format: string | null;
+  format: IField['format'];
+  validations?: IFieldValidation[];
   showInFilter: boolean;
-  showInForm: boolean;
-  showInDetail: boolean;
-  showInList: boolean;
+  showInParentList?: boolean;
+  visibleInParentList?: boolean;
+  permissions?: IFieldPermissions | null;
   widthInForm: number | null;
   widthInList: number | null;
   widthInDetail: number | null;
@@ -55,7 +79,7 @@ type ExportedField = {
     order: 'asc' | 'desc';
   } | null;
   dropdown: Array<{ id: string; label: string; color?: string | null }>;
-  category: Array<{ id: string; label: string; children: unknown[] }>;
+  category: IField['category'];
   group: { slug: string } | null;
 };
 
@@ -69,9 +93,7 @@ type ExportedStructure = {
   name: string;
   slug: string;
   description: string | null;
-  style: string;
-  visibility: string;
-  collaboration: string;
+  style: TableCreatePayload['style'];
   fields: ExportedField[];
   groups: ExportedGroup[];
   fieldOrderList: string[];
@@ -87,10 +109,13 @@ type ExportedStructure = {
 };
 
 type ExportedTable = {
+  /** Identidade da tabela (presente também em exports "somente dados"). */
+  tableSlug?: string;
+  tableName?: string;
   structure?: ExportedStructure;
   data?: {
     totalRows: number;
-    rows: Array<Record<string, unknown> & { _originalId?: string }>;
+    rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
   };
 };
 
@@ -98,7 +123,7 @@ type ExportedMenu = {
   _originalId: string;
   name: string;
   slug: string;
-  type: string;
+  type: ValueOf<typeof E_MENU_ITEM_TYPE>;
   parent: string | null;
   url: string | null;
   html: string | null;
@@ -120,7 +145,7 @@ export default class ImportTableUseCase {
     private readonly fieldRepository: FieldContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly menuRepository: MenuContractRepository,
-    private readonly tableSchemaService: TableSchemaContractService,
+    private readonly schemaBuilder: SchemaBuilderContractService,
   ) {}
 
   async execute(
@@ -136,10 +161,10 @@ export default class ImportTableUseCase {
         );
       }
 
-      const content = payload.fileContent as Record<string, unknown>;
-      const header = content.header as Record<string, unknown> | undefined;
+      const content = toRecord(payload.fileContent);
+      const header = toRecord(content.header);
 
-      if (!header || header.platform !== 'lowcodejs') {
+      if (header.platform !== 'lowcodejs') {
         return left(
           HTTPException.BadRequest(
             'Arquivo de importação inválido. Plataforma não reconhecida.',
@@ -149,6 +174,22 @@ export default class ImportTableUseCase {
       }
 
       const pkg = this.normalizePackage(content);
+
+      // Importação "somente dados": o pacote não traz estrutura, apenas linhas
+      // + a identidade (tableSlug) de cada tabela. As tabelas precisam já
+      // existir no destino — casamos por slug e inserimos as linhas.
+      const isDataOnly =
+        pkg.tables.length > 0 && pkg.tables.every((t) => !t.structure);
+      if (isDataOnly) {
+        return this.importDataOnly(pkg, payload);
+      }
+
+      // Normaliza slugs legados inválidos (ex.: "arquivo(s)" criado antes da
+      // validação estrita) ANTES de validar — reescreve de forma consistente
+      // os fields, grupos e TODAS as referências (relationships, fieldOrder,
+      // layoutFields e as chaves das rows). Sem isso, importar um pacote vindo
+      // de uma instância antiga falha com INVALID_FIELD_SLUG.
+      this.normalizeStructureSlugs(pkg);
       const metadataError = this.validatePackageFieldMetadata(pkg);
       if (metadataError) return left(metadataError);
 
@@ -166,6 +207,19 @@ export default class ImportTableUseCase {
 
       const conflict = await this.detectConflicts(pkg, renames, menuRenames);
       if (conflict) return left(conflict);
+
+      // Total de linhas a inserir (em todas as tabelas do pacote) — base do
+      // percentual do feed de progresso. Contadores globais acompanham as
+      // fases C/D.
+      const totalRows = pkg.tables.reduce(
+        (acc, t) => acc + (t.data?.rows?.length ?? 0),
+        0,
+      );
+      let processedRows = 0;
+      let failedRows = 0;
+      // No máximo ~100 eventos de linha (1 por 1% do total) para não inundar o
+      // socket em importações grandes. O último sempre é emitido.
+      const emitStep = Math.max(1, Math.floor(totalRows / 100));
 
       const tableSlugToInfo = new Map<
         string,
@@ -186,16 +240,30 @@ export default class ImportTableUseCase {
         if (!t.structure) continue;
         const originalSlug = t.structure.slug;
         const rename = renames.get(originalSlug);
+        let newSlug = originalSlug;
+        let newName = t.structure.name;
+        if (rename) {
+          newSlug = rename.slug;
+          newName = rename.name;
+        }
         tableSlugToInfo.set(originalSlug, {
           originalSlug,
-          newSlug: rename ? rename.slug : originalSlug,
-          newName: rename ? rename.name : t.structure.name,
+          newSlug,
+          newName,
           structure: t.structure,
         });
       }
 
       // Phase A: create tables (relationship pointing to packages → resolved later)
       for (const info of tableSlugToInfo.values()) {
+        this.emitProgress(
+          payload,
+          'structure',
+          processedRows,
+          totalRows,
+          info.newName,
+          failedRows,
+        );
         const built = await this.createTableSkeleton({
           structure: info.structure,
           newName: info.newName,
@@ -244,9 +312,8 @@ export default class ImportTableUseCase {
           const stripped = this.stripRelationshipFields(row, full);
           // Preserva o criador original da row (campo nativo CREATOR);
           // cai para o usuário que está importando quando ausente.
-          const rowCreator = row._originalCreator
-            ? String(row._originalCreator)
-            : payload.ownerId;
+          let rowCreator = payload.ownerId;
+          if (row._originalCreator) rowCreator = String(row._originalCreator);
           try {
             const inserted = await this.rowRepository.insertRaw(
               full,
@@ -254,18 +321,37 @@ export default class ImportTableUseCase {
               rowCreator,
             );
             importedRowCount++;
-            const originalRowId = row._originalId
-              ? String(row._originalId)
-              : null;
+            let originalRowId: string | null = null;
+            if (row._originalId) originalRowId = String(row._originalId);
             if (originalRowId) map.set(originalRowId, inserted._id);
           } catch (rowError) {
+            failedRows++;
             console.error('[tools > import-table][row-insert]:', rowError);
+          }
+          processedRows++;
+          if (processedRows % emitStep === 0 || processedRows === totalRows) {
+            this.emitProgress(
+              payload,
+              'rows',
+              processedRows,
+              totalRows,
+              info.newName,
+              failedRows,
+            );
           }
         }
         rowIdMap.set(info.newSlug, map);
       }
 
       // Phase D: backfill relationships using the row id map
+      this.emitProgress(
+        payload,
+        'relationships',
+        processedRows,
+        totalRows,
+        null,
+        failedRows,
+      );
       for (const info of tableSlugToInfo.values()) {
         const full = fullTables.get(info.originalSlug);
         if (!full) continue;
@@ -282,6 +368,14 @@ export default class ImportTableUseCase {
       }
 
       // Phase E: recreate menus
+      this.emitProgress(
+        payload,
+        'menus',
+        processedRows,
+        totalRows,
+        null,
+        failedRows,
+      );
       const importedMenus = await this.importMenus({
         menus: pkg.menus,
         tableSlugToInfo,
@@ -304,6 +398,16 @@ export default class ImportTableUseCase {
         0,
       );
 
+      if (payload.jobId) {
+        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
+          job_id: payload.jobId,
+          importedFields,
+          importedRows: importedRowCount,
+          importedMenus,
+          tables: summaries.map((s) => ({ slug: s.slug, name: s.name })),
+        });
+      }
+
       return right({
         tableId: first.tableId,
         slug: first.slug,
@@ -314,12 +418,376 @@ export default class ImportTableUseCase {
       });
     } catch (error) {
       console.error('[tools > import-table][error]:', error);
+      if (payload.jobId) {
+        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
+          job_id: payload.jobId,
+          message: 'Erro interno ao importar. Nenhuma alteração foi concluída.',
+        });
+      }
       return left(
         HTTPException.InternalServerError(
           'Erro interno do servidor',
           'IMPORT_TABLE_ERROR',
         ),
       );
+    }
+  }
+
+  /**
+   * Emite um evento de progresso para o feed WebSocket. No-op quando o cliente
+   * não enviou `jobId` (importação sem acompanhamento em tempo real).
+   */
+  private emitProgress(
+    payload: ImportTableUseCasePayload,
+    phase: TableImportPhase,
+    processed: number,
+    total: number,
+    currentTable: string | null,
+    failed: number,
+  ): void {
+    if (!payload.jobId) return;
+    emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.PROGRESS, {
+      job_id: payload.jobId,
+      phase,
+      processed,
+      total,
+      current_table: currentTable,
+      failed,
+    });
+  }
+
+  // ── Data-only import (linhas em tabelas existentes) ────────
+
+  /**
+   * Importa apenas dados: casa cada tabela do pacote (por `tableSlug`) com uma
+   * tabela JÁ EXISTENTE no destino e insere as linhas, remapeando os
+   * relacionamentos entre as tabelas do pacote. Não cria estrutura nem menus.
+   */
+  private async importDataOnly(
+    pkg: NormalizedPackage,
+    payload: ImportTableUseCasePayload,
+  ): Promise<ImportTableResponse> {
+    const entries = pkg.tables
+      .map((t) => ({
+        slug: t.tableSlug,
+        name: t.tableName ?? t.tableSlug ?? '',
+        data: t.data,
+      }))
+      .filter((e): e is { slug: string; name: string; data: typeof e.data } =>
+        Boolean(e.slug),
+      );
+
+    if (entries.length === 0) {
+      return left(
+        HTTPException.BadRequest(
+          'Arquivo de dados sem identificação de tabela. Reexporte na versão atual da plataforma.',
+          'DATA_TABLE_IDENTITY_MISSING',
+        ),
+      );
+    }
+
+    // Resolve cada slug contra uma tabela existente (não-lixeira).
+    const resolved: Array<{
+      table: ITable;
+      slug: string;
+      name: string;
+      rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
+    }> = [];
+    const missing: string[] = [];
+    for (const e of entries) {
+      const table = await this.tableRepository.findBySlug(e.slug, {
+        trashed: false,
+      });
+      if (!table) {
+        missing.push(e.slug);
+        continue;
+      }
+      resolved.push({
+        table,
+        slug: e.slug,
+        name: e.name,
+        rows: e.data?.rows ?? [],
+      });
+    }
+
+    if (missing.length > 0) {
+      return left(
+        HTTPException.BadRequest(
+          'Tabela(s) não encontrada(s) no destino. Importe a estrutura primeiro (ou use um arquivo "Completo") antes de carregar os dados.',
+          'IMPORT_TABLES_NOT_FOUND',
+          { tables: missing.join(',') },
+        ),
+      );
+    }
+
+    try {
+      const totalRows = resolved.reduce((acc, r) => acc + r.rows.length, 0);
+      let processedRows = 0;
+      let failedRows = 0;
+      const emitStep = Math.max(1, Math.floor(totalRows / 100));
+
+      // Fase C — insere as linhas (sem relacionamentos) e monta o rowIdMap
+      // chaveado pelo slug real da tabela.
+      const rowIdMap = new Map<string, Map<string, string>>();
+      let importedRowCount = 0;
+
+      for (const r of resolved) {
+        const map = new Map<string, string>();
+        for (const row of r.rows) {
+          const stripped = this.stripRelationshipFields(row, r.table);
+          let rowCreator = payload.ownerId;
+          if (row._originalCreator) rowCreator = String(row._originalCreator);
+          try {
+            const inserted = await this.rowRepository.insertRaw(
+              r.table,
+              stripped,
+              rowCreator,
+            );
+            importedRowCount++;
+            let originalRowId: string | null = null;
+            if (row._originalId) originalRowId = String(row._originalId);
+            if (originalRowId) map.set(originalRowId, inserted._id);
+          } catch (rowError) {
+            failedRows++;
+            console.error('[tools > import-table][data-row-insert]:', rowError);
+          }
+          processedRows++;
+          if (processedRows % emitStep === 0 || processedRows === totalRows) {
+            this.emitProgress(
+              payload,
+              'rows',
+              processedRows,
+              totalRows,
+              r.name,
+              failedRows,
+            );
+          }
+        }
+        rowIdMap.set(r.slug, map);
+      }
+
+      // Fase D — religa relacionamentos usando o rowIdMap.
+      this.emitProgress(
+        payload,
+        'relationships',
+        processedRows,
+        totalRows,
+        null,
+        failedRows,
+      );
+      for (const r of resolved) {
+        await this.backfillRelationships({
+          table: r.table,
+          rows: r.rows,
+          rowIdMap,
+          ownerSlug: r.slug,
+        });
+      }
+
+      const summaries: ImportedTableSummary[] = resolved.map((r) => ({
+        tableId: r.table._id,
+        slug: r.slug,
+        name: r.table.name,
+      }));
+
+      if (payload.jobId) {
+        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
+          job_id: payload.jobId,
+          importedFields: 0,
+          importedRows: importedRowCount,
+          importedMenus: 0,
+          tables: summaries.map((s) => ({ slug: s.slug, name: s.name })),
+        });
+      }
+
+      return right({
+        tableId: summaries[0].tableId,
+        slug: summaries[0].slug,
+        importedFields: 0,
+        importedRows: importedRowCount,
+        tables: summaries,
+        importedMenus: 0,
+      });
+    } catch (error) {
+      console.error('[tools > import-table][data-only][error]:', error);
+      if (payload.jobId) {
+        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
+          job_id: payload.jobId,
+          message: 'Erro interno ao importar os dados.',
+        });
+      }
+      return left(
+        HTTPException.InternalServerError(
+          'Erro interno do servidor',
+          'IMPORT_TABLE_ERROR',
+        ),
+      );
+    }
+  }
+
+  // ── Slug normalization (legacy packages) ──────────────────
+  //
+  // Instâncias antigas podem ter slugs de campo que não batem com o padrão
+  // estrito atual (ex.: "arquivo(s)", maiúsculas, acentos). Em vez de rejeitar
+  // a importação, normalizamos esses slugs aqui e reescrevemos todas as
+  // referências, preservando a unicidade dentro de cada escopo.
+
+  /**
+   * Reescreve `oldSlug → newSlug` para um conjunto de campos no mesmo escopo.
+   * Slugs já válidos são preservados (mapeiam para si mesmos) e reservados
+   * primeiro, de modo que a normalização dos inválidos nunca colida com eles.
+   */
+  private buildScopeRewrite(
+    entries: Array<{ slug: string; name: string }>,
+    reserved: string[],
+    out: Map<string, string>,
+  ): void {
+    const used = new Set<string>(reserved);
+
+    // Passo 1: preserva e reserva todos os slugs já válidos.
+    for (const e of entries) {
+      if (out.has(e.slug)) continue;
+      if (!FieldSlug.getError(e.slug)) {
+        used.add(e.slug);
+        out.set(e.slug, e.slug);
+      }
+    }
+
+    // Passo 2: normaliza os inválidos garantindo unicidade no escopo.
+    for (const e of entries) {
+      if (out.has(e.slug)) continue;
+      let base =
+        FieldSlug.normalize(e.slug) || FieldSlug.normalize(e.name) || 'campo';
+      if (base.length < FIELD_SLUG_MIN_LENGTH) base = 'campo';
+      let candidate = base;
+      let i = 2;
+      while (used.has(candidate)) candidate = `${base}-${i++}`;
+      used.add(candidate);
+      out.set(e.slug, candidate);
+    }
+  }
+
+  private normalizeStructureSlugs(pkg: NormalizedPackage): void {
+    const nativeSlugs = FIELD_NATIVE_LIST.map((f) => f.slug);
+    const groupNativeSlugs = FIELD_GROUP_NATIVE_LIST.map((f) => f.slug);
+
+    // originalTableSlug → mapas de reescrita (para resolver relationships e rows)
+    const perTable = new Map<
+      string,
+      {
+        fieldRewrite: Map<string, string>; // top-level fields + marcadores de grupo
+        groupFieldRewrites: Map<string, Map<string, string>>; // newGroupSlug → (oldSub → newSub)
+      }
+    >();
+
+    // Passo A: reescreve os slugs dentro de cada estrutura.
+    for (const t of pkg.tables) {
+      const s = t.structure;
+      if (!s) continue;
+
+      const fieldRewrite = new Map<string, string>();
+      const groupFieldRewrites = new Map<string, Map<string, string>>();
+
+      // Namespace de nível de tabela: fields top-level + slugs de grupo.
+      this.buildScopeRewrite(
+        [
+          ...(s.fields || []).map((f) => ({ slug: f.slug, name: f.name })),
+          ...(s.groups || []).map((g) => ({ slug: g.slug, name: g.name })),
+        ],
+        nativeSlugs,
+        fieldRewrite,
+      );
+
+      for (const f of s.fields || [])
+        f.slug = fieldRewrite.get(f.slug) ?? f.slug;
+
+      for (const g of s.groups || []) {
+        const newGroupSlug = fieldRewrite.get(g.slug) ?? g.slug;
+        const subRewrite = new Map<string, string>();
+        this.buildScopeRewrite(
+          (g.fields || []).map((f) => ({ slug: f.slug, name: f.name })),
+          groupNativeSlugs,
+          subRewrite,
+        );
+        for (const f of g.fields || []) {
+          f.slug = subRewrite.get(f.slug) ?? f.slug;
+          f.group = { slug: newGroupSlug };
+        }
+        g.slug = newGroupSlug;
+        groupFieldRewrites.set(newGroupSlug, subRewrite);
+      }
+
+      const remapOrder = (slugs: string[] | undefined): string[] =>
+        (slugs || []).map((x) => fieldRewrite.get(x) ?? x);
+      s.fieldOrderList = remapOrder(s.fieldOrderList);
+      s.fieldOrderForm = remapOrder(s.fieldOrderForm);
+      s.fieldOrderFilter = remapOrder(s.fieldOrderFilter);
+      s.fieldOrderDetail = remapOrder(s.fieldOrderDetail);
+
+      if (s.layoutFields) {
+        for (const key of Object.keys(s.layoutFields)) {
+          const v = s.layoutFields[key];
+          if (v) s.layoutFields[key] = fieldRewrite.get(v) ?? v;
+        }
+      }
+
+      perTable.set(s.slug, { fieldRewrite, groupFieldRewrites });
+    }
+
+    // Passo B: reescreve referências cruzadas (relationships) e chaves das rows.
+    for (const t of pkg.tables) {
+      const s = t.structure;
+      if (!s) continue;
+      const self = perTable.get(s.slug)!;
+
+      const rewriteRel = (f: ExportedField): void => {
+        if (f.type !== E_FIELD_TYPE.RELATIONSHIP || !f.relationship) return;
+        const target = perTable.get(f.relationship.tableSlug);
+        if (!target) return; // tabela fora do pacote → resolve contra o DB original
+        f.relationship.fieldSlug =
+          target.fieldRewrite.get(f.relationship.fieldSlug) ??
+          f.relationship.fieldSlug;
+      };
+      for (const f of s.fields || []) rewriteRel(f);
+      for (const g of s.groups || [])
+        for (const f of g.fields || []) rewriteRel(f);
+
+      for (const row of t.data?.rows || []) this.rewriteRowKeys(row, self);
+    }
+  }
+
+  private rewriteRowKeys(
+    row: Record<string, unknown>,
+    info: {
+      fieldRewrite: Map<string, string>;
+      groupFieldRewrites: Map<string, Map<string, string>>;
+    },
+  ): void {
+    const renameKeys = (
+      target: Record<string, unknown>,
+      rewrite: Map<string, string>,
+    ): void => {
+      for (const [oldKey, newKey] of rewrite) {
+        if (oldKey === newKey) continue;
+        if (Object.prototype.hasOwnProperty.call(target, oldKey)) {
+          target[newKey] = target[oldKey];
+          delete target[oldKey];
+        }
+      }
+    };
+
+    // Top-level (renomeia também a chave do grupo via marcador de grupo).
+    renameKeys(row, info.fieldRewrite);
+
+    // Subrows de cada field group.
+    for (const [groupSlug, subRewrite] of info.groupFieldRewrites) {
+      const sub = row[groupSlug];
+      if (!Array.isArray(sub)) continue;
+      for (const subRow of sub) {
+        if (subRow && typeof subRow === 'object') {
+          renameKeys(toRecord(subRow), subRewrite);
+        }
+      }
     }
   }
 
@@ -346,7 +814,7 @@ export default class ImportTableUseCase {
         );
       }
 
-      const slugError = getFieldSlugError(field.slug);
+      const slugError = FieldSlug.getError(field.slug);
       if (slugError) {
         return HTTPException.BadRequest(
           `Slug de campo inválido: ${slugError}`,
@@ -389,9 +857,7 @@ export default class ImportTableUseCase {
           multiple: false,
           format: null,
           showInFilter: false,
-          showInForm: true,
-          showInDetail: true,
-          showInList: true,
+          permissions: buildFieldPermissions(true, true, true),
           widthInForm: null,
           widthInList: null,
           widthInDetail: null,
@@ -445,16 +911,17 @@ export default class ImportTableUseCase {
   private normalizePackage(
     content: Record<string, unknown>,
   ): NormalizedPackage {
+    /* eslint-disable @typescript-eslint/consistent-type-assertions --
+       fronteira de JSON externo: o pacote já foi validado como lowcodejs;
+       coagir para as formas tipadas aqui é inevitável */
     if (Array.isArray(content.tables)) {
-      return {
-        tables: content.tables as ExportedTable[],
-        menus: Array.isArray(content.menus)
-          ? (content.menus as ExportedMenu[])
-          : [],
-      };
+      let menus: ExportedMenu[] = [];
+      if (Array.isArray(content.menus)) menus = content.menus as ExportedMenu[];
+      return { tables: content.tables as ExportedTable[], menus };
     }
     const legacyStructure = content.structure as ExportedStructure | undefined;
     const legacyData = content.data as ExportedTable['data'];
+    /* eslint-enable @typescript-eslint/consistent-type-assertions */
     if (legacyStructure) {
       return {
         tables: [{ structure: legacyStructure, data: legacyData }],
@@ -687,9 +1154,7 @@ export default class ImportTableUseCase {
         required: false,
         multiple: false,
         format: null,
-        showInList: true,
-        showInForm: true,
-        showInDetail: true,
+        permissions: buildFieldPermissions(true, true, true),
         showInFilter: false,
         widthInForm: null,
         widthInList: null,
@@ -720,7 +1185,7 @@ export default class ImportTableUseCase {
         groupFields.push(sub);
       }
 
-      const groupSchema = this.tableSchemaService.computeSchema(groupFields);
+      const groupSchema = this.schemaBuilder.build(groupFields);
 
       groups.push({
         slug: group.slug,
@@ -730,15 +1195,14 @@ export default class ImportTableUseCase {
       });
     }
 
-    const layoutFields: Partial<ILayoutFields> = {};
+    const layoutFields: Record<string, string | null> = {};
     for (const [key, slugValue] of Object.entries(
       structure.layoutFields || {},
     )) {
       if (slugValue && fieldSlugToId.has(slugValue)) {
-        layoutFields[key as keyof ILayoutFields] =
-          fieldSlugToId.get(slugValue) || null;
+        layoutFields[key] = fieldSlugToId.get(slugValue) || null;
       } else {
-        layoutFields[key as keyof ILayoutFields] = null;
+        layoutFields[key] = null;
       }
     }
 
@@ -747,7 +1211,7 @@ export default class ImportTableUseCase {
         .map((s) => fieldSlugToId.get(s))
         .filter((id): id is string => Boolean(id));
 
-    const _schema = this.tableSchemaService.computeSchema(allFields, groups);
+    const _schema = this.schemaBuilder.build(allFields, groups);
 
     const createPayload: TableCreatePayload = {
       _schema,
@@ -757,11 +1221,9 @@ export default class ImportTableUseCase {
       type: 'TABLE',
       logo: null,
       fields: fieldsIds,
-      style: structure.style as TableCreatePayload['style'],
-      visibility: structure.visibility as TableCreatePayload['visibility'],
-      collaboration:
-        structure.collaboration as TableCreatePayload['collaboration'],
-      administrators: [],
+      style: structure.style,
+      permissions: null,
+      members: [],
       owner: ownerId,
       fieldOrderList: resolveOrder(structure.fieldOrderList),
       fieldOrderForm: resolveOrder(structure.fieldOrderForm),
@@ -773,6 +1235,9 @@ export default class ImportTableUseCase {
         afterSave: { code: null },
       },
       groups,
+      // chaves vêm do pacote importado (Record) e correspondem à forma fixa de
+      // ILayoutFields — conversão de fronteira inevitável.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       layoutFields: layoutFields as ILayoutFields,
     };
 
@@ -823,14 +1288,16 @@ export default class ImportTableUseCase {
     return this.fieldRepository.create({
       name: exported.name,
       slug: exported.slug,
-      type: exported.type as IField['type'],
+      type: exported.type,
       required: exported.required,
       multiple: exported.multiple,
-      format: exported.format as IField['format'],
-      showInList: exported.showInList,
-      showInForm: exported.showInForm,
-      showInDetail: exported.showInDetail,
+      format: exported.format,
+      validations: exported.validations ?? [],
+      permissions:
+        exported.permissions ?? buildFieldPermissions(true, true, true),
       showInFilter: exported.showInFilter,
+      showInParentList: exported.showInParentList,
+      visibleInParentList: exported.visibleInParentList,
       widthInForm: exported.widthInForm,
       widthInList: exported.widthInList,
       widthInDetail: exported.widthInDetail,
@@ -838,7 +1305,7 @@ export default class ImportTableUseCase {
       locked: exported.locked,
       relationship,
       dropdown: exported.dropdown,
-      category: exported.category as IField['category'],
+      category: exported.category,
       group: exported.group,
     });
   }
@@ -905,7 +1372,8 @@ export default class ImportTableUseCase {
       }
     }
 
-    const updatedGroups = info.groups ? [...info.groups] : [];
+    let updatedGroups: typeof info.groups = [];
+    if (info.groups) updatedGroups = [...info.groups];
     for (const [gi, group] of (info.structure.groups || []).entries()) {
       const gconf = updatedGroups[gi];
       if (!gconf) continue;
@@ -927,15 +1395,12 @@ export default class ImportTableUseCase {
       updatedGroups[gi] = {
         ...gconf,
         fields: newGroupFields,
-        _schema: this.tableSchemaService.computeSchema(newGroupFields),
+        _schema: this.schemaBuilder.build(newGroupFields),
       };
     }
 
     if (touched) {
-      const _schema = this.tableSchemaService.computeSchema(
-        updatedAllFields,
-        updatedGroups,
-      );
+      const _schema = this.schemaBuilder.build(updatedAllFields, updatedGroups);
       await this.tableRepository.update({
         _id: info.tableId,
         _schema,
@@ -994,7 +1459,7 @@ export default class ImportTableUseCase {
 
   private async backfillRelationships(args: {
     table: ITable;
-    rows: Array<Record<string, unknown> & { _originalId?: string }>;
+    rows: Array<Merge<Record<string, unknown>, { _originalId?: string }>>;
     rowIdMap: Map<string, Map<string, string>>;
     ownerSlug: string;
   }): Promise<void> {
@@ -1018,8 +1483,10 @@ export default class ImportTableUseCase {
     }
 
     for (const row of rows) {
-      const originalRowId = row._originalId ? String(row._originalId) : null;
-      const newRowId = originalRowId ? myMap.get(originalRowId) : null;
+      let originalRowId: string | null = null;
+      if (row._originalId) originalRowId = String(row._originalId);
+      let newRowId: string | null | undefined = null;
+      if (originalRowId) newRowId = myMap.get(originalRowId);
       if (!newRowId) continue;
 
       const updateData: Record<string, unknown> = {};
@@ -1074,7 +1541,8 @@ export default class ImportTableUseCase {
   ): string | string[] | undefined {
     const target = rowIdMap.get(targetTableSlug);
     const remapOne = (v: unknown): string | null => {
-      const id = typeof v === 'string' ? v : String(v ?? '');
+      let id = String(v ?? '');
+      if (typeof v === 'string') id = v;
       if (!id) return null;
       if (target?.has(id)) return target.get(id)!;
       // Target table is outside the package — return original (may match an
@@ -1147,7 +1615,8 @@ export default class ImportTableUseCase {
       }
 
       // Itens folha em conflito podem ter sido renomeados; pais nunca.
-      const rename = isParent ? undefined : menuRenames.get(menu.slug);
+      let rename = undefined;
+      if (!isParent) rename = menuRenames.get(menu.slug);
       const slug = rename?.slug ?? menu.slug;
       const name = rename?.name ?? menu.name;
 
@@ -1170,15 +1639,14 @@ export default class ImportTableUseCase {
         }
       }
 
-      const parentId = menu.parent
-        ? (newIdByOriginalId.get(menu.parent) ?? null)
-        : null;
+      let parentId: string | null = null;
+      if (menu.parent) parentId = newIdByOriginalId.get(menu.parent) ?? null;
 
       try {
         const newMenu = await this.menuRepository.create({
           name,
           slug,
-          type: type as never,
+          type,
           table: tableId,
           parent: parentId,
           url,

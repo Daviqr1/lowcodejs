@@ -11,11 +11,13 @@ import {
   Settings2Icon,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 import { ApiEndpointsModal } from './-api-endpoints-modal';
 
 import { TableFieldManagementSheet } from '@/components/common/dynamic-table/field-management/table-field-management-sheet';
 import { GroupFieldManagementSheet } from '@/components/common/dynamic-table/group-rows/group-field-management-sheet';
+import { ExtensionSlot } from '@/components/common/extension-slot/extension-slot';
 import { FieldTitle } from '@/components/common/field-title';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,16 +36,16 @@ import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_FIELD_TYPE, E_TABLE_TYPE } from '@/lib/constant';
 import type { IField, ITable } from '@/lib/interfaces';
-import { toastInfo } from '@/lib/toast';
+import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface FieldGroupSubMenuProps {
+type FieldGroupSubMenuProps = {
   field: IField;
   originSlug: string;
   parentTable: ITable;
   onNavigate: () => void;
   onManageGroup: (groupSlug: string) => void;
-}
+};
 
 function FieldGroupSubMenu({
   field,
@@ -69,7 +71,7 @@ function FieldGroupSubMenu({
       <DropdownMenuSubTrigger>
         <span className="inline-flex min-w-0 gap-1">
           <span>Gerenciar</span>
-          <FieldTitle value={field.name} />
+          <FieldTitle value={resolveFieldLabel(field)} />
         </span>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
@@ -123,7 +125,7 @@ function FieldGroupSubMenu({
                 <PencilIcon className="size-4" />
                 <span className="inline-flex min-w-0 gap-1">
                   <span>Editar</span>
-                  <FieldTitle value={groupField.name} />
+                  <FieldTitle value={resolveFieldLabel(groupField)} />
                 </span>
               </DropdownMenuItem>
             ))}
@@ -133,9 +135,9 @@ function FieldGroupSubMenu({
   );
 }
 
-interface TableConfigurationProps {
+type TableConfigurationProps = {
   tableSlug: string;
-}
+};
 
 export function TableConfigurationDropdown({
   tableSlug,
@@ -148,11 +150,23 @@ export function TableConfigurationDropdown({
   const table = useReadTable({ slug: tableSlug });
   const permission = useTablePermission(table.data);
 
-  const [apiModalOpen, setApiModalOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const [fieldManagementOpen, setFieldManagementOpen] = useState(false);
-  const [groupManagementSlug, setGroupManagementSlug] = useState<string | null>(
-    null,
+  const fieldTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const apiModalTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  // alvo de gerenciamento de grupo: slug + nonce. O nonce força remontar o Sheet
+  // (chave) e reabrir o mesmo grupo, mantendo o Sheet uncontrolled (abre via
+  // ref clicada a partir do menu — ver dialog/sheet-pattern).
+  const [groupTarget, setGroupTarget] = useState<{
+    slug: string;
+    nonce: number;
+  } | null>(null);
+  const groupTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openGroupManagement() {
+      if (groupTarget) groupTriggerRef.current?.click();
+    },
+    [groupTarget],
   );
 
   const closeMenu = (): void => setOpen(false);
@@ -196,7 +210,7 @@ export function TableConfigurationDropdown({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="mr-12 max-w-xs w-full"
+          className="mr-2 sm:mr-12 w-[calc(100vw-1rem)] max-w-xs"
           data-test-id="table-config-dropdown"
         >
           {(permission.can('CREATE_FIELD') ||
@@ -233,33 +247,33 @@ export function TableConfigurationDropdown({
                       className="inline-flex space-x-1 w-full"
                       onClick={() => {
                         closeMenu();
-                        setFieldManagementOpen(true);
+                        fieldTriggerRef.current?.click();
                       }}
                     >
                       <Settings2Icon className="size-4" />
                       <span>Gerenciar</span>
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator />
-
-                    {activeFields.map((field) => (
-                      <DropdownMenuItem
-                        key={field._id}
-                        onClick={() => {
-                          closeMenu();
-                          router.navigate({
-                            to: '/tables/$slug/field/$fieldId',
-                            params: { slug, fieldId: field._id },
-                          });
-                        }}
-                      >
-                        <PencilIcon className="size-4" />
-                        <span className="inline-flex min-w-0 gap-1">
-                          <span>Editar</span>
-                          <FieldTitle value={field.name} />
-                        </span>
-                      </DropdownMenuItem>
-                    ))}
+                    <div className="overflow-y-auto max-h-60">
+                      {activeFields.map((field) => (
+                        <DropdownMenuItem
+                          key={field._id}
+                          onClick={() => {
+                            closeMenu();
+                            router.navigate({
+                              to: '/tables/$slug/field/$fieldId',
+                              params: { slug, fieldId: field._id },
+                            });
+                          }}
+                        >
+                          <PencilIcon className="size-4" />
+                          <span className="inline-flex min-w-0 gap-1">
+                            <span>Editar</span>
+                            <FieldTitle value={resolveFieldLabel(field)} />
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -302,13 +316,29 @@ export function TableConfigurationDropdown({
                         onNavigate={closeMenu}
                         onManageGroup={(gSlug) => {
                           closeMenu();
-                          setGroupManagementSlug(gSlug);
+                          setGroupTarget((previous) => ({
+                            slug: gSlug,
+                            nonce: (previous?.nonce ?? 0) + 1,
+                          }));
                         }}
                       />
                     ))}
                 </DropdownMenuGroup>
               </React.Fragment>
             )}
+
+          {permission.can('UPDATE_FIELD') && table.data && (
+            <React.Fragment>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <ExtensionSlot
+                  id="table.fields.manage"
+                  context={{ table: table.data, slug }}
+                />
+              </DropdownMenuGroup>
+            </React.Fragment>
+          )}
 
           {permission.can('UPDATE_TABLE') && (
             <React.Fragment>
@@ -356,7 +386,7 @@ export function TableConfigurationDropdown({
                     data-test-id="api-endpoints-btn"
                     onClick={() => {
                       closeMenu();
-                      setApiModalOpen(true);
+                      apiModalTriggerRef.current?.click();
                     }}
                   >
                     <InfoIcon className="size-4" />
@@ -372,10 +402,10 @@ export function TableConfigurationDropdown({
                       const embedUrl = window.location.href;
                       const iframeCode = `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0"></iframe>`;
                       navigator.clipboard.writeText(iframeCode);
-                      toastInfo(
-                        'Código embed copiado',
-                        'O código iframe foi copiado para a área de transferência',
-                      );
+                      toast.info('Código embed copiado', {
+                        description:
+                          'O código iframe foi copiado para a área de transferência',
+                      });
                     }}
                   >
                     <CodeIcon className="size-4" />
@@ -388,28 +418,24 @@ export function TableConfigurationDropdown({
         </DropdownMenuContent>
 
         <ApiEndpointsModal
+          ref={apiModalTriggerRef}
           tableSlug={tableSlug}
-          open={apiModalOpen}
-          onOpenChange={setApiModalOpen}
         />
       </DropdownMenu>
 
       {table.data && (
         <TableFieldManagementSheet
-          open={fieldManagementOpen}
-          onOpenChange={setFieldManagementOpen}
+          ref={fieldTriggerRef}
           table={table.data}
         />
       )}
 
-      {table.data && groupManagementSlug && (
+      {table.data && groupTarget && (
         <GroupFieldManagementSheet
-          open={Boolean(groupManagementSlug)}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) setGroupManagementSlug(null);
-          }}
+          key={groupTarget.nonce}
+          ref={groupTriggerRef}
           table={table.data}
-          groupSlug={groupManagementSlug}
+          groupSlug={groupTarget.slug}
         />
       )}
     </>

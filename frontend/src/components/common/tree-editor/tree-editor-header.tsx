@@ -4,9 +4,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 
-interface TreeEditorHeaderProps {
+type TreeEditorHeaderProps = {
   onAddRootNode: () => void;
-}
+};
 
 export const TreeEditorHeader: React.FC<TreeEditorHeaderProps> = ({
   onAddRootNode,

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   E_LOGGER_ACTION_TYPE,
   E_LOGGER_OBJECT_TYPE,
@@ -10,7 +9,15 @@ import type {
 
 export type LoggerCreatePayload = Merge<
   Pick<ILogger, 'action' | 'content' | 'url' | 'object' | 'object_id'>,
-  { user_id: string | null }
+  {
+    user_id: string | null;
+    // Dados do registro referenciado por object_id. Opcionais — ausentes/null
+    // quando o objeto nao for uma ROW de tabela dinamica.
+    creator?: string | null;
+    updater?: string | null;
+    objectCreatedAt?: Date | null;
+    objectUpdatedAt?: Date | null;
+  }
 >;
 
 export type LoggerUpdatePayload = Merge<

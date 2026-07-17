@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
-import { E_ROLE } from '@application/core/entity.core';
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
 import { UserSendToTrashSchema } from './send-to-trash.schema';
 import UserSendToTrashUseCase from './send-to-trash.use-case';
@@ -14,7 +14,6 @@ import { UserSendToTrashParamValidator } from './send-to-trash.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: UserSendToTrashUseCase = getInstanceByToken(
       UserSendToTrashUseCase,
     ),
@@ -25,7 +24,7 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS),
       ],
       schema: UserSendToTrashSchema,
     },
@@ -44,7 +43,6 @@ export default class {
     const result = await this.useCase.execute({
       _id: params._id,
       actorId: request.user.sub,
-      actorRole: request.user.role,
     });
 
     if (result.isLeft()) {

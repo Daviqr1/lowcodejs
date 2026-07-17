@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
@@ -20,10 +16,7 @@ const TABLE_PAYLOAD = {
   _schema: {},
   fields: [],
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -54,12 +47,12 @@ describe('Bulk Restore Use Case', () => {
     await rowInMemoryRepository.update({
       table,
       _id: row1._id,
-      data: { trashed: true, trashedAt: new Date() },
+      data: { trashedAt: new Date() },
     });
     await rowInMemoryRepository.update({
       table,
       _id: row2._id,
-      data: { trashed: true, trashedAt: new Date() },
+      data: { trashedAt: new Date() },
     });
 
     const result = await sut.execute({
@@ -80,9 +73,9 @@ describe('Bulk Restore Use Case', () => {
       table,
       query: { _id: row2._id },
     });
-    expect(restored1?.trashed).toBe(false);
     expect(restored1?.trashedAt).toBeNull();
-    expect(restored2?.trashed).toBe(false);
+    expect(restored1?.trashedAt).toBeNull();
+    expect(restored2?.trashedAt).toBeNull();
     expect(restored2?.trashedAt).toBeNull();
   });
 

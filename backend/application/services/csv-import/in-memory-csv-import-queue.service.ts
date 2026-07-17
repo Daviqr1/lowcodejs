@@ -1,12 +1,11 @@
+import type { Merge } from '@application/core/entity.core';
+
 import {
   CsvImportQueueContractService,
   type CsvImportJobPayload,
 } from './csv-import-queue-contract.service';
 
-interface StoredJob extends CsvImportJobPayload {
-  id: string;
-  enqueuedAt: Date;
-}
+type StoredJob = Merge<CsvImportJobPayload, { id: string; enqueuedAt: Date }>;
 
 export default class InMemoryCsvImportQueueService implements CsvImportQueueContractService {
   private jobs: StoredJob[] = [];

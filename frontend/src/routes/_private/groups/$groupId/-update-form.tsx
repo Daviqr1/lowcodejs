@@ -10,7 +10,7 @@ import { withForm } from '@/integrations/tanstack-form/form-hook';
 import { E_ROLE } from '@/lib/constant';
 import { UserGroupUpdateBodySchema } from '@/lib/schemas';
 
-const RoleMapper = {
+const RoleMapper: Record<string, string> = {
   [E_ROLE.ADMINISTRATOR]: 'Administrador',
   [E_ROLE.REGISTERED]: 'Registrado',
   [E_ROLE.MANAGER]: 'Gerente',
@@ -22,28 +22,33 @@ export type GroupUpdateFormValues = {
   name: string;
   description: string;
   permissions: Array<string>;
+  encompasses: Array<string>;
 };
 
 export const groupUpdateFormDefaultValues: GroupUpdateFormValues = {
   name: '',
   description: '',
   permissions: [],
+  encompasses: [],
 };
 
 export const UpdateGroupFormFields = withForm({
   defaultValues: groupUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define a união.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     slug: '',
+    groupId: '',
   },
-  render: function Render({ form, isPending, mode, slug }) {
+  render: function Render({ form, isPending, mode, slug, groupId }) {
     const isDisabled = mode === 'show' || isPending;
 
     return (
       <section
         data-test-id="group-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Slug (read-only) */}
         <Field>
@@ -53,7 +58,7 @@ export const UpdateGroupFormFields = withForm({
               data-test-id="group-slug-input"
               disabled
               type="text"
-              value={RoleMapper[slug as keyof typeof RoleMapper] || slug}
+              value={RoleMapper[slug] || slug}
               readOnly
               className="bg-muted"
             />
@@ -127,6 +132,18 @@ export const UpdateGroupFormFields = withForm({
               placeholder="Selecione as permissões..."
               disabled={isDisabled}
               required
+            />
+          )}
+        </form.AppField>
+
+        {/* Campo Grupos englobados (hierarquia) */}
+        <form.AppField name="encompasses">
+          {(field) => (
+            <field.FieldGroupMultiSelect
+              label="Grupos englobados"
+              placeholder="Selecione grupos que este engloba..."
+              disabled={isDisabled}
+              excludeId={groupId}
             />
           )}
         </form.AppField>

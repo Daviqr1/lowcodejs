@@ -1,0 +1,34 @@
+graph TD
+    subgraph Cliente
+        Browser["Navegador / SSR (React 19 + TanStack Start)"]
+    end
+
+    subgraph Backend["Backend Fastify 5 (porta 3000)"]
+        MW["Middlewares (Auth JWT, TableAccess, Role, ExtensionActive)"]
+        CTRL["Controllers (REST)"]
+        UC["Use-Cases (Either pattern)"]
+        SANDBOX["Sandbox VM (beforeSave/afterSave/onLoad)"]
+        WS["Socket.IO (/chat, /notifications, /storage-migration)"]
+    end
+
+    subgraph Persistencia
+        SYS[("MongoDB system\nDB_DATABASE\n14 models nativos")]
+        DATA[("MongoDB data\nDB_DATA_DATABASE\ncollections dinamicas por table.slug")]
+        REDIS[("Redis\ncache + filas BullMQ")]
+        STORAGE[["Storage local _storage/ ou S3\n(Flydrive)"]]
+    end
+
+    subgraph Opcional
+        MCP["MCP Server + OpenAI (profile ai)"]
+    end
+
+    Browser -->|HTTP REST + cookies httpOnly| MW
+    Browser -.->|WebSocket| WS
+    MW --> CTRL --> UC
+    UC --> SANDBOX
+    UC --> SYS
+    UC --> DATA
+    UC --> REDIS
+    UC --> STORAGE
+    WS --> MCP
+    WS --> SYS

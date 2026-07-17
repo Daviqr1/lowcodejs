@@ -15,13 +15,13 @@ import {
 } from '@/lib/constant';
 import { cn } from '@/lib/utils';
 
-interface TableFieldFormatSelectProps {
+type TableFieldFormatSelectProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   fieldType: keyof typeof FORMAT_OPTIONS_MAP;
   required?: boolean;
-}
+};
 
 const FORMAT_OPTIONS_MAP = {
   [E_FIELD_TYPE.TEXT_SHORT]: TEXT_FORMAT_OPTIONS,

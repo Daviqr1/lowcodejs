@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { randomUUID } from 'crypto';
 import { Service } from 'fastify-decorators';
 
@@ -46,11 +45,7 @@ function addCategoryNode(
     }
 
     if (node.children?.length) {
-      const result = addCategoryNode(
-        node.children as Array<ICategory>,
-        parentId,
-        newNode,
-      );
+      const result = addCategoryNode(node.children, parentId, newNode);
       if (result.inserted) {
         inserted = true;
         return {
@@ -110,23 +105,21 @@ export default class TableFieldAddCategoryUseCase {
         children: [],
       };
 
-      const existingCategories = Array.isArray(field.category)
-        ? field.category
-        : [];
+      let existingCategories: ICategory[] = [];
+      if (Array.isArray(field.category)) existingCategories = field.category;
 
       const parentId = payload.parentId ?? null;
 
-      const { updated, inserted } =
-        parentId === null
-          ? {
-              updated: [...existingCategories, newNode],
-              inserted: true,
-            }
-          : addCategoryNode(
-              existingCategories as Array<ICategory>,
-              parentId,
-              newNode,
-            );
+      let updated: ICategory[];
+      let inserted: boolean;
+      if (parentId === null) {
+        updated = [...existingCategories, newNode];
+        inserted = true;
+      } else {
+        const result = addCategoryNode(existingCategories, parentId, newNode);
+        updated = result.updated;
+        inserted = result.inserted;
+      }
 
       if (!inserted) {
         return left(

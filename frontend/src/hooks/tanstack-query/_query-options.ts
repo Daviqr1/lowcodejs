@@ -5,6 +5,7 @@ import { queryKeys } from './_query-keys';
 
 import { API } from '@/lib/api';
 import type {
+  IAuthenticationAccounts,
   IExtension,
   IField,
   IGroup,
@@ -184,13 +185,21 @@ export const tableListInfiniteOptions = (params: TableQueryPayload = {}) =>
 
 // ============== ROWS ==============
 
-export const rowListOptions = (slug: string, params: Record<string, unknown>) =>
+export const rowListOptions = (
+  slug: string,
+  params: Record<string, unknown>,
+  fallbackPerPage?: number,
+) =>
   queryOptions({
     queryKey: queryKeys.rows.list(slug, params),
     queryFn: async () => {
+      const finalParams = {
+        ...params,
+        perPage: params.perPage || fallbackPerPage || 20,
+      };
       const response = await API.get<Paginated<IRow>>(
         `/tables/${slug}/rows/paginated`,
-        { params },
+        { params: finalParams },
       );
       return response.data;
     },
@@ -206,6 +215,19 @@ export const rowDetailOptions = (slug: string, rowId: string) =>
       return response.data;
     },
     enabled: Boolean(slug) && Boolean(rowId),
+    staleTime: 30 * 1000,
+  });
+
+export const rowBySlugOptions = (slug: string, rowSlug: string) =>
+  queryOptions({
+    queryKey: queryKeys.rows.bySlug(slug, rowSlug),
+    queryFn: async () => {
+      const response = await API.get<IRow>(
+        `/tables/${slug}/rows/by-slug/${rowSlug}`,
+      );
+      return response.data;
+    },
+    enabled: Boolean(slug) && Boolean(rowSlug),
     staleTime: 30 * 1000,
   });
 
@@ -335,12 +357,14 @@ export const relationshipRowsOptions = (params: {
   search?: string;
   page?: number;
   perPage?: number;
+  excludeSelfId?: string;
 }) =>
   queryOptions({
     queryKey: queryKeys.relationships.rows(
       params.fieldSlug,
       params.tableSlug,
       params.search,
+      params.excludeSelfId,
     ),
     queryFn: async () => {
       const response = await API.get<Paginated<IRow>>(
@@ -350,6 +374,9 @@ export const relationshipRowsOptions = (params: {
             page: params.page ?? 1,
             perPage: params.perPage ?? 10,
             ...(params.search && { search: params.search }),
+            ...(params.excludeSelfId && {
+              excludeSelfId: params.excludeSelfId,
+            }),
           },
         },
       );
@@ -364,12 +391,20 @@ export const relationshipRowsInfiniteOptions = (params: {
   fieldSlug: string;
   search?: string;
   perPage?: number;
+  excludeLinked?: boolean;
+  relationshipId?: string;
+  excludeSide?: 'source' | 'target';
+  excludeForRecordId?: string;
+  excludeSelfId?: string;
 }) =>
   infiniteQueryOptions({
     queryKey: queryKeys.relationships.infinite(
       params.fieldSlug,
       params.tableSlug,
       params.search,
+      params.excludeLinked,
+      params.excludeForRecordId,
+      params.excludeSelfId,
     ),
     queryFn: async ({ pageParam }) => {
       const response = await API.get<Paginated<IRow>>(
@@ -379,6 +414,19 @@ export const relationshipRowsInfiniteOptions = (params: {
             page: pageParam,
             perPage: params.perPage ?? 10,
             ...(params.search && { search: params.search }),
+            ...(params.excludeSelfId && {
+              excludeSelfId: params.excludeSelfId,
+            }),
+            ...(params.excludeLinked &&
+              params.relationshipId &&
+              params.excludeSide && {
+                excludeLinked: 'true',
+                relationshipId: params.relationshipId,
+                excludeSide: params.excludeSide,
+                ...(params.excludeForRecordId && {
+                  excludeForRecordId: params.excludeForRecordId,
+                }),
+              }),
           },
         },
       );
@@ -387,6 +435,20 @@ export const relationshipRowsInfiniteOptions = (params: {
     enabled: Boolean(params.tableSlug),
     initialPageParam: 1,
     getNextPageParam: nextPageOrUndefined,
+    staleTime: 30 * 1000,
+  });
+
+// ============== AUTHENTICATION ==============
+
+export const accountsOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.authentication.accounts(),
+    queryFn: async () => {
+      const { data } = await API.get<IAuthenticationAccounts>(
+        '/authentication/accounts',
+      );
+      return data;
+    },
     staleTime: 30 * 1000,
   });
 

@@ -11,7 +11,7 @@ Visao geral em `backend/CLAUDE.md` -> "Migracao de arquivos entre drivers".
 | Arquivo | Descricao |
 |---------|-----------|
 | `storage-migration-queue-contract.service.ts` | Abstract class + tipos de payload (`MigrateJobPayload`, `CleanupJobPayload`, `ActiveJobInfo`) |
-| `bullmq-storage-migration-queue.service.ts` | Implementacao via BullMQ (Redis). Fila com nome `storage-migration` (constante exportada `STORAGE_MIGRATION_QUEUE_NAME`). |
+| `storage-migration-queue.service.ts` | Implementacao via BullMQ (Redis). Fila com nome `storage-migration` (constante exportada `STORAGE_MIGRATION_QUEUE_NAME`). |
 | `in-memory-storage-migration-queue.service.ts` | Mock para testes |
 | `worker.ts` | Worker in-process iniciado por `bin/server.ts`. Consome jobs `migrate` e `cleanup`, emite eventos via Socket.IO no namespace `/storage-migration`. |
 

@@ -15,7 +15,7 @@ Envia um campo de grupo para a lixeira (soft delete).
    - Verifica se o campo e nativo (nao pode ser enviado para lixeira)
    - Verifica se o campo e locked (nao pode ser enviado para lixeira)
    - Verifica se o campo ja esta na lixeira
-   - Atualiza o campo: showInList=false, showInForm=false, showInDetail=false, showInFilter=false, required=false, trashed=true, trashedAt=now
+   - Atualiza o campo: `permissions=buildFieldPermissions(false,false,false)` (oculta em list/form/detail), showInFilter=false, required=false, trashed=true, trashedAt=now
    - Atualiza o grupo com o campo atualizado e reconstroi schema do grupo
    - Reconstroi o schema da tabela pai
    - Atualiza a tabela

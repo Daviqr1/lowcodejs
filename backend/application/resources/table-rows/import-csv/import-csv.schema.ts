@@ -21,36 +21,41 @@ const TABLE_NOT_FOUND_SHAPE = {
 } as const;
 
 export const TableRowImportCsvTemplateSchema: FastifySchema = {
-  tags: ['Table Rows'],
+  tags: ['Registros'],
   summary: 'Baixa template CSV para importação de registros',
   description:
-    'Retorna arquivo CSV com apenas o cabeçalho (nomes dos campos importáveis). Use para preparar o arquivo de importação.',
+    'Retorna arquivo CSV com apenas o cabeçalho (nomes dos campos importáveis). Use para preparar o arquivo de importação. Restrito a MASTER e ADMINISTRATOR.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
     properties: {
-      slug: { type: 'string' },
+      slug: { type: 'string', description: 'Slug da tabela' },
     },
     required: ['slug'],
   },
   response: {
     200: {
-      description: 'Arquivo CSV template',
+      description: 'Arquivo CSV template (download attachment)',
       type: 'string',
       format: 'binary',
     },
     401: {
       ...ERROR_SHAPE,
+      description: 'Não autorizado - Autenticação necessária',
       properties: {
         ...ERROR_SHAPE.properties,
         code: { type: 'number', enum: [401] },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
       },
     },
     403: {
       ...ERROR_SHAPE,
+      description:
+        'Acesso negado - Permissão insuficiente (apenas MASTER/ADMINISTRATOR)',
       properties: {
         ...ERROR_SHAPE.properties,
         code: { type: 'number', enum: [403] },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
       },
     },
     404: TABLE_NOT_FOUND_SHAPE,
@@ -58,7 +63,7 @@ export const TableRowImportCsvTemplateSchema: FastifySchema = {
 };
 
 export const TableRowImportCsvSchema: FastifySchema = {
-  tags: ['Table Rows'],
+  tags: ['Registros'],
   summary: 'Importa registros de um arquivo CSV',
   description:
     'Enfileira um job de importação CSV em background. Progresso via Socket.IO namespace /csv-import, room job:{jobId}. Restrito a MASTER e ADMINISTRATOR.',

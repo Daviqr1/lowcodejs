@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -6,6 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RelationshipDeletionContractService } from '@application/services/relationship/relationship-deletion-contract.service';
 
 import type { TableDeletePayload } from './delete.validator';
 
@@ -17,6 +17,7 @@ export default class TableDeleteUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
+    private readonly relationshipDeletion: RelationshipDeletionContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -33,6 +34,9 @@ export default class TableDeleteUseCase {
       if (fieldIds.length > 0) {
         await this.fieldRepository.deleteMany(fieldIds);
       }
+
+      // Remove definitions e links de relacionamento que tocam esta tabela (§9).
+      await this.relationshipDeletion.cleanupTable(table._id);
 
       // Dropar a coleção dinâmica (registros da tabela)
       await this.tableRepository.dropCollection(table.slug);

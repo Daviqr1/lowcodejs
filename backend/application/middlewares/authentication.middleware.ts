@@ -2,70 +2,53 @@ import { type FastifyRequest } from 'fastify';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import {
+  ACCESS_TOKEN_COOKIE,
+  getRequestCookie,
+} from '@application/utils/cookies.util';
 
-interface AuthOptions {
+type AuthOptions = {
   optional?: boolean;
-}
-
-function extractLastCookieValue(
-  cookieHeader: string | undefined,
-  name: string,
-): string | undefined {
-  if (!cookieHeader) return undefined;
-  let lastValue: string | undefined;
-  for (const part of cookieHeader.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) {
-      lastValue = rest.join('=');
-    }
-  }
-  return lastValue;
-}
+};
 
 export function AuthenticationMiddleware(
   options: AuthOptions = { optional: false },
 ) {
   return async function (request: FastifyRequest): Promise<void> {
-    try {
-      const accessToken =
-        extractLastCookieValue(request.headers.cookie, 'accessToken') ??
-        request.cookies.accessToken;
+    const accessToken = getRequestCookie(request, ACCESS_TOKEN_COOKIE);
 
-      if (!accessToken) {
-        if (options.optional) return;
-        throw HTTPException.Unauthorized(
-          'Autenticação necessária',
-          'AUTHENTICATION_REQUIRED',
-        );
-      }
-
-      const accessTokenDecoded: IJWTPayload | null =
-        await request.server.jwt.decode(String(accessToken));
-
-      if (
-        !accessTokenDecoded ||
-        accessTokenDecoded.type !== E_JWT_TYPE.ACCESS
-      ) {
-        if (options.optional) return;
-        throw HTTPException.Unauthorized(
-          'Autenticação necessária',
-          'AUTHENTICATION_REQUIRED',
-        );
-      }
-
-      request.user = {
-        sub: accessTokenDecoded.sub,
-        email: accessTokenDecoded.email,
-        role: accessTokenDecoded.role,
-        type: E_JWT_TYPE.ACCESS,
-      };
-    } catch {
+    if (!accessToken) {
       if (options.optional) return;
-
       throw HTTPException.Unauthorized(
         'Autenticação necessária',
         'AUTHENTICATION_REQUIRED',
       );
     }
+
+    let accessTokenDecoded: IJWTPayload | null = null;
+    try {
+      accessTokenDecoded = await request.server.jwt.decode(accessToken);
+    } catch {
+      if (options.optional) return;
+      throw HTTPException.Unauthorized(
+        'Autenticação necessária',
+        'AUTHENTICATION_REQUIRED',
+      );
+    }
+
+    if (!accessTokenDecoded || accessTokenDecoded.type !== E_JWT_TYPE.ACCESS) {
+      if (options.optional) return;
+      throw HTTPException.Unauthorized(
+        'Autenticação necessária',
+        'AUTHENTICATION_REQUIRED',
+      );
+    }
+
+    request.user = {
+      sub: accessTokenDecoded.sub,
+      email: accessTokenDecoded.email,
+      role: accessTokenDecoded.role,
+      type: E_JWT_TYPE.ACCESS,
+    };
   };
 }

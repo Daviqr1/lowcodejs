@@ -3,9 +3,11 @@ import {
   createLazyFileRoute,
   useParams,
   useRouter,
+  useSearch,
 } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import type { UserUpdateFormValues } from './-update-form';
 import { UpdateUserFormFields, UserUpdateSchema } from './-update-form';
@@ -22,7 +24,6 @@ import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IUser } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/users/$userId/')({
   component: RouteComponent,
@@ -38,7 +39,10 @@ function RouteComponent(): React.JSX.Element {
 
   const { data } = useSuspenseQuery(userDetailOptions(userId));
 
-  const [mode, setMode] = React.useState<'show' | 'edit'>('show');
+  const search = useSearch({ from: '/_private/users/$userId/' });
+  let initialMode: 'show' | 'edit' = 'show';
+  if (search.mode === 'edit') initialMode = 'edit';
+  const [mode, setMode] = React.useState<'show' | 'edit'>(initialMode);
 
   const goBack = (): void => {
     sidebar.setOpen(true);
@@ -80,11 +84,11 @@ function RouteComponent(): React.JSX.Element {
   );
 }
 
-interface UserUpdateContentProps {
+type UserUpdateContentProps = {
   data: IUser;
   mode: 'show' | 'edit';
   setMode: React.Dispatch<React.SetStateAction<'show' | 'edit'>>;
-}
+};
 
 function UserUpdateContent({
   data,
@@ -112,6 +116,7 @@ function UserUpdateContent({
       password: '',
       status: data.status,
       group: data.group._id,
+      groups: data.groups?.map((group) => group._id) ?? [],
     } satisfies UserUpdateFormValues,
     validators: {
       onChange: UserUpdateSchema,
@@ -133,10 +138,9 @@ function UserUpdateContent({
 
   const _update = useUpdateUser({
     onSuccess() {
-      toastSuccess(
-        'Usuário atualizado',
-        'Os dados do usuário foram atualizados com sucesso',
-      );
+      toast.success('Usuário atualizado', {
+        description: 'Os dados do usuário foram atualizados com sucesso',
+      });
 
       form.reset();
       setMode('show');
@@ -181,7 +185,7 @@ function UserUpdateContent({
         <PageShell.Content>
           <form
             data-test-id="user-update-form"
-            className="flex-1 flex flex-col min-h-0 overflow-auto"
+            className="flex-1 flex flex-col"
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();

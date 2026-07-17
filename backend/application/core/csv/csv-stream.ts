@@ -21,11 +21,10 @@ export type CsvField = { label: string; value: string };
  * falhar cedo com 422.
  */
 export type CsvBatchFetcher<TPayload, TEntity> = (
-  // eslint-disable-next-line no-unused-vars
   payload: TPayload,
-  // eslint-disable-next-line no-unused-vars
+
   page: number,
-  // eslint-disable-next-line no-unused-vars
+
   perPage: number,
 ) => Promise<TEntity[]>;
 
@@ -75,5 +74,7 @@ export function buildCsvStream<TRow extends Record<string, unknown>>(opts: {
   // `AsyncParser.parse` despacha AsyncIterable como objeto único (bug interno
   // da lib), então convertemos para Readable em objectMode antes.
   const input = Readable.from(opts.source, { objectMode: true });
-  return parser.parse(input) as unknown as Readable;
+  // `parse` retorna JSON2CSVNodeTransform, que estende Transform → Readable —
+  // já é atribuível ao retorno `Readable` sem asserção.
+  return parser.parse(input);
 }

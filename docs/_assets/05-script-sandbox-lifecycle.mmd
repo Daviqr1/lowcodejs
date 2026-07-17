@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant C as Controller
+    participant UC as Use-Case (create/update)
+    participant V as validateRowPayload
+    participant P as RowPasswordService
+    participant SE as ScriptExecutionService (VM)
+    participant R as RowRepository (Mongoose)
+    participant H as Hook pre/post save (model-builder)
+    participant N as Notification/Mention Services
+
+    C->>UC: execute(payload)
+    UC->>V: valida tipos/required/formato
+    V-->>UC: errors | null
+    alt errors
+        UC-->>C: Left 400 INVALID_PAYLOAD_FORMAT
+    end
+    UC->>P: hash campos PASSWORD
+    UC->>SE: execute beforeSave (moment=antes_salvar) [explicito no use-case]
+    SE-->>UC: ExecutionResult {success, logs, error}
+    note over UC,SE: erro de script NAO bloqueia o save no use-case (apenas loga)
+    UC->>R: create/update na collection dinamica
+    R->>H: pre('save') -> executeScript beforeSave [2a execucao]
+    note over H: pre-save: erro de script LANCA e ABORTA o save
+    R->>H: post('save') -> executeScript afterSave (moment=depois_salvar)
+    note over H: post-save: afterSave NAO bloqueante (so console.error)
+    R-->>UC: row persistido
+    UC->>N: notifyNewMembers (KANBAN/CALENDAR) / notifyNewMentions (KANBAN)
+    UC->>P: mask campos PASSWORD
+    UC-->>C: Right(row)

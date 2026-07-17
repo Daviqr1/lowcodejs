@@ -44,6 +44,15 @@ export const Schema = new mongoose.Schema(
       tableIds: { type: [String], default: [] },
     },
 
+    /**
+     * Configurações por tabela. Mapa tableId -> settings (Record<string, unknown>).
+     * Populado por configure-table-scope e lido por RowAccessGuardService.
+     */
+    tableSettings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
     manifestSnapshot: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -69,9 +78,6 @@ Schema.index({ pkg: 1, type: 1, extensionId: 1 }, { unique: true });
 Schema.index({ enabled: 1, type: 1 });
 Schema.index({ slots: 1, enabled: 1 });
 
-export const Extension = (mongoose?.models?.Extension ||
-  mongoose.model<Entity>(
-    'Extension',
-    Schema,
-    'extensions',
-  )) as mongoose.Model<Entity>;
+export const Extension: mongoose.Model<Entity> =
+  mongoose?.models?.Extension ||
+  mongoose.model<Entity>('Extension', Schema, 'extensions');

@@ -4,7 +4,11 @@ CRUD e gerenciamento de campos de uma tabela dinamica.
 
 ## Entidade
 
-`IField` - Campo de tabela com tipo, formato, visibilidade, validacao e configuracoes (relationship, dropdown, category, group).
+`IField` - Campo de tabela com tipo, formato, `permissions` ({ list, form,
+detail } com binding por contexto — ausencia de binding = visivel), validacao e
+configuracoes (relationship, dropdown, category, group). `showInFilter` controla
+apenas a sidebar de filtros (nao e permissao). Os booleans
+`showInList/showInForm/showInDetail` foram removidos.
 
 ## Endpoints
 
@@ -26,4 +30,12 @@ CRUD e gerenciamento de campos de uma tabela dinamica.
 
 ## Schema Base
 
-Definido em `table-field-base.schema.ts`: required, multiple, format, showInFilter, showInForm, showInDetail, showInList, widthInForm, widthInList, widthInDetail, locked, defaultValue, relationship, dropdown, category, group.
+Definido em `table-field-base.schema.ts`: required, multiple, format,
+`validations` (array de `{ rule, config }` — regras de `field.validations[]`;
+`rule` ∈ `E_FIELD_VALIDATION`; default `[]`), `permissions` (FieldPermissionsSchema:
+{ list, form, detail } → binding), showInFilter (controla a sidebar de filtros),
+widthInForm, widthInList, widthInDetail, locked, defaultValue, relationship,
+dropdown, category, group.
+
+> O passe das regras configuradas em `validations` roda no create/update de
+> **row** (`FieldValidationService`), não na criação do campo. Aqui só persiste.

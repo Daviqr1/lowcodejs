@@ -3,24 +3,24 @@ import { useMutation } from '@tanstack/react-query';
 
 import { API } from '@/lib/api';
 
-export interface ITranscribeField {
+export type ITranscribeField = {
   key: string;
   label: string;
   type: 'string' | 'date' | 'number' | 'boolean';
   value: string | number | boolean | null;
-}
+};
 
-export interface ITranscribeResult {
+export type ITranscribeResult = {
   documentTypeId: string;
   documentTypeName: string;
   fields: Array<ITranscribeField>;
   raw: unknown;
-}
+};
 
-interface Options {
+type Options = {
   onSuccess?: (data: ITranscribeResult) => void;
   onError?: (error: unknown) => void;
-}
+};
 
 export function useDocTranscriptionTranscribe(
   options?: Options,

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import slugify from 'slugify';
 
@@ -8,19 +7,17 @@ import {
   E_EXTENSION_TYPE,
   E_MENU_ITEM_TYPE,
   type IMenu as Entity,
+  type Merge,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
-import {
-  MenuContractRepository,
-  type MenuCreatePayload as RepositoryMenuCreatePayload,
-} from '@application/repositories/menu/menu-contract.repository';
+import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 import type { MenuCreatePayload } from './create.validator';
 
 type Response = Either<HTTPException, Entity>;
-type Payload = MenuCreatePayload & { owner: string };
+type Payload = Merge<MenuCreatePayload, { owner: string }>;
 
 @Service()
 export default class MenuCreateUseCase {
@@ -170,7 +167,7 @@ export default class MenuCreateUseCase {
         slug,
         owner: payload.owner,
         order,
-      } as RepositoryMenuCreatePayload);
+      });
 
       if (created.isInitial) {
         await this.menuRepository.setOnlyInitial(created._id);

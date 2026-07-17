@@ -15,7 +15,7 @@ export function ExportCsvButton({
   onClick,
   disabled,
   isPending,
-  label = 'Exportar CSV',
+  label = 'Exportar',
   testId = 'export-csv-btn',
 }: Props): React.JSX.Element {
   return (
@@ -26,11 +26,8 @@ export function ExportCsvButton({
       disabled={disabled || isPending}
       data-test-id={testId}
     >
-      {isPending ? (
-        <LoaderCircleIcon className="size-4 animate-spin" />
-      ) : (
-        <DownloadIcon className="size-4" />
-      )}
+      {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+      {!isPending && <DownloadIcon className="size-4" />}
       <span>{label}</span>
     </Button>
   );

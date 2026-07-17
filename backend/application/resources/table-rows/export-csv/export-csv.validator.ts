@@ -13,6 +13,9 @@ export const TableRowExportCsvParamsValidator = z.object({
 });
 
 export type TableRowExportCsvPayload = Merge<
-  z.infer<typeof TableRowExportCsvParamsValidator>,
-  z.infer<typeof TableRowExportCsvQueryValidator>
-> & { user?: string };
+  Merge<
+    z.infer<typeof TableRowExportCsvParamsValidator>,
+    z.infer<typeof TableRowExportCsvQueryValidator>
+  >,
+  { user?: string }
+>;

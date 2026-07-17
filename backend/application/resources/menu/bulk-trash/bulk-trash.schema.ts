@@ -30,11 +30,28 @@ export const MenuBulkTrashSchema: FastifySchema = {
         },
       },
     },
-    401: {
-      description: 'Não autorizado',
+    400: {
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', description: 'Mensagem de erro' },
+        code: { type: 'number', enum: [400] },
+        cause: {
+          type: 'string',
+          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Erros de validação por campo',
+        },
+      },
+    },
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
+      type: 'object',
+      properties: {
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
@@ -44,7 +61,7 @@ export const MenuBulkTrashSchema: FastifySchema = {
       },
     },
     403: {
-      description: 'Permissão insuficiente',
+      description: 'Proibido - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },

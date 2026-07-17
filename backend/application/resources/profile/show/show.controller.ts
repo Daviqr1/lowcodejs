@@ -12,7 +12,6 @@ import ProfileShowUseCase from './show.use-case';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
     ),
@@ -45,6 +44,11 @@ export default class {
       });
     }
 
-    return response.status(200).send(toUserResponse(result.value));
+    const { capabilities, ...user } = result.value;
+
+    return response.status(200).send({
+      ...toUserResponse(user),
+      capabilities,
+    });
   }
 }

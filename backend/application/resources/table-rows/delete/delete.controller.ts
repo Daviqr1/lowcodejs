@@ -13,7 +13,6 @@ import { TableRowDeleteParamsValidator } from './delete.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TableRowDeleteUseCase = getInstanceByToken(
       TableRowDeleteUseCase,
     ),
@@ -35,7 +34,11 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const params = TableRowDeleteParamsValidator.parse(request.params);
-    const result = await this.useCase.execute(params);
+    const result = await this.useCase.execute({
+      ...params,
+      ...(request?.user?.sub && { __actorUserId: request.user.sub }),
+      ...(request.ownership?.ownOnly && { __ownOnly: true }),
+    });
 
     if (result.isLeft()) {
       const error = result.value;

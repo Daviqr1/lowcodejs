@@ -18,13 +18,13 @@ import { useUserReadPaginatedInfinite } from '@/hooks/tanstack-query/use-user-re
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser } from '@/lib/interfaces';
 
-interface ForumUserMultiSelectProps {
+type ForumUserMultiSelectProps = {
   value: Array<string>;
   onChange: (value: Array<string>) => void;
   onSelectedUsersChange?: (users: Array<IUser>) => void;
   disabled?: boolean;
   placeholder?: string;
-}
+};
 
 export function ForumUserMultiSelect({
   value,

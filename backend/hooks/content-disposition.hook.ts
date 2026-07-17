@@ -5,7 +5,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
-import StorageMongooseRepository from '@application/repositories/storage/storage-mongoose.repository';
+import StorageMongooseRepository from '@application/repositories/storage/storage.repository';
 import {
   buildContentDisposition,
   DispositionMode,
@@ -39,14 +39,14 @@ async function resolveStorageMeta(
       StorageMongooseRepository,
     );
     const doc = await repo.findByFilename(filename);
-    const meta: StorageMeta | null =
-      doc === null
-        ? null
-        : {
-            originalName: doc.originalName,
-            mimetype: doc.mimetype,
-            location: doc.location,
-          };
+    let meta: StorageMeta | null = null;
+    if (doc !== null) {
+      meta = {
+        originalName: doc.originalName,
+        mimetype: doc.mimetype,
+        location: doc.location,
+      };
+    }
     setCachedStorageMeta(filename, meta);
     return meta;
   } catch (error) {
@@ -62,7 +62,8 @@ const HASH_NAME_PATTERN = /^\d{1,8}$/;
 
 function isStaticFilename(filename: string): boolean {
   const dotIndex = filename.lastIndexOf('.');
-  const stem = dotIndex === -1 ? filename : filename.slice(0, dotIndex);
+  let stem = filename;
+  if (dotIndex !== -1) stem = filename.slice(0, dotIndex);
   return !HASH_NAME_PATTERN.test(stem);
 }
 
@@ -165,13 +166,16 @@ export async function StorageContentDispositionHook(
   // doc is absent from Mongo (legacy or just-uploaded race), fall back to
   // local — the historical default driver.
   const primary = meta?.location ?? 'local';
-  const secondary = primary === 'local' ? 's3' : 'local';
+  let secondary: 'local' | 's3' = 'local';
+  if (primary === 'local') secondary = 's3';
 
   try {
     await DRIVER_HANDLERS[primary](filename, request, response);
   } catch (primaryErr) {
+    let primaryMsg = 'erro desconhecido';
+    if (primaryErr instanceof Error) primaryMsg = primaryErr.message;
     console.info(
-      `[Storage] ${filename} ausente no driver primário (${primary}), tentando ${secondary}: ${(primaryErr as Error).message}`,
+      `[Storage] ${filename} ausente no driver primário (${primary}), tentando ${secondary}: ${primaryMsg}`,
     );
     try {
       await DRIVER_HANDLERS[secondary](filename, request, response);

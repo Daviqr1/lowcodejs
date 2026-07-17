@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import type { Merge } from '@application/core/entity.core';
+
 export const NotificationPaginatedQueryValidator = z.object({
   page: z.coerce
     .number({ message: 'A página deve ser um número' })
@@ -21,8 +23,9 @@ export const NotificationPaginatedQueryValidator = z.object({
     .optional(),
 });
 
-export type NotificationPaginatedPayload = z.infer<
-  typeof NotificationPaginatedQueryValidator
-> & {
-  userId: string;
-};
+export type NotificationPaginatedPayload = Merge<
+  z.infer<typeof NotificationPaginatedQueryValidator>,
+  {
+    userId: string;
+  }
+>;

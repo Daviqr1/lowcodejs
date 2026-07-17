@@ -17,7 +17,8 @@ tabelas e campos.
   cookies de sessão reais e executar requests autenticados contra o servidor real
 - **Testes unitários** (`*.spec.ts`): usam factories + repositórios in-memory,
   sem dependência de MongoDB real
-- `createAuthenticatedUser()` cria grupo MASTER com todas as 12 permissões por
-  padrão, simplificando setup de testes que não testam RBAC
+- `createAuthenticatedUser()` cria grupo MASTER com 18 permissões por padrão
+  (12 de tabela + 6 capacidades de área, sem MANAGE_CHAT), simplificando setup
+  de testes que não testam RBAC
 - Factories aceitam partial overrides para customizar apenas os campos relevantes
   ao teste

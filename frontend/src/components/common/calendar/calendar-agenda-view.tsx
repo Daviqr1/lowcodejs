@@ -4,10 +4,10 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import type { CalendarEventItem } from '@/lib/calendar-helpers';
 
-interface CalendarAgendaViewProps {
+type CalendarAgendaViewProps = {
   events: Array<CalendarEventItem>;
   onSelectEvent: (event: CalendarEventItem) => void;
-}
+};
 
 export function CalendarAgendaView({
   events,

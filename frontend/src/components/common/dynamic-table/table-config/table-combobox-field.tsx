@@ -7,12 +7,12 @@ import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-table
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface TableComboboxFieldProps {
+type TableComboboxFieldProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-}
+};
 
 export function TableComboboxField({
   label,

@@ -1,8 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserGroupBulkDeleteSchema: FastifySchema = {
-  tags: ['User Groups'],
+  tags: ['Grupos de Usuários'],
   summary: 'Excluir permanentemente múltiplos grupos',
+  description:
+    'Exclui permanentemente os grupos elegíveis (já na lixeira, não-sistema e sem usuários atribuídos) e retorna a quantidade efetivamente removida. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
   body: {
     type: 'object',
@@ -13,7 +15,30 @@ export const UserGroupBulkDeleteSchema: FastifySchema = {
     additionalProperties: false,
   },
   response: {
-    200: { type: 'object', properties: { deleted: { type: 'number' } } },
+    200: {
+      description: 'Quantidade de grupos excluídos permanentemente',
+      type: 'object',
+      properties: {
+        deleted: { type: 'number', description: 'Total de grupos excluídos' },
+      },
+    },
+    400: {
+      description: 'Requisição inválida - Falha na validação',
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'Mensagem de erro de validação',
+        },
+        code: { type: 'number', enum: [400] },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Erros de validação por campo',
+        },
+      },
+    },
     401: {
       type: 'object',
       properties: {

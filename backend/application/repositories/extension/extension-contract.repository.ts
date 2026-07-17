@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type {
   E_EXTENSION_TYPE,
   IExtension,
@@ -47,6 +46,12 @@ export type ExtensionUpdateTableScopePayload = {
   tableScope: IExtensionTableScope;
 };
 
+export type ExtensionUpdateTableSettingsPayload = {
+  _id: string;
+  tableId: string;
+  settings: Record<string, unknown>;
+};
+
 export type ExtensionQueryPayload = {
   type?: ExtensionType;
   enabled?: boolean;
@@ -82,6 +87,13 @@ export abstract class ExtensionContractRepository {
     payload: ExtensionUpdateTableScopePayload,
   ): Promise<IExtension>;
   /**
+   * Persiste `settings` para uma tabela especifica no campo `tableSettings[tableId]`.
+   * Usado pelo configure-table-scope quando o plugin e um row-access-guard.
+   */
+  abstract updateTableSettings(
+    payload: ExtensionUpdateTableSettingsPayload,
+  ): Promise<IExtension>;
+  /**
    * Marca como `available: false` toda extensão cuja chave (pkg, type, extensionId)
    * NÃO esteja em `presentKeys`. Usado pelo loader para sinalizar manifestos
    * removidos do disco.
@@ -89,4 +101,9 @@ export abstract class ExtensionContractRepository {
   abstract markUnavailableExcept(
     presentKeys: ExtensionAvailabilityKey[],
   ): Promise<number>;
+  /**
+   * Retorna extensões enabled e available cujo tableScope cobre tableId.
+   * Usado por RowAccessGuardService para descobrir os guards ativos da tabela.
+   */
+  abstract findActiveForTable(tableId: string): Promise<IExtension[]>;
 }

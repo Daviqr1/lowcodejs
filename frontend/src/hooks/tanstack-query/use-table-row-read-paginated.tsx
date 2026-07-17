@@ -8,6 +8,9 @@ import type { IRow, Paginated } from '@/lib/interfaces';
 export function useReadTableRowPaginated(payload: {
   slug: string;
   search: Record<string, unknown>;
+  fallbackPerPage?: number;
 }): UseQueryResult<Paginated<IRow>, Error> {
-  return useQuery(rowListOptions(payload.slug, payload.search));
+  return useQuery(
+    rowListOptions(payload.slug, payload.search, payload.fallbackPerPage),
+  );
 }

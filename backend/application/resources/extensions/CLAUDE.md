@@ -12,15 +12,27 @@ rotas dinâmicas).
 
 | Operação | Método | Rota | Permissão |
 |----------|--------|------|-----------|
-| list | GET | `/extensions` | MASTER, ADMINISTRATOR |
-| active | GET | `/extensions/active` | Auth (qualquer usuário) |
-| toggle | PATCH | `/extensions/:_id/toggle` | MASTER, ADMINISTRATOR |
-| configure-table-scope | PATCH | `/extensions/:_id/table-scope` | MASTER, ADMINISTRATOR |
+| list | GET | `/extensions` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_TOOLS)` |
+| active | GET | `/extensions/active` | Auth only (qualquer usuário) |
+| toggle | PATCH | `/extensions/:_id/toggle` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_TOOLS)` |
+| configure-table-scope | PATCH | `/extensions/:_id/table-scope` | `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_PLUGINS)` |
 
 ## Middlewares
 
-1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR])`
+`AuthenticationMiddleware({ optional: false })` roda primeiro em todas as
+operações. A camada de autorização é por **capacidade de área**
+(`PermissionMiddleware`), não mais por role:
+
+- **list** e **toggle**: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_TOOLS)`
+- **configure-table-scope**:
+  `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_PLUGINS)`
+- **active**: AUTH-ONLY (sem PermissionMiddleware) — guarda de runtime para
+  qualquer usuário autenticado
+
+> Isto **restringe** o acesso em relação ao modelo antigo
+> (`RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR])`): ADMINISTRATOR não
+> gerencia mais ferramentas/plugins por padrão — somente quem tiver a capacidade
+> MANAGE_TOOLS / MANAGE_PLUGINS atribuída ao seu grupo (MASTER bypassa).
 
 ## Repositórios utilizados
 
@@ -29,7 +41,8 @@ rotas dinâmicas).
 ## Comportamentos chave
 
 - **list** retorna todas as extensões (incluindo `enabled: false` e
-  `available: false`) para o Workshop. Restrito a MASTER e ADMINISTRATOR
+  `available: false`) para o Workshop. Restrito a quem tem a capacidade
+  MANAGE_TOOLS (MASTER bypassa)
 - **active** retorna apenas extensões `enabled: true` e `available: true`,
   **sem** `manifestSnapshot`. Disponível para qualquer usuário autenticado —
   usado pela sidebar (sub-menu Ferramentas) e pelos slots no frontend

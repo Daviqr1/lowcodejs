@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import type { Merge } from '@application/core/entity.core';
+
 import type { IDocTranscriptionConfig } from './doc-transcription.types';
 
 const SINGLETON_ID = 'singleton';
@@ -38,13 +40,15 @@ const DocTranscriptionConfigSchema = new mongoose.Schema(
   { timestamps: true, id: false },
 );
 
-export const DocTranscriptionConfigModel = (mongoose?.models
-  ?.DocTranscriptionConfig ||
-  mongoose.model<IDocTranscriptionConfig & mongoose.Document>(
+export const DocTranscriptionConfigModel: mongoose.Model<
+  Merge<IDocTranscriptionConfig, mongoose.Document>
+> =
+  mongoose?.models?.DocTranscriptionConfig ||
+  mongoose.model<Merge<IDocTranscriptionConfig, mongoose.Document>>(
     'DocTranscriptionConfig',
     DocTranscriptionConfigSchema,
     'doc_transcription_config',
-  )) as mongoose.Model<IDocTranscriptionConfig & mongoose.Document>;
+  );
 
 export async function getOrCreateConfig(): Promise<IDocTranscriptionConfig> {
   let doc = await DocTranscriptionConfigModel.findById(SINGLETON_ID);
@@ -55,7 +59,7 @@ export async function getOrCreateConfig(): Promise<IDocTranscriptionConfig> {
       documentTypes: [],
     });
   }
-  return doc.toJSON() as IDocTranscriptionConfig;
+  return doc.toJSON();
 }
 
 export async function saveConfig(
@@ -66,5 +70,5 @@ export async function saveConfig(
     { $set: data },
     { upsert: true, new: true },
   );
-  return doc!.toJSON() as IDocTranscriptionConfig;
+  return doc!.toJSON();
 }

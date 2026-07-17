@@ -14,13 +14,13 @@ import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IMenu } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface FieldMenuPositionSelectProps {
+type FieldMenuPositionSelectProps = {
   label: string;
   parentId?: string;
   disabled?: boolean;
   excludeId?: string;
   required?: boolean;
-}
+};
 
 function getParentId(menu: IMenu): string | null {
   if (!menu.parent) return null;
@@ -86,11 +86,13 @@ export function FieldMenuPositionSelect({
   }, [excludeId, menus, parentId]);
 
   const options = React.useMemo(() => {
-    const firstValue = parentId ? '1' : '0';
+    let firstValue = '0';
+    if (parentId) firstValue = '1';
     const items = [{ value: firstValue, label: 'Primeiro item' }];
 
     siblings.forEach((menu, index) => {
-      const value = parentId ? String(index + 2) : String(index + 1);
+      let value = String(index + 1);
+      if (parentId) value = String(index + 2);
       items.push({
         value,
         label: 'Depois de '.concat(menu.name),
@@ -108,9 +110,9 @@ export function FieldMenuPositionSelect({
       return;
     }
 
-    field.handleChange(
-      options[options.length - 1]?.value ?? (parentId ? '1' : '0'),
-    );
+    let positionFallback = '0';
+    if (parentId) positionFallback = '1';
+    field.handleChange(options[options.length - 1]?.value ?? positionFallback);
   }, [field, options, parentId]);
 
   return (

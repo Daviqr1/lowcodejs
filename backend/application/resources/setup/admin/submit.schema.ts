@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupAdminSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Criar administrador MASTER no setup wizard',
   description:
     'Cria o primeiro usuário MASTER e autentica automaticamente. Etapa 1 do setup wizard.',

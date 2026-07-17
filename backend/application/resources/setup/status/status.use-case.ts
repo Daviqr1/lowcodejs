@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-import { Inject, Service } from 'fastify-decorators';
+import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
@@ -10,21 +9,21 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 
 import { SETUP_STEPS } from '../setup.steps';
 
-interface SetupStatusResponse {
+type SetupStatusResponse = {
   completed: boolean;
   currentStep: string | null;
   hasAdmin: boolean;
   steps: typeof SETUP_STEPS;
-}
+};
 
 type Response = Either<HTTPException, SetupStatusResponse>;
 
 @Service()
 export default class SetupStatusUseCase {
-  @Inject(UserContractRepository)
-  private readonly userRepository!: UserContractRepository;
-
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly userRepository: UserContractRepository,
+  ) {}
 
   async execute(): Promise<Response> {
     try {

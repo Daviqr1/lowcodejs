@@ -17,14 +17,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-tables-read-paginated-infinite';
 import type { ITable } from '@/lib/interfaces';
 
-interface TableMultiSelectProps {
+type TableMultiSelectProps = {
   value?: Array<string>;
   onValueChange?: (value: Array<string>, tables?: Array<ITable>) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   allowedTableIds?: Array<string>;
-}
+};
 
 export function TableMultiSelect({
   value = [],

@@ -7,6 +7,7 @@ import {
   UploadIcon,
 } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { TableComboboxPaginated } from '@/components/common/dynamic-table/table-selectors/table-combobox-paginated';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,6 @@ import { useTableRowsImportCsv } from '@/hooks/tanstack-query/use-table-rows-imp
 import { useCsvImportSocket } from '@/hooks/use-csv-import-socket';
 import { downloadCsvFromApi } from '@/lib/csv-export';
 import { QueryClient } from '@/lib/query-client';
-import { toastSuccess } from '@/lib/toast';
 
 type Phase = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
 
@@ -57,10 +57,9 @@ export function ImportCsvSection(): React.JSX.Element {
         queryKey: queryKeys.rows.lists(tableSlug),
       });
     }
-    toastSuccess(
-      'Importação concluída!',
-      `${socket.completed.imported} importadas, ${socket.completed.skipped} ignoradas`,
-    );
+    toast.success('Importação concluída!', {
+      description: `${socket.completed.imported} importadas, ${socket.completed.skipped} ignoradas`,
+    });
   }, [socket.completed, tableSlug]);
 
   React.useEffect((): void => {

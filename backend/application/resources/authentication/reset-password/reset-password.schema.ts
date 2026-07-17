@@ -4,7 +4,7 @@ export const ResetPasswordSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Atualizar senha após recuperação',
   description:
-    'Atualiza a senha do usuário usando um token de recuperação válido obtido da validação do código',
+    'Atualiza a senha do usuário identificado pelo token de sessão (definido após a validação do código) e enfileira um email de confirmação (efeito colateral). Retorna 200 sem corpo',
   body: {
     type: 'object',
     required: ['password'],
@@ -34,52 +34,39 @@ export const ResetPasswordSchema: FastifySchema = {
   response: {
     200: {
       description: 'Senha atualizada com sucesso',
+      type: 'null',
+    },
+    400: {
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
         message: { type: 'string' },
-      },
-    },
-    400: {
-      description:
-        'Requisição inválida - Token inválido ou erro de validação de senha',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Token de recuperação inválido',
-            'A senha deve ter no mínimo 6 caracteres',
-            'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
-          ],
-        },
         code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_TOKEN', 'INVALID_PARAMETERS'],
-        },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Token de recuperação inválido',
-          code: 400,
-          cause: 'INVALID_TOKEN',
+    },
+    401: {
+      description: 'Não autorizado - Autenticação necessária',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [401] },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
         },
-        {
-          message: 'A senha deve ter no mínimo 6 caracteres',
-          code: 400,
-          cause: 'INVALID_PARAMETERS',
-        },
-      ],
+      },
     },
     404: {
       description: 'Não encontrado - Usuário não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Usuário não encontrado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
         errors: {
@@ -87,19 +74,12 @@ export const ResetPasswordSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Usuário não encontrado',
-          code: 404,
-          cause: 'USER_NOT_FOUND',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['UPDATE_PASSWORD_ERROR'] },
         errors: {
@@ -107,13 +87,6 @@ export const ResetPasswordSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Erro interno do servidor',
-          code: 500,
-          cause: 'UPDATE_PASSWORD_ERROR',
-        },
-      ],
     },
   },
 };

@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableRowDeleteSchema: FastifySchema = {
-  tags: ['Rows'],
-  summary: 'Delete row',
+  tags: ['Registros'],
+  summary: 'Excluir registro',
   description:
-    'Permanently deletes a row from a table. This action cannot be undone and removes all associated data.',
+    'Exclui permanentemente um registro de uma tabela. Esta ação não pode ser desfeita e remove todos os dados associados.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,12 +12,12 @@ export const TableRowDeleteSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the row',
+        description: 'Slug da tabela que contém o registro',
         examples: ['users', 'products', 'blog-posts'],
       },
       _id: {
         type: 'string',
-        description: 'Row ID to delete permanently',
+        description: 'ID do registro a ser excluído permanentemente',
         examples: ['507f1f77bcf86cd799439011'],
       },
     },
@@ -25,17 +25,44 @@ export const TableRowDeleteSchema: FastifySchema = {
   },
   response: {
     200: {
-      description: 'Row deleted successfully',
-      type: 'object',
-      properties: {},
+      description: 'Registro excluído com sucesso',
+      type: 'null',
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    403: {
+      description: 'Acesso negado - Permissões insuficientes',
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Mensagem de erro' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'TABLE_PRIVATE',
+            'RESTRICTED_CREATE',
+            'FORM_VIEW_RESTRICTED',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -43,13 +70,10 @@ export const TableRowDeleteSchema: FastifySchema = {
       },
     },
     404: {
-      description: 'Not found - Table or row does not exist',
+      description: 'Não encontrado - Tabela ou registro não existe',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Table not found', 'Row not found'],
-        },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [404] },
         cause: {
           type: 'string',
@@ -60,19 +84,12 @@ export const TableRowDeleteSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Row not found',
-          code: 404,
-          cause: 'ROW_NOT_FOUND',
-        },
-      ],
     },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['DELETE_ROW_ERROR'] },
         errors: {

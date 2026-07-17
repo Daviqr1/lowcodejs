@@ -9,12 +9,12 @@ import { useTablesReadPaginatedInfinite } from '@/hooks/tanstack-query/use-table
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-interface SelectOption {
+type SelectOption = {
   value: string;
   label: string;
-}
+};
 
-interface FilteredTableComboboxFieldProps {
+type FilteredTableComboboxFieldProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
@@ -24,7 +24,7 @@ interface FilteredTableComboboxFieldProps {
   allowedTableIds: Array<string>;
 
   mapOption?: (table: { _id: string; name: string }) => SelectOption;
-}
+};
 
 export function FilteredTableComboboxField({
   label,
@@ -52,12 +52,14 @@ export function FilteredTableComboboxField({
    * recebe opções prontas (sem "Carregar mais"), disparamos todas as
    * páginas automaticamente abaixo.
    */
+  let paginatedParams: { _ids?: Array<string>; perPage: number } = {
+    perPage: 50,
+  };
+  if (normalizedAllowedIds.length > 0) {
+    paginatedParams = { _ids: normalizedAllowedIds, perPage: 50 };
+  }
   const { data, status, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useTablesReadPaginatedInfinite(
-      normalizedAllowedIds.length > 0
-        ? { _ids: normalizedAllowedIds, perPage: 50 }
-        : { perPage: 50 },
-    );
+    useTablesReadPaginatedInfinite(paginatedParams);
 
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage) {

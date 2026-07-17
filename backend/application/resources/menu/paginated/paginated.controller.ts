@@ -1,8 +1,11 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
+import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 
+import { MenuPaginatedSchema } from './paginated.schema';
 import MenuPaginatedUseCase from './paginated.use-case';
 import { MenuPaginatedQueryValidator } from './paginated.validator';
 
@@ -11,7 +14,6 @@ import { MenuPaginatedQueryValidator } from './paginated.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: MenuPaginatedUseCase = getInstanceByToken(
       MenuPaginatedUseCase,
     ),
@@ -24,7 +26,9 @@ export default class {
         AuthenticationMiddleware({
           optional: false,
         }),
+        PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU),
       ],
+      schema: MenuPaginatedSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

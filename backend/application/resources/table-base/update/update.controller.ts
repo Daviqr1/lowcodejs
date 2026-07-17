@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 
@@ -44,6 +42,8 @@ export default class {
     const result = await this.useCase.execute({
       routeSlug: params.slug,
       ...payload,
+      actorId: request.user?.sub,
+      actorIsOwner: request.ownership?.isOwner ?? false,
     });
 
     if (result.isLeft()) {

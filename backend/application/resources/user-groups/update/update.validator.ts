@@ -23,6 +23,9 @@ export const UserGroupUpdateBodyValidator = z.object({
   permissions: z
     .array(z.string({ message: 'Cada permissão deve ser um texto' }))
     .optional(),
+  encompasses: z
+    .array(z.string({ message: 'Cada grupo deve ser um texto' }))
+    .optional(),
 });
 
 export type UserGroupUpdatePayload = Merge<

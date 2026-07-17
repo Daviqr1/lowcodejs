@@ -6,17 +6,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { cn } from '@/lib/utils';
 
-const Editor = lazy(() =>
-  import('@/components/common/rich-editor').then((m) => ({
-    default: m.Editor,
-  })),
-);
+const Editor = lazy(async () => {
+  const m = await import('@/components/common/rich-editor');
+  return { default: m.Editor };
+});
 
-const ContentViewer = lazy(() =>
-  import('@/components/common/rich-editor').then((m) => ({
-    default: m.ContentViewer,
-  })),
-);
+const ContentViewer = lazy(async () => {
+  const m = await import('@/components/common/rich-editor');
+  return { default: m.ContentViewer };
+});
 
 function EditorSkeleton(): React.JSX.Element {
   return (
@@ -34,11 +32,11 @@ function EditorSkeleton(): React.JSX.Element {
   );
 }
 
-interface FieldEditorProps {
+type FieldEditorProps = {
   label: string;
   showPreview?: boolean;
   defaultMode?: EditorMode;
-}
+};
 
 export function FieldEditor({
   label,

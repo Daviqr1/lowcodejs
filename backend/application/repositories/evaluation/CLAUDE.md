@@ -7,7 +7,7 @@ Repositorio da entidade Evaluation (avaliacoes/ratings em registros de tabela).
 | Arquivo | Descricao |
 |---------|-----------|
 | `evaluation-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `evaluation-mongoose.repository.ts` | Implementacao com Mongoose |
+| `evaluation.repository.ts` | Implementacao com Mongoose |
 | `evaluation-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

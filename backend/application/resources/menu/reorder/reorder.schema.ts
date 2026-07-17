@@ -26,10 +26,16 @@ export const MenuReorderSchema: FastifySchema = {
               minimum: 0,
               description: 'Nova posição do item',
             },
+            parent: {
+              type: 'string',
+              nullable: true,
+              description: 'ID do novo menu pai (opcional)',
+            },
           },
         },
       },
     },
+    additionalProperties: false,
   },
   response: {
     200: {
@@ -37,12 +43,15 @@ export const MenuReorderSchema: FastifySchema = {
       type: 'null',
     },
     400: {
-      description: 'Requisição inválida',
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string' },
+        cause: {
+          type: 'string',
+          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -50,12 +59,12 @@ export const MenuReorderSchema: FastifySchema = {
       },
     },
     401: {
-      description: 'Não autorizado',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -66,9 +75,9 @@ export const MenuReorderSchema: FastifySchema = {
       description: 'Menu não encontrado',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', description: 'Mensagem de erro' },
         code: { type: 'number', enum: [404] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -79,9 +88,9 @@ export const MenuReorderSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Erro interno do servidor'] },
         code: { type: 'number', enum: [500] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['REORDER_MENU_ERROR'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

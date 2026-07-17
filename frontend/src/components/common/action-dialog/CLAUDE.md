@@ -19,7 +19,7 @@ queries + toast + navegacao opcional.
 - `@/components/ui/button`
 - `@/lib/handle-api-error`
 - `@/lib/query-client`
-- `@/lib/toast`
+- `sonner` (API `toast.*`)
 
 ## Padroes importantes
 

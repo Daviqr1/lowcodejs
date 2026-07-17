@@ -13,7 +13,6 @@ import { GroupFieldRemoveFromTrashParamsValidator } from './remove-from-trash.va
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: GroupFieldRemoveFromTrashUseCase = getInstanceByToken(
       GroupFieldRemoveFromTrashUseCase,
     ),

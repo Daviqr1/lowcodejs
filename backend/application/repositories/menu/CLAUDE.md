@@ -7,7 +7,7 @@ Repositorio da entidade Menu (itens de navegacao do sistema).
 | Arquivo | Descricao |
 |---------|-----------|
 | `menu-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `menu-mongoose.repository.ts` | Implementacao com Mongoose |
+| `menu.repository.ts` | Implementacao com Mongoose |
 | `menu-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

@@ -4,9 +4,19 @@ export const StorageUploadSchema: FastifySchema = {
   tags: ['Armazenamento'],
   summary: 'Fazer upload de arquivos',
   description:
-    'Faz upload de um ou mais arquivos para o sistema de armazenamento. Os arquivos são salvos no diretório configurado e os metadados são armazenados no banco de dados',
+    'Faz upload de um ou mais arquivos para o sistema de armazenamento. Os arquivos são salvos no driver configurado e os metadados são armazenados no banco de dados',
   security: [{ cookieAuth: [] }],
   consumes: ['multipart/form-data'],
+  querystring: {
+    type: 'object',
+    properties: {
+      staticName: {
+        type: 'string',
+        minLength: 1,
+        description: 'Nome fixo opcional para o arquivo (sobrescreve o gerado)',
+      },
+    },
+  },
   response: {
     201: {
       description: 'Arquivos enviados com sucesso',
@@ -46,8 +56,7 @@ export const StorageUploadSchema: FastifySchema = {
           },
           trashed: {
             type: 'boolean',
-            enum: [false],
-            description: 'Arquivo não está na lixeira',
+            description: 'Se o arquivo está na lixeira',
           },
           trashedAt: {
             type: 'string',
@@ -68,56 +77,13 @@ export const StorageUploadSchema: FastifySchema = {
         },
       },
     },
-    400: {
-      description:
-        'Requisição inválida - Formato ou tamanho de arquivo inválido',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Tipo de arquivo não permitido',
-            'Tamanho de arquivo excedido',
-            'Nenhum arquivo fornecido',
-            'Formato de arquivo inválido',
-          ],
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_FILE_TYPE',
-            'FILE_SIZE_EXCEEDED',
-            'NO_FILES_PROVIDED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
     401: {
       description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    413: {
-      description:
-        'Payload muito grande - Tamanho do arquivo excede os limites',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Arquivo muito grande'] },
-        code: { type: 'number', enum: [413] },
-        cause: { type: 'string', enum: ['PAYLOAD_TOO_LARGE'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -128,7 +94,7 @@ export const StorageUploadSchema: FastifySchema = {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['STORAGE_UPLOAD_ERROR'] },
         errors: {

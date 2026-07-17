@@ -13,7 +13,7 @@ Restaura um campo de grupo da lixeira, reabilitando visibilidade.
    - Encontra o grupo pelo groupSlug
    - Busca o campo pelo fieldId
    - Valida que campo esta na lixeira (trashed=true)
-   - Atualiza campo: showInList=true, showInForm=true, showInDetail=true, showInFilter=true, required=false, trashed=false, trashedAt=null
+   - Atualiza campo: `permissions=buildFieldPermissions(true,true,true)` (visivel em list/form/detail), showInFilter=true, required=false, trashed=false, trashedAt=null
    - Atualiza o grupo com o campo atualizado e reconstroi schema do grupo
    - Reconstroi o schema da tabela pai
    - Atualiza a tabela

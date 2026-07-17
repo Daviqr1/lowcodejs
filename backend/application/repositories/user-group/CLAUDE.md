@@ -7,7 +7,7 @@ Repositorio da entidade Group (grupos de usuarios com permissoes/roles).
 | Arquivo | Descricao |
 |---------|-----------|
 | `user-group-contract.repository.ts` | Classe abstrata com interface e payload types |
-| `user-group-mongoose.repository.ts` | Implementacao com Mongoose |
+| `user-group.repository.ts` | Implementacao com Mongoose |
 | `user-group-in-memory.repository.ts` | Implementacao em memoria para testes |
 
 ## Metodos

@@ -17,13 +17,13 @@ import { useUserReadPaginatedInfinite } from '@/hooks/tanstack-query/use-user-re
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IUser } from '@/lib/interfaces';
 
-interface UserMultiSelectProps {
+type UserMultiSelectProps = {
   value?: Array<string>;
   onValueChange?: (value: Array<string>) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
+};
 
 export function UserMultiSelect({
   value = [],
@@ -78,11 +78,14 @@ export function UserMultiSelect({
           slug: '',
           description: null,
           permissions: [],
+          encompasses: [],
           createdAt: '',
           updatedAt: null,
           trashedAt: null,
           trashed: false,
         },
+        groups: [],
+        notificationsEnabled: true,
         createdAt: '',
         updatedAt: null,
         trashedAt: null,

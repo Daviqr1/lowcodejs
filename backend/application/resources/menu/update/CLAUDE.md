@@ -3,7 +3,7 @@
 Atualiza um item de menu existente.
 
 ## Endpoint
-`PATCH /menu/:_id` | Auth: Yes | Permission: nenhuma especifica
+`PATCH /menu/:_id` | Auth: Yes | Permission: `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_MENU)`
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)

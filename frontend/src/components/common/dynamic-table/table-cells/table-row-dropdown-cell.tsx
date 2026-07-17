@@ -6,18 +6,24 @@ import { Badge } from '@/components/ui/badge';
 import type { IField, IRow } from '@/lib/interfaces';
 import { getDropdownItem } from '@/lib/table';
 
-interface TableRowDropdownCellProps {
+type TableRowDropdownCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowDropdownCell({
   field,
   row,
 }: TableRowDropdownCellProps): React.JSX.Element {
-  const values = Array.from<string>(row[field.slug] ?? []);
+  const raw = row[field.slug];
+  let values: Array<string> = [];
+  if (Array.isArray(raw)) {
+    values = raw.filter((value): value is string => typeof value === 'string');
+  }
 
-  const items = values.map((value) => getDropdownItem(field.dropdown, value));
+  const items = values.map((value) =>
+    getDropdownItem(field.dropdown ?? [], value),
+  );
 
   if (items.length === 0) {
     return <span className="text-muted-foreground text-sm">-</span>;
@@ -31,11 +37,13 @@ export function TableRowDropdownCell({
     >
       {items.map((item, index) => {
         const style = getDropdownContrastStyle(item?.color);
+        let badgeClassName: string | undefined = 'text-muted-foreground';
+        if (style) badgeClassName = undefined;
         return (
           <Badge
             key={item?.id ?? index}
             variant="outline"
-            className={style ? undefined : 'text-muted-foreground'}
+            className={badgeClassName}
             style={style}
           >
             {item?.label}

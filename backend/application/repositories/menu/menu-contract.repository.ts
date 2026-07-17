@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import type { FindOptions, IMenu, Merge } from '@application/core/entity.core';
 
 export type MenuCreatePayload = Merge<
@@ -15,16 +14,20 @@ export type MenuCreatePayload = Merge<
       | 'order'
       | 'isInitial'
       | 'extension'
+      | 'visibility'
     >
   >
 >;
 
 export type MenuUpdatePayload = Merge<
   Pick<IMenu, '_id'>,
-  Partial<MenuCreatePayload> & {
-    trashed?: boolean;
-    trashedAt?: Date | null;
-  }
+  Merge<
+    Partial<MenuCreatePayload>,
+    {
+      trashed?: boolean;
+      trashedAt?: Date | null;
+    }
+  >
 >;
 
 export type MenuQueryPayload = {

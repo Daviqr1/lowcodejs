@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
@@ -11,9 +10,11 @@ import {
 } from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IGroup } from '@application/core/entity.core';
+import type { IGroup, IUser } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
 import type { UserGroupExportCsvPayload } from './export-csv.validator';
 
@@ -30,16 +31,23 @@ const FIELDS: CsvField[] = [
 ];
 
 function toCsvRow(group: IGroup): Record<string, unknown> {
+  let permissionsCount = 0;
+  if (Array.isArray(group.permissions)) {
+    permissionsCount = group.permissions.length;
+  }
+  let createdAt = '';
+  if (group.createdAt) createdAt = new Date(group.createdAt).toISOString();
+  let updatedAt = '';
+  if (group.updatedAt) updatedAt = new Date(group.updatedAt).toISOString();
+
   return {
     _id: group._id,
     name: group.name ?? '',
     slug: group.slug ?? '',
     description: group.description ?? '',
-    permissionsCount: Array.isArray(group.permissions)
-      ? group.permissions.length
-      : 0,
-    createdAt: group.createdAt ? new Date(group.createdAt).toISOString() : '',
-    updatedAt: group.updatedAt ? new Date(group.updatedAt).toISOString() : '',
+    permissionsCount,
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -47,6 +55,8 @@ function toCsvRow(group: IGroup): Record<string, unknown> {
 export default class UserGroupExportCsvUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
+    private readonly userRepository: UserContractRepository,
+    private readonly groupResolver: GroupResolverContractService,
   ) {}
 
   async execute(payload: UserGroupExportCsvPayload): Promise<Response> {
@@ -58,10 +68,16 @@ export default class UserGroupExportCsvUseCase {
       if (payload['order-created-at'])
         sort.createdAt = payload['order-created-at'];
 
+      let actor: IUser | null = null;
+      if (payload.user?._id) {
+        actor = await this.userRepository.findById(payload.user._id);
+      }
+      const hideMaster = await this.groupResolver.shouldHideMaster(actor);
+
       const total = await this.userGroupRepository.count({
         search: payload.search,
         trashed: payload.trashed,
-        user: payload.user,
+        hideMaster,
       });
 
       if (total > EXPORT_CSV_LIMIT) {
@@ -78,14 +94,14 @@ export default class UserGroupExportCsvUseCase {
       );
 
       const source = iterateInBatches({
-        payload: { ...payload, sort },
+        payload: { ...payload, sort, hideMaster },
         fetchBatch: async (p, page, perPage) => {
           const batch = await this.userGroupRepository.findMany({
             page,
             perPage,
             search: p.search,
             trashed: p.trashed,
-            user: p.user,
+            hideMaster: p.hideMaster,
             sort: p.sort,
           });
           return batch.map(toCsvRow);

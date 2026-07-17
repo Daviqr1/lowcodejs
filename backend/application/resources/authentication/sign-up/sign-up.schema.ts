@@ -2,8 +2,9 @@ import type { FastifySchema } from 'fastify';
 
 export const SignUpSchema: FastifySchema = {
   tags: ['Autenticação'],
-  summary: 'User registration sign up',
-  description: 'Creates a new user account with name, email and password',
+  summary: 'Registrar novo usuário (cadastro)',
+  description:
+    'Cria uma nova conta de usuário com nome, email e senha (grupo REGISTERED) e enfileira um email de boas-vindas (efeito colateral). Retorna 201 sem corpo. Rota pública',
   body: {
     type: 'object',
     required: ['name', 'email', 'password'],
@@ -11,6 +12,7 @@ export const SignUpSchema: FastifySchema = {
       name: {
         type: 'string',
         minLength: 1,
+        description: 'Nome completo do usuário',
         errorMessage: {
           type: 'O nome deve ser um texto',
           minLength: 'O nome é obrigatório',
@@ -19,6 +21,7 @@ export const SignUpSchema: FastifySchema = {
       email: {
         type: 'string',
         format: 'email',
+        description: 'Email do usuário',
         errorMessage: {
           type: 'O email deve ser um texto',
           format: 'Digite um email válido',
@@ -28,6 +31,7 @@ export const SignUpSchema: FastifySchema = {
         type: 'string',
         minLength: 6,
         pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
+        description: 'Senha do usuário',
         errorMessage: {
           type: 'A senha deve ser um texto',
           minLength: 'A senha deve ter no mínimo 6 caracteres',
@@ -48,34 +52,27 @@ export const SignUpSchema: FastifySchema = {
   },
   response: {
     201: {
-      description: 'User created successfully',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['User created successfully'] },
-      },
+      description: 'Usuário criado com sucesso',
+      type: 'null',
     },
     400: {
-      description: 'Bad request - Validation failed',
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Invalid request'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [400] },
         cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
         },
       },
     },
     409: {
-      description: 'Conflict - User already exists or group not found',
+      description: 'Conflito - Usuário já existe ou grupo não encontrado',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['User already exists', 'Group not found'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [409] },
         cause: {
           type: 'string',
@@ -88,10 +85,10 @@ export const SignUpSchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['SIGN_UP_ERROR'] },
         errors: {

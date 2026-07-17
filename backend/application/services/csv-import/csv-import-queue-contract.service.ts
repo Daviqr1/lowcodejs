@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 export const CSV_IMPORT_QUEUE_NAME = 'csv-import';

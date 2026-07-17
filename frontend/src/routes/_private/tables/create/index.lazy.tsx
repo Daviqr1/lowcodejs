@@ -3,6 +3,7 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import {
   CreateTableFormFields,
@@ -25,7 +26,6 @@ import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute('/_private/tables/create/')({
   component: RouteComponent,
@@ -48,7 +48,9 @@ function RouteComponentContent(): React.JSX.Element {
 
   const _create = useCreateTable({
     onSuccess(response) {
-      toastSuccess('Tabela criada', 'A tabela foi criada com sucesso');
+      toast.success('Tabela criada', {
+        description: 'A tabela foi criada com sucesso',
+      });
 
       form.reset();
       navigate({
@@ -81,7 +83,6 @@ function RouteComponentContent(): React.JSX.Element {
         slug: value.slug.trim() || undefined,
         logo: value.logo,
         style: value.style,
-        visibility: value.visibility,
       });
     },
   });

@@ -1,8 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserGroupSendToTrashSchema: FastifySchema = {
-  tags: ['User Groups'],
+  tags: ['Grupos de Usuários'],
   summary: 'Enviar grupo para a lixeira (soft delete)',
+  description:
+    'Envia um grupo para a lixeira (soft delete). Bloqueia grupos do sistema e grupos com usuários atribuídos. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -10,7 +12,10 @@ export const UserGroupSendToTrashSchema: FastifySchema = {
     properties: { _id: { type: 'string', minLength: 1 } },
   },
   response: {
-    200: { type: 'null' },
+    200: {
+      description: 'Grupo enviado para a lixeira com sucesso',
+      type: 'null',
+    },
     401: {
       type: 'object',
       properties: {

@@ -27,11 +27,20 @@ async function readDirectoryNames(path: string): Promise<string[]> {
   return entries.filter((e) => e.isDirectory()).map((e) => e.name);
 }
 
-export interface LoadExtensionsResult {
+/** Extrai os slots de placement, retornando [] para plugins com kind. */
+function resolvePlacementSlots(
+  placement: { slots: string[] } | { kind: string } | undefined,
+): string[] {
+  if (!placement) return [];
+  if ('slots' in placement) return placement.slots;
+  return [];
+}
+
+export type LoadExtensionsResult = {
   loaded: number;
   invalid: number;
   unavailable: number;
-}
+};
 
 export async function loadExtensions(
   repository: ExtensionContractRepository,
@@ -60,7 +69,9 @@ export async function loadExtensions(
         if (!existsSync(manifestPath)) continue;
 
         try {
-          const raw = JSON.parse(await readFile(manifestPath, 'utf-8'));
+          const raw: Record<string, unknown> = JSON.parse(
+            await readFile(manifestPath, 'utf-8'),
+          );
           const manifest = ManifestSchema.parse({ ...raw, type });
 
           if (manifest.id !== extensionId) {
@@ -82,11 +93,11 @@ export async function loadExtensions(
               author: manifest.author ?? null,
               icon: manifest.icon ?? null,
               image: manifest.image ?? null,
-              slots: manifest.placement?.slots ?? [],
+              slots: resolvePlacementSlots(manifest.placement),
               route: manifest.route ?? null,
               configRoute: manifest.configRoute ?? null,
               submenu: manifest.tool?.submenu ?? null,
-              manifestSnapshot: raw as Record<string, unknown>,
+              manifestSnapshot: raw,
               requires: manifest.requires ?? {},
               permissions: { view: manifest.permissions?.view ?? [] },
             },

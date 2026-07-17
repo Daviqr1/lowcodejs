@@ -12,7 +12,6 @@ import { TablePaginatedQueryValidator } from './paginated.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TablePaginatedUseCase = getInstanceByToken(
       TablePaginatedUseCase,
     ),

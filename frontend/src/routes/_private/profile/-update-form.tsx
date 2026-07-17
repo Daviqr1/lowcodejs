@@ -38,9 +38,12 @@ export const UpdateProfileFormFields = withForm({
   defaultValues: profileUpdateFormDefaultValues,
   props: {
     isPending: false,
+    // withForm infere o tipo do prop pelo default; a asserção define o tipo.
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mode: 'show' as 'show' | 'edit',
     allowPasswordChange: false,
-    onAllowPasswordChangeChange: () => {},
+    onAllowPasswordChangeChange: (_value: boolean) => {},
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     groupData: null as IGroup | null,
   },
   render: function Render({
@@ -56,7 +59,7 @@ export const UpdateProfileFormFields = withForm({
     return (
       <section
         data-test-id="profile-update-form-fields"
-        className="space-y-4 p-2"
+        className="space-y-4 p-3 sm:p-2"
       >
         {/* Campo Nome */}
         <form.AppField

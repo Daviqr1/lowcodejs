@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { getInstanceByToken } from 'fastify-decorators';
+import mongoose from 'mongoose';
 import z from 'zod';
 
 import {
@@ -7,10 +8,15 @@ import {
   E_LOGGER_OBJECT_TYPE,
 } from '@application/core/entity.core';
 import {
+  EMPTY_OBJECT_AUDIT,
+  resolveLoggerObjectAudit,
+} from '@application/core/logger/resolve-object-audit';
+import {
   LoggerContractRepository,
   LoggerCreatePayload,
 } from '@application/repositories/logger/logger-contract.repository';
-import LoggerMongooseRepository from '@application/repositories/logger/logger-mongoose.repository';
+import LoggerMongooseRepository from '@application/repositories/logger/logger.repository';
+import { getDataConnection } from '@config/database.config';
 
 const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
   GET: E_LOGGER_ACTION_TYPE.VIEW,
@@ -19,6 +25,14 @@ const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
   PATCH: E_LOGGER_ACTION_TYPE.UPDATE,
   DELETE: E_LOGGER_ACTION_TYPE.DELETE,
 };
+
+// Narrow para dados dinâmicos de request (query/params) sem asserção.
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value));
+  }
+  return {};
+}
 
 /**
  * Ordem importa: mais específico primeiro.
@@ -134,7 +148,8 @@ function resolveAction(method: string): keyof typeof E_LOGGER_ACTION_TYPE {
 /**
  * Prioridade de params nomeados pelo Fastify (ex: :rowId, :fieldId, :_id).
  */
-function resolveObjectId(params: FastifyRequest['params'] = {}): string | null {
+function resolveObjectId(params: unknown = {}): string | null {
+  const record = asRecord(params);
   const priority = [
     'itemId',
     'messageId',
@@ -147,8 +162,8 @@ function resolveObjectId(params: FastifyRequest['params'] = {}): string | null {
   ];
 
   for (const key of priority) {
-    const value = (params as Record<string, string>)?.[key];
-    if (value) return value;
+    const value = record[key];
+    if (typeof value === 'string' && value) return value;
   }
 
   return null;
@@ -201,16 +216,17 @@ export async function LoggerUserActionHook(
       }
     }
 
-    const query = request.query as Record<string, unknown> | undefined;
-    const routeParams = request.params as Record<string, unknown> | undefined;
-    const hasQuery = !!query && Object.keys(query).length > 0;
-    const hasParams = !!routeParams && Object.keys(routeParams).length > 0;
+    const query = asRecord(request.query);
+    const routeParams = asRecord(request.params);
+    const hasQuery = Object.keys(query).length > 0;
+    const hasParams = Object.keys(routeParams).length > 0;
 
     const contentParts: Record<string, unknown> = {};
     if (body) contentParts.body = body;
     if (hasQuery) contentParts.query = query;
     if (hasParams) contentParts.params = routeParams;
-    const content = Object.keys(contentParts).length > 0 ? contentParts : null;
+    let content: Record<string, unknown> | null = null;
+    if (Object.keys(contentParts).length > 0) content = contentParts;
 
     const action = resolveAction(method);
     const object = resolveObject(routePattern);
@@ -236,6 +252,22 @@ export async function LoggerUserActionHook(
 
     if (request.headers['x-skip-log']) return;
 
+    // Resolve creator/updater/createdAt/updatedAt do registro referenciado
+    // (object_id), lendo os campos ja gravados na propria ROW. Objetos que nao
+    // sao ROW retornam tudo null.
+    let audit = EMPTY_OBJECT_AUDIT;
+    const systemDb = mongoose.connection.db;
+    const dataDb = getDataConnection().db;
+    if (systemDb && dataDb) {
+      audit = await resolveLoggerObjectAudit({
+        systemDb,
+        dataDb,
+        object,
+        objectId: object_id,
+        url: request.url,
+      });
+    }
+
     const payload = {
       action,
       url: request.url,
@@ -243,6 +275,10 @@ export async function LoggerUserActionHook(
       content,
       object,
       object_id,
+      creator: audit.creator?.toString() ?? null,
+      updater: audit.updater?.toString() ?? null,
+      objectCreatedAt: audit.objectCreatedAt,
+      objectUpdatedAt: audit.objectUpdatedAt,
     } satisfies LoggerCreatePayload;
 
     await repo.create(payload);

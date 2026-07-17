@@ -1,10 +1,10 @@
 import { FastifySchema } from 'fastify';
 
 export const TableUpdateSchema: FastifySchema = {
-  tags: ['Tables'],
-  summary: 'Update table',
+  tags: ['Tabelas'],
+  summary: 'Atualizar tabela',
   description:
-    'Updates an existing table with new data, fields, and configuration settings',
+    'Atualiza uma tabela existente: nome, estilo, permissões (binding por ação), convidados, dono, ordenação de campos e layout. Renomear o slug propaga para a coleção dinâmica e campos de relacionamento.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,7 +12,7 @@ export const TableUpdateSchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug identifier',
+        description: 'Identificador slug da tabela',
         examples: ['users', 'products', 'blog-posts'],
       },
     },
@@ -20,21 +20,26 @@ export const TableUpdateSchema: FastifySchema = {
   },
   body: {
     type: 'object',
-    required: ['name', 'style', 'visibility', 'collaboration'],
+    required: ['name', 'description', 'logo', 'methods'],
     properties: {
       name: {
         type: 'string',
-        description: 'Table name',
+        description: 'Nome da tabela',
+      },
+      slug: {
+        type: 'string',
+        description:
+          'Slug da tabela (opcional; gerado a partir do nome quando ausente)',
       },
       description: {
         type: 'string',
         nullable: true,
-        description: 'Table description',
+        description: 'Descrição da tabela',
       },
       logo: {
         type: 'string',
         nullable: true,
-        description: 'Table logo URL or storage ID',
+        description: 'URL do logo ou ID de armazenamento da tabela',
       },
       style: {
         type: 'string',
@@ -50,36 +55,19 @@ export const TableUpdateSchema: FastifySchema = {
           'GANTT',
         ],
         default: 'LIST',
-        description: 'Display style',
-      },
-      visibility: {
-        type: 'string',
-        enum: ['PUBLIC', 'RESTRICTED', 'OPEN', 'FORM', 'PRIVATE'],
-        default: 'PUBLIC',
-        description: 'Visibility setting',
-      },
-      collaboration: {
-        type: 'string',
-        enum: ['OPEN', 'RESTRICTED'],
-        default: 'OPEN',
-        description: 'Collaboration setting',
-      },
-      administrators: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Array of administrator user IDs',
+        description: 'Estilo de exibição',
       },
       fieldOrderList: {
         type: 'array',
         items: { type: 'string' },
         default: [],
-        description: 'Field order for list view',
+        description: 'Ordem dos campos na visualização em lista',
       },
       fieldOrderForm: {
         type: 'array',
         items: { type: 'string' },
         default: [],
-        description: 'Field order for form view',
+        description: 'Ordem dos campos na visualização em formulário',
       },
       fieldOrderFilter: {
         type: 'array',
@@ -98,64 +86,114 @@ export const TableUpdateSchema: FastifySchema = {
             type: 'object',
             required: ['field', 'direction'],
             properties: {
-              field: { type: 'string', description: 'Field slug to sort by' },
+              field: {
+                type: 'string',
+                description: 'Slug do campo para ordenação',
+              },
               direction: {
                 type: 'string',
                 enum: ['asc', 'desc'],
-                description: 'Sort direction',
+                description: 'Direção da ordenação',
               },
             },
           },
         ],
         default: null,
-        description: 'Default sort order for table records',
+        description: 'Ordenação padrão dos registros da tabela',
       },
       methods: {
         type: 'object',
-        description: 'Table methods configuration',
+        description: 'Configuração de métodos da tabela',
       },
       layoutFields: {
         type: 'object',
-        description: 'Layout fields configuration',
+        description: 'Configuração de campos de layout',
+      },
+      groups: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: true },
+        description: 'Configuração de grupos de campos',
+      },
+      rowSlugFieldId: {
+        type: 'string',
+        nullable: true,
+        description: 'ID do campo usado para gerar slugs amigáveis de registro',
+      },
+      permissions: {
+        type: 'object',
+        description:
+          'Mapa de cada ação da tabela para um binding (Grupo|Public|Nobody)',
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            kind: { type: 'string', enum: ['PUBLIC', 'NOBODY', 'GROUP'] },
+            group: { type: 'string', nullable: true },
+          },
+        },
+      },
+      members: {
+        type: 'array',
+        description: 'Convidados da tabela e seus perfis',
+        items: {
+          type: 'object',
+          required: ['user', 'profile'],
+          properties: {
+            user: { type: 'string' },
+            profile: {
+              type: 'string',
+              enum: ['OWNER', 'ADMIN', 'EDITOR', 'CONTRIBUTOR', 'VIEWER'],
+            },
+          },
+        },
+      },
+      owner: {
+        type: 'string',
+        description: 'ID do novo dono da tabela (troca de dono)',
       },
     },
+    additionalProperties: false,
   },
   response: {
     200: {
-      description: 'Table updated successfully',
+      description: 'Tabela atualizada com sucesso',
       type: 'object',
       properties: {
-        _id: { type: 'string', description: 'Table ID' },
-        name: { type: 'string', description: 'Table name' },
+        _id: { type: 'string', description: 'ID da tabela' },
+        name: { type: 'string', description: 'Nome da tabela' },
         description: {
           type: 'string',
           nullable: true,
-          description: 'Table description',
+          description: 'Descrição da tabela',
         },
-        slug: { type: 'string', description: 'Table URL slug' },
+        slug: { type: 'string', description: 'Slug de URL da tabela' },
         logo: {
           type: 'object',
           nullable: true,
-          description: 'Table logo storage details (populated)',
+          description: 'Detalhes de armazenamento do logo da tabela (populado)',
           properties: {
-            _id: { type: 'string', description: 'Storage ID' },
-            url: { type: 'string', description: 'File URL' },
+            _id: { type: 'string', description: 'ID de armazenamento' },
+            url: { type: 'string', description: 'URL do arquivo' },
             filename: {
               type: 'string',
-              description: 'Original filename',
+              description: 'Nome original do arquivo',
             },
-            type: { type: 'string', description: 'MIME type' },
+            type: { type: 'string', description: 'Tipo MIME' },
           },
         },
         fields: {
           type: 'array',
-          description: 'Table fields',
+          description: 'Campos da tabela',
           items: {
             type: 'object',
             properties: {
-              _id: { type: 'string', description: 'Field ID' },
-              name: { type: 'string', description: 'Field name' },
-              slug: { type: 'string', description: 'Field slug' },
+              _id: { type: 'string', description: 'ID do campo' },
+              name: { type: 'string', description: 'Nome do campo' },
+              slug: { type: 'string', description: 'Slug do campo' },
+              label: {
+                type: 'string',
+                nullable: true,
+                description: 'Rótulo customizado de exibição do campo',
+              },
               type: {
                 type: 'string',
                 enum: [
@@ -169,57 +207,68 @@ export const TableUpdateSchema: FastifySchema = {
                   'REACTION',
                   'EVALUATION',
                   'CATEGORY',
+                  'USER',
+                  'HTML_CONTENT',
+                  'CREATOR',
+                  'IDENTIFIER',
+                  'CREATED_AT',
+                  'UPDATED_AT',
+                  'UPDATER',
+                  'STATUS',
+                  'TRASHED_AT',
                 ],
-                description: 'Field type',
+                description: 'Tipo do campo',
               },
-              required: { type: 'boolean', description: 'Is field required' },
+              required: {
+                type: 'boolean',
+                description: 'Se o campo é obrigatório',
+              },
               multiple: {
                 type: 'boolean',
-                description: 'Allows multiple values',
+                description: 'Permite múltiplos valores',
               },
               format: {
                 type: 'string',
                 nullable: true,
-                description: 'Field format validation',
+                description: 'Validação de formato do campo',
               },
-              showInList: {
+              showInFilter: {
                 type: 'boolean',
-                description: 'Show in listings',
+                description: 'Permitir filtragem',
               },
-              showInForm: { type: 'boolean', description: 'Show in form view' },
-              showInDetail: {
-                type: 'boolean',
-                description: 'Show in detail view',
-              },
-              showInFilter: { type: 'boolean', description: 'Allow filtering' },
+              showInParentList: { type: 'boolean' },
+              visibleInParentList: { type: 'boolean' },
               widthInForm: {
                 type: 'number',
                 nullable: true,
-                description: 'Field width in forms, integer 0-100 (%)',
+                description:
+                  'Largura do campo em formulários, inteiro 0-100 (%)',
               },
               widthInList: {
                 type: 'number',
                 nullable: true,
                 description:
-                  'Field width in list/grid views, integer 0-100 (px)',
+                  'Largura do campo em visualizações de lista/grade, inteiro 0-100 (px)',
               },
               widthInDetail: {
                 type: 'number',
                 nullable: true,
-                description: 'Field width in detail views, integer 0-100 (%)',
+                description:
+                  'Largura do campo em visualizações de detalhe, inteiro 0-100 (%)',
               },
               tip: {
                 type: 'string',
                 nullable: true,
-                description: 'Optional help text shown in row forms',
+                description:
+                  'Texto de ajuda opcional exibido nos formulários de registro',
               },
               locked: {
                 type: 'boolean',
-                description: 'Field is locked and cannot be modified',
+                description: 'O campo está bloqueado e não pode ser modificado',
               },
               native: {
                 type: 'boolean',
-                description: 'Field is native',
+                description: 'O campo é nativo',
               },
               defaultValue: {
                 anyOf: [
@@ -227,47 +276,53 @@ export const TableUpdateSchema: FastifySchema = {
                   { type: 'array', items: { type: 'string' } },
                   { type: 'null' },
                 ],
-                description: 'Default field value',
+                description: 'Valor padrão do campo',
               },
               relationship: {
                 type: 'object',
                 nullable: true,
-                description: 'Relationship configuration',
+                description: 'Configuração de relacionamento',
               },
               dropdown: {
                 type: 'array',
                 nullable: true,
-                description: 'Dropdown options',
+                description: 'Opções de seleção',
               },
               allowCustomDropdownOptions: {
                 type: 'boolean',
                 description:
-                  'Allow users to create new dropdown options from row input',
+                  'Permite que usuários criem novas opções de seleção a partir do registro',
               },
               allowCreateRelationshipRecords: {
                 type: 'boolean',
                 description:
-                  'Allow users to create records in the related table from row input',
+                  'Permite que usuários criem registros na tabela relacionada a partir do registro',
+              },
+              fillWithCurrentUserWhenEmpty: {
+                type: 'boolean',
+                description:
+                  'Campo USER: grava o usuário logado quando nenhum id de usuário é enviado no payload',
               },
               category: {
                 type: 'array',
                 nullable: true,
-                description: 'Category options',
+                description: 'Opções de categoria',
               },
               group: {
                 type: 'object',
                 nullable: true,
-                description: 'Field group configuration',
+                description: 'Configuração de grupo de campos',
               },
+              htmlContent: { type: 'string', nullable: true },
               trashed: {
                 type: 'boolean',
-                description: 'Is field in trash',
+                description: 'Se o campo está na lixeira',
               },
               trashedAt: {
                 type: 'string',
                 format: 'date-time',
                 nullable: true,
-                description: 'When field was trashed',
+                description: 'Quando o campo foi enviado para a lixeira',
               },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
@@ -287,46 +342,52 @@ export const TableUpdateSchema: FastifySchema = {
             'CALENDAR',
             'GANTT',
           ],
-          description: 'Display style',
-        },
-        visibility: {
-          type: 'string',
-          enum: ['PUBLIC', 'RESTRICTED', 'OPEN', 'FORM', 'PRIVATE'],
-          description: 'Visibility setting',
-        },
-        collaboration: {
-          type: 'string',
-          enum: ['OPEN', 'RESTRICTED'],
-          description: 'Collaboration setting',
-        },
-        administrators: {
-          type: 'array',
-          description: 'Administrator users (populated)',
-          items: {
-            type: 'object',
-            properties: {
-              _id: { type: 'string', description: 'User ID' },
-              name: { type: 'string', description: 'User name' },
-            },
-          },
+          description: 'Estilo de exibição',
         },
         owner: {
           type: 'object',
-          description: 'Table owner (populated)',
+          description: 'Proprietário da tabela (populado)',
           properties: {
-            _id: { type: 'string', description: 'User ID' },
-            name: { type: 'string', description: 'User name' },
+            _id: { type: 'string', description: 'ID do usuário' },
+            name: { type: 'string', description: 'Nome do usuário' },
+          },
+        },
+        permissions: {
+          type: 'object',
+          nullable: true,
+          description:
+            'Mapa de cada ação para um binding (Grupo|Public|Nobody)',
+          additionalProperties: {
+            type: 'object',
+            properties: {
+              kind: { type: 'string', enum: ['PUBLIC', 'NOBODY', 'GROUP'] },
+              group: { type: 'string', nullable: true },
+            },
+          },
+        },
+        members: {
+          type: 'array',
+          description: 'Convidados da tabela e seus perfis',
+          items: {
+            type: 'object',
+            properties: {
+              user: { type: 'string', description: 'ID do usuário' },
+              profile: {
+                type: 'string',
+                enum: ['OWNER', 'ADMIN', 'EDITOR', 'CONTRIBUTOR', 'VIEWER'],
+              },
+            },
           },
         },
         fieldOrderList: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Field order for list view',
+          description: 'Ordem dos campos na visualização em lista',
         },
         fieldOrderForm: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Field order for form view',
+          description: 'Ordem dos campos na visualização em formulário',
         },
         fieldOrderFilter: {
           type: 'array',
@@ -339,7 +400,7 @@ export const TableUpdateSchema: FastifySchema = {
         type: {
           type: 'string',
           enum: ['TABLE', 'FIELD_GROUP'],
-          description: 'Table type',
+          description: 'Tipo da tabela',
         },
         methods: {
           type: 'object',
@@ -350,7 +411,7 @@ export const TableUpdateSchema: FastifySchema = {
                 code: {
                   type: 'string',
                   nullable: true,
-                  description: 'Code to execute before saving',
+                  description: 'Código a executar antes de salvar',
                 },
               },
             },
@@ -360,7 +421,7 @@ export const TableUpdateSchema: FastifySchema = {
                 code: {
                   type: 'string',
                   nullable: true,
-                  description: 'Code to execute after saving',
+                  description: 'Código a executar depois de salvar',
                 },
               },
             },
@@ -370,38 +431,47 @@ export const TableUpdateSchema: FastifySchema = {
                 code: {
                   type: 'string',
                   nullable: true,
-                  description: 'Code to execute before saving',
+                  description: 'Código a executar antes de salvar',
                 },
               },
             },
           },
-          description: 'Table methods configuration',
+          description: 'Configuração de métodos da tabela',
         },
         groups: {
           type: 'array',
-          description: 'Field groups configuration',
+          description: 'Configuração de grupos de campos',
           items: {
             type: 'object',
             properties: {
-              slug: { type: 'string', description: 'Group slug' },
-              name: { type: 'string', description: 'Group name' },
+              slug: { type: 'string', description: 'Slug do grupo' },
+              name: { type: 'string', description: 'Nome do grupo' },
               fields: {
                 type: 'array',
-                description: 'Fields within the group',
+                description: 'Campos dentro do grupo',
                 items: {
                   type: 'object',
                   properties: {
                     _id: { type: 'string' },
                     name: { type: 'string' },
                     slug: { type: 'string' },
+                    label: {
+                      type: 'object',
+                      nullable: true,
+                      properties: {
+                        list: { type: 'string', nullable: true },
+                        filter: { type: 'string', nullable: true },
+                        form: { type: 'string', nullable: true },
+                        detail: { type: 'string', nullable: true },
+                      },
+                    },
                     type: { type: 'string' },
                     required: { type: 'boolean' },
                     multiple: { type: 'boolean' },
                     format: { type: 'string', nullable: true },
-                    showInList: { type: 'boolean' },
-                    showInForm: { type: 'boolean' },
-                    showInDetail: { type: 'boolean' },
                     showInFilter: { type: 'boolean' },
+                    showInParentList: { type: 'boolean' },
+                    visibleInParentList: { type: 'boolean' },
                     widthInForm: { type: 'number', nullable: true },
                     widthInList: { type: 'number', nullable: true },
                     widthInDetail: { type: 'number', nullable: true },
@@ -427,6 +497,7 @@ export const TableUpdateSchema: FastifySchema = {
                     },
                     allowCustomDropdownOptions: { type: 'boolean' },
                     allowCreateRelationshipRecords: { type: 'boolean' },
+                    fillWithCurrentUserWhenEmpty: { type: 'boolean' },
                     category: {
                       type: 'array',
                       nullable: true,
@@ -437,6 +508,7 @@ export const TableUpdateSchema: FastifySchema = {
                       nullable: true,
                       additionalProperties: true,
                     },
+                    htmlContent: { type: 'string', nullable: true },
                     trashed: { type: 'boolean' },
                     trashedAt: {
                       type: 'string',
@@ -451,7 +523,7 @@ export const TableUpdateSchema: FastifySchema = {
               },
               _schema: {
                 type: 'object',
-                description: 'Group schema',
+                description: 'Schema do grupo',
                 additionalProperties: true,
               },
             },
@@ -459,7 +531,7 @@ export const TableUpdateSchema: FastifySchema = {
         },
         order: {
           type: 'object',
-          description: 'Default sort order for table records',
+          description: 'Ordenação padrão dos registros da tabela',
           properties: {
             field: { type: 'string', nullable: true },
             direction: {
@@ -472,47 +544,46 @@ export const TableUpdateSchema: FastifySchema = {
         _schema: {
           type: 'object',
           description:
-            'Generated MongoDB schema based on fields with trashedAt and trashed properties',
+            'Schema MongoDB gerado a partir dos campos com as propriedades trashedAt e trashed',
           additionalProperties: true,
+        },
+        rowSlugFieldId: {
+          type: 'string',
+          nullable: true,
+          description:
+            'ID do campo usado para gerar slugs amigáveis de registro',
         },
         trashed: {
           type: 'boolean',
-          description: 'Is table in trash',
+          description: 'Se a tabela está na lixeira',
         },
         trashedAt: {
           type: 'string',
           format: 'date-time',
           nullable: true,
-          description: 'When table was trashed',
+          description: 'Quando a tabela foi enviada para a lixeira',
         },
         createdAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Creation timestamp',
+          description: 'Data/hora de criação',
         },
         updatedAt: {
           type: 'string',
           format: 'date-time',
-          description: 'Last update timestamp',
+          description: 'Data/hora da última atualização',
         },
       },
     },
-    400: {
-      description: 'Bad request - Validation error',
+    401: {
+      description: 'Não autenticado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Invalid table name',
-            'Invalid field configuration',
-            'Required fields missing',
-          ],
-        },
-        code: { type: 'number', enum: [400] },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [401] },
         cause: {
           type: 'string',
-          enum: ['INVALID_PARAMETERS', 'INVALID_FIELD_CONFIG'],
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
         },
         errors: {
           type: 'object',
@@ -520,13 +591,37 @@ export const TableUpdateSchema: FastifySchema = {
         },
       },
     },
-    401: {
-      description: 'Unauthorized - Authentication required',
+    403: {
+      description: 'Acesso negado - Permissão insuficiente',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        message: { type: 'string' },
+        code: { type: 'number', enum: [403] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+            'OWNER_CHANGE_FORBIDDEN',
+            'TABLE_PRIVATE',
+          ],
+        },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    404: {
+      description: 'Tabela não encontrada',
+      type: 'object',
+      properties: {
+        message: { type: 'string', enum: ['Tabela não encontrada'] },
+        code: { type: 'number', enum: [404] },
+        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -534,10 +629,10 @@ export const TableUpdateSchema: FastifySchema = {
       },
     },
     409: {
-      description: 'Conflict - Table with the generated slug already exists',
+      description: 'Conflito - Já existe uma tabela com o slug gerado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Table already exists'] },
+        message: { type: 'string', enum: ['Tabela já existe'] },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['TABLE_ALREADY_EXISTS'] },
         errors: {
@@ -546,31 +641,11 @@ export const TableUpdateSchema: FastifySchema = {
         },
       },
     },
-    404: {
-      description: 'Not found - Table with specified slug does not exist',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Table not found'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-      examples: [
-        {
-          message: 'Table not found',
-          code: 404,
-          cause: 'TABLE_NOT_FOUND',
-        },
-      ],
-    },
     500: {
-      description: 'Internal server error - Database or server issues',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Internal server error'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['UPDATE_TABLE_ERROR'] },
         errors: {

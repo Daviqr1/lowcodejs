@@ -2,10 +2,9 @@ import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
   type IField,
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
@@ -16,40 +15,39 @@ import GroupRowExportCsvUseCase from './export-csv.use-case';
 async function streamToString(stream: Readable): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    let buf = chunk;
+    if (typeof chunk === 'string') buf = Buffer.from(chunk);
+    chunks.push(buf);
   }
   return Buffer.concat(chunks).toString('utf-8');
 }
 
-const buildField = (overrides: Partial<IField>): IField =>
-  ({
-    _id: overrides.slug ?? 'f',
-    name: 'Field',
-    slug: 'field',
-    type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
-    format: null,
-    showInFilter: false,
-    showInForm: true,
-    showInDetail: true,
-    showInList: true,
-    widthInForm: null,
-    widthInList: 10,
-    widthInDetail: null,
-    defaultValue: null,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    native: false,
-    locked: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    trashed: false,
-    trashedAt: null,
-    ...overrides,
-  }) as IField;
+const buildField = (overrides: Partial<IField>): IField => ({
+  _id: overrides.slug ?? 'f',
+  name: 'Field',
+  slug: 'field',
+  type: E_FIELD_TYPE.TEXT_SHORT,
+  required: false,
+  multiple: false,
+  format: null,
+  showInFilter: false,
+  permissions: buildFieldPermissions(true, true, true),
+  widthInForm: null,
+  widthInList: 10,
+  widthInDetail: null,
+  defaultValue: null,
+  relationship: null,
+  dropdown: [],
+  category: [],
+  group: null,
+  native: false,
+  locked: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  trashed: false,
+  trashedAt: null,
+  ...overrides,
+});
 
 let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;
@@ -79,7 +77,7 @@ describe('Group Row Export CSV Use Case', () => {
       name: 'Pedidos',
       slug: 'pedidos',
       _schema: {},
-      fields: [groupFieldDef] as unknown as string[],
+      fields: [groupFieldDef._id],
       groups: [
         {
           slug: 'itens',
@@ -89,13 +87,12 @@ describe('Group Row Export CSV Use Case', () => {
         },
       ],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    // popula o field de grupo (o export lê metadados de table.fields)
+    table.fields = [groupFieldDef];
 
     const row = await rowRepo.create({
       table,

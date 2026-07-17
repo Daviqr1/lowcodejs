@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { ListTreeIcon, Trash2Icon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { MenuReorderDialog } from './-reorder-dialog';
 import { TableMenus } from './-table-menus';
@@ -22,12 +23,13 @@ import { TrashButton } from '@/components/common/trash-button';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { menuListOptions } from '@/hooks/tanstack-query/_query-options';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useMenuEmptyTrash } from '@/hooks/tanstack-query/use-menu-empty-trash';
 import { useMenusExportCsv } from '@/hooks/tanstack-query/use-menus-export-csv';
-import { E_FIELD_TYPE, E_ROLE, MetaDefault } from '@/lib/constant';
+import { E_FIELD_TYPE, MetaDefault } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { IFilterField } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import { isMaster, isPrivileged } from '@/lib/permission';
 import { useAuthStore } from '@/stores/authentication';
 
 export const Route = createLazyFileRoute('/_private/menus/')({
@@ -41,18 +43,17 @@ function RouteComponent(): React.JSX.Element {
   const search = useSearch({ from: '/_private/menus/' });
   const sidebar = useSidebar();
   const router = useRouter();
-  const navigate = useNavigate({ from: '/menus' });
+  const navigate = useNavigate({ from: '/menus/' });
   const auth = useAuthStore();
 
   const { data } = useSuspenseQuery(menuListOptions(search));
 
-  const isMaster = auth.user?.group?.slug === E_ROLE.MASTER;
-  const isAdmin = auth.user?.group?.slug === E_ROLE.ADMINISTRATOR;
-  const canExportCsv = isMaster || isAdmin;
+  // Empty-trash/hard-delete é MASTER-only (gate intencional). Export/CSV libera
+  // para qualquer privilegiado (MASTER/ADMINISTRATOR pelo fecho de grupos).
+  const groups = useGroupReadList();
+  const master = isMaster(auth.user, groups.data ?? []);
+  const canExportCsv = isPrivileged(auth.user, groups.data ?? []);
   const isTrashView = search.trashed === true;
-
-  const [emptyTrashOpen, setEmptyTrashOpen] = React.useState(false);
-  const [reorderOpen, setReorderOpen] = React.useState(false);
 
   const exportCsv = useMenusExportCsv({
     onError(error) {
@@ -62,14 +63,13 @@ function RouteComponent(): React.JSX.Element {
 
   const emptyTrash = useMenuEmptyTrash({
     onSuccess(result) {
-      setEmptyTrashOpen(false);
-      const message =
-        result.deleted === 1
-          ? '1 menu excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' menus excluídos permanentemente!');
-      toastSuccess(message, 'A lixeira de menus foi esvaziada');
+      let message = result.deleted
+        .toString()
+        .concat(' menus excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 menu excluído permanentemente!';
+      toast.success(message, {
+        description: 'A lixeira de menus foi esvaziada',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao esvaziar lixeira de menus' });
@@ -111,7 +111,7 @@ function RouteComponent(): React.JSX.Element {
             Gerencie os itens de menu e navegação
           </p>
         </div>
-        <div className="inline-flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div ref={setToolbarNode} />
           <TrashButton />
           <FilterTrigger
@@ -126,26 +126,38 @@ function RouteComponent(): React.JSX.Element {
               onClick={() => exportCsv.mutate(search)}
             />
           )}
-          {isTrashView && isMaster && (
-            <Button
-              data-test-id="empty-trash-menus-btn"
-              variant="destructive"
-              onClick={() => setEmptyTrashOpen(true)}
+          {isTrashView && master && (
+            <PermanentDeleteConfirmDialog
+              asChild
+              title="Esvaziar lixeira de menus"
+              description="Essa ação é irreversível. Todos os menus na lixeira serão excluídos permanentemente."
+              itemsCount={data.meta?.total ?? 0}
+              isPending={emptyTrash.isPending}
+              onConfirm={(close) => {
+                emptyTrash.mutateAsync(undefined, { onSuccess: close });
+              }}
+              testId="empty-trash-menus-dialog"
             >
-              <Trash2Icon className="size-4" />
-              <span>Esvaziar lixeira</span>
-            </Button>
+              <Button
+                data-test-id="empty-trash-menus-btn"
+                variant="destructive"
+              >
+                <Trash2Icon className="size-4" />
+                <span>Esvaziar lixeira</span>
+              </Button>
+            </PermanentDeleteConfirmDialog>
           )}
           {!isTrashView && (
-            <Button
-              data-test-id="reorder-menus-btn"
-              type="button"
-              variant="outline"
-              onClick={() => setReorderOpen(true)}
-            >
-              <ListTreeIcon className="size-4" />
-              <span>Ordenar</span>
-            </Button>
+            <MenuReorderDialog asChild>
+              <Button
+                data-test-id="reorder-menus-btn"
+                type="button"
+                variant="outline"
+              >
+                <ListTreeIcon className="size-4" />
+                <span>Ordenar</span>
+              </Button>
+            </MenuReorderDialog>
           )}
           {!isTrashView && (
             <Button
@@ -192,21 +204,6 @@ function RouteComponent(): React.JSX.Element {
           }
         />
       </PageShell.Footer>
-
-      <PermanentDeleteConfirmDialog
-        open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Esvaziar lixeira de menus"
-        description="Essa ação é irreversível. Todos os menus na lixeira serão excluídos permanentemente."
-        itemsCount={data.meta?.total ?? 0}
-        isPending={emptyTrash.isPending}
-        onConfirm={() => emptyTrash.mutate()}
-        testId="empty-trash-menus-dialog"
-      />
-      <MenuReorderDialog
-        open={reorderOpen}
-        onOpenChange={setReorderOpen}
-      />
     </PageShell>
   );
 }

@@ -1,14 +1,16 @@
+// Spec constrói mocks parciais de entidades do domínio via asserção.
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { E_FIELD_FORMAT } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import BcryptRowPasswordService from '@application/services/row-password/bcrypt-row-password.service';
+import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import {
   makePasswordField,
   makeTextShortWithFormat,
 } from '@test/helpers/field-factory.helper';
+import { groupItems } from '@test/helpers/row-data.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
 import GroupRowCreateUseCase from '../create.use-case';
@@ -557,15 +559,15 @@ describe('Group Row Create - TEXT_SHORT', () => {
         table,
         query: { _id: row._id },
       });
-      const storedItem = (storedRow!.itens as Record<string, unknown>[])[0];
+      const storedItem = groupItems(storedRow!, 'itens')[0];
       const isHashed =
-        (storedItem.senha as string).startsWith('$2a$') ||
-        (storedItem.senha as string).startsWith('$2b$');
+        String(storedItem.senha).startsWith('$2a$') ||
+        String(storedItem.senha).startsWith('$2b$');
       expect(isHashed).toBe(true);
 
       const matches = await bcrypt.compare(
         'minha-senha-123',
-        storedItem.senha as string,
+        String(storedItem.senha),
       );
       expect(matches).toBe(true);
     });

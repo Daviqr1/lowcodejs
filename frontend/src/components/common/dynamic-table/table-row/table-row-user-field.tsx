@@ -22,12 +22,13 @@ import { useUserReadPaginatedInfinite } from '@/hooks/tanstack-query/use-user-re
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import { E_USER_STATUS } from '@/lib/constant';
 import type { IField, IUser } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
-interface TableRowUserFieldProps {
+type TableRowUserFieldProps = {
   field: IField;
   disabled?: boolean;
-}
+};
 
 type UserOption = {
   value: string;
@@ -39,9 +40,8 @@ export function TableRowUserField({
   disabled,
 }: TableRowUserFieldProps): React.JSX.Element {
   const formField = useFieldContext<Array<UserOption>>();
-  const fieldValue = Array.isArray(formField.state.value)
-    ? formField.state.value
-    : [];
+  let fieldValue: Array<UserOption> = [];
+  if (Array.isArray(formField.state.value)) fieldValue = formField.state.value;
   const isInvalid =
     formField.state.meta.isTouched && !formField.state.meta.isValid;
   const errorId = `${formField.name}-error`;
@@ -101,11 +101,14 @@ export function TableRowUserField({
             slug: '',
             description: null,
             permissions: [],
+            encompasses: [],
             createdAt: '',
             updatedAt: null,
             trashedAt: null,
             trashed: false,
           },
+          groups: [],
+          notificationsEnabled: true,
           createdAt: '',
           updatedAt: null,
           trashedAt: null,
@@ -135,11 +138,14 @@ export function TableRowUserField({
           slug: '',
           description: null,
           permissions: [],
+          encompasses: [],
           createdAt: '',
           updatedAt: null,
           trashedAt: null,
           trashed: false,
         },
+        groups: [],
+        notificationsEnabled: true,
         createdAt: '',
         updatedAt: null,
         trashedAt: null,
@@ -247,7 +253,7 @@ export function TableRowUserField({
             >
               <ComboboxValue>
                 {(selectedValues: Array<IUser>): React.ReactNode => {
-                  let chipsPlaceholder = `Selecione ${field.name.toLowerCase()}`;
+                  let chipsPlaceholder = `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`;
                   if (selectedValues.length > 0) {
                     chipsPlaceholder = '';
                   }
@@ -344,7 +350,8 @@ export function TableRowUserField({
         >
           <ComboboxInput
             placeholder={
-              fieldValue[0]?.label || `Selecione ${field.name.toLowerCase()}`
+              fieldValue[0]?.label ||
+              `Selecione ${resolveFieldLabel(field, 'form').toLowerCase()}`
             }
             showClear={fieldValue.length > 0}
             className={cn(isInvalid && 'border-destructive')}

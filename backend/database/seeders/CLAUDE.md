@@ -11,10 +11,19 @@ na primeira execução da UI.
 | Arquivo                           | Descrição                                                                   |
 | --------------------------------- | --------------------------------------------------------------------------- |
 | `main.ts`                         | Orquestrador: glob nos `*.seed.(ts|js)`, valida padrão de filename, ordena e executa sequencialmente. Em falha: log + `process.exit(1)` + `mongoose.disconnect()` |
-| `1720448435-permissions.seed.ts`  | Cria 12 registros de permissão (CREATE_TABLE, VIEW_TABLE, etc.). Upsert por `slug` com `$set` |
+| `1720448435-permissions.seed.ts`  | Cria 19 registros de permissão: 12 de tabela (CREATE_TABLE, VIEW_TABLE, etc.) + 7 capacidades de área (E_AREA_CAPABILITY, inclui MANAGE_CHAT). Upsert por `slug` com `$set` |
 | `1720448445-user-group.seed.ts`   | Cria 4 grupos: MASTER, ADMINISTRATOR, MANAGER, REGISTERED. Metadados via `$set`; array `permissions` via `$setOnInsert` (preserva customizações após a 1ª criação). Busca apenas permissões com `trashed: false` |
 | `1720465893-settings.seed.ts`     | Setting singleton. Se já existe MASTER, marca `SETUP_COMPLETED=true`. Caso contrário, usa `$setOnInsert: {}` (não sobrescreve configs existentes) |
 | `1778025600-demo-users.seed.ts`   | **Gated por `DEMO_MODE=true`**. Cria/atualiza 2 usuários públicos (`admin@admin.com` → ADMINISTRATOR, `registered@registered.com` → REGISTERED) com `$set` em todos os campos (incluindo password re-hashado a cada execução). Throw se grupos ausentes. No-op silencioso quando `DEMO_MODE=false` |
+
+## Seeds de desenvolvimento (`dev/`)
+
+Não são descobertos pelo `main.ts` (nome não termina em `.seed.ts`) nem rodam no
+boot. Servem apenas para popular dados de teste localmente.
+
+| Arquivo                  | Comando                  | Descrição                                                                                          |
+| ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `dev/seed-test-users.ts` | `npm run seed:test-users`| Cria N usuários `*@demo.com` (default 25, `-- --count=N`), status/grupos variados, senha `Teste@123`. Idempotente: recria os `*@demo.com` a cada execução |
 
 ## Padrões
 

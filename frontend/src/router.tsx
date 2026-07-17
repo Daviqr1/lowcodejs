@@ -8,15 +8,17 @@ import { routeTree } from './routeTree.gen';
 
 import { QueryClient as queryClient } from '@/lib/query-client';
 
-export interface RouterContext {
+export type RouterContext = {
   queryClient: QueryClient;
-}
+};
 
 export const getRouter = () => {
   const router = createRouter({
     routeTree,
     context: { queryClient },
     defaultPreload: 'intent',
+    // 0 = delega staleness ao React Query (staleTime das queries). Padrao
+    // recomendado ao usar a integracao TanStack Query (ver _docs 035-preloading).
     defaultPreloadStaleTime: 0,
     defaultPendingMs: 0,
     scrollRestoration: true,
@@ -35,6 +37,8 @@ export const getRouter = () => {
 };
 
 declare module '@tanstack/react-router' {
+  // Module augmentation exige interface (declaration merging) — nao usar type.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmentation em .tsx: o TS exige interface p/ declaration merging
   interface Register {
     router: ReturnType<typeof getRouter>;
   }

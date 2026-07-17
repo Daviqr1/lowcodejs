@@ -6,9 +6,9 @@ import {
 } from '@tanstack/react-router';
 import { ArrowLeftIcon } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import * as z from 'zod';
 
-import { Logo } from '@/components/common/layout/logo';
 import { Button } from '@/components/ui/button';
 import {
   Field,
@@ -26,7 +26,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuthenticationRequestCode } from '@/hooks/tanstack-query/use-authentication-request-code';
 import { useAuthenticationValidateCode } from '@/hooks/tanstack-query/use-authentication-validate-code';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastError, toastSuccess } from '@/lib/toast';
 
 export const Route = createLazyFileRoute(
   '/_authentication/forgot-password/validate-code/',
@@ -59,7 +58,9 @@ function RouteComponent(): React.JSX.Element {
 
   const validateCodeMutation = useAuthenticationValidateCode({
     onSuccess() {
-      toastSuccess('Código validado!', 'Defina sua nova senha.');
+      toast.success('Código validado!', {
+        description: 'Defina sua nova senha.',
+      });
       router.navigate({
         to: '/forgot-password/reset-password',
       });
@@ -81,7 +82,9 @@ function RouteComponent(): React.JSX.Element {
 
   const resendMutation = useAuthenticationRequestCode({
     onSuccess() {
-      toastSuccess('Código reenviado!', 'Verifique seu e-mail.');
+      toast.success('Código reenviado!', {
+        description: 'Verifique seu e-mail.',
+      });
       setCodeValue('');
       setCodeError(null);
     },
@@ -113,92 +116,84 @@ function RouteComponent(): React.JSX.Element {
   return (
     <div
       data-test-id="forgot-password-code-page"
-      className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
+      className="flex flex-col gap-6"
     >
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <form
-            data-test-id="forgot-password-code-form"
-            onSubmit={handleSubmit}
-          >
-            <FieldGroup>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <Link
-                  to="/"
-                  className="flex flex-col items-center gap-2 font-medium"
-                >
-                  <Logo className="h-8" />
-                </Link>
-                <FieldDescription>
-                  Digite o código de 6 dígitos enviado para{' '}
-                  <span className="text-foreground font-medium">
-                    {maskEmail(email)}
-                  </span>
-                </FieldDescription>
-              </div>
+      <form
+        data-test-id="forgot-password-code-form"
+        onSubmit={handleSubmit}
+      >
+        <FieldGroup className="stagger-children">
+          <div className="flex flex-col gap-2 text-left">
+            <h1 className="heading-card">Verificar código</h1>
+            <FieldDescription>
+              Digite o código de 6 dígitos enviado para{' '}
+              <span className="text-foreground font-medium">
+                {maskEmail(email)}
+              </span>
+            </FieldDescription>
+          </div>
 
-              <Field data-invalid={!!codeError}>
-                <FieldLabel>Código de verificação</FieldLabel>
-                <div className="flex justify-center">
-                  <InputOTP
-                    data-test-id="forgot-password-otp-input"
-                    maxLength={6}
-                    value={codeValue}
-                    onChange={(value) => {
-                      setCodeValue(value);
-                      if (codeError) setCodeError(null);
-                    }}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                {codeError && <FieldError>{codeError}</FieldError>}
-              </Field>
+          <Field data-invalid={!!codeError}>
+            <FieldLabel>Código de verificação</FieldLabel>
+            <div className="flex justify-center">
+              <InputOTP
+                data-test-id="forgot-password-otp-input"
+                maxLength={6}
+                value={codeValue}
+                onChange={(value) => {
+                  setCodeValue(value);
+                  if (codeError) setCodeError(null);
+                }}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            {codeError && <FieldError>{codeError}</FieldError>}
+          </Field>
 
-              <Field>
-                <Button
-                  data-test-id="forgot-password-verify-btn"
-                  type="submit"
-                  className="w-full"
-                  disabled={isPending || codeValue.length < 6}
-                >
-                  {isPending && <Spinner />}
-                  <span>Verificar código</span>
-                </Button>
-              </Field>
+          <Field>
+            <Button
+              data-test-id="forgot-password-verify-btn"
+              type="submit"
+              className="w-full transition-transform hover:-translate-y-px hover:shadow-soft active:translate-y-0"
+              disabled={isPending || codeValue.length < 6}
+            >
+              {isPending && <Spinner />}
+              {!isPending && <span>Verificar código</span>}
+            </Button>
+          </Field>
 
-              <FieldDescription className="text-center">
-                Não recebeu o código?{' '}
-                <button
-                  type="button"
-                  className="underline underline-offset-2 disabled:opacity-50"
-                  disabled={isResending}
-                  onClick={handleResend}
-                >
-                  {isResending ? 'Reenviando...' : 'Reenviar'}
-                </button>
-              </FieldDescription>
+          <FieldDescription className="text-center">
+            Não recebeu o código?{' '}
+            <button
+              type="button"
+              className="underline underline-offset-2 disabled:opacity-50"
+              disabled={isResending}
+              onClick={handleResend}
+            >
+              {isResending && 'Reenviando...'}
+              {!isResending && 'Reenviar'}
+            </button>
+          </FieldDescription>
 
-              <FieldDescription className="text-center">
-                <Link
-                  to="/forgot-password"
-                  className="inline-flex items-center gap-1 underline underline-offset-2"
-                >
-                  <ArrowLeftIcon className="h-3 w-3" />
-                  Voltar
-                </Link>
-              </FieldDescription>
-            </FieldGroup>
-          </form>
-        </div>
-      </div>
+          <FieldDescription className="text-center">
+            <Link
+              to="/forgot-password"
+              className="inline-flex items-center gap-1 underline underline-offset-2"
+            >
+              <ArrowLeftIcon className="h-3 w-3" />
+              Voltar
+            </Link>
+          </FieldDescription>
+        </FieldGroup>
+      </form>
     </div>
   );
 }

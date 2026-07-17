@@ -10,10 +10,11 @@
  *   - notification:read     { _id: string }
  *   - notification:read_all { userId: string }
  */
-/* eslint-disable no-unused-vars */
+
 import type { Namespace, Server as SocketIOServer } from 'socket.io';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
+import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
 
 export const NOTIFICATIONS_NAMESPACE = '/notifications';
 
@@ -46,7 +47,7 @@ export function initNotificationsSocket(
 
   namespace.use((socket, next) => {
     const cookieHeader = socket.handshake.headers.cookie;
-    const accessToken = extractCookieValue(cookieHeader, 'accessToken');
+    const accessToken = extractCookieValue(cookieHeader, ACCESS_TOKEN_COOKIE);
 
     if (!accessToken) {
       next(new Error('Autenticação necessária.'));

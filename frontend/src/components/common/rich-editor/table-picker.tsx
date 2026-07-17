@@ -9,10 +9,10 @@ import {
 const INIT_SIZE = 6;
 const MAX_SIZE = 10;
 
-interface TablePickerProps {
+type TablePickerProps = {
   children: React.ReactNode;
   onInsert: (rows: number, cols: number) => void;
-}
+};
 
 export function TablePicker({
   children,

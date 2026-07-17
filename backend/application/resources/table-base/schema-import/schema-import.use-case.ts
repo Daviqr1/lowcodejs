@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 import yaml from 'js-yaml';
 import slugify from 'slugify';
@@ -7,22 +6,23 @@ import { z } from 'zod';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import {
-  E_FIELD_FORMAT,
+  buildDefaultTablePermissions,
+  buildFieldPermissions,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
+  E_ROLE,
+  E_TABLE_PROFILE,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
-  E_TABLE_VISIBILITY,
   FIELD_NATIVE_LIST,
   type FieldCreatePayload,
   type IField,
-  type ValueOf,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { suggestUniqueFieldSlug } from '@application/core/field-slug.core';
+import { FieldSlug } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import { TableSchemaContractService } from '@application/services/table-schema/table-schema-contract.service';
+import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type {
   SchemaImportField,
@@ -62,7 +62,8 @@ export default class SchemaImportUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
-    private readonly tableSchemaService: TableSchemaContractService,
+    private readonly userGroupRepository: UserGroupContractRepository,
+    private readonly schemaBuilder: SchemaBuilderContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -80,8 +81,8 @@ export default class SchemaImportUseCase {
       try {
         parsed = yaml.load(payload.yaml, { schema: yaml.FAILSAFE_SCHEMA });
       } catch (yamlError) {
-        const message =
-          yamlError instanceof Error ? yamlError.message : 'YAML inválido';
+        let message = 'YAML inválido';
+        if (yamlError instanceof Error) message = yamlError.message;
         return left(
           HTTPException.BadRequest(`YAML inválido: ${message}`, 'INVALID_YAML'),
         );
@@ -134,7 +135,8 @@ export default class SchemaImportUseCase {
           batchTables.set(slug, tableRef);
           created.push(summary);
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Erro ao criar';
+          let message = 'Erro ao criar';
+          if (err instanceof Error) message = err.message;
           errors.push({ name: tableDef.name, message });
         }
       }
@@ -165,7 +167,8 @@ export default class SchemaImportUseCase {
             },
           });
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Erro';
+          let message = 'Erro';
+          if (err instanceof Error) message = err.message;
           errors.push({
             name: pending.ownerTableName,
             message: `Falha ao resolver relacionamento: ${message}`,
@@ -202,7 +205,7 @@ export default class SchemaImportUseCase {
     const usedSlugs = new Set<string>(nativeFields.map((f) => f.slug));
 
     for (const fieldDef of tableDef.fields) {
-      const fieldSlug = suggestUniqueFieldSlug(fieldDef.name, [...usedSlugs]);
+      const fieldSlug = FieldSlug.suggestUnique(fieldDef.name, [...usedSlugs]);
       usedSlugs.add(fieldSlug);
 
       const payload = this.buildFieldPayload(fieldDef, fieldSlug);
@@ -225,7 +228,11 @@ export default class SchemaImportUseCase {
 
     const allFields = [...nativeFields, ...userFields];
     const allFieldIds = allFields.map((f) => f._id);
-    const _schema = this.tableSchemaService.computeSchema(allFields);
+    const _schema = this.schemaBuilder.build(allFields);
+
+    const registeredGroup = await this.userGroupRepository.findBySlug(
+      E_ROLE.REGISTERED,
+    );
 
     const tableRecord = await this.tableRepository.create({
       _schema,
@@ -233,10 +240,9 @@ export default class SchemaImportUseCase {
       slug,
       type: E_TABLE_TYPE.TABLE,
       owner: ownerId,
-      administrators: [],
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
+      permissions: buildDefaultTablePermissions(registeredGroup?._id ?? null),
+      members: [{ user: ownerId, profile: E_TABLE_PROFILE.OWNER }],
       style: tableDef.style ?? E_TABLE_STYLE.LIST,
-      visibility: tableDef.visibility ?? E_TABLE_VISIBILITY.RESTRICTED,
       fields: allFieldIds,
       fieldOrderList: allFieldIds,
       fieldOrderForm: allFieldIds,
@@ -317,14 +323,15 @@ export default class SchemaImportUseCase {
     fieldDef: SchemaImportField,
     fieldSlug: string,
   ): FieldCreatePayload {
-    const dropdown =
-      fieldDef.type === E_FIELD_TYPE.DROPDOWN
-        ? fieldDef.options.map((opt) => ({
-            id: crypto.randomUUID(),
-            label: opt.label,
-            color: opt.color ?? null,
-          }))
-        : [];
+    let dropdown: Array<{ id: string; label: string; color: string | null }> =
+      [];
+    if (fieldDef.type === E_FIELD_TYPE.DROPDOWN) {
+      dropdown = fieldDef.options.map((opt) => ({
+        id: crypto.randomUUID(),
+        label: opt.label,
+        color: opt.color ?? null,
+      }));
+    }
 
     return {
       name: fieldDef.name,
@@ -334,11 +341,13 @@ export default class SchemaImportUseCase {
       locked: false,
       required: fieldDef.required,
       multiple: fieldDef.multiple,
-      format: fieldDef.format as ValueOf<typeof E_FIELD_FORMAT> | null,
+      format: fieldDef.format,
       showInFilter: fieldDef.showInFilter,
-      showInForm: fieldDef.showInForm,
-      showInDetail: fieldDef.showInDetail,
-      showInList: fieldDef.showInList,
+      permissions: buildFieldPermissions(
+        fieldDef.showInList,
+        fieldDef.showInForm,
+        fieldDef.showInDetail,
+      ),
       widthInForm: 50,
       widthInList: 10,
       widthInDetail: 50,
@@ -395,9 +404,6 @@ export default class SchemaImportUseCase {
       }
       if (last === 'style') {
         return `${location}: style de tabela inválido. Válidos: LIST, GALLERY, DOCUMENT, CARD, MOSAIC, KANBAN, FORUM, CALENDAR, GANTT.`;
-      }
-      if (last === 'visibility') {
-        return `${location}: visibility inválida. Válidas: PRIVATE, RESTRICTED, OPEN, FORM, PUBLIC.`;
       }
       if (last === 'format') {
         return `${location}: format inválido. Para TEXT_SHORT: ALPHA_NUMERIC, INTEGER, DECIMAL, URL, EMAIL, PASSWORD, PHONE, CNPJ, CPF. Para TEXT_LONG: RICH_TEXT, PLAIN_TEXT. Para DATE: DD_MM_YYYY, MM_DD_YYYY, YYYY_MM_DD (e variações com HH_MM_SS / DASH).`;

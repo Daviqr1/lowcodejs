@@ -4,16 +4,16 @@ import React, { useCallback, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-export interface TreeNode {
+export type TreeNode = {
   id: string;
   label: string;
   icon?: React.ReactNode;
   children?: Array<TreeNode>;
   selectable?: boolean;
-  metadata?: any;
-}
+  metadata?: unknown;
+};
 
-interface TreeItemProps {
+type TreeItemProps = {
   node: TreeNode;
   level: number;
   selectedIds: Set<string>;
@@ -22,7 +22,7 @@ interface TreeItemProps {
   onToggleSelect?: (id: string, node: TreeNode) => void;
   multiSelect?: boolean;
   showCheckboxes?: boolean;
-}
+};
 
 const TreeItem: React.FC<TreeItemProps> = ({
   node,
@@ -139,7 +139,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
   );
 };
 
-interface TreeListProps {
+type TreeListProps = {
   data: Array<TreeNode>;
   selectedIds?: Array<string>;
   expandedIds?: Array<string>;
@@ -151,7 +151,7 @@ interface TreeListProps {
   multiSelect?: boolean;
   showCheckboxes?: boolean;
   className?: string;
-}
+};
 
 export const TreeList: React.FC<TreeListProps> = ({
   data,

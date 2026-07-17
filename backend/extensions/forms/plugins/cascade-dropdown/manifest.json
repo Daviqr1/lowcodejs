@@ -1,0 +1,15 @@
+{
+  "id": "cascade-dropdown",
+  "type": "PLUGIN",
+  "name": "Dropdown em cascata",
+  "description": "Configura campos de relacionamento para selecionar registros em dois níveis dependentes.",
+  "version": "1.0.0",
+  "author": "LowcodeJS",
+  "icon": "ListFilter",
+  "placement": {
+    "slots": ["table.field.relationship.config"]
+  },
+  "requires": {
+    "lowcodejs": ">=1.0.0"
+  }
+}

@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { E_MENU_ITEM_TYPE } from '@application/core/entity.core';
 import {
-  E_TABLE_COLLABORATION,
+  buildFieldPermissions,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import TableSchemaInMemoryService from '@application/services/table-schema/table-schema-in-memory.service';
+import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
 import ImportTableUseCase from './import-table.use-case';
 
@@ -21,7 +22,7 @@ let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
 let rowInMemoryRepository: RowInMemoryRepository;
 let menuInMemoryRepository: MenuInMemoryRepository;
-let tableSchemaService: TableSchemaInMemoryService;
+let schemaBuilder: InMemorySchemaBuilder;
 let sut: ImportTableUseCase;
 
 const baseStructure = {
@@ -29,8 +30,6 @@ const baseStructure = {
   slug: 'clientes',
   description: null,
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fields: [
     {
       name: 'Nome',
@@ -40,9 +39,7 @@ const baseStructure = {
       multiple: false,
       format: 'ALPHA_NUMERIC',
       showInFilter: true,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: null,
       widthInList: null,
       widthInDetail: null,
@@ -101,14 +98,14 @@ describe('Import Table Use Case', () => {
     fieldInMemoryRepository = new FieldInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
     menuInMemoryRepository = new MenuInMemoryRepository();
-    tableSchemaService = new TableSchemaInMemoryService();
+    schemaBuilder = new InMemorySchemaBuilder();
 
     sut = new ImportTableUseCase(
       tableInMemoryRepository,
       fieldInMemoryRepository,
       rowInMemoryRepository,
       menuInMemoryRepository,
-      tableSchemaService,
+      schemaBuilder,
     );
   });
 
@@ -139,6 +136,45 @@ describe('Import Table Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value.slug).toBe('clientes');
+  });
+
+  it('deve normalizar slugs de campo legados invalidos e remapear referencias', async () => {
+    const legacyStructure = {
+      ...baseStructure,
+      slug: 'clientes-legado',
+      fields: [
+        {
+          ...baseStructure.fields[0],
+          name: 'Telefone',
+          slug: 'Telefone', // legado: maiuscula → invalido no padrao estrito
+        },
+      ],
+      fieldOrderList: ['Telefone'],
+      fieldOrderForm: ['Telefone'],
+      layoutFields: { title: 'Telefone' },
+    };
+
+    const result = await sut.execute({
+      name: null,
+      fileContent: {
+        header: { ...v2FileContent.header, tableSlug: 'clientes-legado' },
+        tables: [{ structure: legacyStructure }],
+        menus: [],
+      },
+      ownerId: 'owner-id',
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+    expect(result.value.importedFields).toBe(1);
+
+    // O campo foi criado com o slug normalizado, nao com o slug invalido.
+    expect(await fieldInMemoryRepository.findBySlug('telefone')).toBeTruthy();
+
+    const table = await tableInMemoryRepository.findBySlug('clientes-legado');
+    expect(table).toBeTruthy();
+    expect(table!.fields.some((f) => f.slug === 'telefone')).toBe(true);
+    expect(table!.fields.some((f) => f.slug === 'Telefone')).toBe(false);
   });
 
   it('deve retornar erro OWNER_ID_REQUIRED quando ownerId nao fornecido', async () => {
@@ -182,10 +218,7 @@ describe('Import Table Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -209,10 +242,7 @@ describe('Import Table Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -241,17 +271,14 @@ describe('Import Table Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
     await menuInMemoryRepository.create({
       name: 'Existente',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
 
     const fileWithMenu = {
@@ -291,13 +318,13 @@ describe('Import Table Use Case', () => {
     await menuInMemoryRepository.create({
       name: 'Cadastros',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
     // O item folha "menu-clientes" também já existe — esse SIM conflita.
     await menuInMemoryRepository.create({
       name: 'Clientes',
       slug: 'menu-clientes',
-      type: 'TABLE' as never,
+      type: E_MENU_ITEM_TYPE.TABLE,
     });
 
     const fileWithMenuTree = {
@@ -348,12 +375,12 @@ describe('Import Table Use Case', () => {
     const existingParent = await menuInMemoryRepository.create({
       name: 'Cadastros',
       slug: 'cadastros',
-      type: 'SEPARATOR' as never,
+      type: E_MENU_ITEM_TYPE.SEPARATOR,
     });
     await menuInMemoryRepository.create({
       name: 'Clientes',
       slug: 'menu-clientes',
-      type: 'TABLE' as never,
+      type: E_MENU_ITEM_TYPE.TABLE,
     });
 
     const fileWithMenuTree = {
@@ -420,10 +447,7 @@ describe('Import Table Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -449,9 +473,7 @@ describe('Import Table Use Case', () => {
       multiple: false,
       format: 'ALPHA_NUMERIC',
       showInFilter: true,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: null,
       widthInList: null,
       widthInDetail: null,
@@ -469,9 +491,7 @@ describe('Import Table Use Case', () => {
       multiple: true,
       format: null,
       showInFilter: false,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: null,
       widthInList: null,
       widthInDetail: null,
@@ -590,9 +610,7 @@ describe('Import Table Use Case', () => {
       multiple: true,
       format: null,
       showInFilter: false,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: null,
       widthInList: null,
       widthInDetail: null,
@@ -707,6 +725,96 @@ describe('Import Table Use Case', () => {
     if (!result.isLeft()) throw new Error('Expected left');
     expect(result.value.code).toBe(400);
     expect(result.value.cause).toBe('STRUCTURE_REQUIRED');
+  });
+
+  it('deve importar somente dados em tabela existente (casa por slug)', async () => {
+    const nomeField = makeTextShortField({ name: 'Nome', slug: 'nome' });
+    const produtos = await tableInMemoryRepository.create({
+      name: 'Produtos',
+      slug: 'produtos',
+      _schema: {},
+      fields: [nomeField._id],
+      owner: 'owner-id',
+      style: E_TABLE_STYLE.LIST,
+      fieldOrderList: ['nome'],
+      fieldOrderForm: ['nome'],
+    });
+    produtos.fields = [nomeField];
+
+    const result = await sut.execute({
+      ownerId: 'owner-id',
+      fileContent: {
+        header: {
+          version: '2.0',
+          platform: 'lowcodejs',
+          tableName: 'Produtos',
+          tableSlug: 'produtos',
+          exportedBy: 'Admin',
+          exportedAt: '2024-01-01T00:00:00.000Z',
+          exportType: 'data',
+          tablesCount: 1,
+          menusCount: 0,
+        },
+        tables: [
+          {
+            tableSlug: 'produtos',
+            tableName: 'Produtos',
+            data: {
+              totalRows: 2,
+              rows: [
+                { _originalId: 'p1', nome: 'Cadeira' },
+                { _originalId: 'p2', nome: 'Mesa' },
+              ],
+            },
+          },
+        ],
+        menus: [],
+      },
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('Expected right');
+    expect(result.value.importedRows).toBe(2);
+    expect(result.value.importedFields).toBe(0);
+    expect(result.value.importedMenus).toBe(0);
+    expect(result.value.slug).toBe('produtos');
+
+    const rows = await rowInMemoryRepository.findAllRaw(produtos);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.nome).sort()).toEqual(['Cadeira', 'Mesa']);
+  });
+
+  it('deve retornar IMPORT_TABLES_NOT_FOUND quando a tabela alvo nao existe', async () => {
+    const result = await sut.execute({
+      ownerId: 'owner-id',
+      fileContent: {
+        header: {
+          version: '2.0',
+          platform: 'lowcodejs',
+          tableName: 'Inexistente',
+          tableSlug: 'inexistente',
+          exportedBy: 'Admin',
+          exportedAt: '2024-01-01T00:00:00.000Z',
+          exportType: 'data',
+          tablesCount: 1,
+          menusCount: 0,
+        },
+        tables: [
+          {
+            tableSlug: 'inexistente',
+            tableName: 'Inexistente',
+            data: { totalRows: 1, rows: [{ _originalId: 'x1', nome: 'A' }] },
+          },
+        ],
+        menus: [],
+      },
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(400);
+    expect(result.value.cause).toBe('IMPORT_TABLES_NOT_FOUND');
+    expect(result.value.errors?.tables).toBe('inexistente');
   });
 
   it('deve retornar erro INVALID_PLATFORM quando header ausente', async () => {

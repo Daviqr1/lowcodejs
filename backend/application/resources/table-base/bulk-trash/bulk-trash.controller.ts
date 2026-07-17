@@ -13,7 +13,6 @@ import { BulkTrashBodyValidator } from './bulk-trash.validator';
 })
 export default class {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: BulkTrashUseCase = getInstanceByToken(
       BulkTrashUseCase,
     ),

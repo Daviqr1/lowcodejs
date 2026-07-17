@@ -1,11 +1,19 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserGroupEmptyTrashSchema: FastifySchema = {
-  tags: ['User Groups'],
+  tags: ['Grupos de Usuários'],
   summary: 'Esvaziar lixeira de grupos',
+  description:
+    'Exclui permanentemente todos os grupos na lixeira que não sejam do sistema e não possuam usuários atribuídos. Retorna a quantidade efetivamente removida. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
   response: {
-    200: { type: 'object', properties: { deleted: { type: 'number' } } },
+    200: {
+      description: 'Quantidade de grupos excluídos da lixeira',
+      type: 'object',
+      properties: {
+        deleted: { type: 'number', description: 'Total de grupos excluídos' },
+      },
+    },
     401: {
       type: 'object',
       properties: {

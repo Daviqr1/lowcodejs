@@ -1,0 +1,15 @@
+{
+  "id": "register-ip",
+  "type": "PLUGIN",
+  "name": "Registrar IP",
+  "description": "Adiciona uma ação no menu de cada registro que grava o IP do usuário autenticado no campo de texto oculto 'ip'.",
+  "version": "1.0.0",
+  "author": "LowcodeJS",
+  "icon": "GlobeIcon",
+  "placement": {
+    "slots": ["table.row.actions"]
+  },
+  "requires": {
+    "lowcodejs": ">=1.0.0"
+  }
+}

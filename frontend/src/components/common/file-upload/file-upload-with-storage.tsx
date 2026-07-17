@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { Paperclip, Upload, X } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import type { FileUploadProps } from '@/components/common/file-upload/file-upload';
 import {
@@ -19,10 +20,9 @@ import { useUploadingContext } from '@/components/common/file-upload/uploading-c
 import { Button } from '@/components/ui/button';
 import { API } from '@/lib/api';
 import type { IStorage } from '@/lib/interfaces';
-import { toastError } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
-interface FileUploadWithStorageProps {
+type FileUploadWithStorageProps = {
   value: Array<File>;
   onValueChange: (files: Array<File>) => void;
   onStorageChange: (storages: Array<IStorage>) => void;
@@ -38,7 +38,7 @@ interface FileUploadWithStorageProps {
   compact?: boolean;
   showHint?: boolean;
   staticName?: string;
-}
+};
 
 function dedupeStorages(storages: Array<IStorage>): Array<IStorage> {
   const map = new Map<string, IStorage>();
@@ -97,10 +97,10 @@ export function FileUploadWithStorage({
         const data = error.response?.data;
 
         if (data?.code === 500 && data?.cause === 'STORAGE_UPLOAD_ERROR') {
-          toastError(
-            'Erro ao fazer upload',
-            'Houve um problema ao tentar fazer upload, tente novamente mais tarde.',
-          );
+          toast.error('Erro ao fazer upload', {
+            description:
+              'Houve um problema ao tentar fazer upload, tente novamente mais tarde.',
+          });
         }
       }
     },
@@ -135,11 +135,11 @@ export function FileUploadWithStorage({
         const data = error.response?.data;
 
         if (data?.code === 404 && data?.cause === 'STORAGE_NOT_FOUND') {
-          toastError(data?.message ?? 'Arquivo não encontrado');
+          toast.error(data?.message ?? 'Arquivo não encontrado');
         }
 
         if (data?.code === 500 && data?.cause === 'STORAGE_DELETE_ERROR') {
-          toastError(data?.message ?? 'Erro interno do servidor');
+          toast.error(data?.message ?? 'Erro interno do servidor');
         }
       }
     },
@@ -208,9 +208,7 @@ export function FileUploadWithStorage({
     setStorageFiles((prevStorageFiles) => {
       const nextStorageFiles = new Map(prevStorageFiles);
       const uploadedFiles = value.filter(
-        (file) =>
-          'isUploaded' in file &&
-          (file as File & { isUploaded?: boolean }).isUploaded,
+        (file) => 'isUploaded' in file && Boolean(file.isUploaded),
       );
 
       initialStorages.forEach((storage, index) => {
@@ -285,16 +283,15 @@ export function FileUploadWithStorage({
       errorMessage = 'Número máximo de arquivos excedido';
     }
 
-    toastError(
-      errorMessage,
-      ((): string => {
+    toast.error(errorMessage, {
+      description: ((): string => {
         let displayName = file.name;
         if (file.name.length > 20) {
           displayName = `${file.name.slice(0, 20)}...`;
         }
         return `"${displayName}" foi rejeitado`;
       })(),
-    );
+    });
   }, []);
 
   const onFileValidate = React.useCallback(
@@ -393,29 +390,51 @@ export function FileUploadWithStorage({
         )}
       </FileUploadDropzone>
       <FileUploadList>
-        {value.map((file, index) => (
-          <FileUploadItem
-            key={index}
-            value={file}
-            className="flex-col"
-          >
-            <div className="flex w-full items-center gap-2">
-              <FileUploadItemPreview />
-              <FileUploadItemMetadata />
-              <FileUploadItemDelete asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => handleRemoveFile(file)}
-                >
-                  <X />
-                </Button>
-              </FileUploadItemDelete>
-            </div>
-            {!('isUploaded' in file) && <FileUploadItemProgress />}
-          </FileUploadItem>
-        ))}
+        {value.map((file, index) => {
+          const storage = findStorageForFile(file);
+          const displayName = file.name;
+          const displaySize = Math.round(file.size / 1024);
+
+          return (
+            <FileUploadItem
+              key={index}
+              value={file}
+              className="flex-col"
+            >
+              <div className="flex w-full items-center gap-2">
+                <FileUploadItemPreview />
+                {storage && (
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <a
+                      href={storage.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Abrir ${displayName} em nova aba (botão direito para salvar)`}
+                      className="truncate font-medium text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {displayName}
+                    </a>
+                    <span className="truncate text-muted-foreground text-xs">
+                      {displaySize} KB
+                    </span>
+                  </div>
+                )}
+                {!storage && <FileUploadItemMetadata />}
+                <FileUploadItemDelete asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => handleRemoveFile(file)}
+                  >
+                    <X />
+                  </Button>
+                </FileUploadItemDelete>
+              </div>
+              {!('isUploaded' in file) && <FileUploadItemProgress />}
+            </FileUploadItem>
+          );
+        })}
       </FileUploadList>
     </FileUpload>
   );

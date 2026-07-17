@@ -4,12 +4,13 @@ import { Field, FieldError } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useFieldContext } from '@/integrations/tanstack-form/form-context';
 import type { IField } from '@/lib/interfaces';
+import { resolveFieldLabel } from '@/lib/table';
 
-interface TableRowTextareaFieldProps {
+type TableRowTextareaFieldProps = {
   field: IField;
   disabled?: boolean;
   compact?: boolean;
-}
+};
 
 export function TableRowTextareaField({
   field,
@@ -51,7 +52,7 @@ export function TableRowTextareaField({
         disabled={disabled}
         id={formField.name}
         name={formField.name}
-        placeholder={`Digite ${field.name.toLowerCase()}`}
+        placeholder={`Digite ${resolveFieldLabel(field, 'form').toLowerCase()}`}
         value={formField.state.value || ''}
         onBlur={formField.handleBlur}
         onChange={(e) => formField.handleChange(e.target.value)}

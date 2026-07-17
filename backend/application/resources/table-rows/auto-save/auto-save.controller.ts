@@ -1,10 +1,10 @@
-/* eslint-disable no-unused-vars */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 
+import { TableRowAutoSaveSchema } from './auto-save.schema';
 import TableRowAutoSaveUseCase from './auto-save.use-case';
 import {
   TableRowAutoSaveBodyValidator,
@@ -32,7 +32,7 @@ export default class {
           requiredPermission: 'CREATE_ROW',
         }),
       ],
-      // schema: TableRowCreateSchema,
+      schema: TableRowAutoSaveSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

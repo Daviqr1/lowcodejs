@@ -30,9 +30,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface ChartUsersProps {
+type ChartUsersProps = {
   data: Array<{ status: string; value: number; fill: string }>;
-}
+};
 
 export function ChartUsers({ data }: ChartUsersProps): React.JSX.Element {
   return (

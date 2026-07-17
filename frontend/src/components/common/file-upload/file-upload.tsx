@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import type { Merge } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
 const ROOT_NAME = 'FileUpload';
@@ -32,23 +33,26 @@ function useLazyRef<T>(fn: () => T): React.RefObject<T> {
     ref.current = fn();
   }
 
+  // ref.current ja foi inicializado acima; o `as` estreita RefObject<T | null>
+  // para RefObject<T> (idiom useLazyRef; React nao propaga essa garantia).
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return ref as React.RefObject<T>;
 }
 
 type Direction = 'ltr' | 'rtl';
 
-interface FileState {
+type FileState = {
   file: File;
   progress: number;
   error?: string;
   status: 'idle' | 'uploading' | 'error' | 'success';
-}
+};
 
-interface StoreState {
+type StoreState = {
   files: Map<File, FileState>;
   dragOver: boolean;
   invalid: boolean;
-}
+};
 
 type StoreAction =
   | { type: 'ADD_FILES'; files: Array<File> }
@@ -264,7 +268,7 @@ function useStore<T>(selector: (state: StoreState) => T): T {
   return React.useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 }
 
-interface FileUploadContextValue {
+type FileUploadContextValue = {
   inputId: string;
   dropzoneId: string;
   listId: string;
@@ -273,7 +277,7 @@ interface FileUploadContextValue {
   dir: Direction;
   inputRef: React.RefObject<HTMLInputElement | null>;
   urlCache: WeakMap<File, string>;
-}
+};
 
 const FileUploadContext = React.createContext<FileUploadContextValue | null>(
   null,
@@ -287,37 +291,37 @@ function useFileUploadContext(consumerName: string): FileUploadContextValue {
   return context;
 }
 
-interface FileUploadRootProps extends Omit<
-  React.ComponentProps<'div'>,
-  'defaultValue' | 'onChange'
-> {
-  value?: Array<File>;
-  defaultValue?: Array<File>;
-  onValueChange?: (files: Array<File>) => void;
-  onAccept?: (files: Array<File>) => void;
-  onFileAccept?: (file: File) => void;
-  onFileReject?: (file: File, message: string) => void;
-  onFileValidate?: (file: File) => string | null | undefined;
-  onUpload?: (
-    files: Array<File>,
-    options: {
-      onProgress: (file: File, progress: number) => void;
-      onSuccess: (file: File) => void;
-      onError: (file: File, error: Error) => void;
-    },
-  ) => Promise<void> | void;
-  accept?: string;
-  maxFiles?: number;
-  maxSize?: number;
-  dir?: Direction;
-  label?: string;
-  name?: string;
-  asChild?: boolean;
-  disabled?: boolean;
-  invalid?: boolean;
-  multiple?: boolean;
-  required?: boolean;
-}
+type FileUploadRootProps = Merge<
+  Omit<React.ComponentProps<'div'>, 'defaultValue' | 'onChange'>,
+  {
+    value?: Array<File>;
+    defaultValue?: Array<File>;
+    onValueChange?: (files: Array<File>) => void;
+    onAccept?: (files: Array<File>) => void;
+    onFileAccept?: (file: File) => void;
+    onFileReject?: (file: File, message: string) => void;
+    onFileValidate?: (file: File) => string | null | undefined;
+    onUpload?: (
+      files: Array<File>,
+      options: {
+        onProgress: (file: File, progress: number) => void;
+        onSuccess: (file: File) => void;
+        onError: (file: File, error: Error) => void;
+      },
+    ) => Promise<void> | void;
+    accept?: string;
+    maxFiles?: number;
+    maxSize?: number;
+    dir?: Direction;
+    label?: string;
+    name?: string;
+    asChild?: boolean;
+    disabled?: boolean;
+    invalid?: boolean;
+    multiple?: boolean;
+    required?: boolean;
+  }
+>;
 
 function FileUploadRoot(props: FileUploadRootProps): React.JSX.Element {
   const {
@@ -657,9 +661,12 @@ function FileUploadRoot(props: FileUploadRootProps): React.JSX.Element {
   );
 }
 
-interface FileUploadDropzoneProps extends React.ComponentProps<'div'> {
-  asChild?: boolean;
-}
+type FileUploadDropzoneProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadDropzone(props: FileUploadDropzoneProps): React.JSX.Element {
   const {
@@ -872,9 +879,12 @@ function FileUploadDropzone(props: FileUploadDropzoneProps): React.JSX.Element {
   );
 }
 
-interface FileUploadTriggerProps extends React.ComponentProps<'button'> {
-  asChild?: boolean;
-}
+type FileUploadTriggerProps = Merge<
+  React.ComponentProps<'button'>,
+  {
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadTrigger(props: FileUploadTriggerProps): React.JSX.Element {
   const { asChild, onClick: onClickProp, ...triggerProps } = props;
@@ -914,11 +924,14 @@ function FileUploadTrigger(props: FileUploadTriggerProps): React.JSX.Element {
   );
 }
 
-interface FileUploadListProps extends React.ComponentProps<'div'> {
-  orientation?: 'horizontal' | 'vertical';
-  asChild?: boolean;
-  forceMount?: boolean;
-}
+type FileUploadListProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    orientation?: 'horizontal' | 'vertical';
+    asChild?: boolean;
+    forceMount?: boolean;
+  }
+>;
 
 function FileUploadList(props: FileUploadListProps): React.JSX.Element | null {
   const {
@@ -964,14 +977,14 @@ function FileUploadList(props: FileUploadListProps): React.JSX.Element | null {
   );
 }
 
-interface FileUploadItemContextValue {
+type FileUploadItemContextValue = {
   id: string;
   fileState: FileState | undefined;
   nameId: string;
   sizeId: string;
   statusId: string;
   messageId: string;
-}
+};
 
 const FileUploadItemContext =
   React.createContext<FileUploadItemContextValue | null>(null);
@@ -986,10 +999,13 @@ function useFileUploadItemContext(
   return context;
 }
 
-interface FileUploadItemProps extends React.ComponentProps<'div'> {
-  value: File;
-  asChild?: boolean;
-}
+type FileUploadItemProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    value: File;
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadItem(props: FileUploadItemProps): React.JSX.Element | null {
   const { value, asChild, className, ...itemProps } = props;
@@ -1136,10 +1152,13 @@ function getFileIcon(file: File): React.JSX.Element {
   return <FileIcon />;
 }
 
-interface FileUploadItemPreviewProps extends React.ComponentProps<'div'> {
-  render?: (file: File, fallback: () => React.ReactNode) => React.ReactNode;
-  asChild?: boolean;
-}
+type FileUploadItemPreviewProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    render?: (file: File, fallback: () => React.ReactNode) => React.ReactNode;
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadItemPreview(
   props: FileUploadItemPreviewProps,
@@ -1207,10 +1226,13 @@ function FileUploadItemPreview(
   );
 }
 
-interface FileUploadItemMetadataProps extends React.ComponentProps<'div'> {
-  asChild?: boolean;
-  size?: 'default' | 'sm';
-}
+type FileUploadItemMetadataProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    asChild?: boolean;
+    size?: 'default' | 'sm';
+  }
+>;
 
 function FileUploadItemMetadata(
   props: FileUploadItemMetadataProps,
@@ -1273,12 +1295,15 @@ function FileUploadItemMetadata(
     </ItemMetadataPrimitive>
   );
 }
-interface FileUploadItemProgressProps extends React.ComponentProps<'div'> {
-  variant?: 'linear' | 'circular' | 'fill';
-  size?: number;
-  asChild?: boolean;
-  forceMount?: boolean;
-}
+type FileUploadItemProgressProps = Merge<
+  React.ComponentProps<'div'>,
+  {
+    variant?: 'linear' | 'circular' | 'fill';
+    size?: number;
+    asChild?: boolean;
+    forceMount?: boolean;
+  }
+>;
 
 function FileUploadItemProgress(
   props: FileUploadItemProgressProps,
@@ -1408,9 +1433,12 @@ function FileUploadItemProgress(
   }
 }
 
-interface FileUploadItemDeleteProps extends React.ComponentProps<'button'> {
-  asChild?: boolean;
-}
+type FileUploadItemDeleteProps = Merge<
+  React.ComponentProps<'button'>,
+  {
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadItemDelete(
   props: FileUploadItemDeleteProps,
@@ -1453,10 +1481,13 @@ function FileUploadItemDelete(
   );
 }
 
-interface FileUploadClearProps extends React.ComponentProps<'button'> {
-  forceMount?: boolean;
-  asChild?: boolean;
-}
+type FileUploadClearProps = Merge<
+  React.ComponentProps<'button'>,
+  {
+    forceMount?: boolean;
+    asChild?: boolean;
+  }
+>;
 
 function FileUploadClear(
   props: FileUploadClearProps,

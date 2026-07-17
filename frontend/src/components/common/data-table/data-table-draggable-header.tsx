@@ -5,10 +5,10 @@ import { GripVerticalIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-interface DataTableDraggableHeaderProps<TData> {
+type DataTableDraggableHeaderProps<TData> = {
   header: Header<TData, unknown>;
   children: React.ReactNode;
-}
+};
 
 export function DataTableDraggableHeader<TData>({
   header,

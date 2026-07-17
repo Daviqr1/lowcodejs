@@ -1,10 +1,10 @@
 import * as React from 'react';
 
-interface UploadingContextValue {
+type UploadingContextValue = {
   registerUpload: (key: string) => void;
   unregisterUpload: (key: string) => void;
   isUploading: boolean;
-}
+};
 
 const UploadingContext = React.createContext<UploadingContextValue | null>(
   null,

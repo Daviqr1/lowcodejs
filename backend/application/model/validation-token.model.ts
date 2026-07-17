@@ -33,9 +33,6 @@ export const Schema = new mongoose.Schema(
   },
 );
 
-export const ValidationToken = (mongoose?.models?.ValidationToken ||
-  mongoose.model<Entity>(
-    'ValidationToken',
-    Schema,
-    'validation-tokens',
-  )) as mongoose.Model<Entity>;
+export const ValidationToken: mongoose.Model<Entity> =
+  mongoose?.models?.ValidationToken ||
+  mongoose.model<Entity>('ValidationToken', Schema, 'validation-tokens');

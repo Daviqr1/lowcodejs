@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
@@ -67,8 +66,9 @@ export default class GroupRowPaginatedUseCase {
 
       if (Array.isArray(rawItems)) {
         for (const item of rawItems) {
-          // Ignora rascunhos (itens incompletos do auto-save, trashed=true).
-          if (isRecord(item) && item.trashed !== true) {
+          // Mostra rascunhos (status='draft') junto dos publicados; o
+          // frontend exibe badge. Oculta apenas itens na lixeira (trashedAt).
+          if (isRecord(item) && item.trashedAt == null) {
             allItems.push(item);
           }
         }
@@ -82,7 +82,7 @@ export default class GroupRowPaginatedUseCase {
         perPage,
         page,
         lastPage,
-        firstPage: total > 0 ? 1 : 0,
+        firstPage: Number(total > 0),
       };
 
       const paginated = allItems.slice(skip, skip + perPage);

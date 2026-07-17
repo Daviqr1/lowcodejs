@@ -4,7 +4,10 @@ CRUD e gerenciamento de tabelas dinamicas da plataforma low-code.
 
 ## Entidade
 
-`ITable` - Tabela dinamica com campos, schema, visibilidade, estilo e colaboracao.
+`ITable` - Tabela dinamica com campos, schema, estilo, `permissions` (mapa das
+10 acoes → binding), `members[]` (convidados com perfil) e `owner`. Os campos
+legados `visibility`/`collaboration`/`administrators` foram removidos do schema —
+nao ha mais fallback.
 
 ## Endpoints
 
@@ -24,8 +27,12 @@ CRUD e gerenciamento de tabelas dinamicas da plataforma low-code.
 
 - `TableContractRepository` - CRUD de tabelas, renameSlug, dropCollection, findByFieldIds, updateMany
 - `FieldContractRepository` - CRUD de campos, createMany, deleteMany, updateRelationshipTableSlug
-- `UserContractRepository` - Validacao de administradores ativos (usado no update)
+- `UserContractRepository` - Validacao de membros/owner ativos
 
 ## Schema Base
 
-Definido em `table-base.schema.ts`: TableStyleSchema, TableVisibilitySchema, TableCollaborationSchema, TableAdministratorsSchema, TableFieldOrderListSchema, TableFieldOrderFormSchema, TableOrderSchema, TableLayoutFieldsSchema, TableMethodSchema.
+Definido em `table-base.schema.ts`: TablePermissionBindingSchema,
+TablePermissionsSchema (mapa acao→binding), TableMembersSchema
+(`{ user, profile }`), TableStyleSchema, TableFieldOrderListSchema,
+TableFieldOrderFormSchema, TableOrderSchema, TableLayoutFieldsSchema,
+TableMethodSchema. (`owner` e validado direto nos validators de create/update.)

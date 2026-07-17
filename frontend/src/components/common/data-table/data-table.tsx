@@ -17,6 +17,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import React from 'react';
 
 import { DataTableDraggableHeader } from './data-table-draggable-header';
+import { DataTableMobileCards } from './data-table-mobile-cards';
 import { DataTableResizeHandle } from './data-table-resize-handle';
 
 import {
@@ -30,7 +31,7 @@ import {
 import { useTableKeyboardNavigation } from '@/hooks/use-table-keyboard-navigation';
 import { cn } from '@/lib/utils';
 
-interface DataTableProps<TData> {
+type DataTableProps<TData> = {
   table: TanstackTable<TData>;
   stickyHeader?: boolean;
   onRowClick?: (row: TData) => void;
@@ -38,7 +39,7 @@ interface DataTableProps<TData> {
   enableVirtualization?: boolean;
   enableKeyboardNavigation?: boolean;
   enableColumnDragging?: boolean;
-}
+};
 
 export type InteractiveDataTableProps<TData> = Omit<
   DataTableProps<TData>,
@@ -69,9 +70,8 @@ export function DataTable<TData>({
 }: DataTableProps<TData>): React.JSX.Element {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const columnOrder = table.getState().columnOrder;
-  const columnIds = columnOrder.length
-    ? columnOrder
-    : table.getVisibleFlatColumns().map((c) => c.id);
+  let columnIds = table.getVisibleFlatColumns().map((c) => c.id);
+  if (columnOrder.length) columnIds = columnOrder;
 
   const { containerProps, isCellFocused } = useTableKeyboardNavigation({
     table,
@@ -98,17 +98,16 @@ export function DataTable<TData>({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const currentOrder = columnOrder.length
-      ? [...columnOrder]
-      : table.getVisibleFlatColumns().map((c) => c.id);
+    let currentOrder = table.getVisibleFlatColumns().map((c) => c.id);
+    if (columnOrder.length) currentOrder = [...columnOrder];
 
-    const oldIndex = currentOrder.indexOf(active.id as string);
-    const newIndex = currentOrder.indexOf(over.id as string);
+    const oldIndex = currentOrder.indexOf(String(active.id));
+    const newIndex = currentOrder.indexOf(String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) return;
 
     currentOrder.splice(oldIndex, 1);
-    currentOrder.splice(newIndex, 0, active.id as string);
+    currentOrder.splice(newIndex, 0, String(active.id));
     table.setColumnOrder(currentOrder);
   }
 
@@ -132,7 +131,7 @@ export function DataTable<TData>({
       data-test-id="data-table"
       ref={scrollContainerRef}
       className={cn(
-        'relative w-full overflow-x-auto',
+        'relative hidden w-full overflow-x-auto sm:block',
         enableVirtualization && 'overflow-y-auto',
       )}
       {...containerProps}
@@ -334,22 +333,40 @@ export function DataTable<TData>({
     </div>
   );
 
+  const mobileCards = (
+    <div className="sm:hidden">
+      <DataTableMobileCards
+        table={table}
+        onRowClick={onRowClick}
+        emptyMessage={emptyMessage}
+      />
+    </div>
+  );
+
   if (enableColumnDragging) {
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={columnIds}
-          strategy={horizontalListSortingStrategy}
+      <>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          {tableContent}
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
+          >
+            {tableContent}
+          </SortableContext>
+        </DndContext>
+        {mobileCards}
+      </>
     );
   }
 
-  return tableContent;
+  return (
+    <>
+      {tableContent}
+      {mobileCards}
+    </>
+  );
 }

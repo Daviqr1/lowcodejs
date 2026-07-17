@@ -1,16 +1,26 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 
 import UserGroupPaginatedUseCase from './paginated.use-case';
 
 let userGroupInMemoryRepository: UserGroupInMemoryRepository;
+let userInMemoryRepository: UserInMemoryRepository;
+let groupResolver: GroupResolverService;
 let sut: UserGroupPaginatedUseCase;
 
 describe('UserGroup Paginated Use Case', () => {
   beforeEach(() => {
     userGroupInMemoryRepository = new UserGroupInMemoryRepository();
-    sut = new UserGroupPaginatedUseCase(userGroupInMemoryRepository);
+    userInMemoryRepository = new UserInMemoryRepository();
+    groupResolver = new GroupResolverService(userGroupInMemoryRepository);
+    sut = new UserGroupPaginatedUseCase(
+      userGroupInMemoryRepository,
+      userInMemoryRepository,
+      groupResolver,
+    );
   });
 
   it('deve retornar lista vazia quando nao houver grupos', async () => {

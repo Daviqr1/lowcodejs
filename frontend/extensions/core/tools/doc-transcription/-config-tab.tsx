@@ -1,5 +1,6 @@
 import { ChevronDownIcon, EditIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
 import { DocumentTypeForm } from './-document-type-form';
 
@@ -14,9 +15,12 @@ import {
 } from '@/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -25,16 +29,18 @@ import { Spinner } from '@/components/ui/spinner';
 import type { IDocumentType } from '@/hooks/tanstack-query/use-doc-transcription-config';
 import { useDocTranscriptionConfig } from '@/hooks/tanstack-query/use-doc-transcription-config';
 import { useDocTranscriptionConfigUpdate } from '@/hooks/tanstack-query/use-doc-transcription-config-update';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
-import { toastSuccess } from '@/lib/toast';
+import type { Merge } from '@/lib/interfaces';
+import { cn } from '@/lib/utils';
 
-interface OpenAIModel {
+type OpenAIModel = {
   id: string;
   label: string;
   group: string;
   inputPer1M: string;
   outputPer1M: string;
-}
+};
 
 const OPENAI_MODELS: Array<OpenAIModel> = [
   // GPT-5.5
@@ -155,41 +161,44 @@ const OPENAI_MODELS: Array<OpenAIModel> = [
 const KNOWN_MODELS = OPENAI_MODELS.filter((m) => m.inputPer1M !== '$—');
 const GROUPS = Array.from(new Set(KNOWN_MODELS.map((m) => m.group)));
 
+type ModelPickerDialogProps = Merge<
+  Omit<React.ComponentProps<typeof DialogTrigger>, 'onSelect'>,
+  {
+    value: string;
+    onSelect: (id: string) => void;
+  }
+>;
+
 function ModelPickerDialog({
-  open,
-  onOpenChange,
+  ref,
   value,
   onSelect,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  value: string;
-  onSelect: (id: string) => void;
-}): React.JSX.Element {
+  ...rest
+}: ModelPickerDialogProps): React.JSX.Element {
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>Selecionar modelo OpenAI</DialogTitle>
+          <DialogDescription className="sr-only">
+            Escolha o modelo OpenAI usado na transcrição de documentos
+          </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto px-6 py-4 space-y-5">
           {/* Padrão */}
-          <button
+          <DialogClose
             type="button"
-            onClick={() => {
-              onSelect('');
-              onOpenChange(false);
-            }}
-            className={[
+            onClick={() => onSelect('')}
+            className={cn(
               'w-full text-left rounded-lg border px-4 py-3 transition-colors cursor-pointer',
-              !value
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border hover:bg-muted/50',
-            ].join(' ')}
+              !value && 'border-primary bg-primary/5 ring-1 ring-primary',
+              value && 'border-border hover:bg-muted/50',
+            )}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm">Padrão do servidor</span>
@@ -199,7 +208,7 @@ function ModelPickerDialog({
               Usa <span className="font-mono">OPENAI_MODEL</span> configurado na
               API
             </p>
-          </button>
+          </DialogClose>
 
           {/* Grupos */}
           {GROUPS.map((group) => (
@@ -209,19 +218,16 @@ function ModelPickerDialog({
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {KNOWN_MODELS.filter((m) => m.group === group).map((m) => (
-                  <button
+                  <DialogClose
                     key={m.id}
                     type="button"
-                    onClick={() => {
-                      onSelect(m.id);
-                      onOpenChange(false);
-                    }}
-                    className={[
+                    onClick={() => onSelect(m.id)}
+                    className={cn(
                       'text-left rounded-lg border px-3 py-2.5 transition-colors cursor-pointer',
-                      value === m.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-border hover:bg-muted/50',
-                    ].join(' ')}
+                      value === m.id &&
+                        'border-primary bg-primary/5 ring-1 ring-primary',
+                      value !== m.id && 'border-border hover:bg-muted/50',
+                    )}
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span className="font-medium text-sm leading-tight">
@@ -241,7 +247,7 @@ function ModelPickerDialog({
                         / 1M tokens
                       </span>
                     </div>
-                  </button>
+                  </DialogClose>
                 ))}
               </div>
             </div>
@@ -258,15 +264,20 @@ export function ConfigTab(): React.JSX.Element {
   const [apiUrl, setApiUrl] = React.useState(config.apiUrl ?? '');
   const [apiKey, setApiKey] = React.useState(config.apiKey ?? '');
   const [model, setModel] = React.useState(config.model ?? '');
-  const [modelPickerOpen, setModelPickerOpen] = React.useState(false);
-  const [formOpen, setFormOpen] = React.useState(false);
   const [editingType, setEditingType] = React.useState<IDocumentType | null>(
     null,
   );
+  const [formNonce, setFormNonce] = React.useState(0);
+  const formTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const formDialog = useDismissableDialog();
+
+  React.useEffect(() => {
+    if (formNonce > 0) formTriggerRef.current?.click();
+  }, [formNonce]);
 
   const update = useDocTranscriptionConfigUpdate({
     onSuccess() {
-      toastSuccess('Configuração salva');
+      toast.success('Configuração salva');
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao salvar configuração' });
@@ -274,21 +285,23 @@ export function ConfigTab(): React.JSX.Element {
   });
 
   function saveConnection(): void {
-    update.mutate({
-      apiUrl: apiUrl.trim() || null,
-      apiKey: apiKey.trim() || null,
-      model: model.trim() || null,
-    });
+    const payload: { apiUrl: string | null; apiKey?: string; model?: string } =
+      {
+        apiUrl: apiUrl.trim() || null,
+      };
+    if (apiKey.trim()) payload.apiKey = apiKey.trim();
+    if (model.trim()) payload.model = model.trim();
+    update.mutate(payload);
   }
 
   function openAddForm(): void {
     setEditingType(null);
-    setFormOpen(true);
+    setFormNonce((value) => value + 1);
   }
 
   function openEditForm(docType: IDocumentType): void {
     setEditingType(docType);
-    setFormOpen(true);
+    setFormNonce((value) => value + 1);
   }
 
   function handleSaveDocType(docType: IDocumentType): void {
@@ -297,7 +310,10 @@ export function ConfigTab(): React.JSX.Element {
 
     let updated: Array<IDocumentType>;
     if (exists) {
-      updated = current.map((dt) => (dt.id === docType.id ? docType : dt));
+      updated = current.map((dt) => {
+        if (dt.id === docType.id) return docType;
+        return dt;
+      });
     } else {
       updated = [...current, docType];
     }
@@ -306,8 +322,8 @@ export function ConfigTab(): React.JSX.Element {
       { documentTypes: updated },
       {
         onSuccess() {
-          setFormOpen(false);
-          toastSuccess('Tipo de documento salvo');
+          formDialog.close();
+          toast.success('Tipo de documento salvo');
         },
       },
     );
@@ -319,7 +335,7 @@ export function ConfigTab(): React.JSX.Element {
       { documentTypes: updated },
       {
         onSuccess() {
-          toastSuccess('Tipo de documento removido');
+          toast.success('Tipo de documento removido');
         },
       },
     );
@@ -358,29 +374,32 @@ export function ConfigTab(): React.JSX.Element {
 
           <Field>
             <FieldLabel>Modelo OpenAI</FieldLabel>
-            <button
-              type="button"
-              onClick={() => setModelPickerOpen(true)}
-              className="w-full flex items-center justify-between rounded-md border bg-background px-3 h-9 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+            <ModelPickerDialog
+              asChild
+              value={model}
+              onSelect={setModel}
             >
-              <span className={model ? 'font-mono' : 'text-muted-foreground'}>
-                {model
-                  ? (KNOWN_MODELS.find((m) => m.id === model)?.label ?? model)
-                  : 'Padrão do servidor'}
-              </span>
-              <ChevronDownIcon className="size-4 text-muted-foreground shrink-0" />
-            </button>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between rounded-md border bg-background px-3 h-9 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <span
+                  className={cn(
+                    model && 'font-mono',
+                    !model && 'text-muted-foreground',
+                  )}
+                >
+                  {model &&
+                    (KNOWN_MODELS.find((m) => m.id === model)?.label ?? model)}
+                  {!model && 'Padrão do servidor'}
+                </span>
+                <ChevronDownIcon className="size-4 text-muted-foreground shrink-0" />
+              </button>
+            </ModelPickerDialog>
             {model && (
               <p className="text-xs text-muted-foreground font-mono">{model}</p>
             )}
           </Field>
-
-          <ModelPickerDialog
-            open={modelPickerOpen}
-            onOpenChange={setModelPickerOpen}
-            value={model}
-            onSelect={setModel}
-          />
 
           <div className="flex justify-end pt-2">
             <Button
@@ -419,14 +438,15 @@ export function ConfigTab(): React.JSX.Element {
           </div>
         </CardHeader>
         <CardContent>
-          {config.documentTypes.length === 0 ? (
+          {config.documentTypes.length === 0 && (
             <Empty className="py-6">
               <EmptyTitle>Nenhum tipo configurado</EmptyTitle>
               <EmptyDescription>
                 Adicione ao menos um tipo de documento para usar a transcrição.
               </EmptyDescription>
             </Empty>
-          ) : (
+          )}
+          {config.documentTypes.length > 0 && (
             <div className="space-y-3">
               {config.documentTypes.map((dt) => (
                 <div
@@ -447,7 +467,7 @@ export function ConfigTab(): React.JSX.Element {
                         className="text-xs"
                       >
                         {dt.responseFields.length} campo
-                        {dt.responseFields.length !== 1 ? 's' : ''}
+                        {dt.responseFields.length !== 1 && 's'}
                       </Badge>
                     </div>
                     {dt.description && (
@@ -485,11 +505,12 @@ export function ConfigTab(): React.JSX.Element {
       </Card>
 
       <DocumentTypeForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
+        key={formNonce}
+        ref={formTriggerRef}
         initial={editingType}
         onSave={handleSaveDocType}
         isSaving={update.status === 'pending'}
+        closeRef={formDialog.closeRef}
       />
     </div>
   );

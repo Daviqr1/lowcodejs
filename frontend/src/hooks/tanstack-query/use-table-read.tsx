@@ -13,14 +13,14 @@ export function useReadTable(payload: {
   return useQuery(tableDetailOptions(payload.slug));
 }
 
-interface PaginatedTablesResponse {
+type PaginatedTablesResponse = {
   data: Array<ITable>;
   meta: {
     page: number;
     perPage: number;
     total: number;
   };
-}
+};
 
 export function useReadTables(payload?: {
   page?: number;

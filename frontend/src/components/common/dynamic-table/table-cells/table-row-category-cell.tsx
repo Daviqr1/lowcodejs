@@ -3,17 +3,23 @@ import { TableRowBadgeList } from './table-row-badge-list';
 import type { IField, IRow } from '@/lib/interfaces';
 import { getCategoryItem } from '@/lib/table';
 
-interface TableRowCategoryCellProps {
+type TableRowCategoryCellProps = {
   row: IRow;
   field: IField;
-}
+};
 
 export function TableRowCategoryCell({
   field,
   row,
 }: TableRowCategoryCellProps): React.JSX.Element {
-  const values = Array.from<string>(row[field.slug] ?? []);
-  const items = values.map((value) => getCategoryItem(field.category, value));
+  const raw = row[field.slug];
+  let values: Array<string> = [];
+  if (Array.isArray(raw)) {
+    values = raw.filter((value): value is string => typeof value === 'string');
+  }
+  const items = values.map((value) =>
+    getCategoryItem(field.category ?? [], value),
+  );
 
   return (
     <TableRowBadgeList

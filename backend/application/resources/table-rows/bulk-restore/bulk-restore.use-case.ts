@@ -1,8 +1,8 @@
-/* eslint-disable no-unused-vars */
 import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -11,6 +11,15 @@ import type { BulkRestorePayload } from './bulk-restore.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 
+type Payload = Merge<
+  BulkRestorePayload,
+  {
+    __actorUserId?: string;
+    // Convidado contributor: só restaura os próprios registros.
+    __ownOnly?: boolean;
+  }
+>;
+
 @Service()
 export default class BulkRestoreUseCase {
   constructor(
@@ -18,7 +27,7 @@ export default class BulkRestoreUseCase {
     private readonly rowRepository: RowContractRepository,
   ) {}
 
-  async execute(payload: BulkRestorePayload): Promise<Response> {
+  async execute(payload: Payload): Promise<Response> {
     try {
       const table = await this.tableRepository.findBySlug(payload.slug);
 
@@ -28,9 +37,13 @@ export default class BulkRestoreUseCase {
         );
       }
 
+      let creatorId: string | undefined = undefined;
+      if (payload.__ownOnly) creatorId = payload.__actorUserId;
+
       const modified = await this.rowRepository.bulkRestore({
         table,
         ids: payload.ids,
+        ...(creatorId && { creatorId }),
       });
 
       return right({ modified });

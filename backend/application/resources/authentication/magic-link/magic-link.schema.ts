@@ -4,16 +4,18 @@ export const MagicLinkSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Autenticação via magic link',
   description:
-    'Autentica o usuário via magic link e redireciona para o dashboard com os cookies de autenticação configurados',
+    'Autentica o usuário via código (magic link) na query string. Em caso de sucesso, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e redireciona (302) para o dashboard. Rota pública',
   querystring: {
     type: 'object',
     required: ['code'],
     properties: {
       code: {
         type: 'string',
+        minLength: 1,
         description: 'Código de autenticação do magic link',
         errorMessage: {
           type: 'O código deve ser um texto',
+          minLength: 'O código é obrigatório',
         },
       },
     },
@@ -27,18 +29,29 @@ export const MagicLinkSchema: FastifySchema = {
   },
   response: {
     302: {
-      description: 'Autenticação bem-sucedida - redireciona para o dashboard',
-      type: 'object',
-      properties: {},
+      description:
+        'Autenticação bem-sucedida - define os cookies httpOnly e redireciona para o dashboard',
+      type: 'null',
     },
-    404: {
-      description: 'Não encontrado - Token ou usuário não encontrado',
+    400: {
+      description: 'Requisição inválida - Falha na validação',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Token de validação não encontrado', 'Usuário não encontrado'],
+        message: { type: 'string' },
+        code: { type: 'number', enum: [400] },
+        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
         },
+      },
+    },
+    404: {
+      description:
+        'Não encontrado - Token de validação ou usuário não encontrado',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: {
           type: 'string',
@@ -49,27 +62,12 @@ export const MagicLinkSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Token de validação não encontrado',
-          code: 404,
-          cause: 'VALIDATION_TOKEN_NOT_FOUND',
-        },
-        {
-          message: 'Usuário não encontrado',
-          code: 404,
-          cause: 'USER_NOT_FOUND',
-        },
-      ],
     },
     409: {
-      description: 'Conflito - Token já utilizado',
+      description: 'Conflito - Token de validação já utilizado',
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          enum: ['Token de validação já foi utilizado'],
-        },
+        message: { type: 'string' },
         code: { type: 'number', enum: [409] },
         cause: { type: 'string', enum: ['VALIDATION_TOKEN_ALREADY_USED'] },
         errors: {
@@ -77,19 +75,12 @@ export const MagicLinkSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Token de validação já foi utilizado',
-          code: 409,
-          cause: 'VALIDATION_TOKEN_ALREADY_USED',
-        },
-      ],
     },
     410: {
-      description: 'Expirado - Token expirado',
+      description: 'Expirado - Token de validação expirado',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Token de validação expirado'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [410] },
         cause: { type: 'string', enum: ['VALIDATION_TOKEN_EXPIRED'] },
         errors: {
@@ -97,19 +88,12 @@ export const MagicLinkSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Token de validação expirado',
-          code: 410,
-          cause: 'VALIDATION_TOKEN_EXPIRED',
-        },
-      ],
     },
     500: {
       description: 'Erro interno do servidor',
       type: 'object',
       properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
+        message: { type: 'string' },
         code: { type: 'number', enum: [500] },
         cause: { type: 'string', enum: ['MAGIC_LINK_ERROR'] },
         errors: {
@@ -117,13 +101,6 @@ export const MagicLinkSchema: FastifySchema = {
           additionalProperties: { type: 'string' },
         },
       },
-      examples: [
-        {
-          message: 'Erro interno do servidor',
-          code: 500,
-          cause: 'MAGIC_LINK_ERROR',
-        },
-      ],
     },
   },
 };

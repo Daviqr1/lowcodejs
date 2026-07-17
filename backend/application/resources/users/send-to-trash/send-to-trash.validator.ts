@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import type { Merge } from '@application/core/entity.core';
+
 export const UserSendToTrashParamValidator = z.object({
   _id: z
     .string({ message: 'O ID é obrigatório' })
@@ -7,9 +9,9 @@ export const UserSendToTrashParamValidator = z.object({
     .min(1, 'O ID é obrigatório'),
 });
 
-export type UserSendToTrashPayload = z.infer<
-  typeof UserSendToTrashParamValidator
-> & {
-  actorId: string;
-  actorRole: string;
-};
+export type UserSendToTrashPayload = Merge<
+  z.infer<typeof UserSendToTrashParamValidator>,
+  {
+    actorId: string;
+  }
+>;

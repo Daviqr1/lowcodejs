@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupStorageSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Configurar driver de armazenamento no setup wizard',
   description:
     'Define o driver de armazenamento (local ou S3) e credenciais. Etapa 3 do setup wizard.',
@@ -68,7 +68,7 @@ export const SetupStorageSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -81,7 +81,7 @@ export const SetupStorageSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

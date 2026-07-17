@@ -6,7 +6,7 @@ import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { tableListOptions } from '@/hooks/tanstack-query/_query-options';
 import type { ISetting } from '@/lib/interfaces';
 
-const defaultSearch = { page: 1, perPage: 50 };
+const defaultSearch = { page: 1 };
 
 export const Route = createFileRoute('/_private/tables/')({
   beforeLoad: async ({ context, location }) => {
@@ -15,7 +15,6 @@ export const Route = createFileRoute('/_private/tables/')({
       location.searchStr.includes('order-name') ||
       location.searchStr.includes('order-link') ||
       location.searchStr.includes('order-created-at') ||
-      location.searchStr.includes('order-visibility') ||
       location.searchStr.includes('order-owner');
 
     let customPerPage: number | undefined;
@@ -34,8 +33,8 @@ export const Route = createFileRoute('/_private/tables/')({
         to: '/tables',
         search: (prev) => ({
           ...prev,
-          ...(customPerPage !== undefined ? { perPage: customPerPage } : {}),
-          ...(!hasExplicitSort ? { 'order-created-at': 'desc' } : {}),
+          ...(customPerPage !== undefined && { perPage: customPerPage }),
+          ...(!hasExplicitSort && { 'order-created-at': 'desc' }),
         }),
         replace: true,
       });
@@ -61,7 +60,7 @@ export const Route = createFileRoute('/_private/tables/')({
   validateSearch: z.object({
     search: z.string().optional(),
     page: z.coerce.number().default(1),
-    perPage: z.coerce.number().default(50),
+    perPage: z.coerce.number().optional(),
     name: z.string().optional(),
     trashed: z
       .preprocess(
@@ -72,12 +71,10 @@ export const Route = createFileRoute('/_private/tables/')({
         z.enum(['true', 'false']).transform((v) => v === 'true'),
       )
       .optional(),
-    visibility: z.string().optional(),
     owner: z.string().optional(),
     'order-name': z.enum(['asc', 'desc']).optional(),
     'order-link': z.enum(['asc', 'desc']).optional(),
     'order-created-at': z.enum(['asc', 'desc']).optional(),
-    'order-visibility': z.enum(['asc', 'desc']).optional(),
     'order-owner': z.enum(['asc', 'desc']).optional(),
   }),
   search: {
@@ -89,12 +86,10 @@ export const Route = createFileRoute('/_private/tables/')({
     search: search.search,
     name: search.name,
     trashed: search.trashed,
-    visibility: search.visibility,
     owner: search.owner,
     'order-name': search['order-name'],
     'order-link': search['order-link'],
     'order-created-at': search['order-created-at'],
-    'order-visibility': search['order-visibility'],
     'order-owner': search['order-owner'],
   }),
   loader: ({ context, deps }) => {

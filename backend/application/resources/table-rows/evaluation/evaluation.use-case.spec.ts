@@ -1,21 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  E_TABLE_COLLABORATION,
-  E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE } from '@application/core/entity.core';
 import EvaluationInMemoryRepository from '@application/repositories/evaluation/evaluation-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import InMemoryRowContextService from '@application/services/row-context/in-memory-row-context.service';
+import InMemoryRowContextBuilder from '@application/services/table/in-memory-row-context-builder.service';
 
 import TableRowEvaluationUseCase from './evaluation.use-case';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let evaluationInMemoryRepository: EvaluationInMemoryRepository;
 let rowInMemoryRepository: RowInMemoryRepository;
-let rowContextService: InMemoryRowContextService;
+let rowContextBuilder: InMemoryRowContextBuilder;
 let sut: TableRowEvaluationUseCase;
 
 describe('Table Row Evaluation Use Case', () => {
@@ -23,13 +19,13 @@ describe('Table Row Evaluation Use Case', () => {
     tableInMemoryRepository = new TableInMemoryRepository();
     evaluationInMemoryRepository = new EvaluationInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
-    rowContextService = new InMemoryRowContextService();
+    rowContextBuilder = new InMemoryRowContextBuilder();
 
     sut = new TableRowEvaluationUseCase(
       tableInMemoryRepository,
       evaluationInMemoryRepository,
       rowInMemoryRepository,
-      rowContextService,
+      rowContextBuilder,
     );
     vi.clearAllMocks();
   });
@@ -41,10 +37,7 @@ describe('Table Row Evaluation Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });
@@ -72,10 +65,7 @@ describe('Table Row Evaluation Use Case', () => {
       _schema: {},
       fields: [],
       owner: 'owner-id',
-      administrators: [],
       style: E_TABLE_STYLE.LIST,
-      visibility: E_TABLE_VISIBILITY.RESTRICTED,
-      collaboration: E_TABLE_COLLABORATION.RESTRICTED,
       fieldOrderList: [],
       fieldOrderForm: [],
     });

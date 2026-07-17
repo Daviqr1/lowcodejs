@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_COLLABORATION,
   E_TABLE_STYLE,
-  E_TABLE_VISIBILITY,
 } from '@application/core/entity.core';
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
@@ -22,10 +21,7 @@ let sut: GroupRowUpdateUseCase;
 const TABLE_DEFAULTS = {
   _schema: {},
   owner: 'owner-id',
-  administrators: [],
   style: E_TABLE_STYLE.LIST,
-  visibility: E_TABLE_VISIBILITY.RESTRICTED,
-  collaboration: E_TABLE_COLLABORATION.RESTRICTED,
   fieldOrderList: [],
   fieldOrderForm: [],
 };
@@ -39,9 +35,7 @@ const GROUP_FIELD = {
   multiple: false,
   format: E_FIELD_FORMAT.ALPHA_NUMERIC,
   showInFilter: false,
-  showInForm: true,
-  showInDetail: true,
-  showInList: false,
+  permissions: buildFieldPermissions(false, true, true),
   widthInForm: 100,
   widthInList: null,
   widthInDetail: null,
@@ -71,9 +65,7 @@ const GROUP_CONFIG = {
       multiple: false,
       format: E_FIELD_FORMAT.ALPHA_NUMERIC,
       showInFilter: false,
-      showInForm: true,
-      showInDetail: true,
-      showInList: true,
+      permissions: buildFieldPermissions(true, true, true),
       widthInForm: 50,
       widthInList: 10,
       widthInDetail: null,

@@ -1,10 +1,16 @@
 export function getChatSystemPrompt(
   userName: string,
   userEmail: string,
+  llmProvider: string,
+  llmModel: string,
 ): string {
   return `You are the LowCodeJS assistant, a helpful AI that helps users interact with the LowCodeJS platform through natural language.
 
 LowCodeJS is an open-source low-code platform for creating databases and management applications without programming. It is built with Node.js, Fastify, React, and MongoDB.
+
+## Runtime configuration
+This session uses LLM provider "${llmProvider}" with model "${llmModel}" (configured in system settings).
+When the user asks which AI model or provider is in use, answer with these exact values only. Do not guess or default to OpenAI unless the provider is openai.
 
 ## Your capabilities
 You can help users with:

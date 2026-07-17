@@ -1,4 +1,8 @@
 export const queryKeys = {
+  authentication: {
+    all: ['authentication'] as const,
+    accounts: () => [...queryKeys.authentication.all, 'accounts'] as const,
+  },
   tables: {
     all: ['tables'] as const,
     lists: () => [...queryKeys.tables.all, 'list'] as const,
@@ -19,18 +23,60 @@ export const queryKeys = {
       [...queryKeys.rows.all(tableSlug), 'detail'] as const,
     detail: (tableSlug: string, rowId: string) =>
       [...queryKeys.rows.details(tableSlug), rowId] as const,
+    bySlug: (tableSlug: string, rowSlug: string) =>
+      [...queryKeys.rows.all(tableSlug), 'by-slug', rowSlug] as const,
   },
   relationships: {
     all: ['relationships'] as const,
-    rows: (fieldSlug: string, tableSlug: string, search?: string) =>
-      [...queryKeys.relationships.all, fieldSlug, tableSlug, search] as const,
-    infinite: (fieldSlug: string, tableSlug: string, search?: string) =>
+    rows: (
+      fieldSlug: string,
+      tableSlug: string,
+      search?: string,
+      excludeSelfId?: string,
+    ) =>
+      [
+        ...queryKeys.relationships.all,
+        fieldSlug,
+        tableSlug,
+        search,
+        excludeSelfId,
+      ] as const,
+    infinite: (
+      fieldSlug: string,
+      tableSlug: string,
+      search?: string,
+      excludeLinked?: boolean,
+      excludeForRecordId?: string,
+      excludeSelfId?: string,
+    ) =>
       [
         ...queryKeys.relationships.all,
         'infinite',
         fieldSlug,
         tableSlug,
         search,
+        excludeLinked,
+        excludeForRecordId,
+        excludeSelfId,
+      ] as const,
+    links: (relationshipId: string, side: string, recordId: string) =>
+      [
+        ...queryKeys.relationships.all,
+        'links',
+        relationshipId,
+        side,
+        recordId,
+      ] as const,
+    linksPaginated: (
+      relationshipId: string,
+      side: string,
+      recordId: string,
+      params: Record<string, unknown>,
+    ) =>
+      [
+        ...queryKeys.relationships.links(relationshipId, side, recordId),
+        'paginated',
+        params,
       ] as const,
   },
   fields: {

@@ -11,13 +11,13 @@ import { E_TABLE_STYLE, TABLE_STYLE_OPTIONS } from '@/lib/constant';
 import type { ValueOf } from '@/lib/interfaces';
 import { cn } from '@/lib/utils';
 
-interface TableStyleSelectFieldProps {
+type TableStyleSelectFieldProps = {
   label: string;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
   allowedStyles?: Array<ValueOf<typeof E_TABLE_STYLE>>;
-}
+};
 
 export function TableStyleSelectField({
   label,

@@ -6,9 +6,9 @@ import { extensionListOptions } from './_query-options';
 import type { IExtension } from '@/lib/interfaces';
 import { useAuthStore } from '@/stores/authentication';
 
-interface UseExtensionsReadListOptions {
+type UseExtensionsReadListOptions = {
   enabled?: boolean;
-}
+};
 
 export function useExtensionsReadList(
   options?: UseExtensionsReadListOptions,

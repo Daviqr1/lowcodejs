@@ -15,6 +15,7 @@ teclado.
 | `data-table-column-toggle.tsx`    | Controle de visibilidade de colunas via dropdown com checkboxes                                                                                                                                    |
 | `data-table-draggable-header.tsx` | Wrapper para header com suporte a drag-and-drop via dnd-kit (useSortable)                                                                                                                          |
 | `data-table-resize-handle.tsx`    | Handle de redimensionamento de colunas com feedback visual (linha azul durante resize)                                                                                                             |
+| `data-table-skeleton.tsx`         | Skeleton de carregamento da tabela (linhas/colunas placeholder animadas)                                                                                                                           |
 
 ## Dependencias principais
 

@@ -55,7 +55,9 @@ let cachedWorker: Worker | null = null;
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    let buf: Buffer = chunk;
+    if (typeof chunk === 'string') buf = Buffer.from(chunk);
+    chunks.push(buf);
   }
   return Buffer.concat(chunks);
 }
@@ -67,7 +69,7 @@ function sleep(ms: number): Promise<void> {
 async function processInBatches<T>(
   items: T[],
   concurrency: number,
-  // eslint-disable-next-line no-unused-vars
+
   handler: (item: T, index: number) => Promise<void>,
 ): Promise<void> {
   let index = 0;
@@ -80,7 +82,7 @@ async function processInBatches<T>(
         while (true) {
           const current = index++;
           if (current >= items.length) return;
-          await handler(items[current] as T, current);
+          await handler(items[current], current);
         }
       })(),
     );
@@ -163,7 +165,8 @@ async function migrateOneFile(
       emitProgress(namespace, jobId, doc.filename, ctx);
       return;
     } catch (err) {
-      lastError = err as Error;
+      lastError = new Error(String(err));
+      if (err instanceof Error) lastError = err;
       if (attempts < RETRY_LIMIT) {
         await sleep(1000 * attempts);
       }
@@ -197,10 +200,10 @@ function emitProgress(
 ): void {
   const elapsedMs = Date.now() - ctx.startedAt;
   const remaining = ctx.total - ctx.processed;
-  const eta_seconds =
-    ctx.processed > 0
-      ? Math.round(((elapsedMs / ctx.processed) * remaining) / 1000)
-      : null;
+  let eta_seconds: number | null = null;
+  if (ctx.processed > 0) {
+    eta_seconds = Math.round(((elapsedMs / ctx.processed) * remaining) / 1000);
+  }
 
   const evt: StorageMigrationProgressEvent = {
     job_id: jobId,
@@ -239,9 +242,11 @@ async function handleMigrate(
       jobId,
       ctx,
     );
-    await job.updateProgress(
-      ctx.total === 0 ? 100 : Math.round((ctx.processed / ctx.total) * 100),
-    );
+    let progress = 100;
+    if (ctx.total !== 0) {
+      progress = Math.round((ctx.processed / ctx.total) * 100);
+    }
+    await job.updateProgress(progress);
   });
 
   const completedEvt: StorageMigrationCompletedEvent = {
@@ -281,15 +286,19 @@ async function handleCleanup(
     try {
       await impl.delete(doc.filename);
     } catch (err) {
+      let msg = String(err);
+      if (err instanceof Error) msg = err.message;
       console.warn(
-        `[StorageMigration Worker] cleanup falhou ${doc.filename}: ${(err as Error).message}`,
+        `[StorageMigration Worker] cleanup falhou ${doc.filename}: ${msg}`,
       );
     }
     ctx.processed++;
     emitProgress(deps.namespace, jobId, doc.filename, ctx);
-    await job.updateProgress(
-      ctx.total === 0 ? 100 : Math.round((ctx.processed / ctx.total) * 100),
-    );
+    let progress = 100;
+    if (ctx.total !== 0) {
+      progress = Math.round((ctx.processed / ctx.total) * 100);
+    }
+    await job.updateProgress(progress);
   }
 
   const completedEvt: StorageMigrationCompletedEvent = {
@@ -302,6 +311,15 @@ async function handleCleanup(
   deps.namespace.emit(STORAGE_MIGRATION_EVENT.COMPLETED, completedEvt);
 }
 
+// BullMQ entrega `Job` genérico; `job.name` discrimina o payload. Type-guards
+// estreitam sem asserção.
+function isMigrateJob(job: Job): job is Job<MigrateJobPayload> {
+  return job.name === STORAGE_MIGRATION_JOB.MIGRATE;
+}
+function isCleanupJob(job: Job): job is Job<CleanupJobPayload> {
+  return job.name === STORAGE_MIGRATION_JOB.CLEANUP;
+}
+
 export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
   if (cachedWorker) return cachedWorker;
 
@@ -309,10 +327,10 @@ export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
     STORAGE_MIGRATION_QUEUE_NAME,
     async (job: Job) => {
       try {
-        if (job.name === STORAGE_MIGRATION_JOB.MIGRATE) {
-          await handleMigrate(job as Job<MigrateJobPayload>, deps);
-        } else if (job.name === STORAGE_MIGRATION_JOB.CLEANUP) {
-          await handleCleanup(job as Job<CleanupJobPayload>, deps);
+        if (isMigrateJob(job)) {
+          await handleMigrate(job, deps);
+        } else if (isCleanupJob(job)) {
+          await handleCleanup(job, deps);
         } else {
           console.warn(
             `[StorageMigration Worker] Job desconhecido: ${job.name}`,
@@ -320,9 +338,11 @@ export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
         }
       } catch (err) {
         console.error(`[StorageMigration Worker] Erro no job ${job.id}:`, err);
+        let message = String(err);
+        if (err instanceof Error) message = err.message;
         deps.namespace.emit(STORAGE_MIGRATION_EVENT.ERROR, {
           job_id: job.id ?? 'unknown',
-          message: (err as Error).message,
+          message,
         });
         throw err;
       }

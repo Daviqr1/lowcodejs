@@ -9,7 +9,7 @@ Exclui permanentemente um usuário que esteja na lixeira.
 ## Middleware
 
 1. `AuthenticationMiddleware({ optional: false })`
-2. `RoleMiddleware([E_ROLE.MASTER])`
+2. `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
 
 ## Regras
 
@@ -22,7 +22,7 @@ Exclui permanentemente um usuário que esteja na lixeira.
 | Code | Cause | Quando |
 |------|-------|--------|
 | 401 | AUTHENTICATION_REQUIRED | Sem token |
-| 403 | FORBIDDEN | Não é MASTER |
+| 403 | FORBIDDEN | Sem capability MANAGE_USERS |
 | 404 | USER_NOT_FOUND | Usuário não encontrado |
 | 409 | CANNOT_DELETE_SELF | Auto-delete |
 | 409 | NOT_TRASHED | Usuário não está na lixeira |

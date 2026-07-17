@@ -16,7 +16,6 @@ import {
 })
 export default class TableFieldDeleteController {
   constructor(
-    // eslint-disable-next-line no-unused-vars
     private readonly useCase: TableFieldDeleteUseCase = getInstanceByToken(
       TableFieldDeleteUseCase,
     ),

@@ -5,10 +5,12 @@ import {
   EllipsisIcon,
   EyeIcon,
   LoaderCircleIcon,
+  PencilIcon,
   TrashIcon,
 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 
 import { BulkActionBar } from '@/components/common/bulk-action-bar';
 import {
@@ -27,6 +29,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -41,16 +44,22 @@ import { useGroupBulkDelete } from '@/hooks/tanstack-query/use-group-bulk-delete
 import { useGroupBulkRestore } from '@/hooks/tanstack-query/use-group-bulk-restore';
 import { useGroupBulkTrash } from '@/hooks/tanstack-query/use-group-bulk-trash';
 import { useGroupDelete } from '@/hooks/tanstack-query/use-group-delete';
+import { useGroupReadList } from '@/hooks/tanstack-query/use-group-read-list';
 import { useGroupRemoveFromTrash } from '@/hooks/tanstack-query/use-group-remove-from-trash';
 import { useGroupSendToTrash } from '@/hooks/tanstack-query/use-group-send-to-trash';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { E_ROLE, USER_GROUP_MAPPER } from '@/lib/constant';
 import { handleApiError } from '@/lib/handle-api-error';
-import type { IGroup } from '@/lib/interfaces';
-import { toastSuccess } from '@/lib/toast';
+import type { IGroup, Merge } from '@/lib/interfaces';
+import { isMaster } from '@/lib/permission';
 import { useAuthStore } from '@/stores/authentication';
 
 const ROUTE_ID = '/_private/groups/';
+
+// Alias com index de string: permite consultar o mapper (as const) por slug
+// dinamico sem assertion `keyof`.
+const GROUP_LABELS: Record<string, string> = USER_GROUP_MAPPER;
 
 const SYSTEM_GROUP_SLUGS = new Set<string>([
   E_ROLE.MASTER,
@@ -76,6 +85,7 @@ type ActionsCellProps = {
   onRemoveFromTrash: (group: IGroup) => void;
   onPermanentDelete: (group: IGroup) => void;
   onView: (group: IGroup) => void;
+  onEdit: (group: IGroup) => void;
 };
 
 function ActionsCell(props: ActionsCellProps): React.JSX.Element {
@@ -102,6 +112,16 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
             <EyeIcon className="size-4" />
             <span>Visualizar</span>
           </DropdownMenuItem>
+
+          {!props.group.trashed && (
+            <DropdownMenuItem
+              className="inline-flex space-x-1 w-full cursor-pointer"
+              onClick={() => props.onEdit(props.group)}
+            >
+              <PencilIcon className="size-4" />
+              <span>Editar</span>
+            </DropdownMenuItem>
+          )}
 
           {!props.group.trashed && !isSystemGroup && (
             <DropdownMenuItem
@@ -140,50 +160,64 @@ function ActionsCell(props: ActionsCellProps): React.JSX.Element {
   );
 }
 
-type ConfirmDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  testId?: string;
-};
+type ConfirmDialogProps = Merge<
+  React.ComponentProps<typeof DialogTrigger>,
+  {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    isPending: boolean;
+    onConfirm: (close: () => void) => void;
+    testId?: string;
+  }
+>;
 
-function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element {
+function ConfirmDialog({
+  ref,
+  title,
+  description,
+  confirmLabel,
+  isPending,
+  onConfirm,
+  testId,
+  ...rest
+}: ConfirmDialogProps): React.JSX.Element {
+  const { closeRef, close } = useDismissableDialog();
+
   return (
-    <Dialog
-      modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Dialog>
+      <DialogTrigger
+        {...rest}
+        ref={ref}
+      />
       <DialogContent
         className="py-4 px-6"
-        data-test-id={props.testId}
+        data-test-id={testId}
       >
         <DialogHeader>
-          <DialogTitle>{props.title}</DialogTitle>
-          <DialogDescription>{props.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="inline-flex w-full gap-2 justify-end pt-2">
           <DialogClose asChild>
             <Button
+              ref={closeRef}
               variant="outline"
-              disabled={props.isPending}
+              disabled={isPending}
             >
               Cancelar
             </Button>
           </DialogClose>
           <Button
             type="button"
-            disabled={props.isPending}
-            onClick={props.onConfirm}
+            disabled={isPending}
+            onClick={() => {
+              if (isPending) return;
+              onConfirm(close);
+            }}
           >
-            {props.isPending && (
-              <LoaderCircleIcon className="size-4 animate-spin" />
-            )}
-            {!props.isPending && <span>{props.confirmLabel}</span>}
+            {isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {!isPending && <span>{confirmLabel}</span>}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -203,6 +237,7 @@ function buildColumns(params: {
   onRemoveFromTrash: (group: IGroup) => void;
   onPermanentDelete: (group: IGroup) => void;
   onView: (group: IGroup) => void;
+  onEdit: (group: IGroup) => void;
 }): Array<ColumnDef<IGroup, unknown>> {
   const cols: Array<ColumnDef<IGroup, unknown>> = [];
 
@@ -253,13 +288,7 @@ function buildColumns(params: {
       ),
       cell: ({ row }): React.ReactElement => {
         const group = row.original;
-        return (
-          <>
-            {group.slug in USER_GROUP_MAPPER &&
-              USER_GROUP_MAPPER[group.slug as keyof typeof USER_GROUP_MAPPER]}
-            {!(group.slug in USER_GROUP_MAPPER) && group.name}
-          </>
-        );
+        return <>{GROUP_LABELS[group.slug] || group.name}</>;
       },
     },
     {
@@ -296,6 +325,7 @@ function buildColumns(params: {
           onRemoveFromTrash={params.onRemoveFromTrash}
           onPermanentDelete={params.onPermanentDelete}
           onView={params.onView}
+          onEdit={params.onEdit}
         />
       ),
     });
@@ -304,10 +334,10 @@ function buildColumns(params: {
   return cols;
 }
 
-interface Props {
+type Props = {
   data: Array<IGroup>;
   toolbarPortal: HTMLDivElement | null;
-}
+};
 
 export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
   const sidebar = useSidebar();
@@ -315,21 +345,65 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
   const auth = useAuthStore();
   const search = useSearch({ from: '/_private/groups/' });
 
-  const role = auth.user?.group?.slug;
-  const isMaster = role === E_ROLE.MASTER;
-  const canTrash = role === E_ROLE.MASTER;
+  // Hard-delete/trash de grupos é MASTER-only, resolvido pelo fecho de grupos.
+  const groups = useGroupReadList();
+  const master = isMaster(auth.user, groups.data ?? []);
+  const canTrash = master;
   const isTrashView = search.trashed === true;
 
-  const [singleTrashGroup, setSingleTrashGroup] = React.useState<IGroup | null>(
-    null,
+  const [singleTrashTarget, setSingleTrashTarget] = React.useState<{
+    group: IGroup;
+    nonce: number;
+  } | null>(null);
+  const [singleRestoreTarget, setSingleRestoreTarget] = React.useState<{
+    group: IGroup;
+    nonce: number;
+  } | null>(null);
+  const singleTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const singleRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkTrashTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkRestoreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleTrash() {
+      if (singleTrashTarget) singleTrashTriggerRef.current?.click();
+    },
+    [singleTrashTarget],
   );
-  const [singleRestoreGroup, setSingleRestoreGroup] =
-    React.useState<IGroup | null>(null);
-  const [singleDeleteGroup, setSingleDeleteGroup] =
-    React.useState<IGroup | null>(null);
-  const [bulkTrashOpen, setBulkTrashOpen] = React.useState(false);
-  const [bulkRestoreOpen, setBulkRestoreOpen] = React.useState(false);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+  React.useEffect(
+    function openSingleRestore() {
+      if (singleRestoreTarget) singleRestoreTriggerRef.current?.click();
+    },
+    [singleRestoreTarget],
+  );
+
+  const requestSingleTrash = React.useCallback((group: IGroup) => {
+    setSingleTrashTarget((previous) => ({
+      group,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+  }, []);
+  const requestSingleRestore = React.useCallback((group: IGroup) => {
+    setSingleRestoreTarget((previous) => ({
+      group,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+  }, []);
+
+  // hard delete singular (shared PermanentDelete): alvo dinâmico via ref + nonce.
+  const [singleDeleteTarget, setSingleDeleteTarget] = React.useState<{
+    group: IGroup;
+    nonce: number;
+  } | null>(null);
+  const singleDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bulkDeleteTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(
+    function openSingleDelete() {
+      if (singleDeleteTarget) singleDeleteTriggerRef.current?.click();
+    },
+    [singleDeleteTarget],
+  );
 
   const tableRef = React.useRef<Table<IGroup> | null>(null);
 
@@ -344,13 +418,23 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
     [sidebar, router],
   );
 
+  const navigateToEditGroup = React.useCallback(
+    (groupId: string) => {
+      sidebar.setOpen(false);
+      router.navigate({
+        to: '/groups/$groupId',
+        params: { groupId },
+        search: { mode: 'edit' },
+      });
+    },
+    [sidebar, router],
+  );
+
   const sendToTrash = useGroupSendToTrash({
     onSuccess() {
-      setSingleTrashGroup(null);
-      toastSuccess(
-        'Grupo enviado para lixeira!',
-        'O grupo foi movido para a lixeira',
-      );
+      toast.success('Grupo enviado para lixeira!', {
+        description: 'O grupo foi movido para a lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao enviar grupo para lixeira' });
@@ -359,8 +443,9 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const removeFromTrash = useGroupRemoveFromTrash({
     onSuccess() {
-      setSingleRestoreGroup(null);
-      toastSuccess('Grupo restaurado!', 'O grupo foi restaurado da lixeira');
+      toast.success('Grupo restaurado!', {
+        description: 'O grupo foi restaurado da lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao restaurar grupo' });
@@ -369,11 +454,9 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const groupDelete = useGroupDelete({
     onSuccess() {
-      setSingleDeleteGroup(null);
-      toastSuccess(
-        'Grupo excluído permanentemente!',
-        'O grupo foi excluído permanentemente',
-      );
+      toast.success('Grupo excluído permanentemente!', {
+        description: 'O grupo foi excluído permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -384,13 +467,14 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkTrash = useGroupBulkTrash({
     onSuccess(result) {
-      setBulkTrashOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 grupo enviado para lixeira!'
-          : result.modified.toString().concat(' grupos enviados para lixeira!');
-      toastSuccess(message, 'Os grupos foram movidos para a lixeira');
+      let message = result.modified
+        .toString()
+        .concat(' grupos enviados para lixeira!');
+      if (result.modified === 1) message = '1 grupo enviado para lixeira!';
+      toast.success(message, {
+        description: 'Os grupos foram movidos para a lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao enviar grupos para lixeira' });
@@ -399,13 +483,12 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkRestore = useGroupBulkRestore({
     onSuccess(result) {
-      setBulkRestoreOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.modified === 1
-          ? '1 grupo restaurado!'
-          : result.modified.toString().concat(' grupos restaurados!');
-      toastSuccess(message, 'Os grupos foram restaurados da lixeira');
+      let message = result.modified.toString().concat(' grupos restaurados!');
+      if (result.modified === 1) message = '1 grupo restaurado!';
+      toast.success(message, {
+        description: 'Os grupos foram restaurados da lixeira',
+      });
     },
     onError(error) {
       handleApiError(error, { context: 'Erro ao restaurar grupos' });
@@ -414,15 +497,14 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
 
   const bulkDelete = useGroupBulkDelete({
     onSuccess(result) {
-      setBulkDeleteOpen(false);
       tableRef.current?.resetRowSelection();
-      const message =
-        result.deleted === 1
-          ? '1 grupo excluído permanentemente!'
-          : result.deleted
-              .toString()
-              .concat(' grupos excluídos permanentemente!');
-      toastSuccess(message, 'Os grupos foram excluídos permanentemente');
+      let message = result.deleted
+        .toString()
+        .concat(' grupos excluídos permanentemente!');
+      if (result.deleted === 1) message = '1 grupo excluído permanentemente!';
+      toast.success(message, {
+        description: 'Os grupos foram excluídos permanentemente',
+      });
     },
     onError(error) {
       handleApiError(error, {
@@ -438,14 +520,25 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
     () =>
       buildColumns({
         canTrash,
-        isMaster,
+        isMaster: master,
         isPending: isAnySinglePending,
-        onSendToTrash: (group) => setSingleTrashGroup(group),
-        onRemoveFromTrash: (group) => setSingleRestoreGroup(group),
-        onPermanentDelete: (group) => setSingleDeleteGroup(group),
+        onSendToTrash: (group) => requestSingleTrash(group),
+        onRemoveFromTrash: (group) => requestSingleRestore(group),
+        onPermanentDelete: (group) =>
+          setSingleDeleteTarget((previous) => ({
+            group,
+            nonce: (previous?.nonce ?? 0) + 1,
+          })),
         onView: (group) => navigateToGroup(group._id),
+        onEdit: (group) => navigateToEditGroup(group._id),
       }),
-    [canTrash, isMaster, isAnySinglePending, navigateToGroup],
+    [
+      canTrash,
+      master,
+      isAnySinglePending,
+      navigateToGroup,
+      navigateToEditGroup,
+    ],
   );
 
   const leftPinning: Array<string> = [];
@@ -490,94 +583,103 @@ export function TableGroups({ data, toolbarPortal }: Props): React.JSX.Element {
         <BulkActionBar
           selectedCount={selectedCount}
           isTrashView={isTrashView}
-          canDelete={isMaster}
+          canDelete={master}
           onClear={() => table.resetRowSelection()}
-          onTrash={() => setBulkTrashOpen(true)}
-          onRestore={() => setBulkRestoreOpen(true)}
-          onDelete={() => setBulkDeleteOpen(true)}
+          onTrash={() => bulkTrashTriggerRef.current?.click()}
+          onRestore={() => bulkRestoreTriggerRef.current?.click()}
+          onDelete={() => bulkDeleteTriggerRef.current?.click()}
           isTrashing={bulkTrash.isPending}
           isRestoring={bulkRestore.isPending}
         />
       )}
 
-      <ConfirmDialog
-        open={singleTrashGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleTrashGroup(null);
-        }}
-        title="Enviar grupo para a lixeira"
-        description="Ao confirmar essa ação, o grupo será enviado para a lixeira."
-        confirmLabel="Enviar para lixeira"
-        isPending={sendToTrash.isPending}
-        onConfirm={() => {
-          if (!singleTrashGroup) return;
-          sendToTrash.mutate({ _id: singleTrashGroup._id });
-        }}
-        testId="trash-group-dialog"
-      />
+      {singleTrashTarget && (
+        <ConfirmDialog
+          key={singleTrashTarget.nonce}
+          ref={singleTrashTriggerRef}
+          title="Enviar grupo para a lixeira"
+          description="Ao confirmar essa ação, o grupo será enviado para a lixeira."
+          confirmLabel="Enviar para lixeira"
+          isPending={sendToTrash.isPending}
+          onConfirm={(close) => {
+            sendToTrash.mutateAsync(
+              { _id: singleTrashTarget.group._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="trash-group-dialog"
+        />
+      )}
+
+      {singleRestoreTarget && (
+        <ConfirmDialog
+          key={singleRestoreTarget.nonce}
+          ref={singleRestoreTriggerRef}
+          title="Restaurar grupo da lixeira"
+          description="Ao confirmar essa ação, o grupo será restaurado da lixeira."
+          confirmLabel="Restaurar"
+          isPending={removeFromTrash.isPending}
+          onConfirm={(close) => {
+            removeFromTrash.mutateAsync(
+              { _id: singleRestoreTarget.group._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="restore-group-dialog"
+        />
+      )}
+
+      {singleDeleteTarget && (
+        <PermanentDeleteConfirmDialog
+          key={singleDeleteTarget.nonce}
+          ref={singleDeleteTriggerRef}
+          title="Excluir grupo permanentemente"
+          description="Essa ação é irreversível. O grupo será excluído permanentemente e não poderá ser recuperado."
+          itemsCount={1}
+          isPending={groupDelete.isPending}
+          onConfirm={(close) => {
+            groupDelete.mutateAsync(
+              { _id: singleDeleteTarget.group._id },
+              { onSuccess: close },
+            );
+          }}
+          testId="delete-group-dialog"
+        />
+      )}
 
       <ConfirmDialog
-        open={singleRestoreGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleRestoreGroup(null);
-        }}
-        title="Restaurar grupo da lixeira"
-        description="Ao confirmar essa ação, o grupo será restaurado da lixeira."
-        confirmLabel="Restaurar"
-        isPending={removeFromTrash.isPending}
-        onConfirm={() => {
-          if (!singleRestoreGroup) return;
-          removeFromTrash.mutate({ _id: singleRestoreGroup._id });
-        }}
-        testId="restore-group-dialog"
-      />
-
-      <PermanentDeleteConfirmDialog
-        open={singleDeleteGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) setSingleDeleteGroup(null);
-        }}
-        title="Excluir grupo permanentemente"
-        description="Essa ação é irreversível. O grupo será excluído permanentemente e não poderá ser recuperado."
-        itemsCount={1}
-        isPending={groupDelete.isPending}
-        onConfirm={() => {
-          if (!singleDeleteGroup) return;
-          groupDelete.mutate({ _id: singleDeleteGroup._id });
-        }}
-        testId="delete-group-dialog"
-      />
-
-      <ConfirmDialog
-        open={bulkTrashOpen}
-        onOpenChange={setBulkTrashOpen}
+        ref={bulkTrashTriggerRef}
         title="Enviar grupos para a lixeira"
         description="Os grupos selecionados serão enviados para a lixeira."
         confirmLabel="Enviar para lixeira"
         isPending={bulkTrash.isPending}
-        onConfirm={() => bulkTrash.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkTrash.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-trash-groups-dialog"
       />
 
       <ConfirmDialog
-        open={bulkRestoreOpen}
-        onOpenChange={setBulkRestoreOpen}
+        ref={bulkRestoreTriggerRef}
         title="Restaurar grupos da lixeira"
         description="Os grupos selecionados serão restaurados da lixeira."
         confirmLabel="Restaurar"
         isPending={bulkRestore.isPending}
-        onConfirm={() => bulkRestore.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkRestore.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-restore-groups-dialog"
       />
 
       <PermanentDeleteConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
+        ref={bulkDeleteTriggerRef}
         title="Excluir grupos permanentemente"
         description="Essa ação é irreversível. Os grupos selecionados serão excluídos permanentemente e não poderão ser recuperados."
         itemsCount={selectedCount}
         isPending={bulkDelete.isPending}
-        onConfirm={() => bulkDelete.mutate({ ids: selectedIds })}
+        onConfirm={(close) => {
+          bulkDelete.mutateAsync({ ids: selectedIds }, { onSuccess: close });
+        }}
         testId="bulk-delete-groups-dialog"
       />
     </>

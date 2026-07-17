@@ -1,7 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 export const SetupUploadSubmitSchema: FastifySchema = {
-  tags: ['Setup'],
+  tags: ['Configuração Inicial'],
   summary: 'Configurar limites de upload no setup wizard',
   description:
     'Define tamanho máximo, extensões aceitas e máximo de arquivos por upload. Etapa 4 do setup wizard.',
@@ -62,7 +62,7 @@ export const SetupUploadSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -75,7 +75,7 @@ export const SetupUploadSubmitSchema: FastifySchema = {
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string' },
+        cause: { type: 'string', enum: ['FORBIDDEN'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

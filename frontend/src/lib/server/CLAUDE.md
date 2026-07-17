@@ -6,10 +6,11 @@ cliente como RPCs.
 
 ## Arquivos
 
-| Arquivo          | Descricao                                                          |
-| ---------------- | ------------------------------------------------------------------ |
-| `auth.ts`        | `serverSignIn` e `serverSignOut` para autenticacao via API backend |
-| `get-cookies.ts` | `getServerCookies` retorna os cookies da requisicao atual          |
+| Arquivo              | Descricao                                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `auth.ts`            | `serverSignIn` e `serverSignOut` para autenticacao via API backend                                                |
+| `get-cookies.ts`     | `getServerCookies` retorna os cookies da requisicao atual                                                         |
+| `refresh-session.ts` | `serverRefreshSession` — server function (POST) que renova o token/sessao no SSR repassando os cookies ao backend |
 
 ## serverSignIn
 

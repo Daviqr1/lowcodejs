@@ -1,28 +1,39 @@
 import type { FastifySchema } from 'fastify';
 
 export const UserSendToTrashSchema: FastifySchema = {
-  tags: ['Users'],
+  tags: ['Usuários'],
   summary: 'Enviar usuário para a lixeira (soft delete)',
+  description:
+    'Envia um usuário para a lixeira (soft delete). Bloqueia auto-envio e impede que um ADMINISTRATOR envie um usuário MASTER para a lixeira.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
     required: ['_id'],
     properties: {
-      _id: { type: 'string', minLength: 1 },
+      _id: {
+        type: 'string',
+        minLength: 1,
+        description: 'ID do usuário a ser enviado para a lixeira',
+      },
     },
   },
   response: {
-    200: { type: 'null' },
+    200: {
+      type: 'null',
+      description: 'Usuário enviado para a lixeira com sucesso',
+    },
     401: {
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
-        message: { type: 'string' },
+        message: { type: 'string', enum: ['Autenticação necessária'] },
         code: { type: 'number', enum: [401] },
         cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
         errors: { type: 'object', additionalProperties: { type: 'string' } },
       },
     },
     403: {
+      description: 'Acesso negado - Permissão insuficiente',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -35,6 +46,7 @@ export const UserSendToTrashSchema: FastifySchema = {
       },
     },
     404: {
+      description: 'Usuário não encontrado',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -44,6 +56,7 @@ export const UserSendToTrashSchema: FastifySchema = {
       },
     },
     409: {
+      description: 'Conflito - Operação não permitida no estado atual',
       type: 'object',
       properties: {
         message: { type: 'string' },
@@ -56,6 +69,7 @@ export const UserSendToTrashSchema: FastifySchema = {
       },
     },
     500: {
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
         message: { type: 'string' },

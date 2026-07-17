@@ -5,11 +5,11 @@ import React from 'react';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface DataTableBodyProps<TData> {
+type DataTableBodyProps<TData> = {
   table: TanstackTable<TData>;
   onRowClick?: (row: TData) => void;
   emptyMessage: string;
-}
+};
 
 function DataTableBodyInner<TData>({
   table,
@@ -91,6 +91,9 @@ function DataTableBodyInner<TData>({
   );
 }
 
+// React.memo apaga a assinatura generica do componente; o `as` restaura o
+// call signature de DataTableBodyInner<TData> (limitacao de tipagem do React).
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 export const DataTableBody = React.memo(
   DataTableBodyInner,
 ) as typeof DataTableBodyInner;

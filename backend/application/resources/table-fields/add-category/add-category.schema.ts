@@ -1,10 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
 export const TableFieldAddCategorySchema: FastifySchema = {
-  tags: ['Fields'],
-  summary: 'Add category option',
+  tags: ['Campos'],
+  summary: 'Adicionar opção de categoria',
   description:
-    'Adds a new category option to a CATEGORY field, either at the root or as a child of an existing category.',
+    'Adiciona uma nova opção de categoria a um campo do tipo CATEGORY, na raiz ou como filha de uma categoria existente.',
   security: [{ cookieAuth: [] }],
   params: {
     type: 'object',
@@ -12,13 +12,11 @@ export const TableFieldAddCategorySchema: FastifySchema = {
     properties: {
       slug: {
         type: 'string',
-        description: 'Table slug containing the field',
-        examples: ['users', 'products', 'blog-posts'],
+        description: 'Slug da tabela que contém o campo',
       },
       _id: {
         type: 'string',
-        description: 'Field ID to add the category option',
-        examples: ['507f1f77bcf86cd799439011'],
+        description: 'ID do campo para adicionar a opção de categoria',
       },
     },
     additionalProperties: false,
@@ -29,25 +27,24 @@ export const TableFieldAddCategorySchema: FastifySchema = {
     properties: {
       label: {
         type: 'string',
-        description: 'Category label',
-        examples: ['Financeiro', 'Clientes'],
+        description: 'Rótulo da categoria',
       },
       parentId: {
         type: 'string',
         nullable: true,
-        description: 'Parent category ID (null or omitted for root)',
-        examples: ['123456', null],
+        description: 'ID da categoria pai (null ou omitido para a raiz)',
       },
     },
     additionalProperties: false,
   },
   response: {
     200: {
-      description: 'Category option created',
+      description: 'Opção de categoria criada com sucesso',
       type: 'object',
       properties: {
         node: {
           type: 'object',
+          description: 'Nó de categoria criado',
           properties: {
             id: { type: 'string' },
             label: { type: 'string' },
@@ -56,6 +53,7 @@ export const TableFieldAddCategorySchema: FastifySchema = {
         },
         field: {
           type: 'object',
+          description: 'Campo atualizado',
           properties: {
             _id: { type: 'string' },
             name: { type: 'string' },
@@ -64,10 +62,45 @@ export const TableFieldAddCategorySchema: FastifySchema = {
             required: { type: 'boolean' },
             multiple: { type: 'boolean' },
             format: { type: 'string', nullable: true },
-            showInList: { type: 'boolean' },
-            showInForm: { type: 'boolean' },
-            showInDetail: { type: 'boolean' },
             showInFilter: { type: 'boolean' },
+            showInParentList: { type: 'boolean' },
+            visibleInParentList: { type: 'boolean' },
+            permissions: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                list: {
+                  type: 'object',
+                  properties: {
+                    kind: {
+                      type: 'string',
+                      enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                    },
+                    group: { type: 'string', nullable: true },
+                  },
+                },
+                form: {
+                  type: 'object',
+                  properties: {
+                    kind: {
+                      type: 'string',
+                      enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                    },
+                    group: { type: 'string', nullable: true },
+                  },
+                },
+                detail: {
+                  type: 'object',
+                  properties: {
+                    kind: {
+                      type: 'string',
+                      enum: ['PUBLIC', 'NOBODY', 'GROUP'],
+                    },
+                    group: { type: 'string', nullable: true },
+                  },
+                },
+              },
+            },
             widthInForm: { type: 'number', nullable: true },
             widthInList: { type: 'number', nullable: true },
             widthInDetail: { type: 'number', nullable: true },
@@ -89,12 +122,15 @@ export const TableFieldAddCategorySchema: FastifySchema = {
       },
     },
     400: {
-      description: 'Bad request - Validation error',
+      description: 'Requisição inválida - Tipo de campo inválido',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [400] },
-        cause: { type: 'string' },
+        cause: {
+          type: 'string',
+          enum: ['INVALID_FIELD_TYPE'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -102,12 +138,15 @@ export const TableFieldAddCategorySchema: FastifySchema = {
       },
     },
     401: {
-      description: 'Unauthorized - Authentication required',
+      description: 'Não autorizado - Autenticação necessária',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
+        cause: {
+          type: 'string',
+          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -115,12 +154,21 @@ export const TableFieldAddCategorySchema: FastifySchema = {
       },
     },
     403: {
-      description: 'Forbidden - Access denied',
+      description: 'Acesso negado - Permissões insuficientes',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [403] },
-        cause: { type: 'string', enum: ['ACCESS_DENIED'] },
+        cause: {
+          type: 'string',
+          enum: [
+            'USER_NOT_FOUND',
+            'USER_NOT_ACTIVE',
+            'PERMISSIONS_NOT_FOUND',
+            'INSUFFICIENT_PERMISSIONS',
+            'OWNER_OR_ADMIN_REQUIRED',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -128,12 +176,19 @@ export const TableFieldAddCategorySchema: FastifySchema = {
       },
     },
     404: {
-      description: 'Not found - Table, field, or parent category not found',
+      description: 'Não encontrado - Tabela, campo ou categoria pai não existe',
       type: 'object',
       properties: {
         message: { type: 'string' },
         code: { type: 'number', enum: [404] },
-        cause: { type: 'string' },
+        cause: {
+          type: 'string',
+          enum: [
+            'TABLE_NOT_FOUND',
+            'FIELD_NOT_FOUND',
+            'PARENT_CATEGORY_NOT_FOUND',
+          ],
+        },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },
@@ -141,7 +196,7 @@ export const TableFieldAddCategorySchema: FastifySchema = {
       },
     },
     500: {
-      description: 'Internal server error',
+      description: 'Erro interno do servidor',
       type: 'object',
       properties: {
         message: { type: 'string' },

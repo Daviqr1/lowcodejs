@@ -45,9 +45,13 @@ declarativo. Inspirado no fluxo do Supabase (cola e executa).
 
 - Tipos: `TEXT_SHORT`, `TEXT_LONG`, `DATE`, `DROPDOWN`, `FILE`, `USER`,
   `CATEGORY`, `RELATIONSHIP`
-- Propriedades de campo: `required`, `multiple`, `format`, `showIn*`,
-  `defaultValue`, `options` (para DROPDOWN), `relationship` (para RELATIONSHIP)
-- Propriedades de tabela: `name`, `visibility`, `style`
+- Propriedades de campo: `required`, `multiple`, `format`, `showInList`/
+  `showInForm`/`showInDetail`/`showInFilter`, `defaultValue`, `options` (para
+  DROPDOWN), `relationship` (para RELATIONSHIP). Os booleans `showInList`/
+  `showInForm`/`showInDetail` sao input do formato de importacao e sao
+  convertidos para `field.permissions` (`buildFieldPermissions`); nao existem na
+  entidade. `showInFilter` e gravado direto no campo.
+- Propriedades de tabela: `name`, `style`
 - Limites: 100 tabelas por schema, 100 campos por tabela, body 5 MB
 
 Fora do escopo (v2):
