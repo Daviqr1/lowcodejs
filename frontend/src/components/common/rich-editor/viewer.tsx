@@ -10,6 +10,15 @@ type EditorViewerProps = {
   className?: string;
 };
 
+// Remove estilos de cor branca/muito clara que ficariam invisiveis em fundo
+// claro (ex.: texto que era claro sobre fundo escuro no editor).
+function sanitizeRichText(content: string): string {
+  return content.replace(
+    /style="[^"]*color:\s*(?:#fff(?:fff)?|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))[^"]*"/gi,
+    '',
+  );
+}
+
 export function ContentViewer({
   content,
   className,
@@ -27,10 +36,7 @@ export function ContentViewer({
   }
 
   // Remove estilos de cor branca/muito clara que ficam invisiveis em fundo claro
-  const sanitizedContent = content.replace(
-    /style="[^"]*color:\s*(?:#fff(?:fff)?|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))[^"]*"/gi,
-    '',
-  );
+  const sanitizedContent = sanitizeRichText(content);
 
   return (
     <div

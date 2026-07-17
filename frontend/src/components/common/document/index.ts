@@ -17,5 +17,4 @@ export {
   getDropMode,
 } from './document-sidebar-helpers';
 export { DocumentToc } from './document-toc';
-export { DocumentPdf } from './document-pdf';
 export { DocumentPrintButton } from './document-print-button';
