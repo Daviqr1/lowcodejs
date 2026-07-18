@@ -112,9 +112,15 @@ kernel.register(jwt, {
   },
 });
 
+// Teto rígido do parser de upload (proteção do servidor). O limite real por
+// upload é o FILE_UPLOAD_MAX_SIZE do Setting, aplicado por requisição no
+// controller de upload (upload.controller.ts). Este valor só precisa ser >= ao
+// maior limite configurável. O antigo teto de 5MB rejeitava qualquer arquivo
+// grande antes mesmo de o Setting ser consultado.
+const UPLOAD_HARD_CEILING = 200 * 1024 * 1024; // 200mb
 kernel.register(multipart, {
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5mb
+    fileSize: UPLOAD_HARD_CEILING,
   },
 });
 

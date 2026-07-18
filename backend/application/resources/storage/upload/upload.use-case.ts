@@ -23,12 +23,23 @@ export default class StorageUploadUseCase {
   async execute(
     payload: AsyncIterableIterator<MultipartFile>,
     staticName?: string,
+    maxBytes?: number,
   ): Promise<Response> {
+    const uploaded: string[] = [];
     try {
       const data: StorageCreatePayload[] = [];
 
       for await (const part of payload) {
         const sended = await this.service.upload(part, staticName);
+        uploaded.push(sended.filename);
+
+        // O parser trunca o stream quando passa do limite por requisição
+        // (limits.fileSize). Aborta e limpa os arquivos já enviados.
+        if (part.file.truncated) {
+          await this.cleanup(uploaded);
+          return left(this.tooLargeError(maxBytes));
+        }
+
         data.push(sended);
       }
 
@@ -36,6 +47,18 @@ export default class StorageUploadUseCase {
 
       return right(storages);
     } catch (error) {
+      await this.cleanup(uploaded);
+
+      // Alguns cenários fazem o parser lançar em vez de truncar.
+      if (
+        error !== null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'FST_REQ_FILE_TOO_LARGE'
+      ) {
+        return left(this.tooLargeError(maxBytes));
+      }
+
       console.error('[storage > upload][error]:', error);
       return left(
         HTTPException.InternalServerError(
@@ -43,6 +66,27 @@ export default class StorageUploadUseCase {
           'STORAGE_UPLOAD_ERROR',
         ),
       );
+    }
+  }
+
+  private tooLargeError(maxBytes?: number): HTTPException {
+    let limite = 'permitido';
+    if (maxBytes && maxBytes > 0) {
+      limite = `de ${Math.round(maxBytes / (1024 * 1024))}MB`;
+    }
+    return HTTPException.PayloadTooLarge(
+      `O arquivo excede o tamanho máximo ${limite}.`,
+      'FILE_TOO_LARGE',
+    );
+  }
+
+  private async cleanup(filenames: string[]): Promise<void> {
+    for (const filename of filenames) {
+      try {
+        await this.service.delete(filename);
+      } catch {
+        // best-effort: não deixa a limpeza mascarar o erro original
+      }
     }
   }
 }
