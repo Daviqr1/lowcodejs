@@ -1,7 +1,8 @@
 # Document
 
 Componentes para visualizacao de documentos estruturados por categorias
-hierarquicas, com sidebar de navegacao, sumario, impressao e exportacao PDF.
+hierarquicas, com sidebar de navegacao e impressao nativa do navegador
+(`window.print()` -> salvar em PDF).
 
 ## Arquivos
 
@@ -16,13 +17,22 @@ hierarquicas, com sidebar de navegacao, sumario, impressao e exportacao PDF.
 | `document-row.tsx`                | Renderiza um registro do documento com heading, blocos de conteudo e campos extras colapsaveis                        |
 | `document-heading-row.tsx`        | Componente de heading dinamico (h2-h6) com icone e acoes opcionais                                                    |
 | `document-toc.tsx`                | Sumario (table of contents) com links para ancoras, visivel apenas na impressao (print-only)                          |
-| `document-pdf.tsx`                | Gera documento PDF com react-pdf (Document/Page/View/Text), inclui TOC e blocos de conteudo                           |
-| `document-print-button.tsx`       | Botao de impressao posicionado no canto superior direito                                                              |
+| `document-print-button.tsx`       | Botao de impressao (canto superior direito) que dispara `window.print()`                                             |
+
+## Impressao
+
+- O botao dispara `window.print()` sobre o conteudo ja renderizado (classes
+  `prose`), sem gerar PDF via biblioteca — fiel, instantaneo e o usuario salva
+  em PDF pela propria janela de impressao.
+- O CSS de impressao vive em `src/styles.css` (`@media print`): esconde o chrome
+  (sidebar/header da app, barra de acoes da tabela, sumario) e remove o recorte
+  dos containers de altura fixa para o conteudo fluir entre paginas. A view
+  `table-document-view.tsx` marca `.document-print-root`/`.document-print-content`
+  e injeta um titulo `print-only` com o nome da tabela no topo.
 
 ## Dependencias principais
 
 - `@dnd-kit/core` e `@dnd-kit/sortable` para drag-and-drop na sidebar
-- `@react-pdf/renderer` e `react-pdf-html` para geracao de PDF
 - `@tanstack/react-query` para mutations de CRUD de categorias
 - `@tanstack/react-router` para navegacao e parametros de rota
 - Tipos `CatNode`, `DocBlock`, `IRow`, `IField` de `@/lib/document-helpers` e

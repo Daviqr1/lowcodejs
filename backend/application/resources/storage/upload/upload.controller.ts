@@ -31,7 +31,16 @@ export default class {
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { staticName } = StorageUploadQueryValidator.parse(request.query);
 
-    const result = await this.useCase.execute(request.files(), staticName);
+    // Limite configurável pelo MASTER em /settings (FILE_UPLOAD_MAX_SIZE),
+    // sincronizado para process.env no boot. Default 10MB (igual ao model).
+    const maxBytes =
+      Number(process.env.FILE_UPLOAD_MAX_SIZE) || 10 * 1024 * 1024;
+
+    const result = await this.useCase.execute(
+      request.files({ limits: { fileSize: maxBytes } }),
+      staticName,
+      maxBytes,
+    );
 
     if (result.isLeft()) {
       const error = result.value;

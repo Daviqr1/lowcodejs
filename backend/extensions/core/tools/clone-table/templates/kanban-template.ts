@@ -63,94 +63,110 @@ export async function createKanbanTemplate(
       beforeSave: {
         code: `
 (async () => {
+  var prev = context.previous || null;
+
+  // Sem "antes" não há o que comparar (ex.: criação). Não envia nada,
+  // evitando reenviar e-mail em todo save.
+  if (!prev) return;
+
   var titulo = field.get('titulo') || 'Sem título';
   var lista = String(field.get('lista') || '');
-  var listaLabel = field.getLabel('lista');
-  var link = context.appUrl + '/tables/' + context.table.slug;
+  var listaLabel = field.getLabel('lista') || '';
+  var rowId = field.get('_id') || '';
+  var link = rowId
+    ? context.appUrl + '/tables/' + context.table.slug + '/row/' + rowId
+    : '';
   var tabela = context.table.name || '';
-  var detalhesBase = {};
-  if (tabela) detalhesBase['Tabela'] = tabela;
-  detalhesBase['Tarefa'] = titulo;
-  detalhesBase['Status'] = listaLabel || '-';
-  detalhesBase['Acessar'] = link;
 
-  var membros = field.get('membros') || [];
-  var emails = Array.isArray(membros)
-    ? membros
-        .map(function (m) {
-          if (m && typeof m === 'object') return m.email || null;
-          if (typeof m === 'string' && m.includes('@')) return m;
-          return null;
-        })
-        .filter(Boolean)
-    : [];
+  var detalhes = {};
+  if (tabela) detalhes['Tabela'] = tabela;
+  detalhes['Tarefa'] = titulo;
+  detalhes['Status'] = listaLabel || '-';
+  if (link) detalhes['Acessar'] = link;
 
-  var prevRaw = field.get('membros-notificados') || '[]';
-  var prev = [];
-  try {
-    prev = Array.isArray(prevRaw) ? prevRaw : JSON.parse(prevRaw);
-  } catch (e) {
-    prev = [];
+  function idsDe(valor) {
+    if (!Array.isArray(valor)) valor = valor ? [valor] : [];
+    return valor
+      .map(function (m) {
+        if (m && typeof m === 'object') return String(m._id || m.id || '');
+        return String(m || '');
+      })
+      .filter(Boolean);
   }
-  var prevSet = new Set(prev.filter(Boolean));
-  var newEmails = emails.filter(function (e) { return !prevSet.has(e); });
-  if (newEmails.length > 0) {
+
+  var membrosNow = field.get('membros') || [];
+  if (!Array.isArray(membrosNow)) membrosNow = [membrosNow];
+
+  var creator = field.get('creator');
+  var creatorEmail = '';
+  if (creator && typeof creator === 'object' && creator.email)
+    creatorEmail = creator.email;
+  else if (typeof creator === 'string' && creator.includes('@'))
+    creatorEmail = creator;
+
+  var todosEmails = membrosNow
+    .map(function (m) {
+      if (m && typeof m === 'object') return m.email || null;
+      if (typeof m === 'string' && m.includes('@')) return m;
+      return null;
+    })
+    .filter(Boolean);
+  var destinatarios = Array.from(
+    new Set(todosEmails.concat(creatorEmail ? [creatorEmail] : []))
+  );
+
+  // 1) MEMBRO ADICIONADO — só quem entrou agora
+  var antesSet = new Set(idsDe(prev['membros']));
+  var emailsNovos = membrosNow
+    .filter(function (m) {
+      return m && typeof m === 'object' && m._id && !antesSet.has(String(m._id));
+    })
+    .map(function (m) { return m.email; })
+    .filter(Boolean);
+  if (emailsNovos.length > 0) {
     await email.sendTemplate(
-      newEmails,
-      'Você foi adicionado a uma tarefa',
-      'Você foi adicionado como membro em uma tarefa do Kanban.',
-      detalhesBase
-    );
-    field.set(
-      'membros-notificados',
-      JSON.stringify([...prevSet, ...newEmails])
+      emailsNovos,
+      'Atualização em tarefa: ' + titulo,
+      'Você foi adicionado como membro de uma tarefa no Kanban.',
+      detalhes
     );
   }
 
-  var statusAtual = lista;
-  var statusAnterior = String(field.get('status-anterior') || '');
-  if (statusAtual && statusAnterior && statusAtual !== statusAnterior && !context.isNew) {
-    if (emails.length > 0) {
-      var labelAnterior = field.getLabel('lista', statusAnterior);
-      var detalhesStatus = {};
-      if (tabela) detalhesStatus['Tabela'] = tabela;
-      detalhesStatus['Tarefa'] = titulo;
-      detalhesStatus['De'] = labelAnterior;
-      detalhesStatus['Para'] = listaLabel;
-      detalhesStatus['Acessar'] = link;
-      await email.sendTemplate(
-        emails,
-        'Status alterado: ' + titulo,
-        'O status da tarefa foi alterado.',
-        detalhesStatus
-      );
-    }
-  }
-  if (statusAtual) {
-    field.set('status-anterior', statusAtual);
+  // 2) LISTA ALTERADA
+  var listaAntes = String(prev['lista'] || '');
+  if (lista && lista !== listaAntes && destinatarios.length > 0) {
+    var detalhesStatus = {};
+    if (tabela) detalhesStatus['Tabela'] = tabela;
+    detalhesStatus['Tarefa'] = titulo;
+    detalhesStatus['De'] = field.getLabel('lista', listaAntes);
+    detalhesStatus['Para'] = listaLabel;
+    if (link) detalhesStatus['Acessar'] = link;
+    await email.sendTemplate(
+      destinatarios,
+      'Status alterado: ' + titulo,
+      'O status da tarefa foi alterado.',
+      detalhesStatus
+    );
   }
 
-  var progresso = Number(field.get('porcentagem-concluida') || 0);
-  var notificado = String(field.get('concluido-notificado')) === 'true';
-  if (progresso >= 100 && !notificado) {
-    if (emails.length > 0) {
-      var detalhesConc = {};
-      if (tabela) detalhesConc['Tabela'] = tabela;
-      detalhesConc['Tarefa'] = titulo;
-      detalhesConc['Progresso'] = '100%';
-      detalhesConc['Acessar'] = link;
-      await email.sendTemplate(
-        emails,
-        'Tarefa concluída: ' + titulo,
-        'A tarefa atingiu 100% de progresso.',
-        detalhesConc
-      );
-    }
-    field.set('concluido-notificado', 'true');
+  // 3) CONCLUÍDA (cruzou para 100%)
+  var progressoNow = Number(field.get('porcentagem-concluida') || 0);
+  var progressoAntes = Number(prev['porcentagem-concluida'] || 0);
+  if (progressoNow >= 100 && progressoAntes < 100 && destinatarios.length > 0) {
+    var detalhesConc = {};
+    if (tabela) detalhesConc['Tabela'] = tabela;
+    detalhesConc['Tarefa'] = titulo;
+    detalhesConc['Progresso'] = '100%';
+    if (link) detalhesConc['Acessar'] = link;
+    await email.sendTemplate(
+      destinatarios,
+      'Tarefa concluída: ' + titulo,
+      'A tarefa atingiu 100% de progresso.',
+      detalhesConc
+    );
   }
-  if (progresso < 100 && notificado) {
-    field.set('concluido-notificado', 'false');
-  }
+
+  // Menção @usuario -> serviço nativo do Kanban (não aqui).
 })();
         `.trim(),
       },

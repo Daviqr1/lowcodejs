@@ -1,4 +1,3 @@
-import { pdf } from '@react-pdf/renderer';
 import { GripVerticalIcon, PanelLeftIcon } from 'lucide-react';
 import React, {
   useCallback,
@@ -9,7 +8,6 @@ import React, {
 } from 'react';
 
 import { DocumentMain } from '@/components/common/document/document-main';
-import { DocumentPdf } from '@/components/common/document/document-pdf';
 import { DocumentPrintButton } from '@/components/common/document/document-print-button';
 import { DocumentSidebar } from '@/components/common/document/document-sidebar';
 import { DocumentToc } from '@/components/common/document/document-toc';
@@ -21,7 +19,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { CatNode } from '@/lib/document-helpers';
 import {
@@ -48,12 +45,13 @@ export function TableDocumentView({
   data,
   headers,
   order,
-  tableSlug,
   table,
 }: {
   data: Array<IRow>;
   headers: Array<IField>;
   order: Array<string>;
+  // recebido via extraProps do VIEW_MAP; a impressao nativa nao precisa dele,
+  // mas o contrato do caller continua passando.
   tableSlug: string;
   table: ITable;
 }): React.ReactElement {
@@ -109,8 +107,6 @@ export function TableDocumentView({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
-
-  const tableQuery = useReadTable({ slug: tableSlug });
 
   const orderedHeaders = useMemo(
     () => headers.filter((h) => !h.trashed).sort(headerSorter(order)),
@@ -197,27 +193,23 @@ export function TableDocumentView({
     return 2;
   };
 
-  async function handlePrint(): Promise<void> {
-    const blob = await pdf(
-      <DocumentPdf
-        title={tableQuery.data?.name ?? ''}
-        categoryTitle={categoryField?.name ?? 'Sumario'}
-        nodes={categoryTree}
-        rows={sortedRows}
-        blocks={docBlocks}
-        categorySlug={categoryField?.slug ?? 'category'}
-        getLeafLabel={getLeafLabel}
-        getHeadingLevel={getHeadingLevel}
-        getIndentPx={getIndentPx}
-      />,
-    ).toBlob();
+  function handlePrint(): void {
+    // Impressao nativa do que ja esta renderizado na tela: o navegador usa o
+    // DOM + CSS reais (classes `prose`), entao sai fiel e instantaneo, e o
+    // usuario pode salvar em PDF pela propria janela de impressao. O CSS
+    // `@media print` (styles.css) isola o conteudo do documento do restante da
+    // interface. Forcamos tema claro durante a impressao para nao sair escuro.
+    const root = document.documentElement;
+    const wasDark = root.classList.contains('dark');
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${tableSlug}-document.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
+    function restore(): void {
+      if (wasDark) root.classList.add('dark');
+      window.removeEventListener('afterprint', restore);
+    }
+
+    if (wasDark) root.classList.remove('dark');
+    window.addEventListener('afterprint', restore);
+    window.print();
   }
 
   let sidebarPxWidth = 40;
@@ -230,7 +222,7 @@ export function TableDocumentView({
 
   return (
     <div
-      className="relative flex h-[calc(100dvh-64px)] w-full overflow-hidden"
+      className="document-print-root relative flex h-[calc(100dvh-64px)] w-full overflow-hidden"
       data-test-id="table-document-view"
     >
       <DocumentPrintButton onClick={handlePrint} />
@@ -239,7 +231,7 @@ export function TableDocumentView({
       {!isMobile && (
         <>
           <div
-            className="h-full shrink-0"
+            className="no-print h-full shrink-0"
             style={{ width: sidebarPxWidth }}
           >
             <DocumentSidebar
@@ -258,7 +250,7 @@ export function TableDocumentView({
             <div
               role="separator"
               aria-orientation="vertical"
-              className="flex w-1.5 shrink-0 cursor-col-resize items-center justify-center border-r transition-colors hover:bg-primary/10 active:bg-primary/20"
+              className="no-print flex w-1.5 shrink-0 cursor-col-resize items-center justify-center border-r transition-colors hover:bg-primary/10 active:bg-primary/20"
               onMouseDown={handleMouseDown}
             >
               <GripVerticalIcon className="size-3 text-muted-foreground" />
@@ -268,7 +260,11 @@ export function TableDocumentView({
       )}
 
       {/* Main content */}
-      <div className="h-full min-w-0 flex-1 overflow-y-auto">
+      <div className="document-print-content h-full min-w-0 flex-1 overflow-y-auto">
+        {/* Titulo da tabela — visivel apenas na impressao, no topo do PDF. */}
+        <h1 className="print-only mb-4 px-4 pt-4 text-2xl font-bold">
+          {table.name}
+        </h1>
         {isMobile && (
           <div className="no-print sticky top-0 z-10 flex items-center gap-2 border-b bg-background py-2 pr-12 pl-3">
             <Sheet
