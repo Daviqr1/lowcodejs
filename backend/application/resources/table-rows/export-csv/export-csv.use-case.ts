@@ -15,17 +15,25 @@ import type { IField, IRow } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
 import type { TableRowExportCsvPayload } from './export-csv.validator';
 
 type Response = Either<HTTPException, Readable>;
 
-function buildFields(tableFields: IField[]): {
+function buildFields(
+  tableFields: IField[],
+  hiddenSlugs: Set<string>,
+): {
   csvFields: CsvField[];
   exportableFields: IField[];
 } {
   const exportableFields = tableFields.filter(
-    (f) => !f.native || f.slug === '_id' || f.slug === 'creator',
+    (f) =>
+      (!f.native || f.slug === '_id' || f.slug === 'creator') &&
+      !hiddenSlugs.has(f.slug),
   );
 
   const csvFields: CsvField[] = exportableFields.map((field) => ({
@@ -50,6 +58,9 @@ export default class TableRowExportCsvUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowPasswordService: RowPasswordContractService,
+    private readonly fieldVisibility: FieldVisibilityContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: TableRowExportCsvPayload): Promise<Response> {
@@ -62,7 +73,24 @@ export default class TableRowExportCsvUseCase {
         );
       }
 
-      const total = await this.rowRepository.count(table, payload);
+      // Mesmo filtro da listagem: sem isto o export devolve as rows que o
+      // guard esconde em `paginated`.
+      const ctx = await this.rowAccessGuard.resolveContext(payload.user);
+      const guardQuery = await this.rowAccessGuard.composeListQuery(
+        table._id.toString(),
+        {},
+        ctx,
+        table,
+      );
+
+      let guardQueryArg: Record<string, unknown> | undefined = undefined;
+      if (Object.keys(guardQuery).length > 0) guardQueryArg = guardQuery;
+
+      const total = await this.rowRepository.count(
+        table,
+        payload,
+        guardQueryArg,
+      );
 
       if (total > EXPORT_CSV_LIMIT) {
         return left(
@@ -77,7 +105,15 @@ export default class TableRowExportCsvUseCase {
         `[table-rows > export-csv] table=${table.slug} user=${payload.user ?? 'unknown'} count=${total}`,
       );
 
-      const { csvFields, exportableFields } = buildFields(table.fields);
+      const hidden = await this.fieldVisibility.hiddenSlugs({
+        fields: table.fields,
+        context: 'list',
+        userId: payload.user,
+        isOwner: payload.isOwner,
+        isAdministrator: payload.isAdministrator,
+      });
+
+      const { csvFields, exportableFields } = buildFields(table.fields, hidden);
 
       const source = iterateInBatches({
         payload,
@@ -88,8 +124,12 @@ export default class TableRowExportCsvUseCase {
             rawFilters: p,
             skip,
             limit: perPage,
+            guardQuery: guardQueryArg,
           });
-          return rows.map((row) => toCsvRow(row, exportableFields));
+          return rows.map((row) => {
+            this.rowPasswordService.mask(row, table.fields);
+            return toCsvRow(row, exportableFields);
+          });
         },
       });
 

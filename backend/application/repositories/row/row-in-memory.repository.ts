@@ -17,10 +17,85 @@ import type {
 } from './row-contract.repository';
 import { RowContractRepository } from './row-contract.repository';
 
+/** Compara valores tolerando `Date`/`ObjectId` (que nao batem por identidade). */
+function looseEquals(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (left instanceof Date || right instanceof Date) {
+    return (
+      new Date(String(left)).getTime() === new Date(String(right)).getTime()
+    );
+  }
+  if (left == null || right == null) return false;
+  if (typeof left === 'object' || typeof right === 'object') {
+    return String(left) === String(right);
+  }
+  return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Resolve `a.b.c` sobre o objeto, como o Mongo faz com dot-path. */
+function readPath(row: Record<string, unknown>, path: string): unknown {
+  if (!path.includes('.')) return row[path];
+
+  let current: unknown = row;
+  for (const part of path.split('.')) {
+    if (!isRecord(current)) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+/** Um campo-array casa se QUALQUER elemento casar — semantica do Mongo. */
+function candidateValues(fieldVal: unknown): unknown[] {
+  if (Array.isArray(fieldVal)) return fieldVal;
+  return [fieldVal];
+}
+
+function matchesOperator(
+  operator: string,
+  operand: unknown,
+  fieldVal: unknown,
+): boolean {
+  const values = candidateValues(fieldVal);
+
+  const OPERATORS: Record<string, () => boolean> = {
+    $in: () =>
+      Array.isArray(operand) &&
+      values.some((value) => operand.some((item) => looseEquals(item, value))),
+    $nin: () =>
+      !Array.isArray(operand) ||
+      !values.some((value) => operand.some((item) => looseEquals(item, value))),
+    $eq: () => values.some((value) => looseEquals(value, operand)),
+    $ne: () => !values.some((value) => looseEquals(value, operand)),
+    $exists: () => (fieldVal !== undefined) === Boolean(operand),
+    $gt: () => values.some((value) => Number(value) > Number(operand)),
+    $gte: () => values.some((value) => Number(value) >= Number(operand)),
+    $lt: () => values.some((value) => Number(value) < Number(operand)),
+    $lte: () => values.some((value) => Number(value) <= Number(operand)),
+  };
+
+  const evaluate = OPERATORS[operator];
+  // Operador nao suportado nunca deve liberar a row em silencio: o guard
+  // depende deste double para os testes de negacao.
+  if (!evaluate) {
+    throw new Error(
+      `[row-in-memory] operador de guardQuery nao suportado: ${operator}`,
+    );
+  }
+
+  return evaluate();
+}
+
 /**
  * Aplica um fragmento de guardQuery sobre um item da colecao in-memory.
- * Suporta operadores basicos usados pelo RowAccessGuard: $in, $and, $or.
- * Para testes: nao precisa cobrir todo o MongoDB query DSL.
+ *
+ * Cobre os operadores que o RowAccessGuard emite ($in, $ne, $exists, ranges de
+ * data) com a semantica do Mongo para campos-array e dot-path. Operador
+ * desconhecido lanca — antes, qualquer coisa fora de `$in` passava batido e o
+ * fragmento restritivo simplesmente nao filtrava.
  */
 function matchesGuardQuery(
   row: Record<string, unknown>,
@@ -40,22 +115,29 @@ function matchesGuardQuery(
       if (!condition.some((part) => matchesGuardQuery(row, part))) return false;
       continue;
     }
+    if (key === '$nor') {
+      if (!Array.isArray(condition)) continue;
+      if (condition.some((part) => matchesGuardQuery(row, part))) return false;
+      continue;
+    }
 
-    const fieldVal = row[key];
+    const fieldVal = readPath(row, key);
+
     if (
       condition !== null &&
       typeof condition === 'object' &&
       !Array.isArray(condition)
     ) {
-      if ('$in' in condition) {
-        const allowed = condition['$in'];
-        let rowValue = fieldVal;
-        if (Array.isArray(fieldVal)) rowValue = fieldVal[0];
-        if (Array.isArray(allowed) && !allowed.includes(rowValue)) return false;
+      for (const [operator, operand] of Object.entries(condition)) {
+        if (!matchesOperator(operator, operand, fieldVal)) return false;
       }
-    } else {
-      if (fieldVal !== condition) return false;
+      continue;
     }
+
+    if (
+      !candidateValues(fieldVal).some((value) => looseEquals(value, condition))
+    )
+      return false;
   }
 
   return true;

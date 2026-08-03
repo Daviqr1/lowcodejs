@@ -1,27 +1,45 @@
 import { Service } from 'fastify-decorators';
 
 import { Either, left, right } from '@application/core/either.core';
-import { E_ROW_STATUS, IRow } from '@application/core/entity.core';
+import { E_ROW_STATUS, IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
-import { TableRowAutoSavePayload } from './auto-save.validator';
 import { DraftTable } from './draft-table';
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = TableRowAutoSavePayload;
+type Payload = Merge<
+  Record<string, unknown>,
+  {
+    slug: string;
+    /** Vem da query string; ausente significa "criar rascunho". */
+    _id?: string;
+    __actorUserId?: string;
+    /** Convidado contributor: só pode editar os próprios registros. */
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowAutoSaveUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
-  async execute({ slug, _id: rowId, ...payload }: Payload): Promise<Response> {
+  async execute({
+    slug,
+    _id: rowId,
+    __actorUserId: actorUserId,
+    __ownOnly: ownOnly,
+    ...payload
+  }: Payload): Promise<Response> {
     try {
       const table = await this.tableRepository.findBySlug(slug);
 
@@ -69,11 +87,38 @@ export default class TableRowAutoSaveUseCase {
       // Mongoose. O core nao e tocado; a tabela original segue exigindo
       // required no create/update normal.
       const draftTable = DraftTable.from(table);
+      const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
+      const tableId = table._id.toString();
+      const payloadRecord: Record<string, unknown> = payload;
 
       if (!rowId) {
+        const decision = await this.rowAccessGuard.composeWriteDecision(
+          tableId,
+          null,
+          ctx,
+          table,
+          payloadRecord,
+          'create',
+        );
+        if (decision.decision === 'deny') {
+          return left(
+            HTTPException.Forbidden(
+              decision.reason ?? 'Acesso negado',
+              'ROW_WRITE_RESTRICTED',
+            ),
+          );
+        }
+
         const created = await this.rowRepository.create({
           data: {
-            ...payload,
+            ...(await this.rowAccessGuard.composeSanitize(
+              tableId,
+              payloadRecord,
+              ctx,
+              table,
+              'create',
+              null,
+            )),
             ...draftState,
           },
           table: draftTable,
@@ -92,10 +137,48 @@ export default class TableRowAutoSaveUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
+      // Sem isto qualquer usuario com CREATE_ROW sobrescrevia o rascunho de
+      // outro — e o `draftState` ainda despublicava o registro alheio.
+      if (ownOnly) {
+        const creatorId = resolveCreatorId(row.creator);
+        if (!actorUserId || creatorId !== actorUserId) {
+          return left(
+            HTTPException.Forbidden(
+              'Você só pode editar os seus próprios registros',
+              'OWN_ROW_ONLY',
+            ),
+          );
+        }
+      }
+
+      const decision = await this.rowAccessGuard.composeWriteDecision(
+        tableId,
+        row,
+        ctx,
+        table,
+        payloadRecord,
+        'update',
+      );
+      if (decision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(
+            decision.reason ?? 'Acesso negado',
+            'ROW_WRITE_RESTRICTED',
+          ),
+        );
+      }
+
       const updated = await this.rowRepository.update({
         _id: rowId.toString(),
         data: {
-          ...payload,
+          ...(await this.rowAccessGuard.composeSanitize(
+            tableId,
+            payloadRecord,
+            ctx,
+            table,
+            'update',
+            row,
+          )),
           ...draftState,
         },
         table: draftTable,

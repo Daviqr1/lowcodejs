@@ -17,5 +17,5 @@ export type TableRowExportCsvPayload = Merge<
     z.infer<typeof TableRowExportCsvParamsValidator>,
     z.infer<typeof TableRowExportCsvQueryValidator>
   >,
-  { user?: string }
+  { user?: string; isOwner?: boolean; isAdministrator?: boolean }
 >;

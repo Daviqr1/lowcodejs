@@ -307,11 +307,32 @@ export default class GroupFieldUpdateUseCase {
     if (!isDefaultValueEqual(payload.defaultValue, field.defaultValue))
       return false;
 
+    // `locked` e gravavel e tem default `false`: omitir a chave no PUT
+    // destravava o campo e liberava trash/delete.
+    if (payload.locked !== field.locked) return false;
+
+    if (!this.isOptionListEqual(payload.dropdown, field.dropdown)) return false;
+    if (!this.isOptionListEqual(payload.category, field.category)) return false;
+
     // relationship: comparar por _id
     const payloadRelId = payload.relationship?.table?._id ?? null;
     const fieldRelId = field.relationship?.table?._id ?? null;
     if (payloadRelId !== fieldRelId) return false;
 
     return true;
+  }
+
+  /** Compara por id e ordem — o guard reescreve as opcoes por posicao. */
+  private isOptionListEqual(
+    payload: Array<{ id: string }> | null | undefined,
+    current: Array<{ id: string }> | null | undefined,
+  ): boolean {
+    if (payload === undefined) return true;
+
+    const next = payload ?? [];
+    const previous = current ?? [];
+    if (next.length !== previous.length) return false;
+
+    return next.every((option, index) => option.id === previous[index]?.id);
   }
 }

@@ -8,6 +8,8 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
+import { filterWritableIds } from '../guard-filter';
+
 import type { BulkTrashPayload } from './bulk-trash.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
@@ -42,39 +44,18 @@ export default class BulkTrashUseCase {
       let creatorId: string | undefined = undefined;
       if (payload.__ownOnly) creatorId = payload.__actorUserId;
 
-      // Filtra os ids pelo guard — rows negadas são simplesmente ignoradas
-      // (comportamento consistente com __ownOnly que já filtra silenciosamente).
       let actorUserId: string | undefined;
       if (typeof payload.__actorUserId === 'string') {
         actorUserId = payload.__actorUserId;
       }
-      const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
-      const tableId = table._id.toString();
 
-      let allowedIds = payload.ids;
-
-      if (!ctx.isPrivileged) {
-        const guardChecks = await Promise.all(
-          payload.ids.map(async (id) => {
-            const row = await this.rowRepository.findOne({
-              table,
-              query: { _id: id },
-            });
-            if (!row) return null;
-            const dec = await this.rowAccessGuard.composeWriteDecision(
-              tableId,
-              row,
-              ctx,
-              table,
-              null,
-              'delete',
-            );
-            if (dec.decision !== 'deny') return id;
-            return null;
-          }),
-        );
-        allowedIds = guardChecks.filter((id): id is string => id !== null);
-      }
+      const allowedIds = await filterWritableIds(
+        {
+          rowRepository: this.rowRepository,
+          rowAccessGuard: this.rowAccessGuard,
+        },
+        { table, ids: payload.ids, actorUserId, operation: 'delete' },
+      );
 
       if (allowedIds.length === 0) {
         return right({ modified: 0 });

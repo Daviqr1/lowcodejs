@@ -10,6 +10,9 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
+import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 
 import TableRowExportCsvUseCase from './export-csv.use-case';
 
@@ -58,7 +61,13 @@ describe('Table Row Export CSV Use Case', () => {
   beforeEach(() => {
     tableRepo = new TableInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    sut = new TableRowExportCsvUseCase(tableRepo, rowRepo);
+    sut = new TableRowExportCsvUseCase(
+      tableRepo,
+      rowRepo,
+      new InMemoryRowPasswordService(),
+      new InMemoryFieldVisibilityService(),
+      new InMemoryRowAccessGuardService(),
+    );
   });
 
   it('deve gerar CSV com colunas dinâmicas dos fields da tabela', async () => {

@@ -7,6 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
 import type { TableRowSendToTrashPayload } from './send-to-trash.validator';
 
@@ -26,6 +27,7 @@ export default class TableRowSendToTrashUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -61,6 +63,26 @@ export default class TableRowSendToTrashUseCase {
             ),
           );
         }
+      }
+
+      const ctx = await this.rowAccessGuard.resolveContext(
+        payload.__actorUserId,
+      );
+      const decision = await this.rowAccessGuard.composeWriteDecision(
+        table._id.toString(),
+        row,
+        ctx,
+        table,
+        null,
+        'delete',
+      );
+      if (decision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(
+            decision.reason ?? 'Acesso negado',
+            'ROW_WRITE_RESTRICTED',
+          ),
+        );
       }
 
       if (row.trashedAt) {

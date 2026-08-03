@@ -57,6 +57,7 @@ import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { useReadTableRowPaginated } from '@/hooks/tanstack-query/use-table-row-read-paginated';
 import { useTableRowsExportCsv } from '@/hooks/tanstack-query/use-table-rows-export-csv';
 import { useChatSidebar } from '@/hooks/use-chat-sidebar';
+import { useFieldVisibility } from '@/hooks/use-field-visibility';
 import { useFilterSidebar } from '@/hooks/use-filter-sidebar';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_AREA_CAPABILITY, E_TABLE_STYLE, MetaDefault } from '@/lib/constant';
@@ -240,9 +241,15 @@ function RouteComponent(): React.JSX.Element {
 
   const { open: filterOpen, onOpenChange: handleFilterOpenChange } =
     useFilterSidebar();
+  const { isFieldVisible } = useFieldVisibility();
 
   const filterFields = React.useMemo(() => {
-    const filtered = (table.data?.fields ?? []).filter((f) => f.showInFilter);
+    // `showInFilter` sozinho nao basta: campos ocultos ao usuario (ex.: o campo
+    // de visibilidade criado pelo row-access) apareciam na sidebar com todos os
+    // valores, expondo a taxonomia de sigilo e permitindo enumerar por nivel.
+    const filtered = (table.data?.fields ?? []).filter(
+      (f) => f.showInFilter && !f.trashed && isFieldVisible(f, 'list'),
+    );
     const order = table.data?.fieldOrderFilter ?? [];
     if (order.length === 0) return filtered;
     return [...filtered].sort((a, b) => {

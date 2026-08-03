@@ -2,22 +2,32 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IRow } from '@application/core/entity.core';
+import type { IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
 import type { TableRowRemoveFromTrashPayload } from './remove-from-trash.validator';
 
 type Response = Either<HTTPException, IRow>;
 
-type Payload = TableRowRemoveFromTrashPayload;
+type Payload = Merge<
+  TableRowRemoveFromTrashPayload,
+  {
+    __actorUserId?: string;
+    /** Convidado contributor: só restaura os próprios registros. */
+    __ownOnly?: boolean;
+  }
+>;
 
 @Service()
 export default class TableRowRemoveFromTrashUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -39,6 +49,40 @@ export default class TableRowRemoveFromTrashUseCase {
       if (!row) {
         return left(
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
+      }
+
+      // Espelha o `send-to-trash`: sem isto um contributor nao conseguia
+      // enviar a row alheia para a lixeira, mas restaurava qualquer uma.
+      if (payload.__ownOnly) {
+        const creatorId = resolveCreatorId(row.creator);
+        if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
+          return left(
+            HTTPException.Forbidden(
+              'Você só pode restaurar os seus próprios registros',
+              'OWN_ROW_ONLY',
+            ),
+          );
+        }
+      }
+
+      const ctx = await this.rowAccessGuard.resolveContext(
+        payload.__actorUserId,
+      );
+      const decision = await this.rowAccessGuard.composeWriteDecision(
+        table._id.toString(),
+        row,
+        ctx,
+        table,
+        null,
+        'update',
+      );
+      if (decision.decision === 'deny') {
+        return left(
+          HTTPException.Forbidden(
+            decision.reason ?? 'Acesso negado',
+            'ROW_WRITE_RESTRICTED',
+          ),
         );
       }
 

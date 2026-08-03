@@ -2,10 +2,12 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { EvaluationContractRepository } from '@application/repositories/evaluation/evaluation-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowContextBuilderContractService } from '@application/services/table/row-context-builder-contract.service';
 
 import type { TableRowEvaluationPayload } from './evaluation.validator';
@@ -24,6 +26,7 @@ export default class TableRowEvaluationUseCase {
     private readonly evaluationRepository: EvaluationContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowContextBuilder: RowContextBuilderContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -44,6 +47,40 @@ export default class TableRowEvaluationUseCase {
       if (!row)
         return left(
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
+
+      // `field` vem cru do body e era gravado direto na row: sem esta checagem
+      // qualquer slug servia para sobrescrever qualquer campo do registro.
+      const field = table.fields.find(
+        (item) =>
+          item.slug === payload.field &&
+          item.type === E_FIELD_TYPE.EVALUATION &&
+          !item.trashed,
+      );
+
+      if (!field)
+        return left(
+          HTTPException.BadRequest(
+            'Campo de avaliação não encontrado nesta tabela',
+            'EVALUATION_FIELD_NOT_FOUND',
+          ),
+        );
+
+      const ctx = await this.rowAccessGuard.resolveContext(payload.user);
+      const decision = await this.rowAccessGuard.composeWriteDecision(
+        table._id.toString(),
+        row,
+        ctx,
+        table,
+        null,
+        'update',
+      );
+      if (decision.decision === 'deny')
+        return left(
+          HTTPException.Forbidden(
+            decision.reason ?? 'Acesso negado',
+            'ROW_WRITE_RESTRICTED',
+          ),
         );
 
       const fieldValue = row[payload.field];

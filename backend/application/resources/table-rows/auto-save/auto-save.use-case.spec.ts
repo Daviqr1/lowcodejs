@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 
 import TableRowAutoSaveUseCase from './auto-save.use-case';
 
@@ -59,7 +60,11 @@ describe('Table Row Auto Save Use Case', () => {
   beforeEach(() => {
     tableRepo = new TableInMemoryRepository();
     rowRepo = new RowInMemoryRepository();
-    sut = new TableRowAutoSaveUseCase(tableRepo, rowRepo);
+    sut = new TableRowAutoSaveUseCase(
+      tableRepo,
+      rowRepo,
+      new InMemoryRowAccessGuardService(),
+    );
   });
 
   it('deve salvar como rascunho quando obrigatorio e string vazia', async () => {

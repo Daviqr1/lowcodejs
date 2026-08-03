@@ -6,6 +6,9 @@ import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+
+import { filterWritableIds } from '../guard-filter';
 
 import type { BulkDeletePayload } from './bulk-delete.validator';
 
@@ -25,6 +28,7 @@ export default class BulkDeleteUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -40,9 +44,26 @@ export default class BulkDeleteUseCase {
       let creatorId: string | undefined = undefined;
       if (payload.__ownOnly) creatorId = payload.__actorUserId;
 
+      // Exclusao permanente: o guard precisa filtrar antes, senao um usuario
+      // apaga em lote rows que nem enxerga na listagem.
+      const allowedIds = await filterWritableIds(
+        {
+          rowRepository: this.rowRepository,
+          rowAccessGuard: this.rowAccessGuard,
+        },
+        {
+          table,
+          ids: payload.ids,
+          actorUserId: payload.__actorUserId,
+          operation: 'delete',
+        },
+      );
+
+      if (allowedIds.length === 0) return right({ deleted: 0 });
+
       const deleted = await this.rowRepository.bulkDelete({
         table,
-        ids: payload.ids,
+        ids: allowedIds,
         ...(creatorId && { creatorId }),
       });
 

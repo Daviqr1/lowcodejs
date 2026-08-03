@@ -6,6 +6,9 @@ import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+
+import { filterWritableIds } from '../guard-filter';
 
 import type { BulkRestorePayload } from './bulk-restore.validator';
 
@@ -25,6 +28,7 @@ export default class BulkRestoreUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -40,9 +44,24 @@ export default class BulkRestoreUseCase {
       let creatorId: string | undefined = undefined;
       if (payload.__ownOnly) creatorId = payload.__actorUserId;
 
+      const allowedIds = await filterWritableIds(
+        {
+          rowRepository: this.rowRepository,
+          rowAccessGuard: this.rowAccessGuard,
+        },
+        {
+          table,
+          ids: payload.ids,
+          actorUserId: payload.__actorUserId,
+          operation: 'update',
+        },
+      );
+
+      if (allowedIds.length === 0) return right({ modified: 0 });
+
       const modified = await this.rowRepository.bulkRestore({
         table,
-        ids: payload.ids,
+        ids: allowedIds,
         ...(creatorId && { creatorId }),
       });
 

@@ -384,6 +384,18 @@ export default class TableFieldUpdateUseCase {
     if (!isDefaultValueEqual(payload.defaultValue, field.defaultValue))
       return false;
 
+    // `locked` e gravavel e tem default `false` no Zod e no AJV: um PUT que
+    // apenas omitisse a chave destravava o campo e liberava trash/delete.
+    if (payload.locked !== field.locked) return false;
+
+    // O slug e a fonte de verdade do guard de row-access (`visibility.fieldSlug`);
+    // renomear quebra o filtro. `payload.slug` so e o slug do campo quando vem
+    // pela rota real — sem `tableSlug` ele carrega o slug da tabela.
+    if (payload.tableSlug && payload.slug && payload.slug !== field.slug)
+      return false;
+    if (!this.isDropdownEqual(payload.dropdown, field.dropdown)) return false;
+    if (!this.isCategoryEqual(payload.category, field.category)) return false;
+
     // relationship: comparar por _id
     const payloadRelId = payload.relationship?.table?._id ?? null;
     const fieldRelId = field.relationship?.table?._id ?? null;
@@ -401,5 +413,32 @@ export default class TableFieldUpdateUseCase {
     if (payloadGroupSlug !== fieldGroupSlug) return false;
 
     return true;
+  }
+
+  /** Compara as opcoes por id e ordem — o guard reescreve o dropdown por posicao. */
+  private isDropdownEqual(
+    payload: IField['dropdown'],
+    current: IField['dropdown'],
+  ): boolean {
+    if (payload === undefined) return true;
+
+    const next = payload ?? [];
+    const previous = current ?? [];
+    if (next.length !== previous.length) return false;
+
+    return next.every((option, index) => option.id === previous[index]?.id);
+  }
+
+  private isCategoryEqual(
+    payload: IField['category'],
+    current: IField['category'],
+  ): boolean {
+    if (payload === undefined) return true;
+
+    const next = payload ?? [];
+    const previous = current ?? [];
+    if (next.length !== previous.length) return false;
+
+    return next.every((item, index) => item.id === previous[index]?.id);
   }
 }

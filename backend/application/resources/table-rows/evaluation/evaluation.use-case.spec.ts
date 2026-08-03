@@ -4,7 +4,9 @@ import { E_TABLE_STYLE } from '@application/core/entity.core';
 import EvaluationInMemoryRepository from '@application/repositories/evaluation/evaluation-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowContextBuilder from '@application/services/table/in-memory-row-context-builder.service';
+import { makeEvaluationField } from '@test/helpers/field-factory.helper';
 
 import TableRowEvaluationUseCase from './evaluation.use-case';
 
@@ -26,6 +28,7 @@ describe('Table Row Evaluation Use Case', () => {
       evaluationInMemoryRepository,
       rowInMemoryRepository,
       rowContextBuilder,
+      new InMemoryRowAccessGuardService(),
     );
     vi.clearAllMocks();
   });
@@ -41,6 +44,7 @@ describe('Table Row Evaluation Use Case', () => {
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    table.fields = [makeEvaluationField({ slug: 'ratings' })];
 
     const row = await rowInMemoryRepository.create({
       table,
@@ -69,6 +73,7 @@ describe('Table Row Evaluation Use Case', () => {
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    table.fields = [makeEvaluationField({ slug: 'ratings' })];
 
     const evaluation = await evaluationInMemoryRepository.create({
       value: 3,

@@ -130,6 +130,23 @@ export default class TableFieldDeleteUseCase {
         ),
       );
 
+    // Mesmas guardas do caminho top-level, que faltavam aqui.
+    if (field.native)
+      return left(
+        HTTPException.Forbidden(
+          'Campos nativos não podem ser excluídos permanentemente',
+          'NATIVE_FIELD_CANNOT_BE_DELETED',
+        ),
+      );
+
+    if (field.locked)
+      return left(
+        HTTPException.Forbidden(
+          'Campo está bloqueado e não pode ser excluído permanentemente',
+          'FIELD_LOCKED',
+        ),
+      );
+
     // Remove o campo do grupo e reconstrói o schema do grupo
     const updatedGroups = parentTable.groups.map((g) => {
       if (g.slug !== targetGroup.slug) return g;

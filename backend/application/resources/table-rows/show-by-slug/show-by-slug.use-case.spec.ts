@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { E_TABLE_STYLE } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import InMemoryRowContextBuilder from '@application/services/table/in-memory-row-context-builder.service';
 
@@ -35,6 +37,8 @@ describe('Table Row Show By Slug Use Case', () => {
       rowRepository,
       rowPasswordService,
       rowContextBuilder,
+      new InMemoryFieldVisibilityService(),
+      new InMemoryRowAccessGuardService(),
     );
   });
 

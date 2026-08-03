@@ -72,7 +72,10 @@ export const ExtensionListSchema: FastifySchema = {
           // configuracao nunca carrega o que foi salvo.
           tableSettings: {
             type: 'object',
-            additionalProperties: { type: 'object', additionalProperties: true },
+            additionalProperties: {
+              type: 'object',
+              additionalProperties: true,
+            },
           },
           requires: {
             type: 'object',

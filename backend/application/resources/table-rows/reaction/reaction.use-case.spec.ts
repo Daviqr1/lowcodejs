@@ -4,7 +4,9 @@ import { E_REACTION_TYPE, E_TABLE_STYLE } from '@application/core/entity.core';
 import ReactionInMemoryRepository from '@application/repositories/reaction/reaction-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowContextBuilder from '@application/services/table/in-memory-row-context-builder.service';
+import { makeReactionField } from '@test/helpers/field-factory.helper';
 
 import TableRowReactionUseCase from './reaction.use-case';
 
@@ -26,6 +28,7 @@ describe('Table Row Reaction Use Case', () => {
       reactionInMemoryRepository,
       rowInMemoryRepository,
       rowContextBuilder,
+      new InMemoryRowAccessGuardService(),
     );
     vi.clearAllMocks();
   });
@@ -41,6 +44,7 @@ describe('Table Row Reaction Use Case', () => {
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    table.fields = [makeReactionField({ slug: 'likes' })];
 
     const row = await rowInMemoryRepository.create({
       table,
@@ -69,6 +73,7 @@ describe('Table Row Reaction Use Case', () => {
       fieldOrderList: [],
       fieldOrderForm: [],
     });
+    table.fields = [makeReactionField({ slug: 'likes' })];
 
     const reaction = await reactionInMemoryRepository.create({
       type: E_REACTION_TYPE.LIKE,

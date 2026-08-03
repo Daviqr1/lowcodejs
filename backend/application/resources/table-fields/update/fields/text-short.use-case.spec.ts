@@ -567,6 +567,45 @@ describe('Table Field Update - TEXT_SHORT', () => {
     expect(result.value.permissions?.list.kind).toBe('NOBODY');
   });
 
+  it('campo LOCKED deve rejeitar destravar com FIELD_LOCKED', async () => {
+    const { field } = await createFieldAndTable(
+      fieldInMemoryRepository,
+      tableInMemoryRepository,
+      { locked: true, native: false },
+    );
+
+    // `locked` tem default `false` no Zod e no AJV: omitir a chave no PUT
+    // destravava o campo e liberava trash/delete em seguida.
+    const result = await sut.execute({
+      slug: 'clientes',
+      _id: field._id,
+      name: field.name,
+      type: field.type,
+      format: field.format,
+      required: field.required,
+      multiple: field.multiple,
+      defaultValue: field.defaultValue,
+      relationship: field.relationship,
+      dropdown: field.dropdown,
+      category: field.category,
+      group: field.group,
+      trashed: false,
+      trashedAt: null,
+      locked: false,
+      allowCreateRelationshipRecords: false,
+      permissions: field.permissions,
+      showInFilter: field.showInFilter,
+      widthInForm: field.widthInForm,
+      widthInList: field.widthInList,
+      widthInDetail: field.widthInDetail,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(403);
+    expect(result.value.cause).toBe('FIELD_LOCKED');
+  });
+
   it('campo LOCKED deve rejeitar mudar name com FIELD_LOCKED', async () => {
     const { field } = await createFieldAndTable(
       fieldInMemoryRepository,

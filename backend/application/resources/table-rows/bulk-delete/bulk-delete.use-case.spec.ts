@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { E_TABLE_STYLE } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 
 import BulkDeleteUseCase from './bulk-delete.use-case';
 
@@ -25,7 +26,11 @@ describe('Bulk Delete Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
     rowInMemoryRepository = new RowInMemoryRepository();
-    sut = new BulkDeleteUseCase(tableInMemoryRepository, rowInMemoryRepository);
+    sut = new BulkDeleteUseCase(
+      tableInMemoryRepository,
+      rowInMemoryRepository,
+      new InMemoryRowAccessGuardService(),
+    );
     vi.clearAllMocks();
   });
 
