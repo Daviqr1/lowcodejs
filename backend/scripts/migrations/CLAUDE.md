@@ -47,6 +47,8 @@ cabeçalho + uma chamada `run_migration "<basename>"` — ver "Convenções".
 | 25 | `25-migrate-relationship-backfill-form-mode.sh` | `25-migrate-relationship-backfill-form-mode.ts` | Backfilla `formMode='manage'` em campos-espelho N:N. Marker `MIGRATION_RELATIONSHIP_FORM_MODE_AT` |
 | 26 | `26-migrate-relationship-cleanup-broken-definitions.sh` | `26-migrate-relationship-cleanup-broken-definitions.ts` | Quarentena campos-espelho cujas `RelationshipDefinitions` apontam para tabelas inexistentes. Marker `MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT` |
 | 27 | `27-migrate-repair-owns-fk.sh` | `27-migrate-repair-owns-fk.ts` | Restaura FKs inline OWNS_FK (1:1/1:N) apagadas pela migration 23 e remove os links criados por ela. Marker `MIGRATION_REPAIR_OWNS_FK_AT` |
+| 28 | `28-migrate-relationship-dedup-consolidate.sh` | `28-migrate-relationship-dedup-consolidate.ts` | Consolida `RelationshipDefinitions` duplicadas por campo source (e os campos-espelho `-1`…`-N` no target). Marker `MIGRATION_RELATIONSHIP_DEDUP_AT` |
+| 29 | `29-migrate-sanitize-field-slugs.sh` | `29-migrate-sanitize-field-slugs.ts` | Renomeia slugs de campo com caracteres especiais (legado do `slugify` sem `strict`) que quebravam o update path do Mongo (`EmptyFieldName`, code 56). Move os valores das rows para a chave nova. Aceita `--dry-run`. Marker `MIGRATION_FIELD_SLUG_SANITIZE_AT` |
 
 ## Fluxo
 

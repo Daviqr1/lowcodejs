@@ -37,6 +37,8 @@ e ordenada dos wrappers.
 | `25-migrate-relationship-backfill-form-mode.ts` | `MIGRATION_RELATIONSHIP_FORM_MODE_AT` | Backfilla `formMode='manage'` em campos-espelho N:N. |
 | `26-migrate-relationship-cleanup-broken-definitions.ts` | `MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT` | Quarentena campos-espelho cujas `RelationshipDefinitions` apontam para tabelas inexistentes. |
 | `27-migrate-repair-owns-fk.ts` | `MIGRATION_REPAIR_OWNS_FK_AT` | Restaura FKs inline OWNS_FK (1:1/1:N) apagadas pela migration 23 e remove os links criados por ela. |
+| `28-migrate-relationship-dedup-consolidate.ts` | `MIGRATION_RELATIONSHIP_DEDUP_AT` | Consolida `RelationshipDefinitions` duplicadas por campo source (e os campos-espelho `-1`…`-N` no target) empilhadas pelas migrations 15/23. |
+| `29-migrate-sanitize-field-slugs.ts` | `MIGRATION_FIELD_SLUG_SANITIZE_AT` | Renomeia slugs de campo fora do `FIELD_SLUG_PATTERN` (legado do `slugify` sem `strict`, ex. `processo-sei-n.`), que quebravam o update path do Mongo com `EmptyFieldName` (code 56). Atualiza `fields`, `tables._schema`/`groups`/`fieldOrder*`/`order.field`/`layoutFields`, configs do cascade-dropdown e move os valores das rows para a chave nova via `$setField`. Pula campos nativos. Aceita `--dry-run`. |
 
 > **So migrations de boot.** Remodelagens **manuais/destrutivas** (one-off, sem
 > wrapper `.sh`, exigem `--apply --i-have-backup`) vivem separadas em
