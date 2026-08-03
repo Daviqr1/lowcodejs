@@ -40,9 +40,9 @@ export function useUpdateGroup(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async function (payload: UserGroupUpdatePayload) {
-      const route = '/user-group/'.concat(payload._id);
-      const response = await API.patch<IGroup>(route, payload);
+    mutationFn: async function ({ _id, ...body }: UserGroupUpdatePayload) {
+      // `_id` identifica a rota; o body tem `additionalProperties: false`.
+      const response = await API.patch<IGroup>(`/user-group/${_id}`, body);
       return response.data;
     },
     onSuccess(data, variables) {

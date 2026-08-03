@@ -17,7 +17,7 @@ hierarquicas, com sidebar de navegacao e impressao nativa do navegador
 | `document-row.tsx`                | Renderiza um registro do documento com heading, blocos de conteudo e campos extras colapsaveis                        |
 | `document-heading-row.tsx`        | Componente de heading dinamico (h2-h6) com icone e acoes opcionais                                                    |
 | `document-toc.tsx`                | Sumario (table of contents) com links para ancoras, visivel apenas na impressao (print-only)                          |
-| `document-print-button.tsx`       | Botao de impressao (canto superior direito) que dispara `window.print()`                                             |
+| `document-print-button.tsx`       | Botao de impressao (canto superior direito) que dispara `window.print()`                                              |
 
 ## Impressao
 
@@ -27,8 +27,9 @@ hierarquicas, com sidebar de navegacao e impressao nativa do navegador
 - O CSS de impressao vive em `src/styles.css` (`@media print`): esconde o chrome
   (sidebar/header da app, barra de acoes da tabela, sumario) e remove o recorte
   dos containers de altura fixa para o conteudo fluir entre paginas. A view
-  `table-document-view.tsx` marca `.document-print-root`/`.document-print-content`
-  e injeta um titulo `print-only` com o nome da tabela no topo.
+  `table-document-view.tsx` marca
+  `.document-print-root`/`.document-print-content` e injeta um titulo
+  `print-only` com o nome da tabela no topo.
 
 ## Dependencias principais
 

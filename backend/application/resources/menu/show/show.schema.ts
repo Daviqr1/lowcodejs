@@ -76,6 +76,22 @@ export const MenuShowSchema: FastifySchema = {
           type: 'boolean',
           description: 'Se é o menu inicial do sistema',
         },
+        // Sem declarar, o serializador remove e o form de edição recarregava
+        // `extension` como undefined, apagando o vínculo no PATCH seguinte.
+        icon: {
+          type: 'string',
+          nullable: true,
+          description: 'URL da imagem usada como ícone',
+        },
+        extension: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            pkg: { type: 'string' },
+            extensionId: { type: 'string' },
+          },
+          description: 'Referência a um módulo de extensão',
+        },
         visibility: {
           type: 'object',
           nullable: true,

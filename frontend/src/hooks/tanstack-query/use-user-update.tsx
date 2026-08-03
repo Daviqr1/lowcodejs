@@ -30,9 +30,9 @@ export function useUpdateUser(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async function (payload: UserUpdatePayload) {
-      const route = '/users/'.concat(payload._id);
-      const response = await API.patch<IUser>(route, payload);
+    mutationFn: async function ({ _id, ...body }: UserUpdatePayload) {
+      // `_id` identifica a rota; o body tem `additionalProperties: false`.
+      const response = await API.patch<IUser>(`/users/${_id}`, body);
       return response.data;
     },
     onSuccess(data, variables) {

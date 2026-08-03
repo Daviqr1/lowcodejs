@@ -53,7 +53,6 @@ function RouteComponent(): React.JSX.Element {
   const { data } = useSuspenseQuery(
     userListOptions({
       ...search,
-      authenticated: auth.user?._id,
       role: E_ROLE.ADMINISTRATOR,
     }),
   );

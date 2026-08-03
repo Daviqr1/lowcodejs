@@ -89,11 +89,9 @@ export const Route = createFileRoute('/_private/users/')({
     'order-created-at': search['order-created-at'],
   }),
   loader: ({ context, deps }) => {
-    const authenticated = useAuthStore.getState().user?._id;
     context.queryClient.prefetchQuery(
       userListOptions({
         ...deps,
-        authenticated,
         role: E_ROLE.ADMINISTRATOR,
       }),
     );

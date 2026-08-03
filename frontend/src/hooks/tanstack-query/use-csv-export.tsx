@@ -9,6 +9,28 @@ import { downloadCsvFromApi } from '@/lib/csv-export';
 
 export type CsvExportParams = Record<string, unknown> | undefined;
 
+/**
+ * Os callers repassam a `search` inteira da rota, que sempre carrega `page`
+ * (tem `.default(1)`) e pode carregar `order-*`/`perPage`. Nenhum dos endpoints
+ * de export declara essas chaves e a querystring tem `additionalProperties:
+ * false` — qualquer uma derruba o download com 400. Exportacao nao e paginada,
+ * entao descartar aqui resolve para todos os callers.
+ */
+function stripPaginationParams(
+  params: CsvExportParams,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (key === 'page' || key === 'perPage') continue;
+    if (key.startsWith('order-')) continue;
+    if (value === undefined) continue;
+    result[key] = value;
+  }
+
+  return result;
+}
+
 type UseCsvExportProps = Pick<
   Omit<
     UseMutationOptions<void, AxiosError | Error, CsvExportParams, unknown>,
@@ -31,7 +53,11 @@ export function useCsvExport(
   return useMutation({
     mutationFn: async function (params: CsvExportParams) {
       try {
-        await downloadCsvFromApi(endpoint, params ?? {}, fallbackFilename);
+        await downloadCsvFromApi(
+          endpoint,
+          stripPaginationParams(params),
+          fallbackFilename,
+        );
       } catch (error) {
         if (
           error instanceof AxiosError &&

@@ -35,9 +35,15 @@ export function useUpdateTable(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async function (payload: TableUpdatePayload) {
-      const route = '/tables/'.concat(payload.routeSlug);
-      const response = await API.put<ITable>(route, payload);
+    mutationFn: async function ({
+      routeSlug,
+      fields,
+      ...body
+    }: TableUpdatePayload) {
+      // `routeSlug` identifica a rota e `fields` nao e aceito pelo endpoint —
+      // o body tem `additionalProperties: false`, entao qualquer uma das duas
+      // derrubava o update inteiro com 400.
+      const response = await API.put<ITable>(`/tables/${routeSlug}`, body);
       return response.data;
     },
     onSuccess(data, variables) {

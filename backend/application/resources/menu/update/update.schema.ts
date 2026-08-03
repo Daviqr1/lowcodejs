@@ -32,6 +32,13 @@ export const MenuUpdateSchema: FastifySchema = {
       additionalProperties: 'Campos extras não são permitidos',
     },
     properties: {
+      // O Zod ja aceitava `order` e o use-case tem o ramo de reordenacao, mas
+      // sem declarar aqui o `additionalProperties: false` barrava o PATCH.
+      order: {
+        type: 'number',
+        minimum: 0,
+        description: 'Ordem do item entre os irmãos',
+      },
       name: {
         type: 'string',
         minLength: 1,
