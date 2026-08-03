@@ -5,12 +5,18 @@ import {
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
+  type IField,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
+import { TableFieldCreateSchema } from '../../table-fields/create/create.schema';
+import { TableFieldUpdateSchema } from '../../table-fields/update/update.schema';
+import { GroupFieldCreateSchema } from '../create/create.schema';
+
+import { GroupFieldUpdateSchema } from './update.schema';
 import GroupFieldUpdateUseCase from './update.use-case';
 
 let tableRepository: TableInMemoryRepository;
@@ -50,6 +56,41 @@ const FIELD_CREATE_PAYLOAD = {
   widthInDetail: null,
 };
 
+// O Fastify roda AJV com `useDefaults: true`: uma flag com `default` declarado e
+// preenchida quando o body a omite. Como as duas telas mandam PUT parcial (cada
+// uma com so a flag que conhece), um `default: false` aqui faz elas se apagarem
+// mutuamente. Este bloco guarda a causa raiz — o unit test do use-case nao passa
+// pelo AJV e nao pegaria a regressao.
+describe('Schemas de campo — flags de listagem do grupo sem default AJV', () => {
+  const SCHEMAS = {
+    'table-group-fields/update': GroupFieldUpdateSchema,
+    'table-group-fields/create': GroupFieldCreateSchema,
+    'table-fields/update': TableFieldUpdateSchema,
+    'table-fields/create': TableFieldCreateSchema,
+  };
+
+  function declaredDefaults(body: unknown): Record<string, unknown> {
+    const properties = Reflect.get(Object(body), 'properties');
+    const result: Record<string, unknown> = {};
+    for (const key of ['showInParentList', 'visibleInParentList']) {
+      result[key] = Reflect.get(
+        Object(Reflect.get(Object(properties), key)),
+        'default',
+      );
+    }
+    return result;
+  }
+
+  for (const [name, schema] of Object.entries(SCHEMAS)) {
+    it(`${name}: flag ausente no body nao vira false`, () => {
+      expect(declaredDefaults(schema.body)).toEqual({
+        showInParentList: undefined,
+        visibleInParentList: undefined,
+      });
+    });
+  }
+});
+
 describe('Group Field Update Use Case', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
@@ -64,6 +105,63 @@ describe('Group Field Update Use Case', () => {
       modelBuilder,
     );
   });
+
+  // Cria o campo-filho ja com as flags no estado desejado e a tabela pai com o
+  // grupo `endereco` apontando para ele.
+  async function createFieldInGroup(flags: {
+    showInParentList: boolean;
+    visibleInParentList: boolean;
+  }): Promise<IField> {
+    const field = await fieldRepository.create({
+      ...FIELD_CREATE_PAYLOAD,
+      ...flags,
+    });
+
+    await tableRepository.create({
+      ...TABLE_DEFAULTS,
+      name: 'Clientes',
+      slug: 'clientes',
+      groups: [
+        { slug: 'endereco', name: 'Endereco', fields: [field], _schema: {} },
+      ],
+    });
+
+    return field;
+  }
+
+  // Payload valido de update; o caller passa so as flags que aquela tela envia
+  // (as omitidas ficam ausentes, como no PUT real).
+  function updatePayload(overrides: {
+    fieldId: string;
+    showInParentList?: boolean;
+    visibleInParentList?: boolean;
+  }): Parameters<typeof sut.execute>[0] {
+    return {
+      slug: 'clientes',
+      groupSlug: 'endereco',
+      name: 'Rua',
+      type: E_FIELD_TYPE.TEXT_SHORT,
+      permissions: buildFieldPermissions(true, true, true),
+      showInFilter: true,
+      locked: false,
+      allowCreateRelationshipRecords: false,
+      required: false,
+      category: [],
+      dropdown: [],
+      defaultValue: null,
+      format: E_FIELD_FORMAT.ALPHA_NUMERIC,
+      group: null,
+      multiple: false,
+      relationship: null,
+      widthInForm: 50,
+      widthInList: 10,
+      widthInDetail: null,
+      trashed: false,
+      trashedAt: null,
+      htmlContent: null,
+      ...overrides,
+    };
+  }
 
   it('deve atualizar campo do grupo com sucesso', async () => {
     const field = await fieldRepository.create(FIELD_CREATE_PAYLOAD);
@@ -171,6 +269,70 @@ describe('Group Field Update Use Case', () => {
     const updatedField = await fieldRepository.findById(field._id);
     expect(updatedField?.showInParentList).toBe(true);
     expect(updatedField?.visibleInParentList).toBe(true);
+  });
+
+  it('nao deve apagar visibleInParentList quando o caller omite a flag', async () => {
+    const field = await createFieldInGroup({
+      showInParentList: true,
+      visibleInParentList: true,
+    });
+
+    // Payload do form de edicao do campo: manda showInParentList, omite a outra.
+    const result = await sut.execute(
+      updatePayload({ fieldId: field._id, showInParentList: true }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    const updatedField = await fieldRepository.findById(field._id);
+    expect(updatedField?.showInParentList).toBe(true);
+    expect(updatedField?.visibleInParentList).toBe(true);
+  });
+
+  it('nao deve apagar showInParentList quando o caller omite a flag', async () => {
+    const field = await createFieldInGroup({
+      showInParentList: true,
+      visibleInParentList: true,
+    });
+
+    // Payload do olho em Gerenciar: manda visibleInParentList, omite a outra.
+    const result = await sut.execute(
+      updatePayload({ fieldId: field._id, visibleInParentList: false }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    const updatedField = await fieldRepository.findById(field._id);
+    expect(updatedField?.showInParentList).toBe(true);
+    expect(updatedField?.visibleInParentList).toBe(false);
+  });
+
+  it('deve revelar a coluna na transicao off->on de showInParentList', async () => {
+    const field = await createFieldInGroup({
+      showInParentList: false,
+      visibleInParentList: false,
+    });
+
+    const result = await sut.execute(
+      updatePayload({ fieldId: field._id, showInParentList: true }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    const updatedField = await fieldRepository.findById(field._id);
+    expect(updatedField?.visibleInParentList).toBe(true);
+  });
+
+  it('nao deve reverter um ocultar quando showInParentList ja estava ligado', async () => {
+    const field = await createFieldInGroup({
+      showInParentList: true,
+      visibleInParentList: false,
+    });
+
+    const result = await sut.execute(
+      updatePayload({ fieldId: field._id, showInParentList: true }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    const updatedField = await fieldRepository.findById(field._id);
+    expect(updatedField?.visibleInParentList).toBe(false);
   });
 
   it('deve retornar TABLE_NOT_FOUND quando tabela nao existe', async () => {

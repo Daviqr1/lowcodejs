@@ -104,7 +104,12 @@ export default class FieldInMemoryRepository implements FieldContractRepository 
   async update({ _id, ...payload }: FieldUpdatePayload): Promise<IField> {
     const field = this.items.find((f) => f._id === _id);
     if (!field) throw new Error('Field not found');
-    Object.assign(field, payload, { updatedAt: new Date() });
+    // Espelha o `$set` do Mongoose: chave `undefined` e descartada, nao apaga o
+    // valor gravado. Sem isso o fake mentiria sobre updates parciais.
+    const defined = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== undefined),
+    );
+    Object.assign(field, defined, { updatedAt: new Date() });
     return field;
   }
 

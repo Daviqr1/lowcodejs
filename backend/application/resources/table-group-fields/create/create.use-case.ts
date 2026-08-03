@@ -138,6 +138,10 @@ export default class GroupFieldCreateUseCase {
       // Cria o campo
       const field = await this.fieldRepository.create({
         ...payload,
+        // Nascer elegivel ja nasce visivel na listagem do pai (o form so expoe
+        // `showInParentList`; o olho do Gerenciar cuida do resto depois).
+        visibleInParentList:
+          payload.visibleInParentList ?? payload.showInParentList,
         defaultValue: normalizeDefaultValue(payload.type, payload.defaultValue),
         slug,
         group: null,

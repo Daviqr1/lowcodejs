@@ -86,15 +86,15 @@ export const TableFieldUpdateSchema: FastifySchema = {
         default: false,
         description: 'Permitir filtrar por este campo',
       },
+      // Sem `default`: AJV preencheria a flag ausente com false e apagaria a
+      // outra num PUT parcial (ver table-group-fields/update/update.schema.ts).
       showInParentList: {
         type: 'boolean',
-        default: false,
         description:
           'Campo-filho de grupo: elegivel a aparecer na listagem geral da tabela pai',
       },
       visibleInParentList: {
         type: 'boolean',
-        default: false,
         description:
           'Campo-filho de grupo: coluna visivel na listagem geral da tabela pai',
       },

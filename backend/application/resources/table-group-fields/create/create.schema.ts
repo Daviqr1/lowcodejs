@@ -57,8 +57,10 @@ export const GroupFieldCreateSchema: FastifySchema = {
       required: { type: 'boolean', default: false },
       multiple: { type: 'boolean', default: false },
       showInFilter: { type: 'boolean', default: false },
-      showInParentList: { type: 'boolean', default: false },
-      visibleInParentList: { type: 'boolean', default: false },
+      // Sem `default`: o Mongoose ja aplica false, e o default do AJV apagaria
+      // a flag que o caller nao enviou (ver update.schema.ts).
+      showInParentList: { type: 'boolean' },
+      visibleInParentList: { type: 'boolean' },
       widthInForm: { type: 'number', nullable: true, default: 50 },
       widthInList: { type: 'number', nullable: true, default: 10 },
       widthInDetail: { type: 'number', nullable: true, default: 50 },

@@ -93,6 +93,14 @@ export default class GroupFieldUpdateUseCase {
           HTTPException.NotFound('Campo não encontrado', 'FIELD_NOT_FOUND'),
         );
 
+      // Ligar a elegibilidade ja revela a coluna na listagem. So na transicao
+      // off->on, para nao desfazer um "ocultar" feito depois pelo olho em
+      // Gerenciar. `undefined` = caller nao enviou = nao altera.
+      let visibleInParentList = payload.visibleInParentList;
+      if (payload.showInParentList && !field.showInParentList) {
+        visibleInParentList = true;
+      }
+
       if (field.native) {
         if (payload.trashed) {
           return left(
@@ -107,7 +115,7 @@ export default class GroupFieldUpdateUseCase {
           _id: field._id,
           showInFilter: payload.showInFilter,
           showInParentList: payload.showInParentList,
-          visibleInParentList: payload.visibleInParentList,
+          visibleInParentList,
           permissions: payload.permissions,
           widthInForm: payload.widthInForm,
           widthInList: payload.widthInList,
@@ -216,6 +224,7 @@ export default class GroupFieldUpdateUseCase {
 
       const updatedField = await this.fieldRepository.update({
         ...payload,
+        visibleInParentList,
         defaultValue: normalizeDefaultValue(payload.type, payload.defaultValue),
         _id: field._id,
         slug,

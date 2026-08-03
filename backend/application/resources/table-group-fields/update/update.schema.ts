@@ -38,8 +38,11 @@ export const GroupFieldUpdateSchema: FastifySchema = {
       required: { type: 'boolean', default: false },
       multiple: { type: 'boolean', default: false },
       showInFilter: { type: 'boolean', default: false },
-      showInParentList: { type: 'boolean', default: false },
-      visibleInParentList: { type: 'boolean', default: false },
+      // Sem `default`: AJV preencheria a flag ausente com false e os dois
+      // callers (form do campo / olho do Gerenciar) mandam PUT parcial, cada um
+      // com so a flag que conhece — apagando a outra. Ausente = nao altera.
+      showInParentList: { type: 'boolean' },
+      visibleInParentList: { type: 'boolean' },
       widthInForm: { type: 'number', nullable: true, default: 50 },
       widthInList: { type: 'number', nullable: true, default: 10 },
       widthInDetail: { type: 'number', nullable: true, default: 50 },

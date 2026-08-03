@@ -74,15 +74,15 @@ export const TableFieldCreateSchema: FastifySchema = {
         default: false,
         description: 'Permitir filtrar por este campo',
       },
+      // Sem `default`: o Mongoose ja aplica false, e o default do AJV apagaria
+      // a flag que o caller nao enviou (ver update.schema.ts).
       showInParentList: {
         type: 'boolean',
-        default: false,
         description:
           'Campo-filho de grupo: elegivel a aparecer na listagem geral da tabela pai',
       },
       visibleInParentList: {
         type: 'boolean',
-        default: false,
         description:
           'Campo-filho de grupo: coluna visivel na listagem geral da tabela pai',
       },
