@@ -90,6 +90,32 @@ describe('Sign Up Use Case', () => {
     expect(found?._id).toBe(existing._id);
   });
 
+  it('deve retornar erro USER_ALREADY_EXISTS quando email estiver na lixeira', async () => {
+    const existing = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password123',
+      group: 'group-id',
+    });
+
+    await userInMemoryRepository.update({
+      _id: existing._id,
+      trashed: true,
+      trashedAt: new Date(),
+    });
+
+    const result = await sut.execute({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password123',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(409);
+    expect(result.value.cause).toBe('USER_ALREADY_EXISTS');
+  });
+
   it('deve retornar erro GROUP_NOT_FOUND quando grupo REGISTERED nao existir', async () => {
     const newUserRepo = new UserInMemoryRepository();
     const newGroupRepo = new UserGroupInMemoryRepository();

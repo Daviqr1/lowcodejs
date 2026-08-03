@@ -29,7 +29,13 @@ export default class SignUpUseCase {
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const user = await this.userRepository.findByEmail(payload.email);
+      // O e-mail nao tem indice unique no model: um e-mail na lixeira tambem
+      // bloqueia o registro, senao ficariam dois docs com o mesmo e-mail.
+      const user =
+        (await this.userRepository.findByEmail(payload.email)) ??
+        (await this.userRepository.findByEmail(payload.email, {
+          trashed: true,
+        }));
 
       if (user)
         return left(

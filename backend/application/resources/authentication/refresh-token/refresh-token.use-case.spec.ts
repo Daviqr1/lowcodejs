@@ -40,6 +40,28 @@ describe('Refresh Token Use Case', () => {
     expect(result.value.message).toBe('Usuário não encontrado');
   });
 
+  it('deve retornar erro USER_NOT_FOUND quando usuario estiver na lixeira', async () => {
+    const user = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password',
+      group: 'group-id',
+    });
+
+    await userInMemoryRepository.update({
+      _id: user._id,
+      trashed: true,
+      trashedAt: new Date(),
+    });
+
+    const result = await sut.execute({ _id: user._id });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(404);
+    expect(result.value.cause).toBe('USER_NOT_FOUND');
+  });
+
   it('deve retornar erro REFRESH_TOKEN_ERROR quando houver falha', async () => {
     const findByIdSpy = vi
       .spyOn(userInMemoryRepository, 'findById')

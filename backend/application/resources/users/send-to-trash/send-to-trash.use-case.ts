@@ -31,17 +31,23 @@ export default class UserSendToTrashUseCase {
       const user = await this.userRepository.findById(payload._id);
 
       if (!user) {
+        // `findById` ja filtra a lixeira; so buscamos o doc trashado para
+        // distinguir "ja esta na lixeira" (409) de "nao existe" (404).
+        const trashedUser = await this.userRepository.findById(payload._id, {
+          trashed: true,
+        });
+
+        if (trashedUser) {
+          return left(
+            HTTPException.Conflict(
+              'Usuário já está na lixeira',
+              'ALREADY_TRASHED',
+            ),
+          );
+        }
+
         return left(
           HTTPException.NotFound('Usuário não encontrado', 'USER_NOT_FOUND'),
-        );
-      }
-
-      if (user.trashed) {
-        return left(
-          HTTPException.Conflict(
-            'Usuário já está na lixeira',
-            'ALREADY_TRASHED',
-          ),
         );
       }
 

@@ -98,6 +98,33 @@ describe('Sign In Use Case', () => {
     expect(result.value.message).toBe('Usuário inativo');
   });
 
+  it('deve retornar erro 401 quando usuario estiver na lixeira', async () => {
+    const hashedPassword = await passwordService.hash('password123');
+    const user = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: hashedPassword,
+      group: 'group-id',
+    });
+
+    await userInMemoryRepository.update({
+      _id: user._id,
+      trashed: true,
+      trashedAt: new Date(),
+    });
+
+    const result = await sut.execute({
+      email: 'john@example.com',
+      password: 'password123',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(401);
+    expect(result.value.cause).toBe('INVALID_CREDENTIALS');
+    expect(result.value.message).toBe('E-mail ou senha inválidos');
+  });
+
   it('deve retornar erro SIGN_IN_ERROR quando houver falha', async () => {
     const findByEmailSpy = vi
       .spyOn(userInMemoryRepository, 'findByEmail')

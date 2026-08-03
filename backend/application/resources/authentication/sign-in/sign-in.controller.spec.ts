@@ -109,6 +109,22 @@ describe('E2E Sign In Controller', () => {
       expect(cookies.some((c) => c.includes('refreshToken'))).toBe(true);
     });
 
+    it('deve retornar 401 quando o usuario estiver na lixeira', async () => {
+      const trashed = await createUser('trashed@example.com', 'Trashed User');
+      await User.updateOne(
+        { email: trashed.email },
+        { trashed: true, trashedAt: new Date() },
+      );
+
+      const response = await supertest(kernel.server)
+        .post('/authentication/sign-in')
+        .send(trashed);
+
+      expect(response.statusCode).toBe(401);
+      expect(response.body.cause).toBe('INVALID_CREDENTIALS');
+      expect(response.headers['set-cookie']).toBeUndefined();
+    });
+
     it('deve manter duas contas autenticadas simultaneamente', async () => {
       const first = await createUser('first@example.com', 'First User');
       const second = await createUser('second@example.com', 'Second User');
