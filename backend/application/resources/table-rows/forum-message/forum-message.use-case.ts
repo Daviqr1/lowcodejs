@@ -8,6 +8,7 @@ import {
   E_TABLE_STYLE,
   type IField,
   type IGroupConfiguration,
+  type IRow,
   type ITable,
 } from '@application/core/entity.core';
 import { E_NOTIFICATION_TYPE } from '@application/core/entity.core';
@@ -17,6 +18,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { NotificationContractService } from '@application/services/notification/notification-contract.service';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { Env } from '@start/env';
 
 import type {
@@ -60,6 +62,7 @@ export default class ForumMessageUseCase {
     private readonly emailQueue: EmailQueueContractService,
     private readonly rowRepository: RowContractRepository,
     private readonly notificationService: NotificationContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async create(payload: ForumMessageCreatePayload): Promise<Response> {
@@ -98,7 +101,7 @@ export default class ForumMessageUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
-      if (!this.canAccessChannel(row, config, payload.user))
+      if (!(await this.canAccessChannel(table, row, config, payload.user)))
         return left(
           HTTPException.Forbidden(
             'User is not allowed to post in this channel',
@@ -250,7 +253,7 @@ export default class ForumMessageUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
-      if (!this.canAccessChannel(row, config, payload.user))
+      if (!(await this.canAccessChannel(table, row, config, payload.user)))
         return left(
           HTTPException.Forbidden(
             'User is not allowed to edit messages in this channel',
@@ -444,7 +447,7 @@ export default class ForumMessageUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
-      if (!this.canAccessChannel(row, config, payload.user))
+      if (!(await this.canAccessChannel(table, row, config, payload.user)))
         return left(
           HTTPException.Forbidden(
             'User is not allowed to delete messages in this channel',
@@ -542,7 +545,7 @@ export default class ForumMessageUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
-      if (!this.canAccessChannel(row, config, payload.user))
+      if (!(await this.canAccessChannel(table, row, config, payload.user)))
         return left(
           HTTPException.Forbidden(
             'User is not allowed to access this channel',
@@ -697,13 +700,34 @@ export default class ForumMessageUseCase {
     };
   }
 
-  private canAccessChannel(
+  /**
+   * Acesso ao canal: regra propria do forum (dono/membro em canal privado) e,
+   * por cima, o row-access-guard — o canal e uma row como qualquer outra e
+   * estava fora do filtro.
+   */
+  private async canAccessChannel(
+    table: ITable,
+    row: IRow,
+    config: ForumConfig,
+    userId: string,
+  ): Promise<boolean> {
+    if (!this.channelAllowsUser(row, config, userId)) return false;
+
+    const ctx = await this.rowAccessGuard.resolveContext(userId);
+    return this.rowAccessGuard.composeReadDecision(
+      table._id.toString(),
+      row,
+      ctx,
+      table,
+    );
+  }
+
+  private channelAllowsUser(
     row: Record<string, unknown>,
     config: ForumConfig,
     userId: string,
   ): boolean {
-    const creatorId =
-      this.normalizeId(row['creator']) ?? this.normalizeId(row.creator);
+    const creatorId = this.normalizeId(row.creator);
     if (creatorId === userId) return true;
 
     let isPrivate: boolean;

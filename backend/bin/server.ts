@@ -23,6 +23,8 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import RowMongooseRepository from '@application/repositories/row/row.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import RowAccessGuardService from '@application/services/row-access-guard/row-access-guard.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import StorageService from '@application/services/storage/storage.service';
@@ -162,6 +164,9 @@ async function start(): Promise<void> {
     );
     const csvRowPasswordService =
       getInstanceByToken<RowPasswordContractService>(BcryptRowPasswordService);
+    const csvRowAccessGuard = getInstanceByToken<RowAccessGuardContractService>(
+      RowAccessGuardService,
+    );
 
     startCsvImportWorker({
       namespace: csvImportNamespace,
@@ -169,6 +174,7 @@ async function start(): Promise<void> {
       tableRepository: csvTableRepository,
       rowRepository: csvRowRepository,
       rowPasswordService: csvRowPasswordService,
+      rowAccessGuard: csvRowAccessGuard,
     });
     console.info('CSV import worker started');
 

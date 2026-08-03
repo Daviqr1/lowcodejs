@@ -28,6 +28,7 @@ import {
   type CsvImportProgressEvent,
   type CsvImportSocketInit,
 } from '@application/resources/table-rows/import-csv/import-csv.socket';
+import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { createBullMQConnection } from '@config/redis.config';
 
@@ -51,6 +52,7 @@ type WorkerDeps = {
   tableRepository: TableContractRepository;
   rowRepository: RowContractRepository;
   rowPasswordService: RowPasswordContractService;
+  rowAccessGuard: RowAccessGuardContractService;
 };
 
 let cachedWorker: Worker<CsvImportJobPayload> | null = null;
@@ -225,6 +227,7 @@ async function processImportJob(
   let skipped = 0;
   const total = rows.length;
   const groups: IGroupConfiguration[] = table.groups ?? [];
+  const guardContext = await deps.rowAccessGuard.resolveContext(userId);
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -258,7 +261,19 @@ async function processImportJob(
     }
 
     await deps.rowPasswordService.hash(payload, table.fields);
-    await deps.rowRepository.create({ table, data: payload });
+
+    // Sem o sanitize, uma coluna de visibilidade no CSV entrava crua — dava
+    // para importar rows num nivel que o proprio usuario nao enxerga.
+    const sanitized = await deps.rowAccessGuard.composeSanitize(
+      table._id.toString(),
+      payload,
+      guardContext,
+      table,
+      'create',
+      null,
+    );
+
+    await deps.rowRepository.create({ table, data: sanitized });
 
     imported++;
 

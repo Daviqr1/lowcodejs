@@ -14,6 +14,7 @@ import type { UserContractRepository } from '@application/repositories/user/user
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailQueueService from '@application/services/email-queue/in-memory-email-queue.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import { groupItems } from '@test/helpers/row-data.helper';
 
 import ForumMessageUseCase from './forum-message.use-case';
@@ -126,6 +127,7 @@ describe('Forum Message Use Case', () => {
       emailQueue,
       rowInMemoryRepository,
       notificationService,
+      new InMemoryRowAccessGuardService(),
     );
     vi.clearAllMocks();
   });
