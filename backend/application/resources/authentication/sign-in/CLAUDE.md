@@ -9,8 +9,9 @@ Autentica um usuario com email e senha, retornando tokens JWT como cookies HTTP-
 1. Middleware: Nenhum
 2. Validator: `SignInBodyValidator` - campos: `email` (string, email, required, trim), `password` (string, min 1, required, trim)
 3. UseCase: `SignInUseCase`
-   - Busca usuario por email exato via `userRepository.findBy({ email, exact: true })`
-   - Se nao encontrar, retorna Left (401 INVALID_CREDENTIALS)
+   - Busca usuario por email via `userRepository.findByEmail(email)` — o finder
+     ja filtra `trashed: false`, entao usuario na lixeira nao e encontrado
+   - Se nao encontrar (inexistente **ou** na lixeira), retorna Left (401 INVALID_CREDENTIALS)
    - Se usuario inativo (`E_USER_STATUS.INACTIVE`), retorna Left (401 USER_INACTIVE)
    - Compara senha com bcrypt (`bcrypt.compare`)
    - Se senha nao confere, retorna Left (401 INVALID_CREDENTIALS)
@@ -20,6 +21,8 @@ Autentica um usuario com email e senha, retornando tokens JWT como cookies HTTP-
 
 ## Regras de Negocio
 - Email deve existir no banco de dados
+- Usuario na lixeira (`trashed: true`) **nao autentica** — cai no mesmo
+  INVALID_CREDENTIALS de email inexistente, sem revelar que a conta existe
 - Usuario deve estar com status ACTIVE
 - Senha deve corresponder ao hash armazenado (bcrypt)
 - Tokens (accessToken + refreshToken) sao setados como cookies HTTP-only

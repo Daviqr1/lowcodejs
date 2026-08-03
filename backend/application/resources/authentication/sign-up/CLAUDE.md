@@ -9,8 +9,10 @@ Registra um novo usuario com nome, email e senha. Envia e-mail de boas-vindas.
 1. Middleware: Nenhum
 2. Validator: `SignUpBodyValidator` - campos: `name` (string, min 1, required, trim), `email` (string, email, required, trim), `password` (string, min 6, regex maiuscula+minuscula+numero+especial, required, trim)
 3. UseCase: `SignUpUseCase`
-   - Busca usuario por email exato via `userRepository.findBy({ email, exact: true })`
-   - Se usuario ja existe, retorna Left (409 USER_ALREADY_EXISTS)
+   - Busca usuario por email via `findByEmail(email)` e, se nao achar, repete com
+     `{ trashed: true }` — o e-mail nao tem indice unique no model, entao um
+     e-mail na lixeira tambem precisa bloquear o registro
+   - Se usuario ja existe (ativo ou na lixeira), retorna Left (409 USER_ALREADY_EXISTS)
    - Busca grupo REGISTERED via `userGroupRepository.findBy({ slug: E_ROLE.REGISTERED, exact: true })`
    - Se grupo nao encontrado, retorna Left (409 GROUP_NOT_FOUND)
    - Faz hash da senha com bcrypt (salt 6)
@@ -21,7 +23,7 @@ Registra um novo usuario com nome, email e senha. Envia e-mail de boas-vindas.
 5. Service: `EmailContractService.buildTemplate`, `EmailContractService.sendEmail`
 
 ## Regras de Negocio
-- Email nao pode ja estar cadastrado
+- Email nao pode ja estar cadastrado — inclusive por usuario na lixeira
 - Grupo REGISTERED deve existir no banco (seeder)
 - Senha hashada com bcrypt (salt rounds = 6)
 - Usuario criado com status ACTIVE e role REGISTERED

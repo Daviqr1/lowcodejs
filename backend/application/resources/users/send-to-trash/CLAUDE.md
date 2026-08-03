@@ -15,7 +15,9 @@ Envia um usuário para a lixeira (soft delete).
 
 - Bloqueia auto-trash (`_id === request.user.sub`).
 - Bloqueia ADMIN tentando trashar usuário MASTER.
-- Apenas usuários ativos (não-trashed) são afetados.
+- Apenas usuários ativos (não-trashed) são afetados. `findById` já filtra a
+  lixeira; a busca com `{ trashed: true }` só acontece no caminho de erro, para
+  distinguir `ALREADY_TRASHED` (409) de `USER_NOT_FOUND` (404).
 
 ## Erros
 
