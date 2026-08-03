@@ -56,6 +56,50 @@ export const E_FIELD_TYPE = {
   STATUS: 'STATUS',
 } as const;
 
+/**
+ * Tipos nativos — criados pela plataforma, nunca escolhidos pelo usuario.
+ */
+export const FIELD_TYPE_NATIVE_VALUES: Array<ValueOf<typeof E_FIELD_TYPE>> = [
+  E_FIELD_TYPE.CREATOR,
+  E_FIELD_TYPE.IDENTIFIER,
+  E_FIELD_TYPE.CREATED_AT,
+  E_FIELD_TYPE.UPDATED_AT,
+  E_FIELD_TYPE.UPDATER,
+  E_FIELD_TYPE.TRASHED_AT,
+  E_FIELD_TYPE.STATUS,
+];
+
+/**
+ * Tipos que nao podem existir dentro de um FIELD_GROUP (sem aninhamento).
+ */
+const FIELD_TYPE_NOT_NESTABLE_VALUES: Array<ValueOf<typeof E_FIELD_TYPE>> = [
+  E_FIELD_TYPE.FIELD_GROUP,
+  E_FIELD_TYPE.REACTION,
+  E_FIELD_TYPE.EVALUATION,
+];
+
+/**
+ * Todos os tipos de campo — usar nos enums de RESPOSTA (inclui os nativos).
+ * Derivado de `E_FIELD_TYPE` para que um tipo novo nunca precise ser repetido
+ * a mao nos JSON Schemas do Fastify.
+ */
+export const FIELD_TYPE_ALL_VALUES = Object.values(E_FIELD_TYPE);
+
+/**
+ * Tipos configuraveis pelo usuario — usar nos enums de BODY (criar/editar campo).
+ */
+export const FIELD_TYPE_CONFIGURABLE_VALUES = FIELD_TYPE_ALL_VALUES.filter(
+  (type) => !FIELD_TYPE_NATIVE_VALUES.includes(type),
+);
+
+/**
+ * Tipos configuraveis dentro de um FIELD_GROUP.
+ */
+export const FIELD_TYPE_GROUP_CONFIGURABLE_VALUES =
+  FIELD_TYPE_CONFIGURABLE_VALUES.filter(
+    (type) => !FIELD_TYPE_NOT_NESTABLE_VALUES.includes(type),
+  );
+
 export const E_ROW_STATUS = {
   DRAFT: 'draft',
   PUBLISHED: 'published',

@@ -1,5 +1,10 @@
 import type { FastifySchema } from 'fastify';
 
+import {
+  FIELD_TYPE_ALL_VALUES,
+  FIELD_TYPE_CONFIGURABLE_VALUES,
+} from '@application/core/entity.core';
+
 export const TableFieldCreateSchema: FastifySchema = {
   tags: ['Campos'],
   summary: 'Criar campo',
@@ -43,20 +48,7 @@ export const TableFieldCreateSchema: FastifySchema = {
       },
       type: {
         type: 'string',
-        enum: [
-          'TEXT_SHORT',
-          'TEXT_LONG',
-          'DROPDOWN',
-          'DATE',
-          'RELATIONSHIP',
-          'FILE',
-          'FIELD_GROUP',
-          'REACTION',
-          'EVALUATION',
-          'CATEGORY',
-          'USER',
-          'HTML_CONTENT',
-        ],
+        enum: FIELD_TYPE_CONFIGURABLE_VALUES,
         description: 'Tipo do campo, conforme o enum FIELD_TYPE',
       },
       required: {
@@ -390,27 +382,7 @@ export const TableFieldCreateSchema: FastifySchema = {
         slug: { type: 'string', description: 'Slug gerado do campo' },
         type: {
           type: 'string',
-          enum: [
-            'TEXT_SHORT',
-            'TEXT_LONG',
-            'DROPDOWN',
-            'DATE',
-            'RELATIONSHIP',
-            'FILE',
-            'FIELD_GROUP',
-            'REACTION',
-            'EVALUATION',
-            'CATEGORY',
-            'USER',
-            'HTML_CONTENT',
-            'CREATOR',
-            'IDENTIFIER',
-            'CREATED_AT',
-            'UPDATED_AT',
-            'UPDATER',
-            'STATUS',
-            'TRASHED_AT',
-          ],
+          enum: FIELD_TYPE_ALL_VALUES,
           description: 'Tipo do campo',
         },
         required: { type: 'boolean', description: 'Campo é obrigatório' },

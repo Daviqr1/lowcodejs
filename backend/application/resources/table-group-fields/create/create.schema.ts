@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { FIELD_TYPE_GROUP_CONFIGURABLE_VALUES } from '@application/core/entity.core';
+
 export const GroupFieldCreateSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
   summary: 'Criar campo no grupo',
@@ -41,17 +43,7 @@ export const GroupFieldCreateSchema: FastifySchema = {
       },
       type: {
         type: 'string',
-        enum: [
-          'TEXT_SHORT',
-          'TEXT_LONG',
-          'DROPDOWN',
-          'DATE',
-          'RELATIONSHIP',
-          'FILE',
-          'CATEGORY',
-          'USER',
-          'HTML_CONTENT',
-        ],
+        enum: FIELD_TYPE_GROUP_CONFIGURABLE_VALUES,
         description: 'Tipo do campo',
       },
       required: { type: 'boolean', default: false },

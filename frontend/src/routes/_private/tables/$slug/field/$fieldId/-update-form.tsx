@@ -1024,6 +1024,19 @@ export const UpdateFieldFormFields = withForm({
           </form.AppField>
         )}
 
+        {/* Campo Valor Padrão (USER_GROUP) */}
+        {isUserGroup && (
+          <form.AppField name="defaultValue">
+            {(field) => (
+              <field.FieldGroupCombobox
+                label="Valor padrão"
+                placeholder="Sem valor padrão"
+                disabled={isDisabled || lockAllControls}
+              />
+            )}
+          </form.AppField>
+        )}
+
         {/* Campo USER: gravar o usuário logado quando vazio */}
         {isUser && (
           <form.AppField name="fillWithCurrentUserWhenEmpty">

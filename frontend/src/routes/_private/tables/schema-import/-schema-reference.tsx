@@ -26,6 +26,10 @@ const SECTIONS: Array<Section> = [
       { name: 'DROPDOWN', hint: 'Seletor com options inline (label + color).' },
       { name: 'FILE', hint: 'Anexo de arquivo.' },
       { name: 'USER', hint: 'Referência a um usuário do sistema.' },
+      {
+        name: 'USER_GROUP',
+        hint: 'Referência a um ou mais grupos de usuários.',
+      },
       { name: 'CATEGORY', hint: 'Árvore de categorias.' },
       {
         name: 'RELATIONSHIP',

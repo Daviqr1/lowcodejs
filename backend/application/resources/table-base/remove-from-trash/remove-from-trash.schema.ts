@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
+
 export const TableRemoveFromTrashSchema: FastifySchema = {
   tags: ['Tabelas'],
   summary: 'Restaurar tabela da lixeira',
@@ -56,27 +58,7 @@ export const TableRemoveFromTrashSchema: FastifySchema = {
               slug: { type: 'string', description: 'Slug do campo' },
               type: {
                 type: 'string',
-                enum: [
-                  'TEXT_SHORT',
-                  'TEXT_LONG',
-                  'DROPDOWN',
-                  'DATE',
-                  'RELATIONSHIP',
-                  'FILE',
-                  'FIELD_GROUP',
-                  'REACTION',
-                  'EVALUATION',
-                  'CATEGORY',
-                  'USER',
-                  'HTML_CONTENT',
-                  'CREATOR',
-                  'IDENTIFIER',
-                  'CREATED_AT',
-                  'UPDATED_AT',
-                  'UPDATER',
-                  'STATUS',
-                  'TRASHED_AT',
-                ],
+                enum: FIELD_TYPE_ALL_VALUES,
                 description: 'Tipo do campo do enum FIELD_TYPE',
               },
               required: {

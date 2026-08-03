@@ -30,6 +30,7 @@ import { TableRowRelationshipCell } from '@/components/common/dynamic-table/tabl
 import { TableRowTextLongCell } from '@/components/common/dynamic-table/table-cells/table-row-text-long-cell';
 import { TableRowTextShortCell } from '@/components/common/dynamic-table/table-cells/table-row-text-short-cell';
 import { TableRowUserCell } from '@/components/common/dynamic-table/table-cells/table-row-user-cell';
+import { TableRowUserGroupCell } from '@/components/common/dynamic-table/table-cells/table-row-user-group-cell';
 import { AttachmentContextMenu } from '@/components/common/file-upload/attachment-context-menu';
 import { FileUploadWithStorage } from '@/components/common/file-upload/file-upload-with-storage';
 import { extractMentionIds } from '@/components/common/rich-editor';
@@ -856,6 +857,13 @@ export function KanbanRowDialog({
       case E_FIELD_TYPE.USER:
         return (
           <TableRowUserCell
+            row={row}
+            field={field}
+          />
+        );
+      case E_FIELD_TYPE.USER_GROUP:
+        return (
+          <TableRowUserGroupCell
             row={row}
             field={field}
           />

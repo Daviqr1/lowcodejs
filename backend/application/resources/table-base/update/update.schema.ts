@@ -1,5 +1,7 @@
 import { FastifySchema } from 'fastify';
 
+import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
+
 export const TableUpdateSchema: FastifySchema = {
   tags: ['Tabelas'],
   summary: 'Atualizar tabela',
@@ -196,27 +198,7 @@ export const TableUpdateSchema: FastifySchema = {
               },
               type: {
                 type: 'string',
-                enum: [
-                  'TEXT_SHORT',
-                  'TEXT_LONG',
-                  'DROPDOWN',
-                  'DATE',
-                  'RELATIONSHIP',
-                  'FILE',
-                  'FIELD_GROUP',
-                  'REACTION',
-                  'EVALUATION',
-                  'CATEGORY',
-                  'USER',
-                  'HTML_CONTENT',
-                  'CREATOR',
-                  'IDENTIFIER',
-                  'CREATED_AT',
-                  'UPDATED_AT',
-                  'UPDATER',
-                  'STATUS',
-                  'TRASHED_AT',
-                ],
+                enum: FIELD_TYPE_ALL_VALUES,
                 description: 'Tipo do campo',
               },
               required: {

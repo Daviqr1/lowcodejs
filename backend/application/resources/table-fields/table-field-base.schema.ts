@@ -205,6 +205,7 @@ const ARRAY_DEFAULT_VALUE_TYPES = new Set([
   'DROPDOWN',
   'CATEGORY',
   'USER',
+  'USER_GROUP',
   'RELATIONSHIP',
 ]);
 
@@ -214,7 +215,7 @@ const STRING_DEFAULT_VALUE_TYPES = new Set(['TEXT_SHORT', 'TEXT_LONG', 'DATE']);
 /**
  * Normaliza defaultValue para a estrutura correta baseado no tipo do campo:
  * - TEXT_SHORT, TEXT_LONG, DATE → string | null
- * - DROPDOWN, CATEGORY, USER, RELATIONSHIP → string[] | null
+ * - DROPDOWN, CATEGORY, USER, USER_GROUP, RELATIONSHIP → string[] | null
  * - Outros → null
  */
 export function normalizeDefaultValue(

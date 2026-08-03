@@ -69,6 +69,7 @@ function estimateFieldValueBytes(field: LooseField): number {
     case 'DROPDOWN':
     case 'RELATIONSHIP':
     case 'USER':
+    case 'USER_GROUP':
     case 'FILE':
       return 30; // array com um ObjectId/string
     case 'FIELD_GROUP':

@@ -287,6 +287,7 @@ export default class GenerateTestDataUseCase {
           break;
 
         case 'USER':
+        case 'USER_GROUP':
         case 'FILE':
           data[f.slug] = [new mongoose.Types.ObjectId().toString()];
           break;
