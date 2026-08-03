@@ -34,7 +34,10 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const params = GroupRowShowParamsValidator.parse(request.params);
-    const result = await this.useCase.execute({ ...params });
+    const result = await this.useCase.execute({
+      ...params,
+      __actorUserId: request.user?.sub,
+    });
 
     if (result.isLeft()) {
       const error = result.value;

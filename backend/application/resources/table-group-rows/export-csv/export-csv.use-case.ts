@@ -9,11 +9,15 @@ import {
 } from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField } from '@application/core/entity.core';
+import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanReadParentRow } from '../guard-parent-row';
 
 import type { GroupRowExportCsvPayload } from './export-csv.validator';
 
@@ -39,14 +43,18 @@ function buildFields(groupFields: IField[]): {
   return { csvFields, exportableFields };
 }
 
+type Payload = Merge<GroupRowExportCsvPayload, { __actorUserId?: string }>;
+
 @Service()
 export default class GroupRowExportCsvUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
-  async execute(payload: GroupRowExportCsvPayload): Promise<Response> {
+  async execute(payload: Payload): Promise<Response> {
     try {
       const table = await this.tableRepository.findBySlug(payload.slug);
 
@@ -79,6 +87,13 @@ export default class GroupRowExportCsvUseCase {
         );
       }
 
+      const denied = await assertCanReadParentRow(this.rowAccessGuard, {
+        table,
+        row,
+        actorUserId: payload.__actorUserId,
+      });
+      if (denied) return left(denied);
+
       const group = table.groups?.find((g) => g.slug === payload.groupSlug);
       const groupFields: IField[] = group?.fields ?? [];
 
@@ -86,7 +101,12 @@ export default class GroupRowExportCsvUseCase {
       const items: Record<string, unknown>[] = [];
       if (Array.isArray(rawItems)) {
         for (const item of rawItems) {
-          if (isRecord(item)) items.push(item);
+          // Itens na lixeira nao entram (list/paginated ja filtram) e campos
+          // PASSWORD saiam com o hash bcrypt no CSV.
+          if (!isRecord(item)) continue;
+          if (item['trashedAt'] != null) continue;
+          this.rowPasswordService.mask(item, groupFields);
+          items.push(item);
         }
       }
 

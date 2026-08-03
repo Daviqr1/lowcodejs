@@ -39,7 +39,11 @@ export default class {
     const params = GroupRowPaginatedParamsValidator.parse(request.params);
     const query = GroupRowPaginatedQueryValidator.parse(request.query);
 
-    const result = await this.useCase.execute({ ...params, ...query });
+    const result = await this.useCase.execute({
+      ...params,
+      ...query,
+      __actorUserId: request.user?.sub,
+    });
 
     if (result.isLeft()) {
       const error = result.value;

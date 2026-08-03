@@ -9,6 +9,7 @@ import {
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 
 import GroupRowCreateUseCase from './create.use-case';
@@ -117,6 +118,7 @@ describe('Group Row Create Use Case', () => {
       tableRepository,
       rowRepository,
       rowPasswordService,
+      new InMemoryRowAccessGuardService(),
     );
   });
 
@@ -189,9 +191,9 @@ describe('Group Row Create Use Case', () => {
 
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');
-    expect(result.value.code).toBe(500);
-    expect(result.value.cause).toBe('CREATE_GROUP_ROW_ERROR');
-    expect(result.value.message).toBe('Erro interno do servidor');
+    expect(result.value.code).toBe(404);
+    expect(result.value.cause).toBe('ROW_NOT_FOUND');
+    expect(result.value.message).toBe('Registro não encontrado');
   });
 
   it('deve retornar CREATE_GROUP_ROW_ERROR quando repository falha', async () => {

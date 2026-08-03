@@ -5,11 +5,15 @@ import { left, right } from '@application/core/either.core';
 import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { DraftTable } from '@application/resources/table-rows/auto-save/draft-table';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanWriteParentRow } from '../guard-parent-row';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
@@ -20,6 +24,9 @@ type Payload = Merge<
     groupSlug: string;
     _id?: string;
     creator?: string | null;
+    __actorUserId?: string;
+    /** Convidado contributor: só altera itens da row pai que ele criou. */
+    __ownOnly?: boolean;
   }
 >;
 
@@ -33,12 +40,23 @@ export default class GroupRowAutoSaveUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      console.log('[group-rows > auto-save][payload]:', payload);
-      const { slug, rowId, groupSlug, _id: itemId, creator, ...body } = payload;
+      // Sem `console.log` do payload: o hash de senha so acontece adiante, logo
+      // a senha em texto claro ia parar no log.
+      const {
+        slug,
+        rowId,
+        groupSlug,
+        _id: itemId,
+        creator,
+        __actorUserId: actorUserId,
+        __ownOnly: ownOnly,
+        ...body
+      } = payload;
 
       const table = await this.tableRepository.findBySlug(slug);
 
@@ -107,6 +125,38 @@ export default class GroupRowAutoSaveUseCase {
       // normais.
       const draftTable = DraftTable.from(table);
 
+      // A row pai precisa existir e liberar escrita nos dois caminhos — antes
+      // so o ramo de update a carregava, e nenhum dos dois checava posse/guard.
+      const parentRow = await this.rowRepository.findOne({
+        table,
+        query: { _id: rowId },
+      });
+
+      if (!parentRow)
+        return left(
+          HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
+
+      if (ownOnly) {
+        const creatorId = resolveCreatorId(parentRow.creator);
+        if (!actorUserId || creatorId !== actorUserId) {
+          return left(
+            HTTPException.Forbidden(
+              'Você só pode alterar os seus próprios registros',
+              'OWN_ROW_ONLY',
+            ),
+          );
+        }
+      }
+
+      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+        table,
+        row: parentRow,
+        actorUserId,
+        operation: 'update',
+      });
+      if (denied) return left(denied);
+
       await this.rowPasswordService.hash(body, groupFields);
 
       if (!itemId) {
@@ -131,17 +181,7 @@ export default class GroupRowAutoSaveUseCase {
         return right(row);
       }
 
-      const existingRow = await this.rowRepository.findOne({
-        table,
-        query: { _id: rowId },
-      });
-
-      if (!existingRow)
-        return left(
-          HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
-        );
-
-      if (!this.itemExists(existingRow[groupField.slug], itemId))
+      if (!this.itemExists(parentRow[groupField.slug], itemId))
         return left(
           HTTPException.NotFound('Item não encontrado', 'ITEM_NOT_FOUND'),
         );

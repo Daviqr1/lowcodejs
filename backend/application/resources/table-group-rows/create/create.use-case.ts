@@ -5,10 +5,14 @@ import { left, right } from '@application/core/either.core';
 import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
+import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanWriteParentRow } from '../guard-parent-row';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
@@ -18,6 +22,9 @@ type Payload = Merge<
     rowId: string;
     groupSlug: string;
     creator?: string | null;
+    __actorUserId?: string;
+    /** Convidado contributor: só altera itens da row pai que ele criou. */
+    __ownOnly?: boolean;
   }
 >;
 
@@ -31,6 +38,7 @@ export default class GroupRowCreateUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -81,6 +89,39 @@ export default class GroupRowCreateUseCase {
           ),
         );
       }
+
+      // A row pai nao era carregada: `addGroupItem` com rowId inexistente
+      // lancava (500 em vez de 404) e nada aplicava o guard nem o escopo do
+      // contributor, ao contrario de update/delete.
+      const existingRow = await this.rowRepository.findOne({
+        table,
+        query: { _id: payload.rowId },
+      });
+
+      if (!existingRow)
+        return left(
+          HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
+        );
+
+      if (payload.__ownOnly) {
+        const creatorId = resolveCreatorId(existingRow.creator);
+        if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
+          return left(
+            HTTPException.Forbidden(
+              'Você só pode alterar os seus próprios registros',
+              'OWN_ROW_ONLY',
+            ),
+          );
+        }
+      }
+
+      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+        table,
+        row: existingRow,
+        actorUserId: payload.__actorUserId,
+        operation: 'update',
+      });
+      if (denied) return left(denied);
 
       // Hash password fields se necessário
       await this.rowPasswordService.hash(payload, groupFields);

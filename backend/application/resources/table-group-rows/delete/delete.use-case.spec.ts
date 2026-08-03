@@ -9,6 +9,7 @@ import {
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import { groupItems } from '@test/helpers/row-data.helper';
 
 import GroupRowDeleteUseCase from './delete.use-case';
@@ -116,7 +117,11 @@ describe('Group Row Delete Use Case', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
-    sut = new GroupRowDeleteUseCase(tableRepository, rowRepository);
+    sut = new GroupRowDeleteUseCase(
+      tableRepository,
+      rowRepository,
+      new InMemoryRowAccessGuardService(),
+    );
   });
 
   it('deve deletar item do grupo com sucesso', async () => {

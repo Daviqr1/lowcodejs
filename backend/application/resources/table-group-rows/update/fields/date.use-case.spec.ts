@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import { makeDateField } from '@test/helpers/field-factory.helper';
 import { groupItems, lastItemId } from '@test/helpers/row-data.helper';
@@ -49,6 +50,7 @@ describe('Group Row Update - DATE', () => {
       tableRepository,
       rowRepository,
       rowPasswordService,
+      new InMemoryRowAccessGuardService(),
     );
   });
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { E_FIELD_FORMAT } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import { makeTextLongField } from '@test/helpers/field-factory.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
@@ -24,6 +25,7 @@ describe('Group Row Create - TEXT_LONG', () => {
       tableRepository,
       rowRepository,
       rowPasswordService,
+      new InMemoryRowAccessGuardService(),
     );
   });
 

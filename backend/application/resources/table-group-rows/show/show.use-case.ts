@@ -2,17 +2,20 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField } from '@application/core/entity.core';
+import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanReadParentRow } from '../guard-parent-row';
 
 import type { GroupRowShowPayload } from './show.validator';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
-type Payload = GroupRowShowPayload;
+type Payload = Merge<GroupRowShowPayload, { __actorUserId?: string }>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -24,6 +27,7 @@ export default class GroupRowShowUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -56,6 +60,13 @@ export default class GroupRowShowUseCase {
         return left(
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
+
+      const denied = await assertCanReadParentRow(this.rowAccessGuard, {
+        table,
+        row,
+        actorUserId: payload.__actorUserId,
+      });
+      if (denied) return left(denied);
 
       const rawItems = row[groupField.slug];
       let item: Record<string, unknown> | undefined;

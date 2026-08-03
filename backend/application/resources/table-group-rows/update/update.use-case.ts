@@ -9,7 +9,10 @@ import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanWriteParentRow } from '../guard-parent-row';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
@@ -35,6 +38,7 @@ export default class GroupRowUpdateUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -115,6 +119,14 @@ export default class GroupRowUpdateUseCase {
           );
         }
       }
+
+      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+        table,
+        row: existingRow,
+        actorUserId: payload.__actorUserId,
+        operation: 'update',
+      });
+      if (denied) return left(denied);
 
       // Verifica se o item existe na row
       const existingItems = existingRow[groupField.slug];

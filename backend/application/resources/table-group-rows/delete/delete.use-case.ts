@@ -7,6 +7,9 @@ import HTTPException from '@application/core/exception.core';
 import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+
+import { assertCanWriteParentRow } from '../guard-parent-row';
 
 import type { GroupRowDeletePayload } from './delete.validator';
 
@@ -25,6 +28,7 @@ export default class GroupRowDeleteUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -71,6 +75,14 @@ export default class GroupRowDeleteUseCase {
           );
         }
       }
+
+      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+        table,
+        row: existingRow,
+        actorUserId: payload.__actorUserId,
+        operation: 'delete',
+      });
+      if (denied) return left(denied);
 
       // Remove o subdocumento
       const deleted = await this.rowRepository.deleteGroupItem({

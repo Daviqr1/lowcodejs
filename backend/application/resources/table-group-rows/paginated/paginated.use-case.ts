@@ -2,17 +2,25 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IField, IMeta, Paginated } from '@application/core/entity.core';
+import type {
+  IField,
+  IMeta,
+  Merge,
+  Paginated,
+} from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+
+import { assertCanReadParentRow } from '../guard-parent-row';
 
 import type { GroupRowPaginatedPayload } from './paginated.validator';
 
 type Response = Either<HTTPException, Paginated<Record<string, unknown>>>;
-type Payload = GroupRowPaginatedPayload;
+type Payload = Merge<GroupRowPaginatedPayload, { __actorUserId?: string }>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -24,6 +32,7 @@ export default class GroupRowPaginatedUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -60,6 +69,13 @@ export default class GroupRowPaginatedUseCase {
         return left(
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
+
+      const denied = await assertCanReadParentRow(this.rowAccessGuard, {
+        table,
+        row,
+        actorUserId: payload.__actorUserId,
+      });
+      if (denied) return left(denied);
 
       const rawItems = row[groupField.slug];
       const allItems: Record<string, unknown>[] = [];
