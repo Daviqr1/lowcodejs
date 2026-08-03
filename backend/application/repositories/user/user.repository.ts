@@ -93,8 +93,12 @@ export default class UserMongooseRepository implements UserContractRepository {
 
   async findById(_id: string, options?: FindOptions): Promise<IUser | null> {
     const where: Record<string, unknown> = { _id };
+    // Mesmo default de `buildWhereClause`: sem opcao explicita, usuario na
+    // lixeira nao existe (autenticacao, perfil, middlewares, sockets).
     if (options?.trashed !== undefined) {
       where.trashed = options.trashed;
+    } else {
+      where.trashed = false;
     }
 
     const user = await Model.findOne(where).populate(this.populateOptions);
@@ -110,6 +114,8 @@ export default class UserMongooseRepository implements UserContractRepository {
     const where: Record<string, unknown> = { email };
     if (options?.trashed !== undefined) {
       where.trashed = options.trashed;
+    } else {
+      where.trashed = false;
     }
 
     const user = await Model.findOne(where).populate(this.populateOptions);

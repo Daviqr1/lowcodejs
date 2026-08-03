@@ -53,7 +53,7 @@ export default class UserInMemoryRepository implements UserContractRepository {
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return !i.trashed;
     });
     return item ?? null;
   }
@@ -66,7 +66,7 @@ export default class UserInMemoryRepository implements UserContractRepository {
     const item = this.items.find((i) => {
       if (i.email !== email) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return !i.trashed;
     });
     return item ?? null;
   }
