@@ -24,11 +24,23 @@ export default class ValidateCodeUseCase {
         payload.code,
       );
 
-      if (!token)
+      // Mesma resposta de "nao encontrado" quando o codigo existe mas pertence a
+      // outra conta — nao confirma a existencia do codigo alheio.
+      if (!token || token.user?.email !== payload.email)
         return left(
           HTTPException.NotFound(
             'Token de validação não encontrado',
             'VALIDATION_TOKEN_NOT_FOUND',
+          ),
+        );
+
+      // Uso unico: sem isto o mesmo codigo minta uma sessao nova a cada envio
+      // dentro da janela de 10 min (o magic-link ja fazia esta checagem).
+      if (token.status === E_TOKEN_STATUS.VALIDATED)
+        return left(
+          HTTPException.Conflict(
+            'Token de validação já utilizado',
+            'VALIDATION_TOKEN_ALREADY_USED',
           ),
         );
 

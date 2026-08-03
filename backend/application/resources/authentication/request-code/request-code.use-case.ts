@@ -1,4 +1,5 @@
 import { Service } from 'fastify-decorators';
+import { randomInt } from 'node:crypto';
 
 import { left, right, type Either } from '@application/core/either.core';
 import { E_TOKEN_STATUS } from '@application/core/entity.core';
@@ -29,7 +30,9 @@ export default class RequestCodeUseCase {
           HTTPException.NotFound('E-mail não encontrado', 'EMAIL_NOT_FOUND'),
         );
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // `Math.random()` nao e CSPRNG — o codigo autentica a conta, entao
+      // precisa ser imprevisivel.
+      const code = randomInt(100000, 1000000).toString();
 
       await this.validationTokenRepository.create({
         code,

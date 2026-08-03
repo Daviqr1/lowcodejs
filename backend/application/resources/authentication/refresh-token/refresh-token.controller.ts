@@ -9,7 +9,7 @@ import {
   REFRESH_TOKEN_COOKIE,
   setActiveSession,
 } from '@application/utils/cookies.util';
-import { createTokens } from '@application/utils/jwt.util';
+import { createTokens, verifyToken } from '@application/utils/jwt.util';
 
 import { RefreshTokenSchema } from './refresh-token.schema';
 import RefreshTokenUseCase from './refresh-token.use-case';
@@ -47,8 +47,10 @@ export default class {
         });
       }
 
-      const refreshTokenDecoded: IJWTPayload | null =
-        await request.server.jwt.decode(refreshToken);
+      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+        request,
+        refreshToken,
+      );
 
       const activeAccountId = getActiveAccountId(request);
 

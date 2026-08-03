@@ -33,6 +33,7 @@ export type RequestCodePayload = {
 
 export type ValidateCodePayload = {
   code: string;
+  email: string;
 };
 
 export type ResetPasswordPayload = {

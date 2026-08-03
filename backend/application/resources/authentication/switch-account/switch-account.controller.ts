@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, POST, getInstanceByToken } from 'fastify-decorators';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
+import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
 import {
   getActiveAccountId,
@@ -11,7 +12,7 @@ import {
   setActiveSession,
   writeAccountSessions,
 } from '@application/utils/cookies.util';
-import { createTokens } from '@application/utils/jwt.util';
+import { createTokens, verifyToken } from '@application/utils/jwt.util';
 
 import { SwitchAccountSchema } from './switch-account.schema';
 import { SwitchAccountBodyValidator } from './switch-account.validator';
@@ -29,6 +30,11 @@ export default class {
   @POST({
     url: '/switch-account',
     options: {
+      onRequest: [
+        AuthenticationMiddleware({
+          optional: false,
+        }),
+      ],
       schema: SwitchAccountSchema,
     },
   })
@@ -51,8 +57,10 @@ export default class {
       });
     }
 
-    const refreshTokenDecoded: IJWTPayload | null =
-      await request.server.jwt.decode(targetRefreshToken);
+    const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+      request,
+      targetRefreshToken,
+    );
 
     if (
       !refreshTokenDecoded ||

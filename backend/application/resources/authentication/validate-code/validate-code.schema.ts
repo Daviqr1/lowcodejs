@@ -7,7 +7,7 @@ export const ValidateCodeSchema: FastifySchema = {
     'Valida um código de recuperação de senha. Em caso de sucesso, marca o token como utilizado, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e retorna o usuário associado. Rota pública',
   body: {
     type: 'object',
-    required: ['code'],
+    required: ['code', 'email'],
     properties: {
       code: {
         type: 'string',
@@ -18,11 +18,21 @@ export const ValidateCodeSchema: FastifySchema = {
           minLength: 'O código é obrigatório',
         },
       },
+      email: {
+        type: 'string',
+        minLength: 1,
+        description: 'E-mail que solicitou o código',
+        errorMessage: {
+          type: 'O e-mail deve ser um texto',
+          minLength: 'O e-mail é obrigatório',
+        },
+      },
     },
     additionalProperties: false,
     errorMessage: {
       required: {
         code: 'O código é obrigatório',
+        email: 'O e-mail é obrigatório',
       },
       additionalProperties: 'Campos extras não são permitidos',
     },
@@ -75,6 +85,19 @@ export const ValidateCodeSchema: FastifySchema = {
         message: { type: 'string' },
         code: { type: 'number', enum: [404] },
         cause: { type: 'string', enum: ['VALIDATION_TOKEN_NOT_FOUND'] },
+        errors: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
+      },
+    },
+    409: {
+      description: 'Conflito - Token de validação já utilizado',
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'number', enum: [409] },
+        cause: { type: 'string', enum: ['VALIDATION_TOKEN_ALREADY_USED'] },
         errors: {
           type: 'object',
           additionalProperties: { type: 'string' },

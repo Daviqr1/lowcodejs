@@ -27,7 +27,10 @@ export function AuthenticationMiddleware(
 
     let accessTokenDecoded: IJWTPayload | null = null;
     try {
-      accessTokenDecoded = await request.server.jwt.decode(accessToken);
+      // `verify` confere assinatura RS256 e expiracao; `decode` apenas
+      // desserializa e aceitaria um token forjado.
+      accessTokenDecoded =
+        await request.server.jwt.verify<IJWTPayload>(accessToken);
     } catch {
       if (options.optional) return;
       throw HTTPException.Unauthorized(

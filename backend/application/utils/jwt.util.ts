@@ -1,4 +1,4 @@
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import {
   E_JWT_TYPE,
@@ -10,6 +10,24 @@ import {
 export type TokenPair = {
   accessToken: string;
   refreshToken: string;
+};
+
+/**
+ * Confere assinatura RS256 e expiracao. `jwt.decode` apenas desserializa e
+ * aceitaria um token forjado — nunca usar para autorizar.
+ *
+ * Devolve `null` (em vez de lancar) porque os chamadores ja tratam token
+ * ausente e token invalido pelo mesmo caminho de 401.
+ */
+export const verifyToken = async (
+  request: FastifyRequest,
+  token: string,
+): Promise<IJWTPayload | null> => {
+  try {
+    return await request.server.jwt.verify<IJWTPayload>(token);
+  } catch {
+    return null;
+  }
 };
 
 export const createTokens = async (

@@ -108,8 +108,15 @@ async function start(): Promise<void> {
     console.info(`HTTP Server running on http://localhost:${Env.PORT}`);
 
     const httpServer = kernel.server;
-    const jwtDecode = (token: string): IJWTPayload | null =>
-      kernel.jwt.decode<IJWTPayload>(token);
+    // Verifica assinatura RS256 + expiracao. `decode` apenas desserializa e
+    // aceitaria token forjado; os namespaces confiam no `sub` retornado aqui.
+    const jwtDecode = (token: string): IJWTPayload | null => {
+      try {
+        return kernel.jwt.verify<IJWTPayload>(token);
+      } catch {
+        return null;
+      }
+    };
 
     const io = initChatSocket(httpServer, jwtDecode);
     console.info('Socket.IO chat initialized');

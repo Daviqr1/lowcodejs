@@ -3,6 +3,7 @@ import supertest from 'supertest';
 
 import {
   E_AREA_CAPABILITY,
+  E_ROLE,
   E_TABLE_PERMISSION,
   E_USER_STATUS,
 } from '@application/core/entity.core';
@@ -23,7 +24,7 @@ export async function createAuthenticatedUser(
   const password = overrides?.password ?? 'password123';
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  let group = await UserGroup.findOne({ slug: 'master' });
+  let group = await UserGroup.findOne({ slug: E_ROLE.MASTER });
 
   const permissions = await Permission.insertMany([
     {
@@ -122,7 +123,7 @@ export async function createAuthenticatedUser(
   if (!group) {
     group = await UserGroup.create({
       name: 'Master',
-      slug: 'master',
+      slug: E_ROLE.MASTER,
       permissions: permissions.flatMap((p) => p._id),
     });
   }

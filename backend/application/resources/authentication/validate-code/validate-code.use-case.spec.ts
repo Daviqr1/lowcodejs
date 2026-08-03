@@ -22,7 +22,10 @@ describe('Validate Code Use Case', () => {
       user: 'user-id',
     });
 
-    const result = await sut.execute({ code: '123456' });
+    const result = await sut.execute({
+      code: '123456',
+      email: 'user-id@example.com',
+    });
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
@@ -36,20 +39,59 @@ describe('Validate Code Use Case', () => {
       user: 'user-id',
     });
 
-    await sut.execute({ code: '123456' });
+    await sut.execute({ code: '123456', email: 'user-id@example.com' });
 
     const updated = await validationTokenInMemoryRepository.findById(token._id);
     expect(updated?.status).toBe(E_TOKEN_STATUS.VALIDATED);
   });
 
   it('deve retornar erro VALIDATION_TOKEN_NOT_FOUND quando codigo nao existir', async () => {
-    const result = await sut.execute({ code: 'invalid-code' });
+    const result = await sut.execute({
+      code: 'invalid-code',
+      email: 'user-id@example.com',
+    });
 
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');
     expect(result.value.code).toBe(404);
     expect(result.value.cause).toBe('VALIDATION_TOKEN_NOT_FOUND');
     expect(result.value.message).toBe('Token de validação não encontrado');
+  });
+
+  it('deve retornar VALIDATION_TOKEN_NOT_FOUND quando o codigo pertencer a outra conta', async () => {
+    await validationTokenInMemoryRepository.create({
+      code: '123456',
+      status: E_TOKEN_STATUS.REQUESTED,
+      user: 'user-id',
+    });
+
+    const result = await sut.execute({
+      code: '123456',
+      email: 'outra-pessoa@example.com',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(404);
+    expect(result.value.cause).toBe('VALIDATION_TOKEN_NOT_FOUND');
+  });
+
+  it('deve retornar VALIDATION_TOKEN_ALREADY_USED quando o codigo ja foi usado', async () => {
+    await validationTokenInMemoryRepository.create({
+      code: '123456',
+      status: E_TOKEN_STATUS.VALIDATED,
+      user: 'user-id',
+    });
+
+    const result = await sut.execute({
+      code: '123456',
+      email: 'user-id@example.com',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(409);
+    expect(result.value.cause).toBe('VALIDATION_TOKEN_ALREADY_USED');
   });
 
   it('deve retornar erro VALIDATION_TOKEN_EXPIRED quando token ja estiver expirado', async () => {
@@ -59,7 +101,10 @@ describe('Validate Code Use Case', () => {
       user: 'user-id',
     });
 
-    const result = await sut.execute({ code: '123456' });
+    const result = await sut.execute({
+      code: '123456',
+      email: 'user-id@example.com',
+    });
 
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');
@@ -78,7 +123,10 @@ describe('Validate Code Use Case', () => {
     // Simular token criado ha 15 minutos
     Object.assign(token, { createdAt: subMinutes(new Date(), 15) });
 
-    const result = await sut.execute({ code: '123456' });
+    const result = await sut.execute({
+      code: '123456',
+      email: 'user-id@example.com',
+    });
 
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');
@@ -95,7 +143,10 @@ describe('Validate Code Use Case', () => {
       .spyOn(validationTokenInMemoryRepository, 'findByCode')
       .mockRejectedValueOnce(new Error('Database error'));
 
-    const result = await sut.execute({ code: '123456' });
+    const result = await sut.execute({
+      code: '123456',
+      email: 'user-id@example.com',
+    });
 
     expect(result.isLeft()).toBe(true);
     if (!result.isLeft()) throw new Error('Expected left');

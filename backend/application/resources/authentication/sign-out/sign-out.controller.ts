@@ -10,7 +10,7 @@ import {
   setActiveSession,
   writeAccountSessions,
 } from '@application/utils/cookies.util';
-import { createTokens } from '@application/utils/jwt.util';
+import { createTokens, verifyToken } from '@application/utils/jwt.util';
 
 import { SignOutSchema } from './sign-out.schema';
 import { SignOutBodyValidator } from './sign-out.validator';
@@ -56,8 +56,10 @@ export default class {
     for (const nextAccountId of sessionIds) {
       const refreshToken = sessions[nextAccountId];
 
-      const refreshTokenDecoded: IJWTPayload | null =
-        await request.server.jwt.decode(refreshToken);
+      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+        request,
+        refreshToken,
+      );
 
       if (
         !refreshTokenDecoded ||

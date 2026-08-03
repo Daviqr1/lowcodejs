@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
+import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
 import { toUserResponse } from '@application/resources/users/users.mapper';
 import {
@@ -13,6 +14,7 @@ import {
   setActiveAccountCookie,
   writeAccountSessions,
 } from '@application/utils/cookies.util';
+import { verifyToken } from '@application/utils/jwt.util';
 
 import { AuthenticationAccountsSchema } from './accounts.schema';
 
@@ -29,6 +31,11 @@ export default class {
   @GET({
     url: '/accounts',
     options: {
+      onRequest: [
+        AuthenticationMiddleware({
+          optional: false,
+        }),
+      ],
       schema: AuthenticationAccountsSchema,
     },
   })
@@ -50,8 +57,10 @@ export default class {
     const validSessions: Record<string, string> = {};
 
     for (const [accountId, refreshToken] of candidates) {
-      const refreshTokenDecoded: IJWTPayload | null =
-        await request.server.jwt.decode(refreshToken);
+      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+        request,
+        refreshToken,
+      );
 
       if (
         !refreshTokenDecoded ||

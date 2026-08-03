@@ -103,7 +103,7 @@ function RouteComponent(): React.JSX.Element {
       return;
     }
     setCodeError(null);
-    validateCodeMutation.mutate({ code: codeValue });
+    validateCodeMutation.mutate({ code: codeValue, email });
   }
 
   function handleResend(): void {

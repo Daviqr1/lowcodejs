@@ -29,18 +29,15 @@ export default class GroupResolverService implements GroupResolverContractServic
 
   async isPrivileged(user: IUser | null): Promise<boolean> {
     const closure = await this.resolveClosure(user);
-    // Compara em maiusculo espelhando `jwt.util` (role = slug.toUpperCase()):
-    // os grupos de sistema do seed usam slug MASTER/ADMINISTRATOR, mas grupos
-    // criados pela UI derivam slug via slugify (minusculo).
-    return closure.some((group) => {
-      const slug = group.slug?.toUpperCase();
-      return slug === E_ROLE.MASTER || slug === E_ROLE.ADMINISTRATOR;
-    });
+    return closure.some(
+      (group) =>
+        group.slug === E_ROLE.MASTER || group.slug === E_ROLE.ADMINISTRATOR,
+    );
   }
 
   async isMaster(user: IUser | null): Promise<boolean> {
     const closure = await this.resolveClosure(user);
-    return closure.some((group) => group.slug?.toUpperCase() === E_ROLE.MASTER);
+    return closure.some((group) => group.slug === E_ROLE.MASTER);
   }
 
   async shouldHideMaster(user: IUser | null): Promise<boolean> {
@@ -49,9 +46,8 @@ export default class GroupResolverService implements GroupResolverContractServic
     let hasMaster = false;
     let hasPrivileged = false;
     for (const group of closure) {
-      const slug = group.slug?.toUpperCase();
-      if (slug === E_ROLE.MASTER) hasMaster = true;
-      if (slug === E_ROLE.MASTER || slug === E_ROLE.ADMINISTRATOR) {
+      if (group.slug === E_ROLE.MASTER) hasMaster = true;
+      if (group.slug === E_ROLE.MASTER || group.slug === E_ROLE.ADMINISTRATOR) {
         hasPrivileged = true;
       }
     }
