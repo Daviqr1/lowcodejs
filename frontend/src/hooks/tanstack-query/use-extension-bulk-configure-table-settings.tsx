@@ -47,20 +47,28 @@ export function useExtensionBulkConfigureTableSettings(
 
   return useMutation({
     mutationFn: async function ({
-      extensionId,
+      _id,
       tableIds,
       settings,
-      expectedUpdatedAt,
     }: ExtensionBulkConfigureTableSettingsPayload) {
+      // O backend espera um mapa tableId -> settings; a UI aplica a mesma
+      // configuracao em todas as tabelas selecionadas.
+      const tableSettings = Object.fromEntries(
+        tableIds.map((tableId) => [tableId, settings]),
+      );
+
       const response =
         await API.patch<ExtensionBulkConfigureTableSettingsResponse>(
-          `/extensions/${extensionId}/bulk-table-settings`,
-          { tableIds, settings, expectedUpdatedAt },
+          `/extensions/${_id}/bulk-table-settings`,
+          { tableSettings },
         );
       return response.data;
     },
     onSuccess(data, variables) {
       queryClient.invalidateQueries({ queryKey: queryKeys.extensions.all });
+      // O bind cria/altera o campo de visibilidade e refaz o filtro das rows —
+      // tabelas e registros em cache ficam desatualizados.
+      queryClient.invalidateQueries({ queryKey: queryKeys.tables.all });
       props.onSuccess?.(data, variables);
     },
     onError: props.onError,

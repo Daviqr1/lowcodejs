@@ -68,6 +68,12 @@ export const ExtensionListSchema: FastifySchema = {
               tableIds: { type: 'array', items: { type: 'string' } },
             },
           },
+          // Sem declarar aqui o serializador remove o campo e a UI de
+          // configuracao nunca carrega o que foi salvo.
+          tableSettings: {
+            type: 'object',
+            additionalProperties: { type: 'object', additionalProperties: true },
+          },
           requires: {
             type: 'object',
             additionalProperties: true,

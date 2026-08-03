@@ -34,9 +34,12 @@ ser marcados na matriz.
 - **group-keyed**: `groupMatrix` mapeia `value → groupIds` que enxergam aquele
   valor
 - `VisibilitySettings.values` e `groupMatrix` andam juntos (remover valor limpa
-  a key)
+  a key). `normalizeSettings()` garante uma chave por valor antes de enviar — o
+  `superRefine` do backend recusa valor sem chave e chave órfã
 - Validação: `VISIBILITY_VALUE_REGEX` (UPPER_SNAKE_CASE), `FIELD_SLUG_REGEX`
-  (lower_snake)
+  (mesmo pattern kebab-case de `core/field-slug.core.ts`)
+- `fieldVisibility` (campo USER_GROUP da própria row) combina com `visibility`
+  por AND; o campo precisa já existir na tabela — o guard não o cria
 - Consumido pela rota `/extensions`
   (`routes/_private/extensions/index.lazy.tsx`)
 - UI em PT-BR

@@ -4,14 +4,21 @@ import { toast } from 'sonner';
 
 import { DateWindowModeSelector } from './date-window-mode-selector';
 import { GroupMatrix } from './group-matrix';
-import { DEFAULT_ROW_ACCESS_SETTINGS, isRowAccessSettings } from './types';
+import {
+  DEFAULT_ROW_ACCESS_SETTINGS,
+  FIELD_SLUG_REGEX,
+  MAX_VISIBILITY_VALUES,
+  isRowAccessSettings,
+  normalizeSettings,
+} from './types';
 import type { RowAccessSettings } from './types';
 import { VisibilityValuesEditor } from './visibility-values-editor';
 
 import { TableMultiSelect } from '@/components/common/dynamic-table/table-selectors/table-multi-select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -45,17 +52,6 @@ type RowAccessConfigSheetProps = Merge<
   }
 >;
 
-function getResponseStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  if (!('response' in error)) return undefined;
-  const response = error.response;
-  if (typeof response !== 'object' || response === null) return undefined;
-  if (!('status' in response)) return undefined;
-  const status = response.status;
-  if (typeof status === 'number') return status;
-  return undefined;
-}
-
 // Resolve o elemento real de um evento "outside" do Sheet: prioriza o target do
 // originalEvent (clique dentro de um portal) e cai para o target do evento.
 function resolveOutsideTarget(
@@ -79,10 +75,14 @@ function deriveInitialSettings(
   if (initialTableId && extension.tableSettings[initialTableId]) {
     target = extension.tableSettings[initialTableId];
   }
-  if (isRowAccessSettings(target)) {
-    return target;
-  }
-  return DEFAULT_ROW_ACCESS_SETTINGS;
+  if (!isRowAccessSettings(target)) return DEFAULT_ROW_ACCESS_SETTINGS;
+
+  // Settings gravadas antes de `fieldVisibility` existir nao trazem a chave.
+  return {
+    ...target,
+    fieldVisibility:
+      target.fieldVisibility ?? DEFAULT_ROW_ACCESS_SETTINGS.fieldVisibility,
+  };
 }
 
 export function RowAccessConfigSheet({
@@ -96,7 +96,7 @@ export function RowAccessConfigSheet({
   const [settings, setSettings] = React.useState<RowAccessSettings>(
     DEFAULT_ROW_ACCESS_SETTINGS,
   );
-  const [conflictError, setConflictError] = React.useState<string | null>(null);
+  const [applyErrors, setApplyErrors] = React.useState<Array<string>>([]);
 
   // Carrega todos os grupos para popular as colunas da GroupMatrix
   const groupsQuery = useQuery(groupAllOptions());
@@ -110,31 +110,25 @@ export function RowAccessConfigSheet({
     } else {
       setTableIds(extension.tableScope?.tableIds ?? []);
     }
-    setConflictError(null);
+    setApplyErrors([]);
   }, [extension, initialTableId]);
 
   const mutation = useExtensionBulkConfigureTableSettings({
     onSuccess(data) {
-      setConflictError(null);
-      if (data.failed.length === 0) {
+      setApplyErrors([]);
+      if (data.skipped === 0) {
         toast.success('Configuração salva', {
-          description: `Aplicada em ${data.success.length} tabela(s).`,
+          description: `Aplicada em ${data.applied} tabela(s).`,
         });
         close();
-      } else {
-        toast.error('Algumas tabelas falharam', {
-          description: `${data.success.length} sucessos, ${data.failed.length} falhas. Veja detalhes no console.`,
-        });
-        console.warn('[row-access bulk apply] failed:', data.failed);
-      }
-    },
-    onError(error) {
-      if (getResponseStatus(error) === 409) {
-        setConflictError(
-          'Configuração modificada por outro usuário. Recarregue a página e tente novamente.',
-        );
         return;
       }
+      setApplyErrors(data.errors);
+      toast.error('Algumas tabelas falharam', {
+        description: `${data.applied} aplicada(s), ${data.skipped} ignorada(s).`,
+      });
+    },
+    onError(error) {
       handleApiError(error, { context: 'Erro ao configurar Row Access' });
     },
   });
@@ -153,16 +147,28 @@ export function RowAccessConfigSheet({
     }));
   }
 
+  let fieldVisibilityError: string | null = null;
+  if (
+    settings.fieldVisibility.enabled &&
+    !FIELD_SLUG_REGEX.test(settings.fieldVisibility.fieldSlug)
+  ) {
+    fieldVisibilityError = 'letras minúsculas, números e hífens';
+  }
+
   function validate(): string | null {
     if (tableIds.length === 0) return 'Selecione pelo menos uma tabela.';
     if (settings.visibility.enabled) {
       if (settings.visibility.values.length < 2)
         return 'visibility.values: mínimo 2 valores.';
+      if (settings.visibility.values.length > MAX_VISIBILITY_VALUES)
+        return `visibility.values: máximo ${MAX_VISIBILITY_VALUES} valores.`;
       if (
         !settings.visibility.values.includes(settings.visibility.defaultValue)
       )
         return 'visibility.defaultValue precisa estar em values.';
     }
+    if (fieldVisibilityError)
+      return 'fieldVisibility.fieldSlug: slug de campo inválido.';
     if (settings.dateWindow.mode === 'createdAt-sliding') {
       if (
         !Number.isInteger(settings.dateWindow.slidingDays) ||
@@ -180,19 +186,10 @@ export function RowAccessConfigSheet({
       toast.error('Validação', { description: validationError });
       return;
     }
-    // Em runtime as datas chegam como string (JSON) apesar do tipo Date.
-    const ts: unknown = ext.updatedAt ?? ext.createdAt;
-    let expectedUpdatedAt = '';
-    if (ts instanceof Date) {
-      expectedUpdatedAt = ts.toISOString();
-    } else if (ts != null) {
-      expectedUpdatedAt = String(ts);
-    }
     mutation.mutate({
-      extensionId: ext._id,
+      _id: ext._id,
       tableIds,
-      settings: settings,
-      expectedUpdatedAt,
+      settings: normalizeSettings(settings),
     });
   }
 
@@ -325,6 +322,65 @@ export function RowAccessConfigSheet({
 
           <hr />
 
+          {/* Visibilidade por campo USER_GROUP da própria row */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Visibilidade por campo de grupos
+              </h3>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={settings.fieldVisibility.enabled}
+                  onCheckedChange={(c) =>
+                    setSettings((p) => ({
+                      ...p,
+                      fieldVisibility: {
+                        ...p.fieldVisibility,
+                        enabled: Boolean(c),
+                      },
+                    }))
+                  }
+                  disabled={isPending}
+                />
+                Ativa
+              </label>
+            </div>
+
+            {settings.fieldVisibility.enabled && (
+              <Field>
+                <FieldLabel htmlFor="field-visibility-slug">
+                  Slug do campo (tipo Grupos de usuários)
+                </FieldLabel>
+                <Input
+                  id="field-visibility-slug"
+                  type="text"
+                  value={settings.fieldVisibility.fieldSlug}
+                  onChange={(e) =>
+                    setSettings((p) => ({
+                      ...p,
+                      fieldVisibility: {
+                        ...p.fieldVisibility,
+                        fieldSlug: e.target.value,
+                      },
+                    }))
+                  }
+                  disabled={isPending}
+                  placeholder="grupos-acesso"
+                  aria-invalid={Boolean(fieldVisibilityError)}
+                />
+                {fieldVisibilityError && (
+                  <FieldError>{fieldVisibilityError}</FieldError>
+                )}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  A row só aparece se algum grupo do usuário estiver entre os
+                  gravados nesse campo. O campo precisa já existir na tabela.
+                </p>
+              </Field>
+            )}
+          </div>
+
+          <hr />
+
           {/* Creator bypass */}
           <div className="space-y-2">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -363,13 +419,15 @@ export function RowAccessConfigSheet({
             />
           </div>
 
-          {conflictError && (
-            <p
+          {applyErrors.length > 0 && (
+            <div
               role="alert"
-              className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              className="space-y-1 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
-              {conflictError}
-            </p>
+              {applyErrors.map((message) => (
+                <p key={message}>{message}</p>
+              ))}
+            </div>
           )}
         </div>
 

@@ -609,16 +609,16 @@ export type ExtensionConfigureTableScopePayload = {
 };
 
 export type ExtensionBulkConfigureTableSettingsPayload = {
-  extensionId: string;
+  /** `_id` do Mongo — a rota e `/extensions/:_id/bulk-table-settings`. */
+  _id: string;
   tableIds: Array<string>;
   settings: Record<string, unknown>;
-  expectedUpdatedAt: string;
 };
 
 export type ExtensionBulkConfigureTableSettingsResponse = {
-  extension: unknown; // IExtension (sem importar pra evitar ciclo)
-  success: Array<string>;
-  failed: Array<{ tableId: string; reason: string; message: string }>;
+  applied: number;
+  skipped: number;
+  errors: Array<string>;
 };
 
 // ============== SCHEMA IMPORT ==============

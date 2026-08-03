@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { FIELD_SLUG_PATTERN } from '@application/core/field-slug.core';
+
 /**
  * Row Access Control — settings schema (v3, group-keyed)
  *
@@ -26,7 +28,7 @@ const visibilityValueSchema = z
 const fieldSlugSchema = z
   .string()
   .min(1)
-  .regex(/^[a-z][a-z0-9_]*$/, 'Slug deve ser lower_snake_case');
+  .regex(FIELD_SLUG_PATTERN, 'Slug de campo invalido');
 
 const visibilitySettingsSchema = z
   .object({
@@ -96,11 +98,8 @@ const creatorBypassSettingsSchema = z.object({
  * Visibilidade por campo USER_GROUP: `fieldSlug` aponta para um campo do tipo
  * USER_GROUP da tabela. A row é visível/editável apenas se algum grupo do
  * usuário (fecho `ctx.groupIds`) estiver entre os grupos gravados no campo.
- * Convive com `visibility` (groupMatrix) por AND. Slug de campo segue o padrão
- * do FieldSlug (`^[a-z0-9]+(-[a-z0-9]+)*$`) — pode conter hifens.
+ * Convive com `visibility` (groupMatrix) por AND.
  */
-const FIELD_SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
 const fieldVisibilitySettingsSchema = z
   .object({
     enabled: z.boolean(),
@@ -108,7 +107,7 @@ const fieldVisibilitySettingsSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.enabled) return;
-    if (!FIELD_SLUG_REGEX.test(data.fieldSlug)) {
+    if (!FIELD_SLUG_PATTERN.test(data.fieldSlug)) {
       ctx.addIssue({
         code: 'custom',
         path: ['fieldSlug'],

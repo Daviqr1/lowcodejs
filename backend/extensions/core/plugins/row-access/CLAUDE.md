@@ -29,9 +29,15 @@ bypass de criador e janela temporal opcional. Registrado no
 
 - `visibility`: `{ enabled, fieldSlug, values[], groupMatrix (valor → grupos),
   defaultValue }`.
+- `fieldVisibility`: `{ enabled, fieldSlug }` — campo USER_GROUP da própria row;
+  combina com `visibility` por AND. O campo precisa já existir (o guard valida,
+  não cria).
 - `creatorBypass`: `{ enabled }` — o criador sempre vê a própria row.
 - `dateWindow`: `{ mode: 'off' | 'createdAt-sliding' | ..., slidingDays? }` —
   restringe por janela temporal.
+
+Slugs de campo seguem `FIELD_SLUG_PATTERN` (`core/field-slug.core.ts`) — o mesmo
+kebab-case do resto da plataforma.
 
 Configurado por tabela via `/extensions/:_id/table-scope` +
 `bulk-table-settings` (MANAGE_PLUGINS).

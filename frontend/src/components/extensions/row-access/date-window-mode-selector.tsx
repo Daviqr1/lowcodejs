@@ -25,8 +25,8 @@ const DEFAULT_SETTINGS_BY_MODE: Record<
   },
   'field-range': {
     mode: 'field-range',
-    validFromSlug: 'valid_from',
-    validUntilSlug: 'valid_until',
+    validFromSlug: 'valid-from',
+    validUntilSlug: 'valid-until',
   },
 };
 
@@ -46,7 +46,7 @@ export function DateWindowModeSelector({
     if (!FIELD_SLUG_REGEX.test(slug)) {
       setErrors((p) => ({
         ...p,
-        [field]: 'lower_snake_case, começa com letra',
+        [field]: 'letras minúsculas, números e hífens',
       }));
     } else {
       setErrors((p) => {
@@ -168,7 +168,7 @@ export function DateWindowModeSelector({
                 validateSlug('validFromSlug', e.target.value);
               }}
               disabled={disabled}
-              placeholder="valid_from"
+              placeholder="valid-from"
               aria-invalid={Boolean(errors['validFromSlug'])}
             />
             {errors['validFromSlug'] && (
@@ -188,7 +188,7 @@ export function DateWindowModeSelector({
                 validateSlug('validUntilSlug', e.target.value);
               }}
               disabled={disabled}
-              placeholder="valid_until"
+              placeholder="valid-until"
               aria-invalid={Boolean(errors['validUntilSlug'])}
             />
             {errors['validUntilSlug'] && (
