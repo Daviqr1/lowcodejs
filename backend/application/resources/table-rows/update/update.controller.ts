@@ -4,6 +4,7 @@ import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 import type { RowPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { TableRowUpdateSchema } from './update.schema';
 import TableRowUpdateUseCase from './update.use-case';
@@ -13,6 +14,8 @@ import { TableRowUpdateParamsValidator } from './update.validator';
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: TableRowUpdateUseCase = getInstanceByToken(
       TableRowUpdateUseCase,
@@ -47,16 +50,7 @@ export default class {
       __isAdministrator: request.ownership?.isAdministrator,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

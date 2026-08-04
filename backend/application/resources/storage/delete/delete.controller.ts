@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { StorageDeleteSchema } from './delete.schema';
 import StorageDeleteUseCase from './delete.use-case';
@@ -11,6 +12,8 @@ import { StorageDeleteParamsValidator } from './delete.validator';
   route: '/storage',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: StorageDeleteUseCase = getInstanceByToken(
       StorageDeleteUseCase,
@@ -33,16 +36,7 @@ export default class {
 
     const result = await this.useCase.execute(params);
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send({
       message: 'Arquivo deletado com sucesso',

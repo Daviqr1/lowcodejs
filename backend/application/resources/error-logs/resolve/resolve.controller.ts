@@ -4,6 +4,7 @@ import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 import { E_ROLE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import ErrorLogResolveUseCase from './resolve.use-case';
 import {
@@ -15,6 +16,8 @@ import {
   route: '/error-logs',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: ErrorLogResolveUseCase = getInstanceByToken(
       ErrorLogResolveUseCase,
@@ -36,16 +39,7 @@ export default class {
 
     const result = await this.useCase.execute({ id, resolved });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

@@ -1,6 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
+import HttpResponseService from '@application/services/http-response/http-response.service';
+
 import { RequestCodeSchema } from './request-code.schema';
 import RequestCodeUseCase from './request-code.use-case';
 import { RequestCodeBodyValidator } from './request-code.validator';
@@ -9,6 +11,8 @@ import { RequestCodeBodyValidator } from './request-code.validator';
   route: 'authentication',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: RequestCodeUseCase = getInstanceByToken(
       RequestCodeUseCase,
@@ -26,16 +30,7 @@ export default class {
 
     const result = await this.useCase.execute(body);
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

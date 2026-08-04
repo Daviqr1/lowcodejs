@@ -4,6 +4,7 @@ import { Controller, GET, getInstanceByToken, POST } from 'fastify-decorators';
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
   GenerateTestDataEstimateSchema,
@@ -19,6 +20,8 @@ import GenerationJobRegistryService from './generation-job-registry.service';
   route: '/tools',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: GenerateTestDataUseCase = getInstanceByToken(
       GenerateTestDataUseCase,
@@ -44,16 +47,7 @@ export default class {
 
     const result = await this.useCase.execute(body);
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     // 202 Accepted — job assíncrono iniciado
     return response.status(202).send(result.value);
@@ -81,16 +75,7 @@ export default class {
 
     const result = await this.useCase.estimate(body);
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

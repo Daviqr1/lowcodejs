@@ -4,6 +4,7 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 import type { RowPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { GroupRowCreateSchema } from './create.schema';
 import GroupRowCreateUseCase from './create.use-case';
@@ -13,6 +14,8 @@ import { GroupRowCreateParamsValidator } from './create.validator';
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: GroupRowCreateUseCase = getInstanceByToken(
       GroupRowCreateUseCase,
@@ -46,16 +49,7 @@ export default class {
       __ownOnly: request.ownership?.ownOnly,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(201).send(result.value);
   }

@@ -4,6 +4,7 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { CloneTableSchema } from './clone-table.schema';
 import CloneTableUseCase from './clone-table.use-case';
@@ -13,6 +14,8 @@ import { CloneTableValidator } from './clone-table.validator';
   route: '/tools',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: CloneTableUseCase = getInstanceByToken(
       CloneTableUseCase,
@@ -43,16 +46,7 @@ export default class {
       ownerId: request.user.sub,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     const { table, fieldIdMap } = result.value;
     const tables = result.value.tables ?? [table];

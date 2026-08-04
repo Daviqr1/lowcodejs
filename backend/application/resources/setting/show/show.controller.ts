@@ -7,6 +7,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import UserMongooseRepository from '@application/repositories/user/user.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { SettingShowSchema } from './show.schema';
 import SettingShowUseCase from './show.use-case';
@@ -15,6 +16,8 @@ import SettingShowUseCase from './show.use-case';
   route: '/setting',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: SettingShowUseCase = getInstanceByToken(
       SettingShowUseCase,
@@ -48,16 +51,7 @@ export default class {
         isMaster || capabilities.has(E_AREA_CAPABILITY.MANAGE_SETTINGS),
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.send(result.value);
   }

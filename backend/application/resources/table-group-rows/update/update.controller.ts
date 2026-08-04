@@ -4,6 +4,7 @@ import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 import type { RowPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { GroupRowUpdateSchema } from './update.schema';
 import GroupRowUpdateUseCase from './update.use-case';
@@ -13,6 +14,8 @@ import { GroupRowUpdateParamsValidator } from './update.validator';
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: GroupRowUpdateUseCase = getInstanceByToken(
       GroupRowUpdateUseCase,
@@ -45,16 +48,7 @@ export default class {
       ...(request.ownership?.ownOnly && { __ownOnly: true }),
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

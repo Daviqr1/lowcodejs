@@ -3,6 +3,7 @@ import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { TableRowRemoveFromTrashSchema } from './remove-from-trash.schema';
 import TableRowRemoveFromTrashUseCase from './remove-from-trash.use-case';
@@ -12,6 +13,8 @@ import { TableRowRemoveFromTrashParamsValidator } from './remove-from-trash.vali
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: TableRowRemoveFromTrashUseCase = getInstanceByToken(
       TableRowRemoveFromTrashUseCase,
@@ -41,16 +44,7 @@ export default class {
       ...(request.ownership?.ownOnly && { __ownOnly: true }),
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

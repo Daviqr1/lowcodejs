@@ -3,6 +3,7 @@ import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { GroupRowAutoSaveSchema } from './auto-save.schema';
 import GroupRowAutoSaveUseCase from './auto-save.use-case';
@@ -16,6 +17,8 @@ import {
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: GroupRowAutoSaveUseCase = getInstanceByToken(
       GroupRowAutoSaveUseCase,
@@ -50,16 +53,7 @@ export default class {
       __ownOnly: request.ownership?.ownOnly,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(201).send(result.value);
   }

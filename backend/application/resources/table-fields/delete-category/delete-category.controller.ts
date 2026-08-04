@@ -3,6 +3,7 @@ import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { TableFieldDeleteCategorySchema } from './delete-category.schema';
 import TableFieldDeleteCategoryUseCase from './delete-category.use-case';
@@ -12,6 +13,8 @@ import { TableFieldDeleteCategoryParamsValidator } from './delete-category.valid
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: TableFieldDeleteCategoryUseCase = getInstanceByToken(
       TableFieldDeleteCategoryUseCase,
@@ -39,16 +42,7 @@ export default class {
 
     const result = await this.useCase.execute(params);
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

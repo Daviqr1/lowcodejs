@@ -1,6 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
+import HttpResponseService from '@application/services/http-response/http-response.service';
+
 import { SetupStatusSchema } from './status.schema';
 import SetupStatusUseCase from './status.use-case';
 
@@ -8,6 +10,8 @@ import SetupStatusUseCase from './status.use-case';
   route: '/setup',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: SetupStatusUseCase = getInstanceByToken(
       SetupStatusUseCase,
@@ -23,16 +27,7 @@ export default class {
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const result = await this.useCase.execute();
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.send(result.value);
   }

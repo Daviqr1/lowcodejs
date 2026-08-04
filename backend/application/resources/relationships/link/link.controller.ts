@@ -3,6 +3,7 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { RelationshipLinkSchema } from './link.schema';
 import RelationshipLinkUseCase from './link.use-case';
@@ -15,6 +16,8 @@ import {
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: RelationshipLinkUseCase = getInstanceByToken(
       RelationshipLinkUseCase,
@@ -37,15 +40,7 @@ export default class {
 
     const result = await this.useCase.execute({ ...params, ...body });
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        errors: error.errors,
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(201).send(result.value);
   }

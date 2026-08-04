@@ -3,6 +3,7 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { TableRowShowBySlugSchema } from './show-by-slug.schema';
 import TableRowShowBySlugUseCase from './show-by-slug.use-case';
@@ -12,6 +13,8 @@ import { TableRowShowBySlugParamsValidator } from './show-by-slug.validator';
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: TableRowShowBySlugUseCase = getInstanceByToken(
       TableRowShowBySlugUseCase,
@@ -41,16 +44,7 @@ export default class {
       isAdministrator: request.ownership?.isAdministrator,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     // Resolve o registro pelo slug amigavel e devolve o JSON. A navegacao
     // (abrir /tables/:slug/row?_id=...) fica a cargo do frontend, que pode ser

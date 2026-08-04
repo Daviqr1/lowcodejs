@@ -4,6 +4,7 @@ import { Controller, POST, getInstanceByToken } from 'fastify-decorators';
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
@@ -19,6 +20,8 @@ const session = getInstanceByToken<SessionContractService>(SessionService);
   route: 'authentication',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly profileUseCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
@@ -77,16 +80,7 @@ export default class {
 
     const result = await this.profileUseCase.execute({ _id: accountId });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     const tokens = await session.createTokens(result.value, response);
 

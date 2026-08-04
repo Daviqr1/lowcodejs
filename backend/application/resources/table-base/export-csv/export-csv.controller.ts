@@ -6,6 +6,7 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import { CsvExportContractService } from '@application/services/csv-export/csv-export-contract.service';
 import CsvExportService from '@application/services/csv-export/csv-export.service';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { TableExportCsvSchema } from './export-csv.schema';
 import TableExportCsvUseCase from './export-csv.use-case';
@@ -15,6 +16,8 @@ import { TableExportCsvQueryValidator } from './export-csv.validator';
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: TableExportCsvUseCase = getInstanceByToken(
       TableExportCsvUseCase,
@@ -36,15 +39,7 @@ export default class {
 
     const result = await this.useCase.execute(query);
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     const filename =
       getInstanceByToken<CsvExportContractService>(CsvExportService).filename(

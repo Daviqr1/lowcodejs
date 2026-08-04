@@ -8,6 +8,7 @@ import {
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
   GetConditionalFieldsConfigSchema,
@@ -30,6 +31,8 @@ type RequestWithTable = FastifyRequest<{
 
 @Controller({ route: '/plugins/conditional-fields' })
 export default class ConditionalFieldsController {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly getConfigUseCase: GetConditionalFieldsConfigUseCase = getInstanceByToken(
       GetConditionalFieldsConfigUseCase,
@@ -58,14 +61,7 @@ export default class ConditionalFieldsController {
   ): Promise<void> {
     const result = await this.getConfigUseCase.execute(request.table!);
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }
@@ -89,14 +85,7 @@ export default class ConditionalFieldsController {
   ): Promise<void> {
     const result = await this.getConfigUseCase.execute(request.table!);
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }
@@ -124,15 +113,7 @@ export default class ConditionalFieldsController {
       rules: body.rules,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

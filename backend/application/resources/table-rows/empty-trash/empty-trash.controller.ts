@@ -4,6 +4,7 @@ import z from 'zod';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { EmptyTrashSchema } from './empty-trash.schema';
 import EmptyTrashUseCase from './empty-trash.use-case';
@@ -16,6 +17,8 @@ const ParamsValidator = z.object({
   route: 'tables',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: EmptyTrashUseCase = getInstanceByToken(
       EmptyTrashUseCase,
@@ -45,16 +48,7 @@ export default class {
       ...(request.ownership?.ownOnly && { __ownOnly: true }),
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

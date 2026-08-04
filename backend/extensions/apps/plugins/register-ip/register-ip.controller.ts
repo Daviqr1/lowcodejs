@@ -5,6 +5,7 @@ import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import RegisterIpUseCase from './register-ip.use-case';
 import { RegisterIpParamsValidator } from './register-ip.validator';
@@ -28,6 +29,8 @@ function resolveClientIp(request: FastifyRequest): string {
   route: '/plugins/register-ip',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: RegisterIpUseCase = getInstanceByToken(
       RegisterIpUseCase,
@@ -58,16 +61,7 @@ export default class {
 
     const result = await this.useCase.execute({ slug, rowId, ip });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

@@ -6,6 +6,7 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import { CsvExportContractService } from '@application/services/csv-export/csv-export-contract.service';
 import CsvExportService from '@application/services/csv-export/csv-export.service';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { UserGroupExportCsvSchema } from './export-csv.schema';
 import UserGroupExportCsvUseCase from './export-csv.use-case';
@@ -15,6 +16,8 @@ import { UserGroupExportCsvQueryValidator } from './export-csv.validator';
   route: 'user-group',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: UserGroupExportCsvUseCase = getInstanceByToken(
       UserGroupExportCsvUseCase,
@@ -45,15 +48,7 @@ export default class {
       user,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     const filename =
       getInstanceByToken<CsvExportContractService>(CsvExportService).filename(

@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import { ResetPasswordSchema } from './reset-password.schema';
 import UpdatePasswordRecoveryUseCase from './reset-password.use-case';
@@ -11,6 +12,8 @@ import { ResetPasswordBodyValidator } from './reset-password.validator';
   route: 'authentication',
 })
 export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly useCase: UpdatePasswordRecoveryUseCase = getInstanceByToken(
       UpdatePasswordRecoveryUseCase,
@@ -36,16 +39,7 @@ export default class {
       _id: request.user.sub,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }

@@ -11,6 +11,7 @@ import { E_EXTENSION_TYPE, E_ROLE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
   GetConfigSchema,
@@ -51,6 +52,8 @@ function readMultipartFieldValue(
 
 @Controller({ route: '/tools' })
 export default class DocTranscriptionController {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly getConfigUseCase: GetDocTranscriptionConfigUseCase = getInstanceByToken(
       GetDocTranscriptionConfigUseCase,
@@ -80,14 +83,7 @@ export default class DocTranscriptionController {
   ): Promise<void> {
     const result = await this.getConfigUseCase.execute();
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }
@@ -110,15 +106,7 @@ export default class DocTranscriptionController {
     const body = UpdateConfigValidator.parse(request.body);
     const result = await this.updateConfigUseCase.execute(body);
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }
@@ -172,14 +160,7 @@ export default class DocTranscriptionController {
       mimetype: data.mimetype,
     });
 
-    if (result.isLeft()) {
-      const error = result.value;
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-      });
-    }
+    if (result.isLeft()) return this.http.sendError(response, result.value);
 
     return response.status(200).send(result.value);
   }
