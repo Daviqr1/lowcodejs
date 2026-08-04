@@ -4,7 +4,7 @@ import type { Merge } from '@application/core/entity.core';
 
 import type { IDocTranscriptionConfig } from './doc-transcription.types';
 
-const SINGLETON_ID = 'singleton';
+export const DOC_TRANSCRIPTION_CONFIG_ID = 'singleton';
 
 const ResponseFieldSchema = new mongoose.Schema(
   {
@@ -31,7 +31,7 @@ const DocumentTypeSchema = new mongoose.Schema(
 
 const DocTranscriptionConfigSchema = new mongoose.Schema(
   {
-    _id: { type: String, default: SINGLETON_ID },
+    _id: { type: String, default: DOC_TRANSCRIPTION_CONFIG_ID },
     apiUrl: { type: String, default: null },
     apiKey: { type: String, default: null },
     model: { type: String, default: null },
@@ -49,26 +49,3 @@ export const DocTranscriptionConfigModel: mongoose.Model<
     DocTranscriptionConfigSchema,
     'doc_transcription_config',
   );
-
-export async function getOrCreateConfig(): Promise<IDocTranscriptionConfig> {
-  let doc = await DocTranscriptionConfigModel.findById(SINGLETON_ID);
-  if (!doc) {
-    doc = await DocTranscriptionConfigModel.create({
-      _id: SINGLETON_ID,
-      apiUrl: null,
-      documentTypes: [],
-    });
-  }
-  return doc.toJSON();
-}
-
-export async function saveConfig(
-  data: Partial<IDocTranscriptionConfig>,
-): Promise<IDocTranscriptionConfig> {
-  const doc = await DocTranscriptionConfigModel.findByIdAndUpdate(
-    SINGLETON_ID,
-    { $set: data },
-    { upsert: true, new: true },
-  );
-  return doc!.toJSON();
-}

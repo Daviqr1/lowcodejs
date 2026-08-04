@@ -10,7 +10,7 @@ import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
-import { deleteCascadeDropdownConfigsForField } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config.model';
+import { CascadeDropdownConfigContractRepository } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config-contract.repository';
 
 import type { TableFieldDeletePayload } from './delete.validator';
 
@@ -23,6 +23,7 @@ export default class TableFieldDeleteUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly cascadeDropdownConfigRepository: CascadeDropdownConfigContractRepository,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -90,7 +91,7 @@ export default class TableFieldDeleteUseCase {
         owner: table.owner._id,
       });
 
-      await deleteCascadeDropdownConfigsForField({
+      await this.cascadeDropdownConfigRepository.deleteForField({
         tableSlug: table.slug,
         fieldId: field._id,
         fieldSlug: field.slug,
@@ -174,7 +175,7 @@ export default class TableFieldDeleteUseCase {
       owner: parentTable.owner._id,
     });
 
-    await deleteCascadeDropdownConfigsForField({
+    await this.cascadeDropdownConfigRepository.deleteForField({
       tableSlug: parentTable.slug,
       fieldId: field._id,
       fieldSlug: field.slug,

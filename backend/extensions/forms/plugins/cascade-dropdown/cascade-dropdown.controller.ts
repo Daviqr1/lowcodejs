@@ -23,10 +23,7 @@ import MongooseModelBuilder, {
 } from '@application/services/table/model-builder.service';
 import MongooseQueryBuilder from '@application/services/table/query-builder.service';
 
-import {
-  findCascadeDropdownConfig,
-  saveCascadeDropdownConfig,
-} from './cascade-dropdown-config.model';
+import CascadeDropdownConfigMongooseRepository from './cascade-dropdown-config.repository';
 import {
   CascadeDropdownChildOptionsSchema,
   CascadeDropdownGetConfigSchema,
@@ -461,10 +458,9 @@ export default class CascadeDropdownController {
     targetTableSlug: string,
     targetFieldId: string,
   ): Promise<CascadeDropdownConfig | null> {
-    const config = await findCascadeDropdownConfig(
-      targetTableSlug,
-      targetFieldId,
-    );
+    const config = await getInstanceByToken(
+      CascadeDropdownConfigMongooseRepository,
+    ).findByTarget(targetTableSlug, targetFieldId);
     if (!config) return null;
 
     const [targetTable, sourceTable] = await Promise.all([
@@ -565,7 +561,9 @@ export default class CascadeDropdownController {
       return sendError(response, validation.error);
     }
 
-    const saved = await saveCascadeDropdownConfig(validation.config);
+    const saved = await getInstanceByToken(
+      CascadeDropdownConfigMongooseRepository,
+    ).save(validation.config);
     return response.status(200).send(saved);
   }
 

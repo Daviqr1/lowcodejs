@@ -4,7 +4,7 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 
-import { saveConfig } from './doc-transcription-config.model';
+import { DocTranscriptionConfigContractRepository } from './doc-transcription-config-contract.repository';
 import type { IDocTranscriptionConfig } from './doc-transcription.types';
 import type { UpdateConfigInput } from './doc-transcription.validator';
 
@@ -12,6 +12,10 @@ type Response = Either<HTTPException, IDocTranscriptionConfig>;
 
 @Service()
 export default class UpdateDocTranscriptionConfigUseCase {
+  constructor(
+    private readonly configRepository: DocTranscriptionConfigContractRepository,
+  ) {}
+
   async execute(input: UpdateConfigInput): Promise<Response> {
     try {
       const ids = (input.documentTypes ?? []).map((dt) => dt.id);
@@ -25,7 +29,7 @@ export default class UpdateDocTranscriptionConfigUseCase {
         );
       }
 
-      const config = await saveConfig({
+      const config = await this.configRepository.save({
         ...(input.apiUrl !== undefined && { apiUrl: input.apiUrl }),
         ...(input.apiKey !== undefined &&
           input.apiKey !== null &&

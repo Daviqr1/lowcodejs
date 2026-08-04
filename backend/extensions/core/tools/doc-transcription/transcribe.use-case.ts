@@ -4,7 +4,7 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 
-import { getOrCreateConfig } from './doc-transcription-config.model';
+import { DocTranscriptionConfigContractRepository } from './doc-transcription-config-contract.repository';
 import type { ITranscribeResult } from './doc-transcription.types';
 
 type Input = {
@@ -36,9 +36,13 @@ function toPrimitive(value: unknown): string | number | boolean | null {
 
 @Service()
 export default class TranscribeDocumentUseCase {
+  constructor(
+    private readonly configRepository: DocTranscriptionConfigContractRepository,
+  ) {}
+
   async execute(input: Input): Promise<Response> {
     try {
-      const config = await getOrCreateConfig();
+      const config = await this.configRepository.getOrCreate();
 
       if (!config.apiUrl) {
         return left(

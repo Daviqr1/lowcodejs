@@ -9,6 +9,7 @@ import {
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
 
 import TableFieldDeleteUseCase from './delete.use-case';
 
@@ -27,6 +28,7 @@ describe('Table Field Delete Use Case', () => {
       tableInMemoryRepository,
       fieldInMemoryRepository,
       schemaBuilder,
+      new InMemoryCascadeDropdownConfigRepository(),
     );
   });
 

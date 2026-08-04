@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { Controller, GET, PUT } from 'fastify-decorators';
+import { Controller, GET, PUT, getInstanceByToken } from 'fastify-decorators';
 
 import {
   E_EXTENSION_TYPE,
@@ -13,10 +13,7 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 
-import {
-  getConfigByTableId,
-  saveConfig,
-} from './conditional-fields-config.model';
+import ConditionalFieldsConfigMongooseRepository from './conditional-fields-config.repository';
 import {
   GetConditionalFieldsConfigSchema,
   GetConditionalFieldsRuntimeConfigSchema,
@@ -159,7 +156,9 @@ export default class ConditionalFieldsController {
     response: FastifyReply,
   ): Promise<void> {
     const table = request.table!;
-    const config = await getConfigByTableId(table._id.toString(), table.slug);
+    const config = await getInstanceByToken(
+      ConditionalFieldsConfigMongooseRepository,
+    ).findByTable(table._id.toString(), table.slug);
 
     return response.status(200).send(config);
   }
@@ -182,7 +181,9 @@ export default class ConditionalFieldsController {
     response: FastifyReply,
   ): Promise<void> {
     const table = request.table!;
-    const config = await getConfigByTableId(table._id.toString(), table.slug);
+    const config = await getInstanceByToken(
+      ConditionalFieldsConfigMongooseRepository,
+    ).findByTable(table._id.toString(), table.slug);
 
     return response.status(200).send(config);
   }
@@ -213,7 +214,9 @@ export default class ConditionalFieldsController {
     }
     assertRulesHaveNoConflicts(body.rules);
 
-    const config = await saveConfig({
+    const config = await getInstanceByToken(
+      ConditionalFieldsConfigMongooseRepository,
+    ).save({
       tableId: table._id.toString(),
       tableSlug: table.slug,
       rules: body.rules,

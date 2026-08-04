@@ -11,6 +11,7 @@ import FieldValueService from '@application/services/field-value/field-value.ser
 import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
 
 import GroupFieldUpdateUseCase from '../update.use-case';
 
@@ -81,6 +82,7 @@ describe('Group Field Update - EVALUATION', () => {
       modelBuilder,
       new SlugService(),
       new FieldValueService(),
+      new InMemoryCascadeDropdownConfigRepository(),
     );
   });
 

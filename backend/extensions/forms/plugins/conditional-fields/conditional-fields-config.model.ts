@@ -35,29 +35,3 @@ export const ConditionalFieldsConfigModel: mongoose.Model<
     ConditionalFieldsConfigSchema,
     'conditional_fields_configs',
   );
-
-export async function getConfigByTableId(
-  tableId: string,
-  tableSlug: string,
-): Promise<ConditionalFieldsConfig> {
-  const doc = await ConditionalFieldsConfigModel.findOne({ tableId }).lean();
-  if (doc) return doc;
-  return { tableId, tableSlug, rules: [] };
-}
-
-export async function saveConfig(
-  config: ConditionalFieldsConfig,
-): Promise<ConditionalFieldsConfig> {
-  const doc = await ConditionalFieldsConfigModel.findOneAndUpdate(
-    { tableId: config.tableId },
-    {
-      $set: {
-        tableSlug: config.tableSlug,
-        rules: config.rules,
-      },
-    },
-    { upsert: true, new: true },
-  ).lean();
-
-  return doc;
-}
