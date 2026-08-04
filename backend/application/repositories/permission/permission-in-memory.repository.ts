@@ -1,5 +1,5 @@
 import type { FindOptions, IPermission } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   PermissionContractRepository,
@@ -9,19 +9,13 @@ import type {
 } from './permission-contract.repository';
 
 export default class PermissionInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IPermission>
   implements PermissionContractRepository
 {
-  items: IPermission[] = [];
-
   async create(payload: PermissionCreatePayload): Promise<IPermission> {
     const permission: IPermission = {
       ...payload,
-      _id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashedAt: null,
-      trashed: false,
+      ...this.stamp(),
     };
     this.items.push(permission);
     return permission;
@@ -33,8 +27,7 @@ export default class PermissionInMemoryRepository
   ): Promise<IPermission | null> {
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -45,8 +38,7 @@ export default class PermissionInMemoryRepository
   ): Promise<IPermission | null> {
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -62,11 +54,7 @@ export default class PermissionInMemoryRepository
 
     filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
@@ -75,16 +63,11 @@ export default class PermissionInMemoryRepository
     _id,
     ...payload
   }: PermissionUpdatePayload): Promise<IPermission> {
-    const permission = this.items.find((p) => p._id === _id);
-    if (!permission) throw new Error('Permission not found');
-    Object.assign(permission, payload, { updatedAt: new Date() });
-    return permission;
+    return this.patchById(_id, payload, 'Permission');
   }
 
   async delete(_id: string): Promise<void> {
-    const index = this.items.findIndex((p) => p._id === _id);
-    if (index === -1) throw new Error('Permission not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Permission');
   }
 
   async count(payload?: PermissionQueryPayload): Promise<number> {

@@ -8,6 +8,7 @@ import {
   type TStorageMigrationStatus,
 } from '@application/core/entity.core';
 import { Storage as Model } from '@application/model/storage.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -19,8 +20,13 @@ import type {
 } from './storage-contract.repository';
 
 @Service()
-export default class StorageMongooseRepository implements StorageContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class StorageMongooseRepository
+  extends MongooseRepository<IStorage>
+  implements StorageContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private buildWhereClause(
     payload?: StorageQueryPayload,
@@ -39,13 +45,6 @@ export default class StorageMongooseRepository implements StorageContractReposit
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IStorage {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: StorageCreatePayload): Promise<IStorage> {
     const created = await Model.create(payload);
     return this.transform(created);
@@ -60,10 +59,7 @@ export default class StorageMongooseRepository implements StorageContractReposit
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IStorage | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const storage = await Model.findOne(where);
     if (!storage) return null;
@@ -75,10 +71,7 @@ export default class StorageMongooseRepository implements StorageContractReposit
     filename: string,
     options?: FindOptions,
   ): Promise<IStorage | null> {
-    const where: Record<string, unknown> = { filename };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ filename }, options);
 
     const storage = await Model.findOne(where);
     if (!storage) return null;
@@ -89,18 +82,12 @@ export default class StorageMongooseRepository implements StorageContractReposit
   async findMany(payload?: StorageQueryPayload): Promise<IStorage[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     const storages = await Model.find(where)
       .sort({ originalName: 'asc' })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return storages.map((s) => this.transform(s));
   }
@@ -130,16 +117,9 @@ export default class StorageMongooseRepository implements StorageContractReposit
     location: TStorageLocation,
     options?: StorageLocationFindOptions,
   ): Promise<IStorage[]> {
-    let skip: number | undefined;
-    let take: number | undefined;
-    if (options?.page && options?.perPage) {
-      skip = (options.page - 1) * options.perPage;
-      take = options.perPage;
-    }
+    const { skip, limit } = this.paginate(options);
 
-    const storages = await Model.find({ location })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+    const storages = await Model.find({ location }).skip(skip).limit(limit);
 
     return storages.map((s) => this.transform(s));
   }
@@ -158,16 +138,11 @@ export default class StorageMongooseRepository implements StorageContractReposit
     status: TStorageMigrationStatus,
     options?: StorageLocationFindOptions,
   ): Promise<IStorage[]> {
-    let skip: number | undefined;
-    let take: number | undefined;
-    if (options?.page && options?.perPage) {
-      skip = (options.page - 1) * options.perPage;
-      take = options.perPage;
-    }
+    const { skip, limit } = this.paginate(options);
 
     const storages = await Model.find({ migration_status: status })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return storages.map((s) => this.transform(s));
   }

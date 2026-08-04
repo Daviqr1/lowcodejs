@@ -1,4 +1,5 @@
 import type { IExtension } from '@application/core/entity.core';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   ExtensionAvailabilityKey,
@@ -12,9 +13,10 @@ import type {
   ExtensionUpsertPayload,
 } from './extension-contract.repository';
 
-export default class ExtensionInMemoryRepository implements ExtensionContractRepository {
-  items: IExtension[] = [];
-
+export default class ExtensionInMemoryRepository
+  extends InMemoryCollectionRepository<IExtension>
+  implements ExtensionContractRepository
+{
   async findById(_id: string): Promise<IExtension | null> {
     return this.items.find((i) => i._id === _id && !i.trashed) ?? null;
   }

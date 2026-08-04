@@ -1,5 +1,5 @@
 import type { FindOptions, IField } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   FieldContractRepository,
@@ -9,21 +9,15 @@ import type {
 } from './field-contract.repository';
 
 export default class FieldInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IField>
   implements FieldContractRepository
 {
-  items: IField[] = [];
-
   async create(payload: FieldCreatePayload): Promise<IField> {
     const field: IField = {
       ...payload,
       allowCustomDropdownOptions: payload.allowCustomDropdownOptions ?? false,
       tip: payload.tip ?? null,
-      _id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashedAt: null,
-      trashed: false,
+      ...this.stamp(),
     };
     this.items.push(field);
     return field;
@@ -34,11 +28,7 @@ export default class FieldInMemoryRepository
       ...payload,
       allowCustomDropdownOptions: payload.allowCustomDropdownOptions ?? false,
       tip: payload.tip ?? null,
-      _id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashedAt: null,
-      trashed: false,
+      ...this.stamp(),
     }));
     this.items.push(...fields);
     return fields;
@@ -47,8 +37,7 @@ export default class FieldInMemoryRepository
   async findById(_id: string, options?: FindOptions): Promise<IField | null> {
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -59,8 +48,7 @@ export default class FieldInMemoryRepository
   ): Promise<IField | null> {
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -83,11 +71,7 @@ export default class FieldInMemoryRepository
 
     filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
@@ -105,9 +89,7 @@ export default class FieldInMemoryRepository
   }
 
   async delete(_id: string): Promise<void> {
-    const index = this.items.findIndex((f) => f._id === _id);
-    if (index === -1) throw new Error('Field not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Field');
   }
 
   async deleteMany(_ids: string[]): Promise<void> {

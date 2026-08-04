@@ -3,7 +3,7 @@ import {
   type FindOptions,
   type IUser,
 } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -18,11 +18,9 @@ import type {
 const fixtures = new EntityFixtures();
 
 export default class UserInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IUser>
   implements UserContractRepository
 {
-  items: IUser[] = [];
-
   async create(payload: UserCreatePayload): Promise<IUser> {
     const user: IUser = {
       ...payload,
@@ -103,21 +101,14 @@ export default class UserInMemoryRepository
       );
     }
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
 
   async update({ _id, ...payload }: UserUpdatePayload): Promise<IUser> {
     this.checkError('update');
-    const updated = this.items.find((user) => user._id === _id);
-    if (!updated) throw new Error('User not found');
-    Object.assign(updated, payload, { updatedAt: new Date() });
-    return updated;
+    return this.patchById(_id, payload, 'User');
   }
 
   async updateMany({
@@ -149,9 +140,7 @@ export default class UserInMemoryRepository
 
   async delete(_id: string): Promise<void> {
     this.checkError('delete');
-    const index = this.items.findIndex((u) => u._id === _id);
-    if (index === -1) throw new Error('User not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'User');
   }
 
   async deleteMany(_ids: string[]): Promise<number> {

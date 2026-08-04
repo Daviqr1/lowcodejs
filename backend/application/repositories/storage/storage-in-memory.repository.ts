@@ -6,7 +6,7 @@ import {
   type TStorageLocation,
   type TStorageMigrationStatus,
 } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   StorageContractRepository,
@@ -17,11 +17,9 @@ import type {
 } from './storage-contract.repository';
 
 export default class StorageInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IStorage>
   implements StorageContractRepository
 {
-  items: IStorage[] = [];
-
   private buildBase(payload: StorageCreatePayload): IStorage {
     return {
       filename: payload.filename,
@@ -56,8 +54,7 @@ export default class StorageInMemoryRepository
     this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -68,8 +65,7 @@ export default class StorageInMemoryRepository
   ): Promise<IStorage | null> {
     const item = this.items.find((i) => {
       if (i.filename !== filename) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -92,26 +88,17 @@ export default class StorageInMemoryRepository
       a.originalName.localeCompare(b.originalName),
     );
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
 
   async update({ _id, ...payload }: StorageUpdatePayload): Promise<IStorage> {
-    const storage = this.items.find((s) => s._id === _id);
-    if (!storage) throw new Error('Storage not found');
-    Object.assign(storage, payload, { updatedAt: new Date() });
-    return storage;
+    return this.patchById(_id, payload, 'Storage');
   }
 
   async delete(_id: string): Promise<void> {
-    const index = this.items.findIndex((s) => s._id === _id);
-    if (index === -1) throw new Error('Storage not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Storage');
   }
 
   async count(payload?: StorageQueryPayload): Promise<number> {

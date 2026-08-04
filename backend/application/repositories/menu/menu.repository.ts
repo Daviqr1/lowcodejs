@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import type { IMenu } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Menu as Model } from '@application/model/menu.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -15,8 +16,13 @@ import type {
 } from './menu-contract.repository';
 
 @Service()
-export default class MenuMongooseRepository implements MenuContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class MenuMongooseRepository
+  extends MongooseRepository<IMenu>
+  implements MenuContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private readonly populateOptions = [
     { path: 'table' },
@@ -72,11 +78,11 @@ export default class MenuMongooseRepository implements MenuContractRepository {
     return String(ref);
   }
 
-  private transform(entity: InstanceType<typeof Model>): IMenu {
-    const json = entity.toJSON({ flattenObjectIds: true });
+  // Sobrescreve a base so para achatar as duas refs populadas em id.
+  protected transform(entity: InstanceType<typeof Model>): IMenu {
+    const json = super.transform(entity);
     return {
       ...json,
-      _id: entity._id.toString(),
       table: this.toId(json.table),
       parent: this.toId(json.parent),
     };
@@ -89,10 +95,7 @@ export default class MenuMongooseRepository implements MenuContractRepository {
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IMenu | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const menu = await Model.findOne(where).populate(this.populateOptions);
     if (!menu) return null;
@@ -101,10 +104,7 @@ export default class MenuMongooseRepository implements MenuContractRepository {
   }
 
   async findBySlug(slug: string, options?: FindOptions): Promise<IMenu | null> {
-    const where: Record<string, unknown> = { slug };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ slug }, options);
 
     const menu = await Model.findOne(where).populate(this.populateOptions);
     if (!menu) return null;
@@ -115,13 +115,7 @@ export default class MenuMongooseRepository implements MenuContractRepository {
   async findMany(payload?: MenuQueryPayload): Promise<IMenu[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     let sortOption: Record<string, 'asc' | 'desc'> = {
       order: 'asc',
@@ -143,7 +137,7 @@ export default class MenuMongooseRepository implements MenuContractRepository {
       }
 
       const limitStages: Array<{ $limit: number }> = [];
-      if (take) limitStages.push({ $limit: take });
+      if (limit) limitStages.push({ $limit: limit });
 
       const docs = await Model.aggregate([
         { $match: where },
@@ -161,7 +155,7 @@ export default class MenuMongooseRepository implements MenuContractRepository {
           },
         },
         { $sort: aggregationSort },
-        { $skip: skip ?? 0 },
+        { $skip: skip },
         ...limitStages,
         { $project: { _ownerDoc: 0, _ownerName: 0 } },
       ]);
@@ -178,8 +172,8 @@ export default class MenuMongooseRepository implements MenuContractRepository {
     const menus = await Model.find(where)
       .populate(this.populateOptions)
       .sort(sortOption)
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return menus.map((m) => this.transform(m));
   }

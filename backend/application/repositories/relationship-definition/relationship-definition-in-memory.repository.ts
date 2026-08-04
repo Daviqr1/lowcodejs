@@ -2,6 +2,7 @@ import type {
   FindOptions,
   IRelationshipDefinition,
 } from '@application/core/entity.core';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   RelationshipDefinitionContractRepository,
@@ -9,9 +10,10 @@ import type {
   RelationshipDefinitionUpdatePayload,
 } from './relationship-definition-contract.repository';
 
-export default class RelationshipDefinitionInMemoryRepository implements RelationshipDefinitionContractRepository {
-  items: IRelationshipDefinition[] = [];
-
+export default class RelationshipDefinitionInMemoryRepository
+  extends InMemoryCollectionRepository<IRelationshipDefinition>
+  implements RelationshipDefinitionContractRepository
+{
   async create(
     payload: RelationshipDefinitionCreatePayload,
   ): Promise<IRelationshipDefinition> {

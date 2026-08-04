@@ -5,6 +5,7 @@ import type {
   IRelationshipDefinition,
 } from '@application/core/entity.core';
 import { RelationshipDefinition as Model } from '@application/model/relationship-definition.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   RelationshipDefinitionContractRepository,
@@ -13,16 +14,10 @@ import type {
 } from './relationship-definition-contract.repository';
 
 @Service()
-export default class RelationshipDefinitionMongooseRepository implements RelationshipDefinitionContractRepository {
-  private transform(
-    entity: InstanceType<typeof Model>,
-  ): IRelationshipDefinition {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
+export default class RelationshipDefinitionMongooseRepository
+  extends MongooseRepository<IRelationshipDefinition>
+  implements RelationshipDefinitionContractRepository
+{
   async create(
     payload: RelationshipDefinitionCreatePayload,
   ): Promise<IRelationshipDefinition> {
@@ -34,12 +29,7 @@ export default class RelationshipDefinitionMongooseRepository implements Relatio
     _id: string,
     options?: FindOptions,
   ): Promise<IRelationshipDefinition | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    } else {
-      where.trashed = { $ne: true };
-    }
+    const where = this.trashedClause({ _id }, options, { $ne: true });
 
     const definition = await Model.findOne(where);
     if (!definition) return null;
@@ -66,12 +56,7 @@ export default class RelationshipDefinitionMongooseRepository implements Relatio
   }
 
   async findMany(options?: FindOptions): Promise<IRelationshipDefinition[]> {
-    const where: Record<string, unknown> = {};
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    } else {
-      where.trashed = { $ne: true };
-    }
+    const where = this.trashedClause({}, options, { $ne: true });
 
     const definitions = await Model.find(where).sort({ createdAt: 'desc' });
     return definitions.map((definition) => this.transform(definition));

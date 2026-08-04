@@ -3,7 +3,7 @@ import {
   type FindOptions,
   type IGroup,
 } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -18,11 +18,9 @@ import type {
 const fixtures = new EntityFixtures();
 
 export default class UserGroupInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IGroup>
   implements UserGroupContractRepository
 {
-  items: IGroup[] = [];
-
   async create(payload: UserGroupCreatePayload): Promise<IGroup> {
     const group: IGroup = {
       ...payload,
@@ -44,8 +42,7 @@ export default class UserGroupInMemoryRepository
     this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -57,8 +54,7 @@ export default class UserGroupInMemoryRepository
     this.checkError('findBySlug');
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -90,21 +86,14 @@ export default class UserGroupInMemoryRepository
 
     filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
 
   async update({ _id, ...payload }: UserGroupUpdatePayload): Promise<IGroup> {
     this.checkError('update');
-    const group = this.items.find((g) => g._id === _id);
-    if (!group) throw new Error('UserGroup not found');
-    Object.assign(group, payload, { updatedAt: new Date() });
-    return group;
+    return this.patchById(_id, payload, 'UserGroup');
   }
 
   async updateMany({
@@ -135,9 +124,7 @@ export default class UserGroupInMemoryRepository
 
   async delete(_id: string): Promise<void> {
     this.checkError('delete');
-    const index = this.items.findIndex((g) => g._id === _id);
-    if (index === -1) throw new Error('UserGroup not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'UserGroup');
   }
 
   async deleteMany(_ids: string[]): Promise<number> {

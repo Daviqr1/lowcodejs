@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { INotification, Paginated } from '@application/core/entity.core';
 import { Notification as Model } from '@application/model/notification.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   NotificationContractRepository,
@@ -10,14 +11,10 @@ import type {
 } from './notification-contract.repository';
 
 @Service()
-export default class NotificationMongooseRepository implements NotificationContractRepository {
-  private transform(entity: InstanceType<typeof Model>): INotification {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
+export default class NotificationMongooseRepository
+  extends MongooseRepository<INotification>
+  implements NotificationContractRepository
+{
   async create(payload: NotificationCreatePayload): Promise<INotification> {
     const created = await Model.create({
       userId: payload.userId,

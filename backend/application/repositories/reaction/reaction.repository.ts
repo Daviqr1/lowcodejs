@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IReaction } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Reaction as Model } from '@application/model/reaction.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   ReactionContractRepository,
@@ -12,7 +13,10 @@ import type {
 } from './reaction-contract.repository';
 
 @Service()
-export default class ReactionMongooseRepository implements ReactionContractRepository {
+export default class ReactionMongooseRepository
+  extends MongooseRepository<IReaction>
+  implements ReactionContractRepository
+{
   private readonly populateOptions = [{ path: 'user' }];
 
   private buildWhereClause(
@@ -26,13 +30,6 @@ export default class ReactionMongooseRepository implements ReactionContractRepos
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IReaction {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: ReactionCreatePayload): Promise<IReaction> {
     const created = await Model.create(payload);
     const populated = await created.populate(this.populateOptions);
@@ -44,10 +41,7 @@ export default class ReactionMongooseRepository implements ReactionContractRepos
     user: string,
     options?: FindOptions,
   ): Promise<IReaction | null> {
-    const where: Record<string, unknown> = { _id, user };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id, user }, options);
 
     const reaction = await Model.findOne(where).populate(this.populateOptions);
     if (!reaction) return null;
@@ -58,19 +52,13 @@ export default class ReactionMongooseRepository implements ReactionContractRepos
   async findMany(payload?: ReactionQueryPayload): Promise<IReaction[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     const reactions = await Model.find(where)
       .populate(this.populateOptions)
       .sort({ createdAt: 'desc' })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return reactions.map((r) => this.transform(r));
   }

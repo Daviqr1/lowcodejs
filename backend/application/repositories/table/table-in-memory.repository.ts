@@ -5,7 +5,7 @@ import type {
   ITable,
   IUser,
 } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -22,7 +22,7 @@ const fixtures = new EntityFixtures();
 // Refs do double de teste: entidade completa (defaults inertes) a partir do id.
 
 export default class TableInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<ITable>
   implements TableContractRepository
 {
   private storageRef(id: string): IStorage {
@@ -34,7 +34,6 @@ export default class TableInMemoryRepository
   private fieldRef(id: string): IField {
     return fixtures.makeField(id);
   }
-  items: ITable[] = [];
 
   async create(payload: TableCreatePayload): Promise<ITable> {
     this.checkError('create');
@@ -92,8 +91,7 @@ export default class TableInMemoryRepository
     this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -105,8 +103,7 @@ export default class TableInMemoryRepository
     this.checkError('findBySlug');
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -145,11 +142,7 @@ export default class TableInMemoryRepository
 
     filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
@@ -238,9 +231,7 @@ export default class TableInMemoryRepository
 
   async delete(_id: string): Promise<void> {
     this.checkError('delete');
-    const index = this.items.findIndex((t) => t._id === _id);
-    if (index === -1) throw new Error('Table not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Table');
   }
 
   async count(payload?: TableQueryPayload): Promise<number> {

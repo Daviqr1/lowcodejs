@@ -1,5 +1,5 @@
 import type { FindOptions, IReaction } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -13,11 +13,9 @@ import type {
 const fixtures = new EntityFixtures();
 
 export default class ReactionInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IReaction>
   implements ReactionContractRepository
 {
-  items: IReaction[] = [];
-
   async create(payload: ReactionCreatePayload): Promise<IReaction> {
     const reaction: IReaction = {
       ...payload,
@@ -41,8 +39,7 @@ export default class ReactionInMemoryRepository
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
       if (i.user?._id !== user) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -58,26 +55,17 @@ export default class ReactionInMemoryRepository
       filtered = filtered.filter((r) => r.type === payload.type);
     }
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
 
   async update({ _id, ...payload }: ReactionUpdatePayload): Promise<IReaction> {
-    const reaction = this.items.find((r) => r._id === _id);
-    if (!reaction) throw new Error('Reaction not found');
-    Object.assign(reaction, payload, { updatedAt: new Date() });
-    return reaction;
+    return this.patchById(_id, payload, 'Reaction');
   }
 
   async delete(_id: string): Promise<void> {
-    const index = this.items.findIndex((r) => r._id === _id);
-    if (index === -1) throw new Error('Reaction not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Reaction');
   }
 
   async count(payload?: ReactionQueryPayload): Promise<number> {

@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { IExtension } from '@application/core/entity.core';
 import { Extension as Model } from '@application/model/extension.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   ExtensionAvailabilityKey,
@@ -16,14 +17,10 @@ import type {
 } from './extension-contract.repository';
 
 @Service()
-export default class ExtensionMongooseRepository implements ExtensionContractRepository {
-  private transform(entity: InstanceType<typeof Model>): IExtension {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
+export default class ExtensionMongooseRepository
+  extends MongooseRepository<IExtension>
+  implements ExtensionContractRepository
+{
   private buildWhereClause(
     payload?: ExtensionQueryPayload,
   ): Record<string, unknown> {

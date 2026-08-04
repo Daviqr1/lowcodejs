@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import { E_ROLE, type IUser } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { User as Model } from '@application/model/user.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -14,8 +15,13 @@ import type {
 } from './user-contract.repository';
 
 @Service()
-export default class UserMongooseRepository implements UserContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class UserMongooseRepository
+  extends MongooseRepository<IUser>
+  implements UserContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private readonly populateOptions = [
     { path: 'group', populate: { path: 'permissions' } },
@@ -81,13 +87,6 @@ export default class UserMongooseRepository implements UserContractRepository {
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IUser {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: UserCreatePayload): Promise<IUser> {
     const created = await Model.create(payload);
     const populated = await created.populate(this.populateOptions);
@@ -95,14 +94,9 @@ export default class UserMongooseRepository implements UserContractRepository {
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IUser | null> {
-    const where: Record<string, unknown> = { _id };
     // Mesmo default de `buildWhereClause`: sem opcao explicita, usuario na
     // lixeira nao existe (autenticacao, perfil, middlewares, sockets).
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    } else {
-      where.trashed = false;
-    }
+    const where = this.trashedClause({ _id }, options, false);
 
     const user = await Model.findOne(where).populate(this.populateOptions);
     if (!user) return null;
@@ -114,12 +108,7 @@ export default class UserMongooseRepository implements UserContractRepository {
     email: string,
     options?: FindOptions,
   ): Promise<IUser | null> {
-    const where: Record<string, unknown> = { email };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    } else {
-      where.trashed = false;
-    }
+    const where = this.trashedClause({ email }, options, false);
 
     const user = await Model.findOne(where).populate(this.populateOptions);
     if (!user) return null;
@@ -130,13 +119,7 @@ export default class UserMongooseRepository implements UserContractRepository {
   async findMany(payload?: UserQueryPayload): Promise<IUser[]> {
     const where = await this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     let sortOption: Record<string, 'asc' | 'desc'> = { name: 'asc' };
     if (payload?.sort && Object.keys(payload.sort).length > 0) {
@@ -155,7 +138,7 @@ export default class UserMongooseRepository implements UserContractRepository {
       }
 
       const limitStages: Array<{ $limit: number }> = [];
-      if (take) limitStages.push({ $limit: take });
+      if (limit) limitStages.push({ $limit: limit });
 
       const docs = await Model.aggregate([
         { $match: where },
@@ -173,7 +156,7 @@ export default class UserMongooseRepository implements UserContractRepository {
           },
         },
         { $sort: aggregationSort },
-        { $skip: skip ?? 0 },
+        { $skip: skip },
         ...limitStages,
         { $project: { _groupDoc: 0, _groupName: 0 } },
       ]);
@@ -188,8 +171,8 @@ export default class UserMongooseRepository implements UserContractRepository {
     const users = await Model.find(where)
       .populate(this.populateOptions)
       .sort(sortOption)
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return users.map((u) => this.transform(u));
   }

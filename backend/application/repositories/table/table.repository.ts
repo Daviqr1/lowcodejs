@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { ITable } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Table as Model } from '@application/model/table.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 import { getDataConnection } from '@config/database.config';
 
@@ -15,7 +16,10 @@ import type {
 } from './table-contract.repository';
 
 @Service()
-export default class TableMongooseRepository implements TableContractRepository {
+export default class TableMongooseRepository
+  extends MongooseRepository<ITable>
+  implements TableContractRepository
+{
   private assertITable(
     value: Record<string, unknown>,
   ): asserts value is ITable {
@@ -23,7 +27,9 @@ export default class TableMongooseRepository implements TableContractRepository 
       throw new Error('Invalid table object');
     }
   }
-  constructor(private readonly search: SearchContractService) {}
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private readonly populateOptions = [
     { path: 'logo' },
@@ -62,13 +68,6 @@ export default class TableMongooseRepository implements TableContractRepository 
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): ITable {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: TableCreatePayload): Promise<ITable> {
     const created = await Model.create(payload);
     const populated = await created.populate(this.populateOptions);
@@ -76,10 +75,7 @@ export default class TableMongooseRepository implements TableContractRepository 
   }
 
   async findById(_id: string, options?: FindOptions): Promise<ITable | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const table = await Model.findOne(where).populate(this.populateOptions);
     if (!table) return null;
@@ -91,10 +87,7 @@ export default class TableMongooseRepository implements TableContractRepository 
     slug: string,
     options?: FindOptions,
   ): Promise<ITable | null> {
-    const where: Record<string, unknown> = { slug };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ slug }, options);
 
     const table = await Model.findOne(where).populate(this.populateOptions);
     if (!table) return null;
@@ -105,13 +98,7 @@ export default class TableMongooseRepository implements TableContractRepository 
   async findMany(payload?: TableQueryPayload): Promise<ITable[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     let sortOption: Record<string, 'asc' | 'desc'> = { createdAt: 'desc' };
     if (payload?.sort && Object.keys(payload.sort).length > 0) {
@@ -130,7 +117,7 @@ export default class TableMongooseRepository implements TableContractRepository 
       }
 
       const limitStages: Array<{ $limit: number }> = [];
-      if (take) limitStages.push({ $limit: take });
+      if (limit) limitStages.push({ $limit: limit });
 
       const docs = await Model.aggregate([
         { $match: where },
@@ -148,7 +135,7 @@ export default class TableMongooseRepository implements TableContractRepository 
           },
         },
         { $sort: aggregationSort },
-        { $skip: skip ?? 0 },
+        { $skip: skip },
         ...limitStages,
         { $project: { _ownerDoc: 0, _ownerName: 0 } },
       ]);
@@ -170,8 +157,8 @@ export default class TableMongooseRepository implements TableContractRepository 
     const tables = await Model.find(where)
       .populate(this.populateOptions)
       .sort(sortOption)
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return tables.map((t) => this.transform(t));
   }

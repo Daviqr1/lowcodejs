@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import { E_ROLE, type IGroup } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { UserGroup as Model } from '@application/model/user-group.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -14,8 +15,13 @@ import type {
 } from './user-group-contract.repository';
 
 @Service()
-export default class UserGroupMongooseRepository implements UserGroupContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class UserGroupMongooseRepository
+  extends MongooseRepository<IGroup>
+  implements UserGroupContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private readonly populateOptions = [{ path: 'permissions' }];
 
@@ -54,13 +60,6 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IGroup {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: UserGroupCreatePayload): Promise<IGroup> {
     const created = await Model.create(payload);
     const populated = await created.populate(this.populateOptions);
@@ -68,10 +67,7 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IGroup | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const group = await Model.findOne(where).populate(this.populateOptions);
     if (!group) return null;
@@ -83,10 +79,7 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
     slug: string,
     options?: FindOptions,
   ): Promise<IGroup | null> {
-    const where: Record<string, unknown> = { slug };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ slug }, options);
 
     const group = await Model.findOne(where).populate(this.populateOptions);
     if (!group) return null;
@@ -97,13 +90,7 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
   async findMany(payload?: UserGroupQueryPayload): Promise<IGroup[]> {
     const where = await this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     let sortOption: Record<string, 'asc' | 'desc'> = { name: 'asc' };
     if (payload?.sort && Object.keys(payload.sort).length > 0) {
@@ -113,8 +100,8 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
     const groups = await Model.find(where)
       .populate(this.populateOptions)
       .sort(sortOption)
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return groups.map((g) => this.transform(g));
   }

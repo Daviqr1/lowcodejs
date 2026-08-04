@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IValidationToken } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { ValidationToken as Model } from '@application/model/validation-token.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   ValidationTokenContractRepository,
@@ -12,7 +13,10 @@ import type {
 } from './validation-token-contract.repository';
 
 @Service()
-export default class ValidationTokenMongooseRepository implements ValidationTokenContractRepository {
+export default class ValidationTokenMongooseRepository
+  extends MongooseRepository<IValidationToken>
+  implements ValidationTokenContractRepository
+{
   private readonly populateOptions = [
     {
       path: 'user',
@@ -31,13 +35,6 @@ export default class ValidationTokenMongooseRepository implements ValidationToke
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IValidationToken {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(
     payload: ValidationTokenCreatePayload,
   ): Promise<IValidationToken> {
@@ -50,10 +47,7 @@ export default class ValidationTokenMongooseRepository implements ValidationToke
     _id: string,
     options?: FindOptions,
   ): Promise<IValidationToken | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const token = await Model.findOne(where).populate(this.populateOptions);
     if (!token) return null;
@@ -65,10 +59,7 @@ export default class ValidationTokenMongooseRepository implements ValidationToke
     code: string,
     options?: FindOptions,
   ): Promise<IValidationToken | null> {
-    const where: Record<string, unknown> = { code };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ code }, options);
 
     const token = await Model.findOne(where).populate(this.populateOptions);
     if (!token) return null;
@@ -81,19 +72,13 @@ export default class ValidationTokenMongooseRepository implements ValidationToke
   ): Promise<IValidationToken[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     const tokens = await Model.find(where)
       .populate(this.populateOptions)
       .sort({ createdAt: 'desc' })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return tokens.map((t) => this.transform(t));
   }

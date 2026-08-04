@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IPermission } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Permission as Model } from '@application/model/permission.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -13,8 +14,13 @@ import type {
 } from './permission-contract.repository';
 
 @Service()
-export default class PermissionMongooseRepository implements PermissionContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class PermissionMongooseRepository
+  extends MongooseRepository<IPermission>
+  implements PermissionContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private buildWhereClause(
     payload?: PermissionQueryPayload,
@@ -31,13 +37,6 @@ export default class PermissionMongooseRepository implements PermissionContractR
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IPermission {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: PermissionCreatePayload): Promise<IPermission> {
     const created = await Model.create(payload);
     return this.transform(created);
@@ -47,12 +46,9 @@ export default class PermissionMongooseRepository implements PermissionContractR
     _id: string,
     options?: FindOptions,
   ): Promise<IPermission | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
-
-    const permission = await Model.findOne(where);
+    const permission = await Model.findOne(
+      this.trashedClause({ _id }, options),
+    );
     if (!permission) return null;
 
     return this.transform(permission);
@@ -62,32 +58,21 @@ export default class PermissionMongooseRepository implements PermissionContractR
     slug: string,
     options?: FindOptions,
   ): Promise<IPermission | null> {
-    const where: Record<string, unknown> = { slug };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
-
-    const permission = await Model.findOne(where);
+    const permission = await Model.findOne(
+      this.trashedClause({ slug }, options),
+    );
     if (!permission) return null;
 
     return this.transform(permission);
   }
 
   async findMany(payload?: PermissionQueryPayload): Promise<IPermission[]> {
-    const where = this.buildWhereClause(payload);
+    const { skip, limit } = this.paginate(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
-
-    const permissions = await Model.find(where)
+    const permissions = await Model.find(this.buildWhereClause(payload))
       .sort({ name: 'asc' })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return permissions.map((p) => this.transform(p));
   }
@@ -112,7 +97,6 @@ export default class PermissionMongooseRepository implements PermissionContractR
   }
 
   async count(payload?: PermissionQueryPayload): Promise<number> {
-    const where = this.buildWhereClause(payload);
-    return Model.countDocuments(where);
+    return Model.countDocuments(this.buildWhereClause(payload));
   }
 }

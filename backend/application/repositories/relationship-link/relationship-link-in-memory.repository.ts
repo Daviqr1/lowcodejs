@@ -1,4 +1,5 @@
 import type { IRelationshipLink } from '@application/core/entity.core';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   RelationshipLinkContractRepository,
@@ -10,9 +11,10 @@ import type {
   RelationshipLinkSide,
 } from './relationship-link-contract.repository';
 
-export default class RelationshipLinkInMemoryRepository implements RelationshipLinkContractRepository {
-  items: IRelationshipLink[] = [];
-
+export default class RelationshipLinkInMemoryRepository
+  extends InMemoryCollectionRepository<IRelationshipLink>
+  implements RelationshipLinkContractRepository
+{
   async create(
     payload: RelationshipLinkCreatePayload,
   ): Promise<IRelationshipLink> {

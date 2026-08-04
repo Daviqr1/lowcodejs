@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { ISetting } from '@application/core/entity.core';
 import { Setting as Model } from '@application/model/setting.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   SettingContractRepository,
@@ -9,11 +10,10 @@ import type {
 } from './setting-contract.repository';
 
 @Service()
-export default class SettingMongooseRepository implements SettingContractRepository {
-  private transform(entity: InstanceType<typeof Model>): ISetting {
-    return entity.toJSON({ flattenObjectIds: true });
-  }
-
+export default class SettingMongooseRepository
+  extends MongooseRepository<ISetting>
+  implements SettingContractRepository
+{
   async get(): Promise<ISetting | null> {
     const setting = await Model.findOne().populate('MODEL_CLONE_TABLES');
 

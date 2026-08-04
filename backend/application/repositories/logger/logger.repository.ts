@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { FindOptions, ILogger } from '@application/core/entity.core';
 import { Logger as Model } from '@application/model/logger.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import {
@@ -12,8 +13,13 @@ import {
 } from './logger-contract.repository';
 
 @Service()
-export default class LoggerMongooseRepository implements LoggerContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class LoggerMongooseRepository
+  extends MongooseRepository<ILogger>
+  implements LoggerContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private readonly populateOptions = [
     { path: 'user' },
@@ -58,13 +64,6 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): ILogger {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: LoggerCreatePayload): Promise<ILogger> {
     const {
       user_id,
@@ -87,11 +86,7 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
   }
 
   async findById(_id: string, options?: FindOptions): Promise<ILogger | null> {
-    const where: Record<string, unknown> = { _id };
-
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const logger = await Model.findOne(where).populate(this.populateOptions);
 
@@ -103,13 +98,7 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
   async findMany(payload?: LoggerQueryPayload): Promise<ILogger[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     let sortOption: Record<string, 'asc' | 'desc'> = { createdAt: 'desc' };
     if (payload?.sort && Object.keys(payload.sort).length > 0) {
@@ -119,8 +108,8 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
     const loggers = await Model.find(where)
       .populate(this.populateOptions)
       .sort(sortOption)
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return loggers.map((entity) => this.transform(entity));
   }

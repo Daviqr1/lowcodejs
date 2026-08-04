@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IField } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Field as Model } from '@application/model/field.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
@@ -13,8 +14,13 @@ import type {
 } from './field-contract.repository';
 
 @Service()
-export default class FieldMongooseRepository implements FieldContractRepository {
-  constructor(private readonly search: SearchContractService) {}
+export default class FieldMongooseRepository
+  extends MongooseRepository<IField>
+  implements FieldContractRepository
+{
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
 
   private buildWhereClause(
     payload?: FieldQueryPayload,
@@ -37,13 +43,6 @@ export default class FieldMongooseRepository implements FieldContractRepository 
     return where;
   }
 
-  private transform(entity: InstanceType<typeof Model>): IField {
-    return {
-      ...entity.toJSON({ flattenObjectIds: true }),
-      _id: entity._id.toString(),
-    };
-  }
-
   async create(payload: FieldCreatePayload): Promise<IField> {
     const created = await Model.create(payload);
     return this.transform(created);
@@ -55,10 +54,7 @@ export default class FieldMongooseRepository implements FieldContractRepository 
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IField | null> {
-    const where: Record<string, unknown> = { _id };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ _id }, options);
 
     const field = await Model.findOne(where);
     if (!field) return null;
@@ -70,10 +66,7 @@ export default class FieldMongooseRepository implements FieldContractRepository 
     slug: string,
     options?: FindOptions,
   ): Promise<IField | null> {
-    const where: Record<string, unknown> = { slug };
-    if (options?.trashed !== undefined) {
-      where.trashed = options.trashed;
-    }
+    const where = this.trashedClause({ slug }, options);
 
     const field = await Model.findOne(where);
     if (!field) return null;
@@ -84,18 +77,12 @@ export default class FieldMongooseRepository implements FieldContractRepository 
   async findMany(payload?: FieldQueryPayload): Promise<IField[]> {
     const where = this.buildWhereClause(payload);
 
-    let skip: number | undefined;
-    let take: number | undefined;
-
-    if (payload?.page && payload?.perPage) {
-      skip = (payload.page - 1) * payload.perPage;
-      take = payload.perPage;
-    }
+    const { skip, limit } = this.paginate(payload);
 
     const fields = await Model.find(where)
       .sort({ name: 'asc' })
-      .skip(skip ?? 0)
-      .limit(take ?? 0);
+      .skip(skip)
+      .limit(limit);
 
     return fields.map((f) => this.transform(f));
   }

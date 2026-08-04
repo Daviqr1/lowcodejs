@@ -1,5 +1,5 @@
 import type { FindOptions, IMenu } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   MenuContractRepository,
@@ -10,11 +10,9 @@ import type {
 } from './menu-contract.repository';
 
 export default class MenuInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IMenu>
   implements MenuContractRepository
 {
-  items: IMenu[] = [];
-
   async create(payload: MenuCreatePayload): Promise<IMenu> {
     const menu: IMenu = {
       ...payload,
@@ -41,8 +39,7 @@ export default class MenuInMemoryRepository
     this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -51,8 +48,7 @@ export default class MenuInMemoryRepository
     this.checkError('findBySlug');
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -83,21 +79,14 @@ export default class MenuInMemoryRepository
       return a.name.localeCompare(b.name);
     });
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
 
   async update({ _id, ...payload }: MenuUpdatePayload): Promise<IMenu> {
     this.checkError('update');
-    const menu = this.items.find((m) => m._id === _id);
-    if (!menu) throw new Error('Menu not found');
-    Object.assign(menu, payload, { updatedAt: new Date() });
-    return menu;
+    return this.patchById(_id, payload, 'Menu');
   }
 
   async updateMany({
@@ -129,9 +118,7 @@ export default class MenuInMemoryRepository
 
   async delete(_id: string): Promise<void> {
     this.checkError('delete');
-    const index = this.items.findIndex((m) => m._id === _id);
-    if (index === -1) throw new Error('Menu not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Menu');
   }
 
   async deleteMany(_ids: string[]): Promise<number> {

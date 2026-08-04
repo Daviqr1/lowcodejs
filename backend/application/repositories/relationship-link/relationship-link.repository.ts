@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { IRelationshipLink } from '@application/core/entity.core';
 import { RelationshipLink as Model } from '@application/model/relationship-link.model';
+import { MongooseRepository } from '@application/repositories/mongoose-base.repository';
 
 import type {
   RelationshipLinkContractRepository,
@@ -14,12 +15,15 @@ import type {
 } from './relationship-link-contract.repository';
 
 @Service()
-export default class RelationshipLinkMongooseRepository implements RelationshipLinkContractRepository {
-  private transform(entity: InstanceType<typeof Model>): IRelationshipLink {
-    const json = entity.toJSON({ flattenObjectIds: true });
+export default class RelationshipLinkMongooseRepository
+  extends MongooseRepository<IRelationshipLink>
+  implements RelationshipLinkContractRepository
+{
+  // Sobrescreve a base so para forcar string nas tres refs do pivo.
+  protected transform(entity: InstanceType<typeof Model>): IRelationshipLink {
+    const json = super.transform(entity);
     return {
       ...json,
-      _id: entity._id.toString(),
       relationshipId: String(json.relationshipId),
       sourceId: String(json.sourceId),
       targetId: String(json.targetId),

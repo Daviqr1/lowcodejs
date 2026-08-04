@@ -1,5 +1,5 @@
 import type { FindOptions, IEvaluation } from '@application/core/entity.core';
-import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
+import { InMemoryCollectionRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -13,11 +13,9 @@ import type {
 const fixtures = new EntityFixtures();
 
 export default class EvaluationInMemoryRepository
-  extends InMemoryRepository
+  extends InMemoryCollectionRepository<IEvaluation>
   implements EvaluationContractRepository
 {
-  items: IEvaluation[] = [];
-
   async create(payload: EvaluationCreatePayload): Promise<IEvaluation> {
     const evaluation: IEvaluation = {
       ...payload,
@@ -41,8 +39,7 @@ export default class EvaluationInMemoryRepository
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
       if (i.user?._id !== user) return false;
-      if (options?.trashed !== undefined) return i.trashed === options.trashed;
-      return true;
+      return this.matchesTrashed(i, options);
     });
     return item ?? null;
   }
@@ -54,11 +51,7 @@ export default class EvaluationInMemoryRepository
       filtered = filtered.filter((e) => e.user?._id === payload.user);
     }
 
-    if (payload?.page && payload?.perPage) {
-      const start = (payload.page - 1) * payload.perPage;
-      const end = start + payload.perPage;
-      filtered = filtered.slice(start, end);
-    }
+    filtered = this.paginate(filtered, payload);
 
     return filtered;
   }
@@ -67,16 +60,11 @@ export default class EvaluationInMemoryRepository
     _id,
     ...payload
   }: EvaluationUpdatePayload): Promise<IEvaluation> {
-    const evaluation = this.items.find((e) => e._id === _id);
-    if (!evaluation) throw new Error('Evaluation not found');
-    Object.assign(evaluation, payload, { updatedAt: new Date() });
-    return evaluation;
+    return this.patchById(_id, payload, 'Evaluation');
   }
 
   async delete(_id: string): Promise<void> {
-    const index = this.items.findIndex((e) => e._id === _id);
-    if (index === -1) throw new Error('Evaluation not found');
-    this.items.splice(index, 1);
+    this.removeById(_id, 'Evaluation');
   }
 
   async count(payload?: EvaluationQueryPayload): Promise<number> {
