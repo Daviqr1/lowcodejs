@@ -9,7 +9,7 @@ import {
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
-import { buildRelationshipResolvers } from './relationship-resolver';
+import RelationshipResolverService from './relationship-resolver.service';
 
 let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;
@@ -77,12 +77,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: 'Caneta' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();
@@ -110,12 +108,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: 'Caneta; Lápis' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();
@@ -139,12 +135,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: fakeId }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();
@@ -165,12 +159,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: 'Inexistente' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();
@@ -190,12 +182,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: 'Caneta' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();
@@ -236,12 +226,10 @@ describe('buildRelationshipResolvers', () => {
       { responsavel: 'user@example.com' },
     ];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     // USER não gera resolver — worker.ts coerceValue retornará undefined via isUnsupportedImportType
     expect(resolvers.has('responsavel')).toBe(false);
@@ -257,12 +245,10 @@ describe('buildRelationshipResolvers', () => {
     const fieldMap = new Map<string, IField>([['produto', field]]);
     const csvRows: Record<string, string>[] = [{ produto: 'Caneta' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     expect(resolvers.has('produto')).toBe(false);
   });
@@ -283,12 +269,10 @@ describe('buildRelationshipResolvers', () => {
     // CSV exportado com capitalização original; resolver usa toLowerCase no mapa
     const csvRows: Record<string, string>[] = [{ produto: 'Caneta' }];
 
-    const resolvers = await buildRelationshipResolvers(
-      csvRows,
-      fieldMap,
+    const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
-    );
+    ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
     expect(resolver).toBeDefined();

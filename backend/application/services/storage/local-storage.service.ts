@@ -3,10 +3,10 @@ import { Service } from 'fastify-decorators';
 import { createReadStream, existsSync } from 'node:fs';
 import { access, mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 
+import { FileProcessingContractService } from '@application/services/file-processing/file-processing-contract.service';
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
 import { LocalStorageContractService } from './local-storage-contract.service';
-import { processFile } from './process-file';
 import type {
   StorageReadResponse,
   StorageUploadResponse,
@@ -15,7 +15,10 @@ import type {
 
 @Service()
 export default class LocalStorageService implements LocalStorageContractService {
-  constructor(private readonly config: StorageConfigContractService) {}
+  constructor(
+    private readonly config: StorageConfigContractService,
+    private readonly fileProcessing: FileProcessingContractService,
+  ) {}
 
   async ensureBucket(): Promise<void> {
     const storagePath = this.config.localPath();
@@ -30,7 +33,7 @@ export default class LocalStorageService implements LocalStorageContractService 
   ): Promise<StorageUploadResponse> {
     await this.ensureBucket();
 
-    const file = await processFile(part, staticName);
+    const file = await this.fileProcessing.process(part, staticName);
 
     await writeFile(this.config.localFilePath(file.filename), file.buffer);
 

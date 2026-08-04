@@ -1,3 +1,5 @@
+import { Service } from 'fastify-decorators';
+
 import type {
   LlmChatCompletionResult,
   LlmChatMessage,
@@ -5,13 +7,11 @@ import type {
   LlmChatTool,
 } from '../llm-chat.types';
 
+import type { ClaudeConfig } from './claude-provider-contract.service';
+import { ClaudeProviderContractService } from './claude-provider-contract.service';
+
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-
-type ClaudeConfig = {
-  apiKey: string;
-  model: string;
-};
 
 function toAnthropicMessages(messages: Array<LlmChatMessage>): {
   system: string | undefined;
@@ -162,61 +162,64 @@ function parseClaudeResponse(
   return { message: assistantMessage, finishReason: 'stop' };
 }
 
-export function createClaudeProvider(config: ClaudeConfig): LlmChatProvider {
-  return {
-    async complete(params: {
-      messages: Array<LlmChatMessage>;
-      tools?: Array<LlmChatTool>;
-    }): Promise<LlmChatCompletionResult> {
-      const { system, messages } = toAnthropicMessages(params.messages);
+@Service()
+export default class ClaudeProviderService implements ClaudeProviderContractService {
+  create(config: ClaudeConfig): LlmChatProvider {
+    return {
+      async complete(params: {
+        messages: Array<LlmChatMessage>;
+        tools?: Array<LlmChatTool>;
+      }): Promise<LlmChatCompletionResult> {
+        const { system, messages } = toAnthropicMessages(params.messages);
 
-      const body: Record<string, unknown> = {
-        model: config.model,
-        max_tokens: 4096,
-        messages,
-      };
-      if (system) body.system = system;
-      if (params.tools && params.tools.length > 0) {
-        body.tools = toAnthropicTools(params.tools);
-      }
-
-      const response = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': config.apiKey,
-          'anthropic-version': ANTHROPIC_VERSION,
-        },
-        body: JSON.stringify(body),
-      });
-
-      const raw = await response.text();
-      let data: Record<string, unknown> = {};
-      if (raw) {
-        try {
-          data = JSON.parse(raw);
-        } catch {
-          throw new Error(
-            `Resposta inválida da Anthropic: ${raw.slice(0, 200)}`,
-          );
+        const body: Record<string, unknown> = {
+          model: config.model,
+          max_tokens: 4096,
+          messages,
+        };
+        if (system) body.system = system;
+        if (params.tools && params.tools.length > 0) {
+          body.tools = toAnthropicTools(params.tools);
         }
-      }
 
-      if (!response.ok) {
-        let errMessage = raw.slice(0, 300);
-        const err = data.error;
-        if (
-          err &&
-          typeof err === 'object' &&
-          'message' in err &&
-          typeof err.message === 'string'
-        ) {
-          errMessage = err.message;
+        const response = await fetch(ANTHROPIC_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': config.apiKey,
+            'anthropic-version': ANTHROPIC_VERSION,
+          },
+          body: JSON.stringify(body),
+        });
+
+        const raw = await response.text();
+        let data: Record<string, unknown> = {};
+        if (raw) {
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            throw new Error(
+              `Resposta inválida da Anthropic: ${raw.slice(0, 200)}`,
+            );
+          }
         }
-        throw new Error(`Anthropic API ${response.status}: ${errMessage}`);
-      }
 
-      return parseClaudeResponse(data);
-    },
-  };
+        if (!response.ok) {
+          let errMessage = raw.slice(0, 300);
+          const err = data.error;
+          if (
+            err &&
+            typeof err === 'object' &&
+            'message' in err &&
+            typeof err.message === 'string'
+          ) {
+            errMessage = err.message;
+          }
+          throw new Error(`Anthropic API ${response.status}: ${errMessage}`);
+        }
+
+        return parseClaudeResponse(data);
+      },
+    };
+  }
 }

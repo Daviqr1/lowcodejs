@@ -40,7 +40,7 @@ import {
 } from './csv-import-socket-contract.service';
 import { CsvImportSocketContractService } from './csv-import-socket-contract.service';
 import { CsvImportWorkerContractService } from './csv-import-worker-contract.service';
-import { buildRelationshipResolvers } from './relationship-resolver';
+import { RelationshipResolverContractService } from './relationship-resolver-contract.service';
 
 export const IMPORT_CSV_LIMIT = 10_000;
 
@@ -55,6 +55,7 @@ type WorkerDeps = {
   rowAccessGuard: RowAccessGuardContractService;
   fieldValue: FieldValueContractService;
   rowPayloadValidator: RowPayloadValidatorContractService;
+  relationshipResolver: RelationshipResolverContractService;
 };
 
 function parseCsv(csvContent: string): Promise<Array<Record<string, string>>> {
@@ -152,12 +153,7 @@ async function processImportJob(
   }
   const fieldMap = buildFieldMap(headers, table.fields);
 
-  const resolvers = await buildRelationshipResolvers(
-    rows,
-    fieldMap,
-    deps.tableRepository,
-    deps.rowRepository,
-  );
+  const resolvers = await deps.relationshipResolver.build(rows, fieldMap);
 
   let imported = 0;
   let skipped = 0;
@@ -256,6 +252,7 @@ export default class CsvImportWorkerService
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly fieldValue: FieldValueContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly relationshipResolver: RelationshipResolverContractService,
     private readonly socket: CsvImportSocketContractService,
     private readonly redis: RedisContractService,
   ) {
@@ -316,6 +313,7 @@ export default class CsvImportWorkerService
       rowAccessGuard: this.rowAccessGuard,
       fieldValue: this.fieldValue,
       rowPayloadValidator: this.rowPayloadValidator,
+      relationshipResolver: this.relationshipResolver,
     };
   }
 }

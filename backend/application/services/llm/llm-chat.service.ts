@@ -18,8 +18,8 @@ import { LlmChatContractService } from './llm-chat-contract.service';
 import type { FileData, LlmChatMessage, LlmChatTool } from './llm-chat.types';
 import type { LlmChatProvider } from './llm-chat.types';
 import type { ResolvedLlmConfig } from './llm-config-contract.service';
-import { createClaudeProvider } from './providers/claude-chat-api';
-import { createOpenAiCompatProvider } from './providers/openai-chat-api';
+import { ClaudeProviderContractService } from './providers/claude-provider-contract.service';
+import { OpenAiCompatProviderContractService } from './providers/openai-compat-provider-contract.service';
 
 function buildUserMessage(userInput: string, file?: FileData): LlmChatMessage {
   if (!file) {
@@ -161,18 +161,23 @@ async function executeMcpTool(params: {
 
 @Service()
 export default class LlmChatService implements LlmChatContractService {
+  constructor(
+    private readonly claude: ClaudeProviderContractService,
+    private readonly openAiCompat: OpenAiCompatProviderContractService,
+  ) {}
+
   providerFor(config: ResolvedLlmConfig): LlmChatProvider {
     const { provider, apiKey, model, baseUrl } = config;
 
     if (provider === E_AI_LLM_PROVIDER.CLAUDE) {
-      return createClaudeProvider({
+      return this.claude.create({
         apiKey: apiKey!,
         model,
       });
     }
 
     if (provider === E_AI_LLM_PROVIDER.OPENROUTER) {
-      return createOpenAiCompatProvider({
+      return this.openAiCompat.create({
         baseUrl: OPENROUTER_BASE,
         apiKey: apiKey!,
         model,
@@ -184,7 +189,7 @@ export default class LlmChatService implements LlmChatContractService {
     }
 
     if (provider === E_AI_LLM_PROVIDER.OLLAMA) {
-      return createOpenAiCompatProvider({
+      return this.openAiCompat.create({
         baseUrl: baseUrl!,
         apiKey: apiKey?.trim() || 'ollama',
         model,
@@ -192,14 +197,14 @@ export default class LlmChatService implements LlmChatContractService {
     }
 
     if (provider === E_AI_LLM_PROVIDER.GEMINI) {
-      return createOpenAiCompatProvider({
+      return this.openAiCompat.create({
         baseUrl: GEMINI_OPENAI_BASE,
         apiKey: apiKey!,
         model,
       });
     }
 
-    return createOpenAiCompatProvider({
+    return this.openAiCompat.create({
       baseUrl: OPENAI_BASE,
       apiKey: apiKey!,
       model,

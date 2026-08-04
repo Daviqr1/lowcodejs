@@ -10,9 +10,9 @@ import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 
+import { FileProcessingContractService } from '@application/services/file-processing/file-processing-contract.service';
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
-import { processFile } from './process-file';
 import { S3StorageContractService } from './s3-storage-contract.service';
 import type {
   StorageReadResponse,
@@ -22,7 +22,10 @@ import type {
 
 @Service()
 export default class S3StorageService implements S3StorageContractService {
-  constructor(private readonly config: StorageConfigContractService) {}
+  constructor(
+    private readonly config: StorageConfigContractService,
+    private readonly fileProcessing: FileProcessingContractService,
+  ) {}
 
   private get bucket(): string {
     return process.env.STORAGE_BUCKET!;
@@ -52,7 +55,7 @@ export default class S3StorageService implements S3StorageContractService {
   ): Promise<StorageUploadResponse> {
     await this.ensureBucket();
 
-    const file = await processFile(part, staticName);
+    const file = await this.fileProcessing.process(part, staticName);
 
     console.info(
       `[Storage S3] Upload ${file.filename} (${file.mimetype}, ${file.size} bytes)`,

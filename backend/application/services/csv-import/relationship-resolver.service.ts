@@ -1,3 +1,5 @@
+import { Service } from 'fastify-decorators';
+
 /**
  * Helpers para resolver display values de campos RELATIONSHIP de volta para
  * ObjectIds durante a importação de CSV.
@@ -19,10 +21,11 @@ import {
   type IRow,
 } from '@application/core/entity.core';
 import { OBJECT_ID_REGEX } from '@application/core/field-rules.core';
-import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
+import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-export type RelationshipResolver = (raw: string) => string[];
+import type { RelationshipResolver } from './relationship-resolver-contract.service';
+import { RelationshipResolverContractService } from './relationship-resolver-contract.service';
 
 const DISPLAY_CANDIDATE_FIELDS = [
   'name',
@@ -117,41 +120,51 @@ function buildResolver(displayToId: Map<string, string>): RelationshipResolver {
   };
 }
 
-export async function buildRelationshipResolvers(
-  csvRows: Record<string, string>[],
-  fieldMap: Map<string, IField>,
-  tableRepository: TableContractRepository,
-  rowRepository: RowContractRepository,
-): Promise<Map<string, RelationshipResolver>> {
-  const resolverMap = new Map<string, RelationshipResolver>();
+@Service()
+export default class RelationshipResolverService implements RelationshipResolverContractService {
+  constructor(
+    private readonly tableRepository: TableContractRepository,
+    private readonly rowRepository: RowContractRepository,
+  ) {}
 
-  for (const [col, field] of fieldMap) {
-    if (field.type !== E_FIELD_TYPE.RELATIONSHIP) continue;
-    if (!field.relationship) continue;
+  async build(
+    csvRows: Array<Record<string, string>>,
+    fieldMap: Map<string, IField>,
+  ): Promise<Map<string, RelationshipResolver>> {
+    const resolverMap = new Map<string, RelationshipResolver>();
 
-    const relTableSlug = field.relationship.table.slug;
-    const displayFieldSlug = field.relationship.field.slug;
-    const candidateSlugs = buildCandidateSlugs(displayFieldSlug);
-    const displayValues = collectDisplayValues(col, csvRows);
+    for (const [col, field] of fieldMap) {
+      if (field.type !== E_FIELD_TYPE.RELATIONSHIP) continue;
+      if (!field.relationship) continue;
 
-    const relatedTable = await tableRepository.findBySlug(relTableSlug);
-    if (!relatedTable) {
-      resolverMap.set(col, (): string[] => []);
-      continue;
+      const relTableSlug = field.relationship.table.slug;
+      const displayFieldSlug = field.relationship.field.slug;
+      const candidateSlugs = buildCandidateSlugs(displayFieldSlug);
+      const displayValues = collectDisplayValues(col, csvRows);
+
+      const relatedTable = await this.tableRepository.findBySlug(relTableSlug);
+      if (!relatedTable) {
+        resolverMap.set(col, (): string[] => []);
+        continue;
+      }
+
+      let displayToId = new Map<string, string>();
+      if (displayValues.length > 0) {
+        const relRows = await this.rowRepository.findManyByFieldValues(
+          relatedTable,
+          candidateSlugs,
+          displayValues,
+        );
+        displayToId = buildDisplayToIdMap(
+          relRows,
+          candidateSlugs,
+          relTableSlug,
+        );
+      }
+
+      resolverMap.set(col, buildResolver(displayToId));
     }
 
-    let displayToId = new Map<string, string>();
-    if (displayValues.length > 0) {
-      const relRows = await rowRepository.findManyByFieldValues(
-        relatedTable,
-        candidateSlugs,
-        displayValues,
-      );
-      displayToId = buildDisplayToIdMap(relRows, candidateSlugs, relTableSlug);
-    }
-
-    resolverMap.set(col, buildResolver(displayToId));
+    return resolverMap;
   }
-
-  return resolverMap;
 }

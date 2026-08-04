@@ -1,3 +1,5 @@
+import { Service } from 'fastify-decorators';
+
 import type {
   LlmChatCompletionResult,
   LlmChatMessage,
@@ -5,12 +7,8 @@ import type {
   LlmChatTool,
 } from '../llm-chat.types';
 
-type OpenAiCompatConfig = {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  extraHeaders?: Record<string, string>;
-};
+import type { OpenAiCompatConfig } from './openai-compat-provider-contract.service';
+import { OpenAiCompatProviderContractService } from './openai-compat-provider-contract.service';
 
 async function postChatCompletions(
   config: OpenAiCompatConfig,
@@ -101,24 +99,25 @@ function parseOpenAiResponse(
   return { message: assistantMessage, finishReason };
 }
 
-export function createOpenAiCompatProvider(
-  config: OpenAiCompatConfig,
-): LlmChatProvider {
-  return {
-    async complete(params: {
-      messages: Array<LlmChatMessage>;
-      tools?: Array<LlmChatTool>;
-    }): Promise<LlmChatCompletionResult> {
-      const body: Record<string, unknown> = {
-        model: config.model,
-        messages: params.messages,
-      };
-      if (params.tools && params.tools.length > 0) {
-        body.tools = params.tools;
-      }
+@Service()
+export default class OpenAiCompatProviderService implements OpenAiCompatProviderContractService {
+  create(config: OpenAiCompatConfig): LlmChatProvider {
+    return {
+      async complete(params: {
+        messages: Array<LlmChatMessage>;
+        tools?: Array<LlmChatTool>;
+      }): Promise<LlmChatCompletionResult> {
+        const body: Record<string, unknown> = {
+          model: config.model,
+          messages: params.messages,
+        };
+        if (params.tools && params.tools.length > 0) {
+          body.tools = params.tools;
+        }
 
-      const data = await postChatCompletions(config, body);
-      return parseOpenAiResponse(data);
-    },
-  };
+        const data = await postChatCompletions(config, body);
+        return parseOpenAiResponse(data);
+      },
+    };
+  }
 }
