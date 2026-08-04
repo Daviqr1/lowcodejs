@@ -5,6 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
 import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SetupStepsContractService } from '@application/services/setup-steps/setup-steps-contract.service';
 import type { SetupStep } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type Input = {
@@ -28,30 +29,15 @@ const CURRENT_STEP: SetupStep = 'email';
 
 @Service()
 export default class SetupEmailSubmitUseCase {
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly setupSteps: SetupStepsContractService,
+  ) {}
 
   async execute(payload: Input): Promise<Response> {
     try {
-      const setting = await this.settingRepository.get();
-
-      if (setting?.SETUP_COMPLETED) {
-        return left(
-          HTTPException.Conflict(
-            'O setup já foi concluído',
-            'SETUP_ALREADY_COMPLETED',
-          ),
-        );
-      }
-
-      if (setting && setting.SETUP_CURRENT_STEP !== CURRENT_STEP) {
-        return left(
-          HTTPException.PreconditionFailed(
-            'Etapa incorreta do setup',
-            'SETUP_WRONG_STEP',
-            { expected: setting.SETUP_CURRENT_STEP ?? 'admin' },
-          ),
-        );
-      }
+      const guard = await this.setupSteps.guard(CURRENT_STEP);
+      if (guard.isLeft()) return left(guard.value);
 
       const updated = await this.settingRepository.update({
         EMAIL_PROVIDER_HOST: payload.EMAIL_PROVIDER_HOST,

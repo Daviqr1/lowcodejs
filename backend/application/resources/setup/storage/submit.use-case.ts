@@ -41,26 +41,8 @@ export default class SetupStorageSubmitUseCase {
 
   async execute(payload: Input): Promise<Response> {
     try {
-      const setting = await this.settingRepository.get();
-
-      if (setting?.SETUP_COMPLETED) {
-        return left(
-          HTTPException.Conflict(
-            'O setup já foi concluído',
-            'SETUP_ALREADY_COMPLETED',
-          ),
-        );
-      }
-
-      if (setting && setting.SETUP_CURRENT_STEP !== CURRENT_STEP) {
-        return left(
-          HTTPException.PreconditionFailed(
-            'Etapa incorreta do setup',
-            'SETUP_WRONG_STEP',
-            { expected: setting.SETUP_CURRENT_STEP ?? 'admin' },
-          ),
-        );
-      }
+      const guard = await this.setupSteps.guard(CURRENT_STEP);
+      if (guard.isLeft()) return left(guard.value);
 
       const next = this.setupSteps.next(CURRENT_STEP);
 
