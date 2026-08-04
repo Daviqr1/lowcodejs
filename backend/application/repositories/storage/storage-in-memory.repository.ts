@@ -6,6 +6,7 @@ import {
   type TStorageLocation,
   type TStorageMigrationStatus,
 } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   StorageContractRepository,
@@ -15,21 +16,11 @@ import type {
   StorageUpdatePayload,
 } from './storage-contract.repository';
 
-export default class StorageInMemoryRepository implements StorageContractRepository {
+export default class StorageInMemoryRepository
+  extends InMemoryRepository
+  implements StorageContractRepository
+{
   items: IStorage[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   private buildBase(payload: StorageCreatePayload): IStorage {
     return {
@@ -62,7 +53,7 @@ export default class StorageInMemoryRepository implements StorageContractReposit
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IStorage | null> {
-    this._checkError('findById');
+    this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;

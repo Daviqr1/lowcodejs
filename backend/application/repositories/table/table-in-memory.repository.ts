@@ -5,6 +5,7 @@ import type {
   ITable,
   IUser,
 } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -29,24 +30,14 @@ function fieldRef(id: string): IField {
   return fixtures.makeField(id);
 }
 
-export default class TableInMemoryRepository implements TableContractRepository {
+export default class TableInMemoryRepository
+  extends InMemoryRepository
+  implements TableContractRepository
+{
   items: ITable[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async create(payload: TableCreatePayload): Promise<ITable> {
-    this._checkError('create');
+    this.checkError('create');
     let logo: IStorage | null = null;
     if (payload.logo) logo = storageRef(payload.logo);
     const table: ITable = {
@@ -98,7 +89,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
   }
 
   async findById(_id: string, options?: FindOptions): Promise<ITable | null> {
-    this._checkError('findById');
+    this.checkError('findById');
     const item = this.items.find((i) => {
       if (i._id !== _id) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
@@ -111,7 +102,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
     slug: string,
     options?: FindOptions,
   ): Promise<ITable | null> {
-    this._checkError('findBySlug');
+    this.checkError('findBySlug');
     const item = this.items.find((i) => {
       if (i.slug !== slug) return false;
       if (options?.trashed !== undefined) return i.trashed === options.trashed;
@@ -121,7 +112,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
   }
 
   async findMany(payload?: TableQueryPayload): Promise<ITable[]> {
-    this._checkError('findMany');
+    this.checkError('findMany');
     let filtered = this.items;
 
     // Filtro de trashed
@@ -164,7 +155,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
   }
 
   async update({ _id, ...payload }: TableUpdatePayload): Promise<ITable> {
-    this._checkError('update');
+    this.checkError('update');
     const table = this.items.find((t) => t._id === _id);
     if (!table) throw new Error('Table not found');
 
@@ -224,7 +215,7 @@ export default class TableInMemoryRepository implements TableContractRepository 
     filterTrashed,
     data,
   }: TableUpdateManyPayload): Promise<number> {
-    this._checkError('updateMany');
+    this.checkError('updateMany');
     let filtered = this.items.filter((t) => _ids.includes(t._id));
 
     if (type) {
@@ -246,14 +237,14 @@ export default class TableInMemoryRepository implements TableContractRepository 
   }
 
   async delete(_id: string): Promise<void> {
-    this._checkError('delete');
+    this.checkError('delete');
     const index = this.items.findIndex((t) => t._id === _id);
     if (index === -1) throw new Error('Table not found');
     this.items.splice(index, 1);
   }
 
   async count(payload?: TableQueryPayload): Promise<number> {
-    this._checkError('count');
+    this.checkError('count');
     const filtered = await this.findMany({
       ...payload,
       page: undefined,

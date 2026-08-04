@@ -1,4 +1,5 @@
 import type { FindOptions, IPermission } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   PermissionContractRepository,
@@ -7,21 +8,11 @@ import type {
   PermissionUpdatePayload,
 } from './permission-contract.repository';
 
-export default class PermissionInMemoryRepository implements PermissionContractRepository {
+export default class PermissionInMemoryRepository
+  extends InMemoryRepository
+  implements PermissionContractRepository
+{
   items: IPermission[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async create(payload: PermissionCreatePayload): Promise<IPermission> {
     const permission: IPermission = {
@@ -61,7 +52,7 @@ export default class PermissionInMemoryRepository implements PermissionContractR
   }
 
   async findMany(payload?: PermissionQueryPayload): Promise<IPermission[]> {
-    this._checkError('findMany');
+    this.checkError('findMany');
     let filtered = this.items;
 
     if (payload?.search) {

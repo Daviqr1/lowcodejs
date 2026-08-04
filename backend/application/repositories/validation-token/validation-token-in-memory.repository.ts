@@ -2,6 +2,7 @@ import type {
   FindOptions,
   IValidationToken,
 } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -14,21 +15,11 @@ import type {
 
 const fixtures = new EntityFixtures();
 
-export default class ValidationTokenInMemoryRepository implements ValidationTokenContractRepository {
+export default class ValidationTokenInMemoryRepository
+  extends InMemoryRepository
+  implements ValidationTokenContractRepository
+{
   items: IValidationToken[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async create(
     payload: ValidationTokenCreatePayload,

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { IRow, Merge } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 
 import type {
@@ -147,21 +148,11 @@ function matchesGuardQuery(
   return true;
 }
 
-export default class RowInMemoryRepository implements RowContractRepository {
+export default class RowInMemoryRepository
+  extends InMemoryRepository
+  implements RowContractRepository
+{
   private collections = new Map<string, IRow[]>();
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   private getCollection(slug: string): IRow[] {
     if (!this.collections.has(slug)) {

@@ -1,4 +1,5 @@
 import type { FindOptions, IReaction } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import { EntityFixtures } from '../entity-fixtures';
 
@@ -11,21 +12,11 @@ import type {
 
 const fixtures = new EntityFixtures();
 
-export default class ReactionInMemoryRepository implements ReactionContractRepository {
+export default class ReactionInMemoryRepository
+  extends InMemoryRepository
+  implements ReactionContractRepository
+{
   items: IReaction[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async create(payload: ReactionCreatePayload): Promise<IReaction> {
     const reaction: IReaction = {

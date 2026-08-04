@@ -1,4 +1,5 @@
 import type { FindOptions, IField } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import type {
   FieldContractRepository,
@@ -7,21 +8,11 @@ import type {
   FieldUpdatePayload,
 } from './field-contract.repository';
 
-export default class FieldInMemoryRepository implements FieldContractRepository {
+export default class FieldInMemoryRepository
+  extends InMemoryRepository
+  implements FieldContractRepository
+{
   items: IField[] = [];
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async create(payload: FieldCreatePayload): Promise<IField> {
     const field: IField = {
