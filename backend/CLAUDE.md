@@ -55,12 +55,11 @@ backend/
 │   ├── redis.config.ts            # ioredis
 │   └── email.config.ts            # Nodemailer transporter
 ├── application/
-│   ├── core/                      # Logica central (entity types, Either, exception, builders, sandbox)
-│   ├── middlewares/               # Auth JWT + Table access/permissions
-│   ├── model/                     # Mongoose schemas (14 models, todos no DB system)
-│   ├── repositories/              # Contract + Mongoose + InMemory (15 entidades)
-│   ├── services/                  # Email (contract + nodemailer + in-memory), Storage (flydrive)
-│   ├── utils/                     # JWT tokens, cookies
+│   ├── core/                      # So tipo, valor e bootstrap — 7 arquivos, nada de comportamento
+│   ├── middlewares/               # 5 middlewares, cada um contract + impl @Service
+│   ├── model/                     # Mongoose schemas (17 models, todos no DB system)
+│   ├── repositories/              # Contract + Mongoose + InMemory (18 entidades)
+│   ├── services/                  # Toda a logica de comportamento, um service por contexto
 │   └── resources/                 # 20 recursos REST (cada um com operacoes isoladas)
 ├── database/
 │   ├── seeders/                   # Permissions, user groups, settings (idempotente)
@@ -117,6 +116,26 @@ backend/
 - Virtual fields (ex: `url` em Storage)
 
 ## Padroes de Design
+
+### Nada de funcao solta
+
+Comportamento vive em **service injetavel** (contract + impl), agrupado **por
+contexto** e nao por arquivo de origem — funcoes duplicadas ou do mesmo assunto
+colapsam num service so. `application/core/` guarda apenas tipo, valor e
+bootstrap.
+
+As excecoes sao poucas e estao comentadas no proprio codigo:
+
+| Onde | Por que |
+| --- | --- |
+| Schema Zod de escopo de modulo (validators) | avaliado no import, antes de o container existir |
+| Migration, seeder e `TaskLogger` | rodam como script standalone, fora do kernel |
+| Double `in-memory-*` | o scanner do DI os ignora por convencao |
+| `*.middleware.ts` | argumento de decorator e avaliado na decoracao da classe, sem instancia onde injetar |
+| `schedulerDiscovery` | os decorators `@Cron`/`@Interval` rodam no import e precisam de um ponto fixo |
+| Default de campo em schema Mongoose | avaliado no import do model |
+
+Por isso **todo service puro tem constructor sem argumentos**.
 
 ### Either/Result Pattern
 ```typescript
@@ -353,6 +372,8 @@ npm run test:unit    # Vitest unit (*.use-case.spec.ts, *.service.spec.ts)
 npm run test:e2e     # Vitest e2e (*.controller.spec.ts) - MongoDB real, 1 worker
 npm run test:coverage # Coverage (V8)
 npm run lint         # ESLint --fix
+npm run di:check     # Resolve o grafo de DI; falha se alguma dep vier undefined
+npm run boot:check   # Conecta no Mongo e sobe o kernel inteiro
 npm start            # Producao (build/bin/server.js)
 ```
 
@@ -372,9 +393,8 @@ npm start            # Producao (build/bin/server.js)
 
 `application/core/di-registry.ts` registra os bindings **dinamicamente** (igual
 `controllers.ts`): varre o filesystem e pareia cada `<base>-contract.<kind>.ts`
-com `<base>.<kind>.ts` por convencao — **nao ha mais lista manual**. Roots
-varridos: `application/repositories` (repository), `application/services`
-(service) e `extensions/` (ambos). `injectablesHolder.injectService(Contract,
+com `<base>.<kind>.ts` por convencao — **nao ha mais lista manual**. Roots varridos: `application/repositories` (repository), `application/services`,
+`application/middlewares` e `hooks` (service) e `extensions/` (ambos). `injectablesHolder.injectService(Contract,
 Impl)` e chamado para cada par encontrado.
 
 - Repositorios: User, UserGroup, Permission, Table, Field, Storage,

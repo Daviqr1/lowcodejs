@@ -22,3 +22,12 @@ tabelas e campos.
   de testes que não testam RBAC
 - Factories aceitam partial overrides para customizar apenas os campos relevantes
   ao teste
+
+## `builder.helper.ts`
+
+`makeSchemaBuilder()` e `makeModelBuilder()` montam esses dois builders com o
+grafo de dependencias real, a mao.
+
+Existem porque specs **unitarios** nao importam `@start/kernel`: o container de
+DI esta vazio ali, entao `getInstanceByToken` falha. Construir a mao funciona
+tanto no unit quanto no e2e e nao depende da ordem de boot.
