@@ -1,6 +1,40 @@
 # Services
 
-Servicos para concerns cross-cutting. Mesmo pattern de Contract + Implementation dos repositories.
+Toda logica de comportamento do backend. Mesmo pattern Contract + Implementation
+dos repositories, registrado automaticamente pelo scanner do `di-registry.ts`.
+
+**Regra de agrupamento: um service por contexto, nao um por arquivo de origem.**
+Funcoes duplicadas ou do mesmo assunto colapsam num service so — foi assim que
+as 4 implementacoes de coercao de valor viraram `FieldValueContractService` e as
+3 de normalizacao de busca viraram `SearchContractService`.
+
+## Services de base (sem dependencias, usados por quase todo o resto)
+
+| Dir | Contexto |
+| --- | --- |
+| `slug/` | gerar e validar slug; fonte unica de `slugify()` |
+| `identifier/` | validar id de documento e gerar UUID |
+| `date/` | data e hora (ISO, recorte de dia UTC, pt-BR, buckets mensais) |
+| `search/` | normalizar e **escapar** texto para `$regex` |
+| `field-value/` | converter, coagir e formatar valor de campo dinamico |
+
+> `search.escape()` e obrigatorio em qualquer `$regex` montado a partir de
+> entrada do usuario — sem ele o termo e interpretado como padrao.
+
+## Escapes documentados de `new` em vez de injecao
+
+Ha tres lugares onde instanciar a mao e correto, todos comentados no codigo:
+
+- **schemas Zod de escopo de modulo** (validators) — avaliados no import, antes
+  de o container existir
+- **migrations e seeders** — rodam como script standalone, fora do kernel
+- **doubles in-memory** — o scanner do DI ignora `*-in-memory.*` por convencao
+
+Por isso todo service puro tem **constructor sem argumentos**.
+
+## Verificacao
+
+`npm run di:check` e `npm run boot:check` — ver `application/core/CLAUDE.md`.
 
 ## Email Service (`email/`)
 

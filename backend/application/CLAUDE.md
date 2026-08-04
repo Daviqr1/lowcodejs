@@ -7,13 +7,12 @@ da aplicação Fastify + Mongoose.
 
 | Diretório       | Responsabilidade                                                        |
 | --------------- | ----------------------------------------------------------------------- |
-| `core/`         | Enums, Either pattern, exceções, validações de campo (`validations/`)   |
+| `core/`         | Só tipo, valor e bootstrap — 7 arquivos. Nada de comportamento          |
 | `middlewares/`  | Auth JWT + controle de acesso a tabelas (middleware por rota)           |
 | `model/`        | Schemas Mongoose para 14 entidades (User, Table, Field, Menu, etc.)    |
 | `repositories/` | Contratos abstratos + implementações (mongoose + in-memory para testes) |
 | `resources/`    | 20 recursos REST com controllers, use-cases, validators e schemas       |
-| `services/`     | Serviços de domínio (email, password, permission, storage, field-validation) |
-| `utils/`        | Utilitários de JWT e cookies                                            |
+| `services/`     | Toda a lógica de comportamento, um service por contexto                 |
 
 ## Padrões
 
