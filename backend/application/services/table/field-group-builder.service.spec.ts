@@ -6,8 +6,10 @@ import {
   type IField,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
+import DateService from '@application/services/date/date.service';
 import SearchService from '@application/services/search/search.service';
 
+import FieldFilterService from './field-filter.service';
 import MongooseFieldGroupBuilder from './field-group-builder.service';
 
 const FIELD_BASE: IField = {
@@ -85,7 +87,9 @@ const enderecoField = makeField({
 let sut: MongooseFieldGroupBuilder;
 
 beforeEach(() => {
-  sut = new MongooseFieldGroupBuilder(new SearchService());
+  sut = new MongooseFieldGroupBuilder(
+    new FieldFilterService(new SearchService(), new DateService()),
+  );
 });
 
 describe('FieldGroupBuilder.buildEmbeddedSchema', () => {

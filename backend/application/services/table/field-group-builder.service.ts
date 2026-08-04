@@ -5,34 +5,16 @@ import type {
   IEmbeddedSchema,
   IField,
   IGroupConfiguration,
-  ValueOf,
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
-import { Storage } from '@application/model/storage.model';
-import { UserGroup } from '@application/model/user-group.model';
-import { User } from '@application/model/user.model';
-import { SearchContractService } from '@application/services/search/search-contract.service';
 
+import { FieldFilterContractService } from './field-filter-contract.service';
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
-
-// Campos de ref simples dentro de grupo: type do campo → model/select do
-// populate (path e nested: `${field.slug}.${groupField.slug}`).
-const GROUP_POPULATE_BY_FIELD_TYPE: Partial<
-  Record<
-    ValueOf<typeof E_FIELD_TYPE>,
-    Pick<mongoose.PopulateOptions, 'model' | 'select'>
-  >
-> = {
-  [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.USER_GROUP]: { model: UserGroup, select: 'name slug _id' },
-  [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.FILE]: { model: Storage },
-};
+import { GROUP_POPULATE_BY_FIELD_TYPE } from './populate-map';
 
 @Service()
 export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContractService {
-  constructor(private readonly search: SearchContractService) {}
+  constructor(private readonly fieldFilter: FieldFilterContractService) {}
 
   buildEmbeddedSchema(
     field: IField,
@@ -116,10 +98,7 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           groupField.type === E_FIELD_TYPE.TEXT_SHORT ||
           groupField.type === E_FIELD_TYPE.TEXT_LONG
         ) {
-          filter[embeddedPath] = {
-            $regex: this.search.normalize(String(payload[payloadKey])),
-            $options: 'i',
-          };
+          filter[embeddedPath] = this.fieldFilter.text(payload[payloadKey]);
         }
 
         if (
@@ -131,29 +110,16 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           groupField.type === E_FIELD_TYPE.CREATOR ||
           groupField.type === E_FIELD_TYPE.UPDATER
         ) {
-          filter[embeddedPath] = {
-            $in: String(payload[payloadKey]).split(','),
-          };
+          filter[embeddedPath] = this.fieldFilter.refIn(payload[payloadKey]);
         }
 
         if (groupField.type === E_FIELD_TYPE.DATE) {
-          const initialKey = `${payloadKey}-initial`;
-          const finalKey = `${payloadKey}-final`;
-          const dateFilter: { $gte?: Date; $lte?: Date } = {};
+          const dateFilter = this.fieldFilter.dateRange(
+            payload[`${payloadKey}-initial`],
+            payload[`${payloadKey}-final`],
+          );
 
-          if (payload[initialKey]) {
-            const initial = new Date(String(payload[initialKey]));
-            dateFilter.$gte = new Date(initial.setUTCHours(0, 0, 0, 0));
-          }
-
-          if (payload[finalKey]) {
-            const final = new Date(String(payload[finalKey]));
-            dateFilter.$lte = new Date(final.setUTCHours(23, 59, 59, 999));
-          }
-
-          if (dateFilter.$gte || dateFilter.$lte) {
-            filter[embeddedPath] = dateFilter;
-          }
+          if (dateFilter) filter[embeddedPath] = dateFilter;
         }
       }
     }
@@ -184,12 +150,7 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           groupField.type === E_FIELD_TYPE.TEXT_SHORT
         ) {
           const embeddedPath = `${field.slug}.${groupField.slug}`;
-          searchQuery.push({
-            [embeddedPath]: {
-              $regex: this.search.normalize(String(search)),
-              $options: 'i',
-            },
-          });
+          searchQuery.push({ [embeddedPath]: this.fieldFilter.text(search) });
         }
       }
     }

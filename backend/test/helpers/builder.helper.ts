@@ -16,6 +16,7 @@ import SearchService from '@application/services/search/search.service';
 import SessionService from '@application/services/session/session.service';
 import SlugService from '@application/services/slug/slug.service';
 import SocketAuthService from '@application/services/socket-auth/socket-auth.service';
+import FieldFilterService from '@application/services/table/field-filter.service';
 import MongooseFieldGroupBuilder from '@application/services/table/field-group-builder.service';
 import MongooseModelBuilder from '@application/services/table/model-builder.service';
 import MongooseSchemaBuilder from '@application/services/table/schema-builder.service';
@@ -30,7 +31,9 @@ import TypeGuardService from '@application/services/type-guard/type-guard.servic
  */
 export function makeSchemaBuilder(): MongooseSchemaBuilder {
   return new MongooseSchemaBuilder(
-    new MongooseFieldGroupBuilder(new SearchService()),
+    new MongooseFieldGroupBuilder(
+      new FieldFilterService(new SearchService(), new DateService()),
+    ),
   );
 }
 

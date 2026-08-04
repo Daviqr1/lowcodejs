@@ -10,6 +10,7 @@ import type {
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 
+import { FieldFilterContractService } from './field-filter-contract.service';
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
 import { QueryBuilderContractService } from './query-builder-contract.service';
 import { RelationshipBuilderContractService } from './relationship-builder-contract.service';
@@ -33,6 +34,7 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
     private readonly fieldGroup: FieldGroupBuilderContractService,
     private readonly relationship: RelationshipBuilderContractService,
     private readonly search: SearchContractService,
+    private readonly fieldFilter: FieldFilterContractService,
   ) {}
 
   normalize(search: string): string {
@@ -78,10 +80,7 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
           field.type === E_FIELD_TYPE.TEXT_LONG) &&
         payload[slug]
       ) {
-        query[slug] = {
-          $regex: this.normalize(String(payload[slug])),
-          $options: 'i',
-        };
+        query[slug] = this.fieldFilter.text(payload[slug]);
       }
 
       if (field.type === E_FIELD_TYPE.RELATIONSHIP && payload[slug]) {
@@ -110,9 +109,7 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
           field.type === E_FIELD_TYPE.UPDATER) &&
         payload[slug]
       ) {
-        query[slug] = {
-          $in: String(payload[slug]).split(','),
-        };
+        query[slug] = this.fieldFilter.refIn(payload[slug]);
       }
 
       if (
@@ -120,23 +117,12 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
         field.type === E_FIELD_TYPE.CREATED_AT ||
         field.type === E_FIELD_TYPE.UPDATED_AT
       ) {
-        const initialKey = `${slug}-initial`;
-        const finalKey = `${slug}-final`;
-        const dateFilter: { $gte?: Date; $lte?: Date } = {};
+        const dateFilter = this.fieldFilter.dateRange(
+          payload[`${slug}-initial`],
+          payload[`${slug}-final`],
+        );
 
-        if (payload[initialKey]) {
-          const initial = new Date(String(payload[initialKey]));
-          dateFilter.$gte = new Date(initial.setUTCHours(0, 0, 0, 0));
-        }
-
-        if (payload[finalKey]) {
-          const final = new Date(String(payload[finalKey]));
-          dateFilter.$lte = new Date(final.setUTCHours(23, 59, 59, 999));
-        }
-
-        if (dateFilter.$gte || dateFilter.$lte) {
-          query[field.slug] = dateFilter;
-        }
+        if (dateFilter) query[field.slug] = dateFilter;
       }
     }
 
@@ -164,12 +150,7 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
           field?.type === E_FIELD_TYPE.TEXT_SHORT
         ) {
           const slug = String(field.slug?.toString());
-          searchQuery.push({
-            [slug]: {
-              $regex: this.normalize(searchStr),
-              $options: 'i',
-            },
-          });
+          searchQuery.push({ [slug]: this.fieldFilter.text(searchStr) });
         }
       }
 

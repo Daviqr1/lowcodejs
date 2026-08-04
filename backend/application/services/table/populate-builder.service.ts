@@ -4,19 +4,14 @@ import type mongoose from 'mongoose';
 import type {
   IField,
   IGroupConfiguration,
-  ValueOf,
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
-import { Evaluation } from '@application/model/evaluation.model';
-import { Reaction } from '@application/model/reaction.model';
-import { Storage } from '@application/model/storage.model';
 import { Table } from '@application/model/table.model';
-import { UserGroup } from '@application/model/user-group.model';
-import { User } from '@application/model/user.model';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
 import { ModelBuilderContractService } from './model-builder-contract.service';
 import { PopulateBuilderContractService } from './populate-builder-contract.service';
+import { POPULATE_BY_FIELD_TYPE } from './populate-map';
 
 type RelationModel = Awaited<ReturnType<ModelBuilderContractService['build']>>;
 // Doc hidratado do model Table (inferido do próprio model — `Table` usa um
@@ -33,23 +28,6 @@ type ModelDocument<M> =
     ? THydrated
     : never;
 type RelationshipTableDoc = ModelDocument<typeof Table>;
-
-// Campos de ref simples: type do campo → model/select do populate. RELATIONSHIP
-// e FIELD_GROUP nao entram aqui (tem logica propria de ciclo/subarvore).
-const POPULATE_BY_FIELD_TYPE: Partial<
-  Record<
-    ValueOf<typeof E_FIELD_TYPE>,
-    Pick<mongoose.PopulateOptions, 'model' | 'select'>
-  >
-> = {
-  [E_FIELD_TYPE.FILE]: { model: Storage },
-  [E_FIELD_TYPE.USER]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.USER_GROUP]: { model: UserGroup, select: 'name slug _id' },
-  [E_FIELD_TYPE.CREATOR]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.UPDATER]: { model: User, select: 'name email _id' },
-  [E_FIELD_TYPE.REACTION]: { model: Reaction, select: 'user type' },
-  [E_FIELD_TYPE.EVALUATION]: { model: Evaluation, select: 'user value' },
-};
 
 /**
  * Caches por request que tornam o populate linear. Sem eles cada nó da árvore
