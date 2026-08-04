@@ -39,3 +39,13 @@ export type LlmChatProvider = {
     tools?: Array<LlmChatTool>;
   }): Promise<LlmChatCompletionResult>;
 };
+
+/** Anexo enviado junto da mensagem do usuario. */
+export type FileData = {
+  type: 'image' | 'pdf';
+  filename: string;
+  content_type?: string;
+  data_uri?: string;
+  extracted_text?: string;
+  page_count?: number;
+};

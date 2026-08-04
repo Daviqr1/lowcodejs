@@ -6,7 +6,7 @@ import { E_AI_LLM_PROVIDER } from '@application/core/entity.core';
 import type { ISetting, ITable } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
-import { projectAiSettingsFields } from '@application/services/llm/ai-setting-fields';
+import { LlmConfigContractService } from '@application/services/llm/llm-config-contract.service';
 
 type Response = Either<HTTPException, ISetting | Record<string, unknown>>;
 
@@ -91,7 +91,10 @@ function getCalendarTemplateEntry(): Pick<
 
 @Service()
 export default class SettingShowUseCase {
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly llmConfig: LlmConfigContractService,
+  ) {}
 
   /**
    * `GET /setting` e auth-only de proposito — alimenta sidebar, paginacao e
@@ -169,7 +172,7 @@ export default class SettingShowUseCase {
 
       return right({
         ...setting,
-        ...projectAiSettingsFields(setting),
+        ...this.llmConfig.projectFields(setting),
         ...this.redactSecrets(payload.canManageSettings),
         FILE_UPLOAD_ACCEPTED: setting.FILE_UPLOAD_ACCEPTED?.split(';') ?? [],
         MODEL_CLONE_TABLES: [

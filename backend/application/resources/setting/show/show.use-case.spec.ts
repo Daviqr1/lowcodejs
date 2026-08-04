@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import SettingInMemoryRepository from '@application/repositories/setting/setting-in-memory.repository';
+import LlmConfigService from '@application/services/llm/llm-config.service';
 
 import SettingShowUseCase from './show.use-case';
 
@@ -52,7 +53,10 @@ describe('Setting Show Use Case', () => {
 
   beforeEach(() => {
     settingInMemoryRepository = new SettingInMemoryRepository();
-    sut = new SettingShowUseCase(settingInMemoryRepository);
+    sut = new SettingShowUseCase(
+      settingInMemoryRepository,
+      new LlmConfigService(),
+    );
   });
 
   it('deve retornar configurações do banco quando existem', async () => {

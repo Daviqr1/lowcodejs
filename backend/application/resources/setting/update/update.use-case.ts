@@ -8,10 +8,7 @@ import {
   SettingUpdatePayload,
 } from '@application/repositories/setting/setting-contract.repository';
 import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
-import {
-  prepareAiSettingsForSave,
-  projectAiSettingsFields,
-} from '@application/services/llm/ai-setting-fields';
+import { LlmConfigContractService } from '@application/services/llm/llm-config-contract.service';
 import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import { StorageContractService } from '@application/services/storage/storage-contract.service';
 
@@ -31,6 +28,7 @@ export default class SettingUpdateUseCase {
     private readonly storageService: StorageContractService,
     private readonly identifier: IdentifierContractService,
     private readonly settingEnvSync: SettingEnvSyncContractService,
+    private readonly llmConfig: LlmConfigContractService,
   ) {}
 
   async execute(payload: SettingUpdatePayload): Promise<Response> {
@@ -41,7 +39,7 @@ export default class SettingUpdateUseCase {
         );
       }
 
-      const normalized = prepareAiSettingsForSave({ ...payload });
+      const normalized = this.llmConfig.prepareForSave({ ...payload });
       const updated = await this.settingRepository.update(normalized);
 
       this.settingEnvSync.syncStorage(updated);
@@ -52,7 +50,7 @@ export default class SettingUpdateUseCase {
 
       return right({
         ...updated,
-        ...projectAiSettingsFields(updated),
+        ...this.llmConfig.projectFields(updated),
         FILE_UPLOAD_ACCEPTED: updated.FILE_UPLOAD_ACCEPTED?.split(';') ?? [],
         // MODEL_CLONE_TABLES já vem populado do repository
       });

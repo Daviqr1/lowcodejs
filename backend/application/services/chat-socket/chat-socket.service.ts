@@ -23,10 +23,9 @@ import { Setting } from '@application/model/setting.model';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { getChatSystemPrompt } from '@application/resources/chat/system-prompt';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
-import { resolveLlmConfig } from '@application/services/llm/ai-setting-fields';
+import { LlmChatContractService } from '@application/services/llm/llm-chat-contract.service';
 import type { LlmChatMessage } from '@application/services/llm/llm-chat.types';
-import { getLlmProviderLabel } from '@application/services/llm/llm-defaults';
-import { runChatCompletion } from '@application/services/llm/run-chat-completion';
+import { LlmConfigContractService } from '@application/services/llm/llm-config-contract.service';
 import {
   ACCESS_TOKEN_COOKIE,
   SessionContractService,
@@ -248,6 +247,8 @@ export default class ChatSocketService implements ChatSocketContractService {
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
     private readonly session: SessionContractService,
+    private readonly llmConfig: LlmConfigContractService,
+    private readonly llmChat: LlmChatContractService,
   ) {}
 
   init(httpServer: HttpServer, decode: JwtDecoder): SocketIOServer {
@@ -312,7 +313,7 @@ export default class ChatSocketService implements ChatSocketContractService {
       const mcpUrl = setting?.MCP_SERVER_URL ?? null;
       const mcpAuthToken = setting?.MCP_SERVER_TOKEN ?? null;
       const mcpLowcodeApiUrl = setting?.MCP_LOWCODE_API_URL ?? null;
-      let llmConfig = resolveLlmConfig(setting);
+      let llmConfig = this.llmConfig.resolve(setting);
 
       if (!aiEnabled || !mcpUrl || !llmConfig.isConfigured) {
         socket.emit(E_CHAT_EVENT.ERROR, {
@@ -370,14 +371,14 @@ export default class ChatSocketService implements ChatSocketContractService {
           message: 'Agente pronto! Você pode enviar mensagens.',
           tools_count: mcpTools.length,
           llm_provider: llmConfig.provider,
-          llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+          llm_provider_label: this.llmConfig.providerLabel(llmConfig.provider),
           llm_model: llmConfig.model,
         });
 
         socket.on(E_CHAT_EVENT.MESSAGE, async (data: ClientMessage) => {
           try {
             const latestSetting = await Setting.findOne().lean();
-            llmConfig = resolveLlmConfig(latestSetting);
+            llmConfig = this.llmConfig.resolve(latestSetting);
 
             const systemPrompt = getChatSystemPrompt(
               user.email.split('@')[0],
@@ -391,11 +392,13 @@ export default class ChatSocketService implements ChatSocketContractService {
 
             socket.emit(E_CHAT_EVENT.LLM_INFO, {
               llm_provider: llmConfig.provider,
-              llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+              llm_provider_label: this.llmConfig.providerLabel(
+                llmConfig.provider,
+              ),
               llm_model: llmConfig.model,
             });
 
-            const { reply } = await runChatCompletion({
+            const { reply } = await this.llmChat.complete({
               llmConfig,
               messages,
               mcpClient: mcpClient!,
