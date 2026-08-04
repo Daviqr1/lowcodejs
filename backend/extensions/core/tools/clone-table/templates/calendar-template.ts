@@ -1,61 +1,27 @@
-import { right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  FIELD_NATIVE_LIST,
   type IField,
   type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type {
-  CloneTableDeps,
-  CloneTableResponse,
-  CloneTableUseCasePayload,
-} from '../clone-table.types';
+import type { CloneTableDeps } from '../clone-table.types';
 
 import { createGroupNativeFields } from './group-natives-helper';
+import type {
+  TableTemplateDescriptor,
+  TemplateFieldSet,
+} from './table-template-contract.service';
 
-export async function createCalendarTemplate(
-  payload: CloneTableUseCasePayload,
-  deps: CloneTableDeps,
-): Promise<CloneTableResponse> {
-  const newSlug = deps.slugService.normalize(payload.name);
-
-  const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
-    await buildCalendarFields(deps.fieldRepository, deps.schemaBuilder);
-  const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
-  const nativeFieldIds = nativeFields.map((field) => field._id);
-
-  const _schema = deps.schemaBuilder.build(
-    [...nativeFields, ...fields],
-    groups,
-  );
-
-  const createPayload: TableCreatePayload = {
-    _schema,
-    name: payload.name,
-    slug: newSlug,
-    description: 'Calendário de agendamentos',
-    type: E_TABLE_TYPE.TABLE,
-    logo: null,
-    fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
-    style: E_TABLE_STYLE.CALENDAR,
-    owner: payload.ownerId,
-    fieldOrderList: [...nativeFieldIds, ...orderList],
-    fieldOrderForm: [...nativeFieldIds, ...orderForm],
-    fieldOrderFilter: [...nativeFieldIds, ...orderFilter],
-    fieldOrderDetail: [...nativeFieldIds, ...orderDetail],
-    methods: {
-      onLoad: { code: null },
-      beforeSave: {
-        code: `
+export const CALENDAR_TEMPLATE: TableTemplateDescriptor = {
+  description: 'Calendário de agendamentos',
+  style: E_TABLE_STYLE.CALENDAR,
+  beforeSave: `
 (async () => {
   var titulo = field.get('titulo') || 'Sem título';
   var inicio = field.get('data-inicio');
@@ -68,12 +34,12 @@ export async function createCalendarTemplate(
   var participantes = field.get('participantes') || [];
   var emails = Array.isArray(participantes)
     ? participantes
-        .map(function (p) {
-          if (p && typeof p === 'object') return p.email || null;
-          if (typeof p === 'string' && p.includes('@')) return p;
-          return null;
-        })
-        .filter(Boolean)
+  .map(function (p) {
+    if (p && typeof p === 'object') return p.email || null;
+    if (typeof p === 'string' && p.includes('@')) return p;
+    return null;
+  })
+  .filter(Boolean)
     : [];
 
   var prevRaw = field.get('participantes-notificados') || '[]';
@@ -127,10 +93,10 @@ export async function createCalendarTemplate(
       detalhesReag['Novo término'] = terminoFmt;
       detalhesReag['Acessar'] = link;
       await email.sendTemplate(
-        emails,
-        'Evento reagendado: ' + titulo,
-        'O evento foi reagendado para um novo horário.',
-        detalhesReag
+  emails,
+  'Evento reagendado: ' + titulo,
+  'O evento foi reagendado para um novo horário.',
+  detalhesReag
       );
     }
   }
@@ -140,20 +106,11 @@ export async function createCalendarTemplate(
     termino: termino ? String(termino) : ''
   }));
 })();
-        `.trim(),
-      },
-      afterSave: { code: null },
-    },
-    groups,
-  };
-
-  const newTable = await deps.tableRepository.create(createPayload);
-
-  return right({
-    table: newTable,
-    fieldIdMap: {},
-  });
-}
+  `.trim(),
+  async buildFields(deps: CloneTableDeps): Promise<TemplateFieldSet> {
+    return buildCalendarFields(deps.fieldRepository, deps.schemaBuilder);
+  },
+};
 
 export async function buildCalendarFields(
   fieldRepository: FieldContractRepository,

@@ -8,6 +8,7 @@ import SlugService from '@application/services/slug/slug.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import CloneTableUseCase from './clone-table.use-case';
+import TableTemplateService from './templates/table-template.service';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
@@ -29,6 +30,7 @@ describe('Clone Table Use Case', () => {
       rowInMemoryRepository,
       schemaBuilder,
       new SlugService(),
+      new TableTemplateService(),
     );
   });
 

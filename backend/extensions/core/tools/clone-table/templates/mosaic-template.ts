@@ -1,62 +1,22 @@
-import { right } from '@application/core/either.core';
-import {
-  E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  FIELD_NATIVE_LIST,
-  type IField,
-} from '@application/core/entity.core';
+import { E_TABLE_STYLE, type IField } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
 
-import type {
-  CloneTableDeps,
-  CloneTableResponse,
-  CloneTableUseCasePayload,
-} from '../clone-table.types';
+import type { CloneTableDeps } from '../clone-table.types';
 
 import { buildSimpleMediaFields } from './media-helpers';
+import type {
+  TableTemplateDescriptor,
+  TemplateFieldSet,
+} from './table-template-contract.service';
 
-export async function createMosaicTemplate(
-  payload: CloneTableUseCasePayload,
-  deps: CloneTableDeps,
-): Promise<CloneTableResponse> {
-  const newSlug = deps.slugService.normalize(payload.name);
-
-  const { fields, orderList, orderForm, orderFilter, orderDetail } =
-    await buildMosaicFields(deps.fieldRepository);
-  const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
-  const nativeFieldIds = nativeFields.map((field) => field._id);
-
-  const _schema = deps.schemaBuilder.build([...nativeFields, ...fields]);
-
-  const createPayload: TableCreatePayload = {
-    _schema,
-    name: payload.name,
-    slug: newSlug,
-    description: 'Mosaico',
-    type: E_TABLE_TYPE.TABLE,
-    logo: null,
-    fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
-    style: E_TABLE_STYLE.MOSAIC,
-    owner: payload.ownerId,
-    fieldOrderList: [...nativeFieldIds, ...orderList],
-    fieldOrderForm: [...nativeFieldIds, ...orderForm],
-    fieldOrderFilter: [...nativeFieldIds, ...orderFilter],
-    fieldOrderDetail: [...nativeFieldIds, ...orderDetail],
-    methods: {
-      onLoad: { code: null },
-      beforeSave: { code: null },
-      afterSave: { code: null },
-    },
-  };
-
-  const newTable = await deps.tableRepository.create(createPayload);
-
-  return right({
-    table: newTable,
-    fieldIdMap: {},
-  });
-}
+export const MOSAIC_TEMPLATE: TableTemplateDescriptor = {
+  description: 'Mosaico',
+  style: E_TABLE_STYLE.MOSAIC,
+  beforeSave: null,
+  async buildFields(deps: CloneTableDeps): Promise<TemplateFieldSet> {
+    return buildMosaicFields(deps.fieldRepository);
+  },
+};
 
 export async function buildMosaicFields(
   fieldRepository: FieldContractRepository,

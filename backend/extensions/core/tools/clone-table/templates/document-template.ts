@@ -1,64 +1,28 @@
-import { right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  FIELD_NATIVE_LIST,
   type IField,
   type IFieldPermissions,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
+
+import type { CloneTableDeps } from '../clone-table.types';
 
 import type {
-  CloneTableDeps,
-  CloneTableResponse,
-  CloneTableUseCasePayload,
-} from '../clone-table.types';
+  TableTemplateDescriptor,
+  TemplateFieldSet,
+} from './table-template-contract.service';
 
-export async function createDocumentTemplate(
-  payload: CloneTableUseCasePayload,
-  deps: CloneTableDeps,
-): Promise<CloneTableResponse> {
-  const newSlug = deps.slugService.normalize(payload.name);
-
-  const { fields, orderList, orderForm, orderFilter, orderDetail } =
-    await buildDocumentFields(deps.fieldRepository);
-  const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
-  const nativeFieldIds = nativeFields.map((field) => field._id);
-
-  const _schema = deps.schemaBuilder.build([...nativeFields, ...fields]);
-
-  const createPayload: TableCreatePayload = {
-    _schema,
-    name: payload.name,
-    slug: newSlug,
-    description: 'Documento',
-    type: E_TABLE_TYPE.TABLE,
-    logo: null,
-    fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
-    style: E_TABLE_STYLE.DOCUMENT,
-    owner: payload.ownerId,
-    fieldOrderList: [...nativeFieldIds, ...orderList],
-    fieldOrderForm: [...nativeFieldIds, ...orderForm],
-    fieldOrderFilter: [...nativeFieldIds, ...orderFilter],
-    fieldOrderDetail: [...nativeFieldIds, ...orderDetail],
-    methods: {
-      onLoad: { code: null },
-      beforeSave: { code: null },
-      afterSave: { code: null },
-    },
-  };
-
-  const newTable = await deps.tableRepository.create(createPayload);
-
-  return right({
-    table: newTable,
-    fieldIdMap: {},
-  });
-}
+export const DOCUMENT_TEMPLATE: TableTemplateDescriptor = {
+  description: 'Documento',
+  style: E_TABLE_STYLE.DOCUMENT,
+  beforeSave: null,
+  async buildFields(deps: CloneTableDeps): Promise<TemplateFieldSet> {
+    return buildDocumentFields(deps.fieldRepository);
+  },
+};
 
 export async function buildDocumentFields(
   fieldRepository: FieldContractRepository,

@@ -20,25 +20,12 @@ import {
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import {
-  CALENDAR_TEMPLATE_ID,
-  CARDS_TEMPLATE_ID,
-  DOCUMENT_TEMPLATE_ID,
-  FORUM_TEMPLATE_ID,
-  KANBAN_TEMPLATE_ID,
-  MOSAIC_TEMPLATE_ID,
-} from './clone-table.constants';
 import type {
   CloneTableDeps,
   CloneTableResponse,
   CloneTableUseCasePayload,
 } from './clone-table.types';
-import { createCalendarTemplate } from './templates/calendar-template';
-import { createCardsTemplate } from './templates/cards-template';
-import { createDocumentTemplate } from './templates/document-template';
-import { createForumTemplate } from './templates/forum-template';
-import { createKanbanTemplate } from './templates/kanban-template';
-import { createMosaicTemplate } from './templates/mosaic-template';
+import { TableTemplateContractService } from './templates/table-template-contract.service';
 
 type Response = CloneTableResponse;
 
@@ -60,6 +47,7 @@ export default class CloneTableUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
     private readonly slugService: SlugContractService,
+    private readonly tableTemplate: TableTemplateContractService,
   ) {}
 
   private getTemplateDeps(): CloneTableDeps {
@@ -99,28 +87,9 @@ export default class CloneTableUseCase {
 
       const templateDeps = this.getTemplateDeps();
 
-      if (payload.baseTableId === KANBAN_TEMPLATE_ID) {
-        return await createKanbanTemplate(payload, templateDeps);
-      }
-
-      if (payload.baseTableId === CARDS_TEMPLATE_ID) {
-        return await createCardsTemplate(payload, templateDeps);
-      }
-
-      if (payload.baseTableId === MOSAIC_TEMPLATE_ID) {
-        return await createMosaicTemplate(payload, templateDeps);
-      }
-
-      if (payload.baseTableId === DOCUMENT_TEMPLATE_ID) {
-        return await createDocumentTemplate(payload, templateDeps);
-      }
-
-      if (payload.baseTableId === FORUM_TEMPLATE_ID) {
-        return await createForumTemplate(payload, templateDeps);
-      }
-
-      if (payload.baseTableId === CALENDAR_TEMPLATE_ID) {
-        return await createCalendarTemplate(payload, templateDeps);
+      const template = this.tableTemplate.findById(payload.baseTableId ?? '');
+      if (template) {
+        return await this.tableTemplate.create(template, payload, templateDeps);
       }
 
       let requestedBaseTableIds: string[] = [];

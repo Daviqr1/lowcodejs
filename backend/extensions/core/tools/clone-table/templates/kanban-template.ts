@@ -1,61 +1,27 @@
-import { right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  FIELD_NATIVE_LIST,
   type IField,
   type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type {
-  CloneTableDeps,
-  CloneTableResponse,
-  CloneTableUseCasePayload,
-} from '../clone-table.types';
+import type { CloneTableDeps } from '../clone-table.types';
 
 import { createGroupNativeFields } from './group-natives-helper';
+import type {
+  TableTemplateDescriptor,
+  TemplateFieldSet,
+} from './table-template-contract.service';
 
-export async function createKanbanTemplate(
-  payload: CloneTableUseCasePayload,
-  deps: CloneTableDeps,
-): Promise<CloneTableResponse> {
-  const newSlug = deps.slugService.normalize(payload.name);
-
-  const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
-    await buildKanbanFields(deps.fieldRepository, deps.schemaBuilder);
-  const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
-  const nativeFieldIds = nativeFields.map((field) => field._id);
-
-  const _schema = deps.schemaBuilder.build(
-    [...nativeFields, ...fields],
-    groups,
-  );
-
-  const createPayload: TableCreatePayload = {
-    _schema,
-    name: payload.name,
-    slug: newSlug,
-    description: 'Kanban de tarefas',
-    type: E_TABLE_TYPE.TABLE,
-    logo: null,
-    fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
-    style: E_TABLE_STYLE.KANBAN,
-    owner: payload.ownerId,
-    fieldOrderList: [...nativeFieldIds, ...orderList],
-    fieldOrderForm: [...nativeFieldIds, ...orderForm],
-    fieldOrderFilter: [...nativeFieldIds, ...orderFilter],
-    fieldOrderDetail: [...nativeFieldIds, ...orderDetail],
-    methods: {
-      onLoad: { code: null },
-      beforeSave: {
-        code: `
+export const KANBAN_TEMPLATE: TableTemplateDescriptor = {
+  description: 'Kanban de tarefas',
+  style: E_TABLE_STYLE.KANBAN,
+  beforeSave: `
 (async () => {
   var prev = context.previous || null;
 
@@ -82,8 +48,8 @@ export async function createKanbanTemplate(
     if (!Array.isArray(valor)) valor = valor ? [valor] : [];
     return valor
       .map(function (m) {
-        if (m && typeof m === 'object') return String(m._id || m.id || '');
-        return String(m || '');
+  if (m && typeof m === 'object') return String(m._id || m.id || '');
+  return String(m || '');
       })
       .filter(Boolean);
   }
@@ -162,20 +128,11 @@ export async function createKanbanTemplate(
 
   // Menção @usuario -> serviço nativo do Kanban (não aqui).
 })();
-        `.trim(),
-      },
-      afterSave: { code: null },
-    },
-    groups,
-  };
-
-  const newTable = await deps.tableRepository.create(createPayload);
-
-  return right({
-    table: newTable,
-    fieldIdMap: {},
-  });
-}
+  `.trim(),
+  async buildFields(deps: CloneTableDeps): Promise<TemplateFieldSet> {
+    return buildKanbanFields(deps.fieldRepository, deps.schemaBuilder);
+  },
+};
 
 export async function buildKanbanFields(
   fieldRepository: FieldContractRepository,

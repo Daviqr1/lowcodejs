@@ -1,61 +1,28 @@
-import { right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_STYLE,
-  E_TABLE_TYPE,
-  FIELD_NATIVE_LIST,
   type IField,
   type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
-import type { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type {
-  CloneTableDeps,
-  CloneTableResponse,
-  CloneTableUseCasePayload,
-} from '../clone-table.types';
+import type { CloneTableDeps } from '../clone-table.types';
 
 import { createGroupNativeFields } from './group-natives-helper';
+import type {
+  TableTemplateDescriptor,
+  TemplateFieldSet,
+  TemplateSeedContext,
+} from './table-template-contract.service';
 
-export async function createForumTemplate(
-  payload: CloneTableUseCasePayload,
-  deps: CloneTableDeps,
-): Promise<CloneTableResponse> {
-  const newSlug = deps.slugService.normalize(payload.name);
-
-  const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
-    await buildForumFields(deps.fieldRepository, deps.schemaBuilder);
-  const nativeFields = await deps.fieldRepository.createMany(FIELD_NATIVE_LIST);
-  const nativeFieldIds = nativeFields.map((field) => field._id);
-
-  const _schema = deps.schemaBuilder.build(
-    [...nativeFields, ...fields],
-    groups,
-  );
-
-  const createPayload: TableCreatePayload = {
-    _schema,
-    name: payload.name,
-    slug: newSlug,
-    description: 'Forum com canais e mensagens',
-    type: E_TABLE_TYPE.TABLE,
-    logo: null,
-    fields: [...nativeFieldIds, ...fields.map((f) => f._id)],
-    style: E_TABLE_STYLE.FORUM,
-    owner: payload.ownerId,
-    fieldOrderList: [...nativeFieldIds, ...orderList],
-    fieldOrderForm: [...nativeFieldIds, ...orderForm],
-    fieldOrderFilter: [...nativeFieldIds, ...orderFilter],
-    fieldOrderDetail: [...nativeFieldIds, ...orderDetail],
-    methods: {
-      onLoad: { code: null },
-      beforeSave: {
-        code: `
+export const FORUM_TEMPLATE: TableTemplateDescriptor = {
+  description: 'Forum com canais e mensagens',
+  style: E_TABLE_STYLE.FORUM,
+  beforeSave: `
 (async () => {
   var canal = field.get('canal') || 'Sem nome';
   var tabela = context.table.name || '';
@@ -64,12 +31,12 @@ export async function createForumTemplate(
   var membros = field.get('membros') || [];
   var emails = Array.isArray(membros)
     ? membros
-        .map(function (m) {
-          if (m && typeof m === 'object') return m.email || null;
-          if (typeof m === 'string' && m.includes('@')) return m;
-          return null;
-        })
-        .filter(Boolean)
+  .map(function (m) {
+    if (m && typeof m === 'object') return m.email || null;
+    if (typeof m === 'string' && m.includes('@')) return m;
+    return null;
+  })
+  .filter(Boolean)
     : [];
 
   var prevRaw = field.get('membros-notificados') || '[]';
@@ -99,43 +66,41 @@ export async function createForumTemplate(
     );
   }
 })();
-        `.trim(),
-      },
-      afterSave: { code: null },
-    },
-    groups,
-  };
-
-  const newTable = await deps.tableRepository.create(createPayload);
-
-  const channelField = fields.find((field) => field.slug === 'canal');
-  const descriptionField = fields.find((field) => field.slug === 'descricao');
-  const privacyField = fields.find((field) => field.slug === 'privacidade');
-  const membersField = fields.find((field) => field.slug === 'membros');
-  if (channelField) {
-    await deps.rowRepository.create({
-      table: newTable,
-      data: {
-        [channelField.slug]: 'Bem-vindos',
-        ...(descriptionField && {
-          [descriptionField.slug]: 'Canal inicial',
-        }),
-        ...(privacyField && {
-          [privacyField.slug]: 'publico',
-        }),
-        ...(membersField && {
-          [membersField.slug]: [],
-        }),
-        creator: payload.ownerId,
-      },
-    });
-  }
-
-  return right({
-    table: newTable,
-    fieldIdMap: {},
-  });
-}
+  `.trim(),
+  async buildFields(deps: CloneTableDeps): Promise<TemplateFieldSet> {
+    return buildForumFields(deps.fieldRepository, deps.schemaBuilder);
+  },
+  async seed(context: TemplateSeedContext): Promise<void> {
+    const channelField = context.fields.find((field) => field.slug === 'canal');
+    const descriptionField = context.fields.find(
+      (field) => field.slug === 'descricao',
+    );
+    const privacyField = context.fields.find(
+      (field) => field.slug === 'privacidade',
+    );
+    const membersField = context.fields.find(
+      (field) => field.slug === 'membros',
+    );
+    if (channelField) {
+      await context.deps.rowRepository.create({
+        table: context.table,
+        data: {
+          [channelField.slug]: 'Bem-vindos',
+          ...(descriptionField && {
+            [descriptionField.slug]: 'Canal inicial',
+          }),
+          ...(privacyField && {
+            [privacyField.slug]: 'publico',
+          }),
+          ...(membersField && {
+            [membersField.slug]: [],
+          }),
+          creator: context.payload.ownerId,
+        },
+      });
+    }
+  },
+};
 
 export async function buildForumFields(
   fieldRepository: FieldContractRepository,
