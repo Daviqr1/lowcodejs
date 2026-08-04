@@ -8,7 +8,8 @@ import { Setting } from '@application/model/setting.model';
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import StorageMongooseRepository from '@application/repositories/storage/storage.repository';
 import { initChatSocket } from '@application/resources/chat/chat.socket';
-import { initNotificationsSocket } from '@application/resources/notifications/notifications.socket';
+import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
+import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
 import { EmailWorkerContractService } from '@application/services/email-queue/email-worker-contract.service';
 import EmailWorkerService from '@application/services/email-queue/email-worker.service';
@@ -128,7 +129,9 @@ async function start(): Promise<void> {
     const migrationNamespace = initStorageMigrationSocket(io, jwtDecode);
     console.info('Socket.IO storage-migration namespace initialized');
 
-    initNotificationsSocket(io, jwtDecode);
+    getInstanceByToken<NotificationSocketContractService>(
+      NotificationSocketService,
+    ).init(io, jwtDecode);
     console.info('Socket.IO notifications namespace initialized');
 
     initTableImportSocket(io, jwtDecode);

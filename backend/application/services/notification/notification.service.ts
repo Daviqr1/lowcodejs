@@ -5,7 +5,7 @@ import {
   type INotification,
 } from '@application/core/entity.core';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
-import { getNotificationsNamespace } from '@application/resources/notifications/notifications.socket';
+import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
 
 import {
   NotificationContractService,
@@ -14,7 +14,10 @@ import {
 
 @Service()
 export default class NotificationService implements NotificationContractService {
-  constructor(private readonly repository: NotificationContractRepository) {}
+  constructor(
+    private readonly repository: NotificationContractRepository,
+    private readonly notificationSocket: NotificationSocketContractService,
+  ) {}
 
   async notify(payload: NotifyPayload): Promise<INotification[]> {
     const recipients = Array.from(
@@ -43,7 +46,7 @@ export default class NotificationService implements NotificationContractService 
         })),
       );
 
-      const namespace = getNotificationsNamespace();
+      const namespace = this.notificationSocket.namespace();
       if (namespace) {
         for (const notification of records) {
           namespace

@@ -6,7 +6,8 @@ import { E_NOTIFICATION_EVENT } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
 import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
-import { getNotificationsNamespace } from '@application/resources/notifications/notifications.socket';
+import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
+import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
 
 import { NotificationMarkAsReadSchema } from './mark-as-read.schema';
 
@@ -44,7 +45,9 @@ export default class {
         });
       }
 
-      const namespace = getNotificationsNamespace();
+      const namespace = getInstanceByToken<NotificationSocketContractService>(
+        NotificationSocketService,
+      ).namespace();
       if (namespace) {
         namespace
           .to(`user:${request.user.sub}`)

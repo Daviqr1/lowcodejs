@@ -6,11 +6,14 @@ import EmailConfigService from '@application/services/email-config/email-config.
 import FieldValueService from '@application/services/field-value/field-value.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import NotificationService from '@application/services/notification/notification.service';
+import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
 import SandboxBuilderService from '@application/services/script-execution/sandbox-builder.service';
 import NodeVmScriptExecutionService from '@application/services/script-execution/script-execution.service';
 import NodeVmRunnerService from '@application/services/script-execution/vm-runner.service';
 import SearchService from '@application/services/search/search.service';
+import SessionService from '@application/services/session/session.service';
 import SlugService from '@application/services/slug/slug.service';
+import SocketAuthService from '@application/services/socket-auth/socket-auth.service';
 import MongooseFieldGroupBuilder from '@application/services/table/field-group-builder.service';
 import MongooseModelBuilder from '@application/services/table/model-builder.service';
 import MongooseSchemaBuilder from '@application/services/table/schema-builder.service';
@@ -33,7 +36,12 @@ export function makeModelBuilder(): MongooseModelBuilder {
   const userRepository = new UserMongooseRepository(new SearchService());
   const sandboxBuilder = new SandboxBuilderService(
     new NodemailerEmailService(new EmailConfigService()),
-    new NotificationService(new NotificationMongooseRepository()),
+    new NotificationService(
+      new NotificationMongooseRepository(),
+      new NotificationSocketService(
+        new SocketAuthService(new SessionService()),
+      ),
+    ),
     userRepository,
     new FieldValueService(),
     new SlugService(),
