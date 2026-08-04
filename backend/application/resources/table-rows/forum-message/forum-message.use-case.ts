@@ -19,6 +19,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { NotificationContractService } from '@application/services/notification/notification-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 import { Env } from '@start/env';
 
 import type {
@@ -50,10 +51,6 @@ type ForumConfig = {
   messageReactionsSlug: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 @Service()
 export default class ForumMessageUseCase {
   constructor(
@@ -63,6 +60,7 @@ export default class ForumMessageUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly notificationService: NotificationContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async create(payload: ForumMessageCreatePayload): Promise<Response> {
@@ -757,7 +755,7 @@ export default class ForumMessageUseCase {
     if (!Array.isArray(value)) return [];
 
     return value.map((message) => {
-      if (isRecord(message)) {
+      if (this.typeGuard.isRecord(message)) {
         return { ...message };
       }
       return {};
@@ -771,11 +769,11 @@ export default class ForumMessageUseCase {
 
   private normalizeId(value: unknown): string | null {
     if (typeof value === 'string' && value.trim()) return value.trim();
-    if (isRecord(value)) {
+    if (this.typeGuard.isRecord(value)) {
       if ('_id' in value) {
         const id = value._id;
         if (typeof id === 'string' && id.trim()) return id.trim();
-        if (isRecord(id) && 'toString' in id) {
+        if (this.typeGuard.isRecord(id) && 'toString' in id) {
           const parsed = String(id);
           if (parsed && parsed !== '[object Object]') return parsed;
         }

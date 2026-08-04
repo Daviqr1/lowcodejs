@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { E_FIELD_FORMAT, E_FIELD_TYPE } from '@application/core/entity.core';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { makeTextShortField as makeField } from '@test/helpers/field-factory.helper';
 
 import FieldValueService from './field-value.service';
 
 describe('FieldValueService', () => {
-  const sut = new FieldValueService();
+  const sut = new FieldValueService(new TypeGuardService());
 
   describe('typeOf', () => {
     it('resolve o tipo pelo slug', () => {

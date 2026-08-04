@@ -11,6 +11,7 @@ import RowInMemoryRepository from '@application/repositories/row/row-in-memory.r
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import GroupRowShowUseCase from './show.use-case';
 
@@ -125,6 +126,7 @@ describe('Group Row Show Use Case', () => {
       rowRepository,
       rowPasswordService,
       new InMemoryRowAccessGuardService(),
+      new TypeGuardService(),
     );
   });
 

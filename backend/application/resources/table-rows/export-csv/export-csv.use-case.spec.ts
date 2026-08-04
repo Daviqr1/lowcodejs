@@ -17,6 +17,7 @@ import InMemoryFieldVisibilityService from '@application/services/field-visibili
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import SlugService from '@application/services/slug/slug.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import TableRowExportCsvUseCase from './export-csv.use-case';
 
@@ -71,7 +72,7 @@ describe('Table Row Export CSV Use Case', () => {
       new InMemoryRowPasswordService(),
       new InMemoryFieldVisibilityService(),
       new InMemoryRowAccessGuardService(),
-      new FieldValueService(),
+      new FieldValueService(new TypeGuardService()),
       new CsvExportService(new SlugService(), new DateService()),
     );
   });

@@ -12,6 +12,7 @@ import FieldValueService from '@application/services/field-value/field-value.ser
 import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import GroupFieldCreateUseCase from './create.use-case';
 
@@ -62,7 +63,7 @@ describe('Group Field Create Use Case', () => {
       schemaBuilder,
       modelBuilder,
       new SlugService(),
-      new FieldValueService(),
+      new FieldValueService(new TypeGuardService()),
     );
   });
 

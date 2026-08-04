@@ -6,13 +6,10 @@ import { E_EXTENSION_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import { RowAccessControlGuard } from '../../../../extensions/core/plugins/row-access/guard.service';
 import { rowAccessSettingsSchema } from '../../../../extensions/core/plugins/row-access/settings-schema';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 type Input = {
   _id: string;
@@ -33,6 +30,7 @@ export default class BulkConfigureTableSettingsUseCase {
     private readonly extensionRepository: ExtensionContractRepository,
     private readonly tableRepository: TableContractRepository,
     private readonly rowAccessControlGuard: RowAccessControlGuard,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute({ _id, tableSettings }: Input): Promise<Response> {
@@ -60,7 +58,7 @@ export default class BulkConfigureTableSettingsUseCase {
       // Detecta se o plugin é um row-access-guard pelo manifest placement.
       const manifestSnapshot = existing.manifestSnapshot;
       let placement: Record<string, unknown> | undefined;
-      if (isRecord(manifestSnapshot.placement)) {
+      if (this.typeGuard.isPlainObject(manifestSnapshot.placement)) {
         placement = manifestSnapshot.placement;
       }
       if (placement?.kind !== 'row-access-guard') {

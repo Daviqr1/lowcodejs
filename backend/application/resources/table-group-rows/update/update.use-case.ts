@@ -11,6 +11,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
@@ -26,10 +27,6 @@ type Payload = Merge<
   }
 >;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 @Service()
 export default class GroupRowUpdateUseCase {
   constructor(
@@ -39,6 +36,7 @@ export default class GroupRowUpdateUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -136,12 +134,15 @@ export default class GroupRowUpdateUseCase {
 
       if (Array.isArray(existingItems)) {
         itemExists = existingItems.some((item: unknown) => {
-          if (isRecord(item)) {
+          if (this.typeGuard.isRecord(item)) {
             const itemId = item._id;
             if (typeof itemId === 'string') {
               return itemId === payload.itemId;
             }
-            if (isRecord(itemId) && typeof itemId.toString === 'function') {
+            if (
+              this.typeGuard.isRecord(itemId) &&
+              typeof itemId.toString === 'function'
+            ) {
               return itemId.toString() === payload.itemId;
             }
           }
@@ -183,7 +184,7 @@ export default class GroupRowUpdateUseCase {
 
       if (Array.isArray(items)) {
         for (const item of items) {
-          if (!isRecord(item)) {
+          if (!this.typeGuard.isRecord(item)) {
             continue;
           }
           const id = item._id;
@@ -192,7 +193,7 @@ export default class GroupRowUpdateUseCase {
             break;
           }
           if (
-            isRecord(id) &&
+            this.typeGuard.isRecord(id) &&
             typeof id.toString === 'function' &&
             id.toString() === payload.itemId
           ) {

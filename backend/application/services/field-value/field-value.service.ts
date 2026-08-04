@@ -5,6 +5,7 @@ import {
   E_FIELD_TYPE,
   type IField,
 } from '@application/core/entity.core';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import type {
   FieldType,
@@ -53,10 +54,6 @@ const RELATION_DISPLAY_KEYS = [
   'slug',
 ] as const;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function stripHtml(value: string): string {
   return value
     .replace(HTML_TAG_REGEX, ' ')
@@ -66,6 +63,8 @@ function stripHtml(value: string): string {
 
 @Service()
 export default class FieldValueService implements FieldValueContractService {
+  constructor(private readonly typeGuard: TypeGuardContractService) {}
+
   typeOf(fields: IField[], slug: string): FieldType | undefined {
     return fields.find((field) => field.slug === slug)?.type;
   }
@@ -176,7 +175,7 @@ export default class FieldValueService implements FieldValueContractService {
         .join('; ');
     }
 
-    if (isRecord(value)) {
+    if (this.typeGuard.isRecord(value)) {
       if (context.fieldType === E_FIELD_TYPE.FILE) {
         return this.formatFile(value, context);
       }

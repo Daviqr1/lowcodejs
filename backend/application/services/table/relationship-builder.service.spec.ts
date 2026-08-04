@@ -12,6 +12,7 @@ import FieldInMemoryRepository from '@application/repositories/field/field-in-me
 import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import RelationshipLinkInMemoryRepository from '@application/repositories/relationship-link/relationship-link-in-memory.repository';
 import RelationshipService from '@application/services/relationship/relationship.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import type { RelationshipHydratableDoc } from './relationship-builder-contract.service';
 import MongooseRelationshipBuilder from './relationship-builder.service';
@@ -70,6 +71,7 @@ describe('MongooseRelationshipBuilder', () => {
       fieldRepository,
       linkRepository,
       service,
+      new TypeGuardService(),
     );
 
     // 1:N — source (pedidos) aceita multiplos; target (produtos) nao.

@@ -7,6 +7,7 @@ import {
   type IField,
 } from '@application/core/entity.core';
 import { NotificationContractService } from '@application/services/notification/notification-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import {
   RowMemberNotificationContractService,
@@ -18,36 +19,36 @@ const SUPPORTED_STYLES = new Set<string>([
   E_TABLE_STYLE.CALENDAR,
 ]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeIdList(input: unknown): string[] {
-  if (!Array.isArray(input)) {
-    if (typeof input === 'string' && input.trim().length > 0)
-      return [input.trim()];
-    if (isRecord(input) && typeof input._id === 'string') return [input._id];
-    return [];
-  }
-  const result: string[] = [];
-  for (const value of input) {
-    if (typeof value === 'string' && value.length > 0) result.push(value);
-    else if (isRecord(value) && typeof value._id === 'string')
-      result.push(value._id);
-  }
-  return result;
-}
-
-function readString(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  return '';
-}
-
 @Service()
 export default class RowMemberNotificationService implements RowMemberNotificationContractService {
+  private normalizeIdList(input: unknown): string[] {
+    if (!Array.isArray(input)) {
+      if (typeof input === 'string' && input.trim().length > 0)
+        return [input.trim()];
+      if (this.typeGuard.isPlainObject(input) && typeof input._id === 'string')
+        return [input._id];
+      return [];
+    }
+    const result: string[] = [];
+    for (const value of input) {
+      if (typeof value === 'string' && value.length > 0) result.push(value);
+      else if (
+        this.typeGuard.isPlainObject(value) &&
+        typeof value._id === 'string'
+      )
+        result.push(value._id);
+    }
+    return result;
+  }
+
+  private readString(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    return '';
+  }
   constructor(
     private readonly notificationService: NotificationContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async notifyNewMembers(params: NotifyRowMembersParams): Promise<void> {
@@ -74,16 +75,16 @@ export default class RowMemberNotificationService implements RowMemberNotificati
       (f) => f.slug === table.layoutFields?.title || f.slug === 'titulo',
     );
     let cardTitle = '';
-    if (titleField) cardTitle = readString(nextRow[titleField.slug]);
-    const rowId = readString(nextRow._id);
+    if (titleField) cardTitle = this.readString(nextRow[titleField.slug]);
+    const rowId = this.readString(nextRow._id);
 
     const aggregatedNewIds = new Set<string>();
     for (const field of userFields) {
       let before = new Set<string>();
       if (previousRow) {
-        before = new Set(normalizeIdList(previousRow[field.slug]));
+        before = new Set(this.normalizeIdList(previousRow[field.slug]));
       }
-      const after = normalizeIdList(nextRow[field.slug]);
+      const after = this.normalizeIdList(nextRow[field.slug]);
       for (const id of after) {
         if (!before.has(id) && id !== actorUserId) {
           aggregatedNewIds.add(id);

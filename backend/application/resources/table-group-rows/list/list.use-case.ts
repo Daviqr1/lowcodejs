@@ -9,15 +9,12 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import type { GroupRowListPayload } from './list.validator';
 
 type Response = Either<HTTPException, Record<string, unknown>[]>;
 type Payload = Merge<GroupRowListPayload, { __actorUserId?: string }>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 @Service()
 export default class GroupRowListUseCase {
@@ -26,6 +23,7 @@ export default class GroupRowListUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -73,7 +71,7 @@ export default class GroupRowListUseCase {
         for (const item of rawItems) {
           // Mostra rascunhos (status='draft') junto dos publicados; o
           // frontend exibe badge. Oculta apenas itens na lixeira (trashedAt).
-          if (isRecord(item) && item.trashedAt == null) {
+          if (this.typeGuard.isRecord(item) && item.trashedAt == null) {
             items.push(item);
           }
         }

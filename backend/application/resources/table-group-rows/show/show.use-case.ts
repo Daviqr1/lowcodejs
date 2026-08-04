@@ -9,15 +9,12 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import type { GroupRowShowPayload } from './show.validator';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<GroupRowShowPayload, { __actorUserId?: string }>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 @Service()
 export default class GroupRowShowUseCase {
@@ -26,6 +23,7 @@ export default class GroupRowShowUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -71,7 +69,7 @@ export default class GroupRowShowUseCase {
 
       if (Array.isArray(rawItems)) {
         for (const candidate of rawItems) {
-          if (!isRecord(candidate)) {
+          if (!this.typeGuard.isRecord(candidate)) {
             continue;
           }
           const id = candidate._id;
@@ -80,7 +78,7 @@ export default class GroupRowShowUseCase {
             break;
           }
           if (
-            isRecord(id) &&
+            this.typeGuard.isRecord(id) &&
             typeof id.toString === 'function' &&
             id.toString() === payload.itemId
           ) {

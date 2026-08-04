@@ -15,6 +15,7 @@ import FieldValueService from '@application/services/field-value/field-value.ser
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import SlugService from '@application/services/slug/slug.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import GroupRowExportCsvUseCase from './export-csv.use-case';
 
@@ -68,8 +69,9 @@ describe('Group Row Export CSV Use Case', () => {
       rowRepo,
       new InMemoryRowPasswordService(),
       new InMemoryRowAccessGuardService(),
-      new FieldValueService(),
+      new FieldValueService(new TypeGuardService()),
       new CsvExportService(new SlugService(), new DateService()),
+      new TypeGuardService(),
     );
   });
 

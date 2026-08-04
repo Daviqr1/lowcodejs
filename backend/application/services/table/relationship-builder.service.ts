@@ -18,6 +18,7 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import type { RelationshipLinkSide } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 import { getDataConnection } from '@config/database.config';
 
 import type {
@@ -34,10 +35,6 @@ type EndpointMultiples = {
   targetField: Pick<IField, 'multiple'>;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 @Service()
 export default class MongooseRelationshipBuilder implements RelationshipBuilderContractService {
   constructor(
@@ -45,6 +42,7 @@ export default class MongooseRelationshipBuilder implements RelationshipBuilderC
     private readonly fieldRepository: FieldContractRepository,
     private readonly linkRepository: RelationshipLinkContractRepository,
     private readonly relationship: RelationshipContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   hasManagedRelationships(fields: IField[]): boolean {
@@ -798,7 +796,7 @@ export default class MongooseRelationshipBuilder implements RelationshipBuilderC
         ids.push(item);
         continue;
       }
-      if (isRecord(item) && typeof item['_id'] === 'string') {
+      if (this.typeGuard.isRecord(item) && typeof item['_id'] === 'string') {
         ids.push(item['_id']);
       }
     }

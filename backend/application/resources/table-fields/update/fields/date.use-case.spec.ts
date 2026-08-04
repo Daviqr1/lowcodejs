@@ -16,6 +16,7 @@ import RelationshipMaterializationService from '@application/services/relationsh
 import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
 
 import TableFieldUpdateUseCase from '../update.use-case';
@@ -131,7 +132,7 @@ describe('Table Field Update - DATE', () => {
         new SlugService(),
       ),
       new SlugService(),
-      new FieldValueService(),
+      new FieldValueService(new TypeGuardService()),
       new InMemoryCascadeDropdownConfigRepository(),
     );
   });

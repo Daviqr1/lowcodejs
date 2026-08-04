@@ -16,14 +16,11 @@ import {
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import type { GroupRowExportCsvPayload } from './export-csv.validator';
 
 type Response = Either<HTTPException, Readable>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function buildFields(groupFields: IField[]): {
   csvFields: CsvField[];
@@ -52,6 +49,7 @@ export default class GroupRowExportCsvUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly fieldValue: FieldValueContractService,
     private readonly csvExport: CsvExportContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -103,7 +101,7 @@ export default class GroupRowExportCsvUseCase {
         for (const item of rawItems) {
           // Itens na lixeira nao entram (list/paginated ja filtram) e campos
           // PASSWORD saiam com o hash bcrypt no CSV.
-          if (!isRecord(item)) continue;
+          if (!this.typeGuard.isRecord(item)) continue;
           if (item['trashedAt'] != null) continue;
           this.rowPasswordService.mask(item, groupFields);
           items.push(item);

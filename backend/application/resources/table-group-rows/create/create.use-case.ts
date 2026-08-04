@@ -11,6 +11,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
@@ -26,10 +27,6 @@ type Payload = Merge<
   }
 >;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 @Service()
 export default class GroupRowCreateUseCase {
   constructor(
@@ -39,6 +36,7 @@ export default class GroupRowCreateUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -152,7 +150,7 @@ export default class GroupRowCreateUseCase {
 
       if (Array.isArray(groupItems) && groupItems.length > 0) {
         const candidate = groupItems[groupItems.length - 1];
-        if (isRecord(candidate)) {
+        if (this.typeGuard.isRecord(candidate)) {
           lastItem = candidate;
         }
       }
