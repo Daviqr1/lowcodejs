@@ -9,18 +9,22 @@ import websocket from '@fastify/websocket';
 import scalar from '@scalar/fastify-api-reference';
 import ajv from 'ajv-errors';
 import fastify from 'fastify';
-import { bootstrap } from 'fastify-decorators';
+import { bootstrap, getInstanceByToken } from 'fastify-decorators';
 import type { Server } from 'node:http';
 
 import { loadControllers } from '@application/core/controllers';
 import { registerDependencies } from '@application/core/di-registry';
+import { ErrorHandlerContractService } from '@application/services/error-handler/error-handler-contract.service';
+import ErrorHandlerService from '@application/services/error-handler/error-handler.service';
 import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { StorageContentDispositionHook } from '@hooks/content-disposition.hook';
-import { ErrorLogHook } from '@hooks/error-log.hook';
-import { LoadExtensionHook } from '@hooks/load-extensions.hook';
-import { LoggerUserActionHook } from '@hooks/logger.hook';
+import { ErrorLogHookContractService } from '@hooks/error-log-hook-contract.service';
+import ErrorLogHookService from '@hooks/error-log-hook.service';
+import { LoadExtensionsHookContractService } from '@hooks/load-extensions-hook-contract.service';
+import LoadExtensionsHookService from '@hooks/load-extensions-hook.service';
+import { LoggerHookContractService } from '@hooks/logger-hook-contract.service';
+import LoggerHookService from '@hooks/logger-hook.service';
 import { Env } from '@start/env';
-import { GlobalErrorHandler } from '@start/error-handler';
 
 function matchOrigin(origin: string, pattern: string): boolean {
   if (pattern.startsWith('*.')) {
@@ -124,13 +128,7 @@ kernel.register(multipart, {
   },
 });
 
-kernel.addHook('onResponse', LoggerUserActionHook);
 kernel.addHook('onRequest', StorageContentDispositionHook);
-// Registra no "Histórico de erros" respostas de erro (>= 400, exceto 401) de
-// usuários autenticados (best-effort).
-kernel.addHook('onSend', ErrorLogHook);
-
-kernel.setErrorHandler(GlobalErrorHandler);
 
 kernel.register(swagger, {
   openapi: {
@@ -169,6 +167,28 @@ kernel.register(websocket);
 
 await registerDependencies();
 
+// Hooks e error handler resolvidos do container — precisa ser depois do
+// `registerDependencies()` acima.
+const loggerHook =
+  getInstanceByToken<LoggerHookContractService>(LoggerHookService);
+kernel.addHook('onResponse', (request, response) =>
+  loggerHook.handle(request, response),
+);
+
+// Registra no "Histórico de erros" respostas de erro (>= 400, exceto 401) de
+// usuários autenticados (best-effort).
+const errorLogHook =
+  getInstanceByToken<ErrorLogHookContractService>(ErrorLogHookService);
+kernel.addHook('onSend', (request, response, payload) =>
+  errorLogHook.handle(request, response, payload),
+);
+
+const errorHandler =
+  getInstanceByToken<ErrorHandlerContractService>(ErrorHandlerService);
+kernel.setErrorHandler((error, request, response) =>
+  errorHandler.handle(error, request, response),
+);
+
 kernel.register(bootstrap, {
   controllers: [...(await loadControllers())],
 });
@@ -176,7 +196,11 @@ kernel.register(bootstrap, {
 // Carrega o registry de extensões assim que o kernel está pronto. Roda tanto
 // no boot do servidor (bin/server.ts) quanto nos testes E2E (que dão
 // kernel.ready() na suíte). Falha de scan é não-fatal — apenas loga.
-kernel.addHook('onReady', LoadExtensionHook);
+const loadExtensionsHook =
+  getInstanceByToken<LoadExtensionsHookContractService>(
+    LoadExtensionsHookService,
+  );
+kernel.addHook('onReady', () => loadExtensionsHook.handle());
 
 kernel.get('/openapi.json', async function () {
   return kernel.swagger();

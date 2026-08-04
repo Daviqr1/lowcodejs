@@ -19,7 +19,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
     "lint": "eslint . --ext .ts --fix",
-    "di:check": "node --import @swc-node/register/esm-register scripts/di-check.ts"
+    "di:check": "node --import @swc-node/register/esm-register scripts/di-check.ts",
+    "boot:check": "node --import @swc-node/register/esm-register scripts/boot-check.ts"
   },
   "keywords": [],
   "author": "",

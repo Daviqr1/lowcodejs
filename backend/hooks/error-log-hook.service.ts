@@ -1,12 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { getInstanceByToken } from 'fastify-decorators';
+import { Service } from 'fastify-decorators';
 import { z } from 'zod';
 
 import {
   ErrorLogContractRepository,
   type ErrorLogCreatePayload,
 } from '@application/repositories/error-log/error-log-contract.repository';
-import ErrorLogMongooseRepository from '@application/repositories/error-log/error-log.repository';
+
+import { ErrorLogHookContractService } from './error-log-hook-contract.service';
 
 const errorBodySchema = z.object({
   message: z.string().optional(),
@@ -41,17 +42,6 @@ function parseErrorBody(payload: unknown): ParsedErrorBody {
   return { message, cause, errors };
 }
 
-async function persistErrorLog(payload: ErrorLogCreatePayload): Promise<void> {
-  try {
-    const repo = getInstanceByToken<ErrorLogContractRepository>(
-      ErrorLogMongooseRepository,
-    );
-    await repo.create(payload);
-  } catch (err) {
-    console.error('[Error Log Hook] falha ao gravar erro:', err);
-  }
-}
-
 // 401 é EXCLUÍDO de propósito: "não autenticado" dispara em massa (sessão
 // expirada, logout, requests do SSR, retry do refresh-token) e polui o
 // histórico sem ser um erro de sistema real. Demais 4xx (400/403/404…) e todos
@@ -72,34 +62,48 @@ const IGNORED_STATUS = new Set<number>([401]);
  * O `statusCode` fica gravado para diferenciar/filtrar 4xx (cliente) de 5xx
  * (servidor) na tela.
  */
-export async function ErrorLogHook(
-  request: FastifyRequest,
-  response: FastifyReply,
-  payload: unknown,
-): Promise<unknown> {
-  try {
-    const userId = request.user?.sub;
 
-    if (
-      userId &&
-      response.statusCode >= 400 &&
-      !IGNORED_STATUS.has(response.statusCode)
-    ) {
-      const { message, cause, errors } = parseErrorBody(payload);
+@Service()
+export default class ErrorLogHookService implements ErrorLogHookContractService {
+  constructor(private readonly repository: ErrorLogContractRepository) {}
 
-      void persistErrorLog({
-        statusCode: response.statusCode,
-        message,
-        cause,
-        method: request.method,
-        url: request.url,
-        user_id: userId,
-        errors,
-      });
+  async handle(
+    request: FastifyRequest,
+    response: FastifyReply,
+    payload: unknown,
+  ): Promise<unknown> {
+    try {
+      const userId = request.user?.sub;
+
+      if (
+        userId &&
+        response.statusCode >= 400 &&
+        !IGNORED_STATUS.has(response.statusCode)
+      ) {
+        const { message, cause, errors } = parseErrorBody(payload);
+
+        void this.persist({
+          statusCode: response.statusCode,
+          message,
+          cause,
+          method: request.method,
+          url: request.url,
+          user_id: userId,
+          errors,
+        });
+      }
+    } catch (err) {
+      console.error('[Error Log Hook] erro inesperado:', err);
     }
-  } catch (err) {
-    console.error('[Error Log Hook] erro inesperado:', err);
+
+    return payload;
   }
 
-  return payload;
+  private async persist(payload: ErrorLogCreatePayload): Promise<void> {
+    try {
+      await this.repository.create(payload);
+    } catch (error) {
+      console.error('[Error Log Hook] falha ao gravar erro:', error);
+    }
+  }
 }

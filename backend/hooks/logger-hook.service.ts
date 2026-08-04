@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { getInstanceByToken } from 'fastify-decorators';
+import { Service } from 'fastify-decorators';
 import mongoose from 'mongoose';
 import z from 'zod';
 
@@ -11,13 +11,13 @@ import {
   LoggerContractRepository,
   LoggerCreatePayload,
 } from '@application/repositories/logger/logger-contract.repository';
-import LoggerMongooseRepository from '@application/repositories/logger/logger.repository';
 import {
   EMPTY_OBJECT_AUDIT,
   LoggerAuditContractService,
 } from '@application/services/logger-audit/logger-audit-contract.service';
-import LoggerAuditService from '@application/services/logger-audit/logger-audit.service';
 import { getDataConnection } from '@config/database.config';
+
+import { LoggerHookContractService } from './logger-hook-contract.service';
 
 const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
   GET: E_LOGGER_ACTION_TYPE.VIEW,
@@ -188,105 +188,104 @@ function fallbackIdFromUrl(url: string): string | null {
 
 const bodySchema = z.record(z.string(), z.unknown());
 
-export async function LoggerUserActionHook(
-  request: FastifyRequest,
-  response: FastifyReply,
-): Promise<void> {
-  try {
-    const repo = getInstanceByToken<LoggerContractRepository>(
-      LoggerMongooseRepository,
-    );
+@Service()
+export default class LoggerHookService implements LoggerHookContractService {
+  constructor(
+    private readonly repository: LoggerContractRepository,
+    private readonly loggerAudit: LoggerAuditContractService,
+  ) {}
 
-    // Usa o padrão da rota (ex: /tables/:slug/rows/:_id) para resolver o object
-    // e a URL real para resolver o object_id via fallback.
-    const routePattern = request.routeOptions?.url ?? request.url;
+  async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
+    try {
+      // Usa o padrão da rota (ex: /tables/:slug/rows/:_id) para resolver o object
+      // e a URL real para resolver o object_id via fallback.
+      const routePattern = request.routeOptions?.url ?? request.url;
 
-    const method = request.method.toUpperCase();
-    const hasBodyMethod = ['POST', 'PUT', 'PATCH'].includes(method);
-    const isJson =
-      request.headers['content-type']?.includes('application/json');
+      const method = request.method.toUpperCase();
+      const hasBodyMethod = ['POST', 'PUT', 'PATCH'].includes(method);
+      const isJson =
+        request.headers['content-type']?.includes('application/json');
 
-    let body: Record<string, unknown> | null = null;
+      let body: Record<string, unknown> | null = null;
 
-    if (hasBodyMethod) {
-      if (isJson) {
-        const parsed = bodySchema.safeParse(request.body);
-        if (parsed.success) body = parsed.data;
-      } else {
-        body = { raw: '[Non-JSON payload]' };
+      if (hasBodyMethod) {
+        if (isJson) {
+          const parsed = bodySchema.safeParse(request.body);
+          if (parsed.success) body = parsed.data;
+        } else {
+          body = { raw: '[Non-JSON payload]' };
+        }
       }
-    }
 
-    const query = asRecord(request.query);
-    const routeParams = asRecord(request.params);
-    const hasQuery = Object.keys(query).length > 0;
-    const hasParams = Object.keys(routeParams).length > 0;
+      const query = asRecord(request.query);
+      const routeParams = asRecord(request.params);
+      const hasQuery = Object.keys(query).length > 0;
+      const hasParams = Object.keys(routeParams).length > 0;
 
-    const contentParts: Record<string, unknown> = {};
-    if (body) contentParts.body = body;
-    if (hasQuery) contentParts.query = query;
-    if (hasParams) contentParts.params = routeParams;
-    let content: Record<string, unknown> | null = null;
-    if (Object.keys(contentParts).length > 0) content = contentParts;
+      const contentParts: Record<string, unknown> = {};
+      if (body) contentParts.body = body;
+      if (hasQuery) contentParts.query = query;
+      if (hasParams) contentParts.params = routeParams;
+      let content: Record<string, unknown> | null = null;
+      if (Object.keys(contentParts).length > 0) content = contentParts;
 
-    const action = resolveAction(method);
-    const object = resolveObject(routePattern);
-    const object_id =
-      resolveObjectId(request.params) ?? fallbackIdFromUrl(request.url);
-    const user_id = response.request.user?.sub ?? null;
+      const action = resolveAction(method);
+      const object = resolveObject(routePattern);
+      const object_id =
+        resolveObjectId(request.params) ?? fallbackIdFromUrl(request.url);
+      const user_id = response.request.user?.sub ?? null;
 
-    // Não loga rotas que não mapeiam para nenhum objeto conhecido
-    if (!object) return;
+      // Não loga rotas que não mapeiam para nenhum objeto conhecido
+      if (!object) return;
 
-    // Não loga requests sem usuário autenticado (SSR, endpoints públicos,
-    // healthchecks). Sem identidade o log vira ruído ("Anônimo") e polui o histórico.
-    if (!user_id) return;
+      // Não loga requests sem usuário autenticado (SSR, endpoints públicos,
+      // healthchecks). Sem identidade o log vira ruído ("Anônimo") e polui o histórico.
+      if (!user_id) return;
 
-    // Não loga GETs (Visualização). Carregar uma página dispara várias requests
-    // em paralelo (menus, extensões, settings, tabelas...) e cada uma viraria um
-    // log separado. O histórico deve refletir AÇÕES do usuário — criar, editar,
-    // deletar — não cada chamada HTTP de leitura.
-    if (action === E_LOGGER_ACTION_TYPE.VIEW) return;
+      // Não loga GETs (Visualização). Carregar uma página dispara várias requests
+      // em paralelo (menus, extensões, settings, tabelas...) e cada uma viraria um
+      // log separado. O histórico deve refletir AÇÕES do usuário — criar, editar,
+      // deletar — não cada chamada HTTP de leitura.
+      if (action === E_LOGGER_ACTION_TYPE.VIEW) return;
 
-    // Não loga operações de reordenação kanban (posicionamento sem mudança de coluna).
-    // Frontend envia X-Skip-Log: true em updates que só alteram `ordem-kanban`.
+      // Não loga operações de reordenação kanban (posicionamento sem mudança de coluna).
+      // Frontend envia X-Skip-Log: true em updates que só alteram `ordem-kanban`.
 
-    if (request.headers['x-skip-log']) return;
+      if (request.headers['x-skip-log']) return;
 
-    // Resolve creator/updater/createdAt/updatedAt do registro referenciado
-    // (object_id), lendo os campos ja gravados na propria ROW. Objetos que nao
-    // sao ROW retornam tudo null.
-    let audit = EMPTY_OBJECT_AUDIT;
-    const systemDb = mongoose.connection.db;
-    const dataDb = getDataConnection().db;
-    if (systemDb && dataDb) {
-      audit = await getInstanceByToken<LoggerAuditContractService>(
-        LoggerAuditService,
-      ).resolve({
-        systemDb,
-        dataDb,
-        object,
-        objectId: object_id,
+      // Resolve creator/updater/createdAt/updatedAt do registro referenciado
+      // (object_id), lendo os campos ja gravados na propria ROW. Objetos que nao
+      // sao ROW retornam tudo null.
+      let audit = EMPTY_OBJECT_AUDIT;
+      const systemDb = mongoose.connection.db;
+      const dataDb = getDataConnection().db;
+      if (systemDb && dataDb) {
+        audit = await this.loggerAudit.resolve({
+          systemDb,
+          dataDb,
+          object,
+          objectId: object_id,
+          url: request.url,
+        });
+      }
+
+      const payload = {
+        action,
         url: request.url,
-      });
+        user_id,
+        content,
+        object,
+        object_id,
+        creator: audit.creator?.toString() ?? null,
+        updater: audit.updater?.toString() ?? null,
+        objectCreatedAt: audit.objectCreatedAt,
+        objectUpdatedAt: audit.objectUpdatedAt,
+      } satisfies LoggerCreatePayload;
+
+      await this.repository.create(payload);
+    } catch (err) {
+      // Nunca deixar o hook de log derrubar a requisição
+      console.error('[Logger Hook] Failed to create log entry:', err);
     }
-
-    const payload = {
-      action,
-      url: request.url,
-      user_id,
-      content,
-      object,
-      object_id,
-      creator: audit.creator?.toString() ?? null,
-      updater: audit.updater?.toString() ?? null,
-      objectCreatedAt: audit.objectCreatedAt,
-      objectUpdatedAt: audit.objectUpdatedAt,
-    } satisfies LoggerCreatePayload;
-
-    await repo.create(payload);
-  } catch (err) {
-    // Nunca deixar o hook de log derrubar a requisição
-    console.error('[Logger Hook] Failed to create log entry:', err);
   }
 }
