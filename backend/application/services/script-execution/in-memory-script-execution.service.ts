@@ -1,7 +1,6 @@
-import type { ExecutionResult } from '@application/core/table/types';
-
 import type { ScriptExecutionInput } from './script-execution-contract.service';
 import { ScriptExecutionContractService } from './script-execution-contract.service';
+import type { ExecutionResult } from './script-execution.types';
 
 export default class InMemoryScriptExecutionService implements ScriptExecutionContractService {
   private _forcedErrors = new Map<string, Error>();

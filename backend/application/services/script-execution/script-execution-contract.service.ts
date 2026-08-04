@@ -2,7 +2,7 @@ import type {
   ExecutionContext,
   ExecutionResult,
   FieldDefinition,
-} from '@application/core/table/types';
+} from './script-execution.types';
 
 export type ScriptExecutionInput = {
   code: string;
@@ -10,6 +10,8 @@ export type ScriptExecutionInput = {
   tableSlug: string;
   fields: FieldDefinition[];
   context: ExecutionContext;
+  /** Teto de tempo da execucao; o runner aplica o default de 5s. */
+  timeout?: number;
 };
 
 export abstract class ScriptExecutionContractService {

@@ -15,17 +15,19 @@ import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { FieldCreatePayload } from '@application/repositories/field/field-contract.repository';
 import { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
-import MongooseModelBuilder from '@application/services/table/model-builder.service';
 import { kernel } from '@start/kernel';
 import {
   createAuthenticatedUser,
   createAuthenticatedUserInGroup,
 } from '@test/helpers/auth.helper';
-import { makeSchemaBuilder } from '@test/helpers/builder.helper';
+import {
+  makeModelBuilder,
+  makeSchemaBuilder,
+} from '@test/helpers/builder.helper';
 import { dropDynamicCollections } from '@test/helpers/database.helper';
 
 const schemaBuilder = makeSchemaBuilder();
-const modelBuilder = new MongooseModelBuilder(schemaBuilder);
+const modelBuilder = makeModelBuilder();
 
 describe('E2E Table Update Controller', () => {
   beforeEach(async () => {

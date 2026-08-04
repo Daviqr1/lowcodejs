@@ -9,8 +9,8 @@ import type {
   Merge,
   Optional,
 } from '@application/core/entity.core';
-import { executeScript } from '@application/core/table/handler';
-import type { FieldDefinition } from '@application/core/table/types';
+import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
+import type { FieldDefinition } from '@application/services/script-execution/script-execution.types';
 import { getDataConnection } from '@config/database.config';
 
 import { ModelBuilderContractService } from './model-builder-contract.service';
@@ -28,7 +28,10 @@ type BuildTable = Optional<
 
 @Service()
 export default class MongooseModelBuilder implements ModelBuilderContractService {
-  constructor(private readonly schema: SchemaBuilderContractService) {}
+  constructor(
+    private readonly schema: SchemaBuilderContractService,
+    private readonly scriptExecution: ScriptExecutionContractService,
+  ) {}
 
   /**
    * Cache dos models dinamicos compilados, por `table._id`. Sem isto, cada
@@ -173,11 +176,15 @@ export default class MongooseModelBuilder implements ModelBuilderContractService
 
     // ===== ADICIONA OS MIDDLEWARES AQUI =====
 
+    // Os hooks do Mongoose sao `function` classica: `this` la dentro e o
+    // documento, nao o builder. O service e capturado no closure.
+    const { scriptExecution } = this;
+
     if (table?.methods?.beforeSave?.code) {
       schema.pre('save', async function (next): Promise<void> {
         let userAction: 'novo_registro' | 'editar_registro' = 'editar_registro';
         if (this.isNew) userAction = 'novo_registro';
-        const result = await executeScript({
+        const result = await scriptExecution.execute({
           code: table?.methods?.beforeSave?.code!,
           doc: this,
           tableSlug: table.slug,
@@ -208,7 +215,7 @@ export default class MongooseModelBuilder implements ModelBuilderContractService
       schema.post('save', async function (doc, next): Promise<void> {
         let userAction: 'novo_registro' | 'editar_registro' = 'editar_registro';
         if (doc.isNew) userAction = 'novo_registro';
-        const result = await executeScript({
+        const result = await scriptExecution.execute({
           code: table?.methods?.afterSave?.code!,
           doc,
           tableSlug: table.slug,
