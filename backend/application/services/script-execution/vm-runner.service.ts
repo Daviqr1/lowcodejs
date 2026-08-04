@@ -31,6 +31,12 @@ function parseErrorInfo(error: Error): Partial<ExecutionError> {
 /**
  * Determines the error type from an error object
  */
+const RUNTIME_ERROR_NAMES = new Set([
+  'TypeError',
+  'ReferenceError',
+  'RangeError',
+]);
+
 function getErrorType(error: Error): ExecutionError['type'] {
   const message = error.message.toLowerCase();
 
@@ -38,8 +44,10 @@ function getErrorType(error: Error): ExecutionError['type'] {
     return 'timeout';
   }
 
+  // O erro nasce no realm da VM, entao `instanceof` visto do host e sempre
+  // falso — a classificacao vai pelo `name`.
   if (
-    error instanceof SyntaxError ||
+    error.name === 'SyntaxError' ||
     message.includes('unexpected token') ||
     message.includes('unexpected identifier') ||
     message.includes('invalid or unexpected token')
@@ -47,15 +55,40 @@ function getErrorType(error: Error): ExecutionError['type'] {
     return 'syntax';
   }
 
-  if (
-    error instanceof TypeError ||
-    error instanceof ReferenceError ||
-    error instanceof RangeError
-  ) {
-    return 'runtime';
-  }
+  if (RUNTIME_ERROR_NAMES.has(error.name)) return 'runtime';
 
   return 'unknown';
+}
+
+/**
+ * Normaliza o que a VM lancou num Error do host. `instanceof Error` nao cruza
+ * o limite do realm, entao o objeto e reconhecido pelo formato — sem isso o
+ * erro original era descartado e a classificacao caia sempre em `unknown`.
+ */
+function toError(thrown: unknown): Error {
+  if (thrown instanceof Error) return thrown;
+
+  if (
+    typeof thrown === 'object' &&
+    thrown !== null &&
+    'message' in thrown &&
+    'name' in thrown
+  ) {
+    const error = new Error(String(thrown.message));
+    error.name = String(thrown.name);
+    if ('stack' in thrown) error.stack = String(thrown.stack);
+    return error;
+  }
+
+  return new Error(String(thrown));
+}
+
+/** Thenable de qualquer realm — `instanceof Promise` nao cruza o limite da VM. */
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+  if (!value) return false;
+  if (typeof value !== 'object' && typeof value !== 'function') return false;
+  if (!('then' in value)) return false;
+  return typeof value.then === 'function';
 }
 
 /**
@@ -101,8 +134,9 @@ export default class NodeVmRunnerService implements VmRunnerContractService {
         breakOnSigint: true,
       });
 
-      // Handle async execution with timeout
-      if (result instanceof Promise) {
+      // Espera a conclusao quando o codigo devolve uma promise. Sem isso a
+      // rejeicao escapa como unhandled e o script e reportado como sucesso.
+      if (isThenable(result)) {
         await Promise.race([result, createTimeoutPromise(timeout)]);
       }
 
@@ -113,8 +147,7 @@ export default class NodeVmRunnerService implements VmRunnerContractService {
 
       return { success: true, logs };
     } catch (error: unknown) {
-      let err: Error = new Error(String(error));
-      if (error instanceof Error) err = error;
+      const err = toError(error);
       const errorType = getErrorType(err);
       const errorInfo = parseErrorInfo(err);
 
@@ -141,8 +174,7 @@ export default class NodeVmRunnerService implements VmRunnerContractService {
       new vm.Script(code);
       return null;
     } catch (error: unknown) {
-      let err: Error = new Error(String(error));
-      if (error instanceof Error) err = error;
+      const err = toError(error);
       const errorInfo = parseErrorInfo(err);
       return {
         type: 'syntax',
