@@ -9,6 +9,7 @@ import FieldValidationService from '@application/services/field-validation/field
 import FieldValidationRuleRegistryService from '@application/services/field-validation/rule-registry.service';
 import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
+import BcryptPasswordService from '@application/services/password/password.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
@@ -35,7 +36,9 @@ describe('Table Row Create - TEXT_SHORT', () => {
     tableRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
     userRepository = new UserInMemoryRepository();
-    rowPasswordService = new BcryptRowPasswordService();
+    rowPasswordService = new BcryptRowPasswordService(
+      new BcryptPasswordService(),
+    );
 
     scriptExecutionService = new InMemoryScriptExecutionService();
 

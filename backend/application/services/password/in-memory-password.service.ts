@@ -22,4 +22,8 @@ export default class InMemoryPasswordService implements PasswordContractService 
   async compare(plain: string, hashed: string): Promise<boolean> {
     return hashed === `hashed_${plain}`;
   }
+
+  isHashed(value: string): boolean {
+    return value.startsWith('hashed_');
+  }
 }

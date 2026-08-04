@@ -10,6 +10,7 @@ import FieldValidationRuleRegistryService from '@application/services/field-vali
 import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import InMemoryKanbanCommentMentionService from '@application/services/kanban-comment-mention/in-memory-kanban-comment-mention.service';
+import BcryptPasswordService from '@application/services/password/password.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
@@ -35,7 +36,9 @@ describe('Table Row Update - TEXT_SHORT', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
-    rowPasswordService = new BcryptRowPasswordService();
+    rowPasswordService = new BcryptRowPasswordService(
+      new BcryptPasswordService(),
+    );
 
     scriptExecutionService = new InMemoryScriptExecutionService();
 

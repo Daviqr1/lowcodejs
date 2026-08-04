@@ -5,6 +5,7 @@ import { E_FIELD_FORMAT } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
+import BcryptPasswordService from '@application/services/password/password.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
@@ -51,7 +52,9 @@ describe('Group Row Update - TEXT_SHORT', () => {
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
-    rowPasswordService = new BcryptRowPasswordService();
+    rowPasswordService = new BcryptRowPasswordService(
+      new BcryptPasswordService(),
+    );
 
     sut = new GroupRowUpdateUseCase(
       tableRepository,
