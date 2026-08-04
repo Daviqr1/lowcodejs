@@ -6,12 +6,6 @@ import { Table as Model } from '@application/model/table.model';
 import { SearchContractService } from '@application/services/search/search-contract.service';
 import { getDataConnection } from '@config/database.config';
 
-function assertITable(value: Record<string, unknown>): asserts value is ITable {
-  if (!value['_id'] && !value['slug']) {
-    throw new Error('Invalid table object');
-  }
-}
-
 import type {
   TableContractRepository,
   TableCreatePayload,
@@ -22,6 +16,13 @@ import type {
 
 @Service()
 export default class TableMongooseRepository implements TableContractRepository {
+  private assertITable(
+    value: Record<string, unknown>,
+  ): asserts value is ITable {
+    if (!value['_id'] && !value['slug']) {
+      throw new Error('Invalid table object');
+    }
+  }
   constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [
@@ -161,7 +162,7 @@ export default class TableMongooseRepository implements TableContractRepository 
         let id = '';
         if (plain['_id']) id = String(plain['_id']);
         plain['_id'] = id;
-        assertITable(plain);
+        this.assertITable(plain);
         return plain;
       });
     }

@@ -15,13 +15,6 @@ import type {
   UpdateEntryInput,
 } from './senhas.types';
 
-function toId(value: unknown): string {
-  if (value && typeof value === 'object' && '_id' in value) {
-    return String(value._id);
-  }
-  return String(value);
-}
-
 type ChannelLean = {
   _id: unknown;
   owner: unknown;
@@ -31,6 +24,12 @@ type ChannelLean = {
 
 @Service()
 export default class SenhasEntryUseCase {
+  private toId(value: unknown): string {
+    if (value && typeof value === 'object' && '_id' in value) {
+      return String(value._id);
+    }
+    return String(value);
+  }
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly crypto: SecretCryptoContractService,
@@ -67,10 +66,10 @@ export default class SenhasEntryUseCase {
     },
     users: Map<string, IPasswordUserRef>,
   ): IPasswordEntry {
-    const authorId = toId(entry.author);
+    const authorId = this.toId(entry.author);
     return {
-      _id: toId(entry._id),
-      channel: toId(entry.channel),
+      _id: this.toId(entry._id),
+      channel: this.toId(entry.channel),
       title: entry.title,
       username: entry.username ?? null,
       url: entry.url ?? null,
@@ -114,7 +113,9 @@ export default class SenhasEntryUseCase {
         .sort({ updatedAt: -1 })
         .lean();
 
-      const users = await this.resolveUsers(entries.map((e) => toId(e.author)));
+      const users = await this.resolveUsers(
+        entries.map((e) => this.toId(e.author)),
+      );
       return right(entries.map((e) => this.serialize(e, users)));
     } catch (error) {
       console.error('[apps/senhas > entry.list][error]:', error);
@@ -229,7 +230,7 @@ export default class SenhasEntryUseCase {
         { new: true },
       ).lean();
 
-      const users = await this.resolveUsers([toId(updated!.author)]);
+      const users = await this.resolveUsers([this.toId(updated!.author)]);
       return right(this.serialize(updated!, users));
     } catch (error) {
       console.error('[apps/senhas > entry.update][error]:', error);

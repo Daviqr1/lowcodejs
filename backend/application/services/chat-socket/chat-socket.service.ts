@@ -40,49 +40,6 @@ type ClientMessage = {
   file?: FileData;
 };
 
-function getErrorMessage(err: unknown): string {
-  if (!(err instanceof Error)) return String(err);
-  const errWithCause: Merge<Error, { cause?: unknown }> = err;
-  const cause = errWithCause.cause;
-  let causeMsg = '';
-  if (cause instanceof Error) causeMsg = ` — causa: ${cause.message}`;
-  return err.message + causeMsg;
-}
-
-function formatChatUserError(err: unknown): string {
-  const raw = getErrorMessage(err).toLowerCase();
-
-  if (
-    raw.includes('429') ||
-    raw.includes('quota') ||
-    raw.includes('rate limit')
-  ) {
-    return 'Cota ou limite de requisições da API do provedor LLM esgotado. Aguarde alguns minutos, verifique o billing do provedor ou troque o provedor/modelo em Configurações → Assistente IA.';
-  }
-
-  if (
-    raw.includes('401') ||
-    raw.includes('403') ||
-    raw.includes('invalid api key') ||
-    raw.includes('incorrect api key') ||
-    raw.includes('authentication')
-  ) {
-    return 'Chave da API inválida ou sem permissão. Verifique a chave em Configurações → Assistente IA.';
-  }
-
-  if (
-    raw.includes('timeout') ||
-    raw.includes('econnrefused') ||
-    raw.includes('fetch failed')
-  ) {
-    return 'Não foi possível conectar ao provedor LLM. Verifique URL, rede e se o serviço (ex.: Ollama) está rodando.';
-  }
-
-  const full = getErrorMessage(err);
-  if (full.length > 400) return `${full.slice(0, 400)}…`;
-  return full;
-}
-
 class NodeHttpTransport implements Transport {
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -204,36 +161,78 @@ class NodeHttpTransport implements Transport {
   }
 }
 
-async function connectMcpClient(
-  mcpUrl: string,
-  mcpAuthToken: string | null,
-  mcpLowcodeApiUrl: string | null,
-  accessToken: string,
-): Promise<{
-  client: Client;
-  tools: Awaited<ReturnType<Client['listTools']>>['tools'];
-}> {
-  const headers: Record<string, string> = {
-    'X-Access-Token': accessToken,
-  };
-  if (mcpAuthToken) {
-    headers['Authorization'] = `Bearer ${mcpAuthToken}`;
-  }
-
-  const lowcodeApiUrl =
-    mcpLowcodeApiUrl?.trim().replace(/\/$/, '') ||
-    Env.APP_SERVER_URL.replace(/\/$/, '');
-  headers['X-Lowcode-Api-Url'] = lowcodeApiUrl;
-
-  const transport = new NodeHttpTransport(new URL(mcpUrl), headers);
-  const client = new Client({ name: 'lowcodejs-chat', version: '1.0.0' });
-  await client.connect(transport);
-  const { tools } = await client.listTools();
-  return { client, tools };
-}
-
 @Service()
 export default class ChatSocketService implements ChatSocketContractService {
+  private getErrorMessage(err: unknown): string {
+    if (!(err instanceof Error)) return String(err);
+    const errWithCause: Merge<Error, { cause?: unknown }> = err;
+    const cause = errWithCause.cause;
+    let causeMsg = '';
+    if (cause instanceof Error) causeMsg = ` — causa: ${cause.message}`;
+    return err.message + causeMsg;
+  }
+
+  private formatChatUserError(err: unknown): string {
+    const raw = this.getErrorMessage(err).toLowerCase();
+
+    if (
+      raw.includes('429') ||
+      raw.includes('quota') ||
+      raw.includes('rate limit')
+    ) {
+      return 'Cota ou limite de requisições da API do provedor LLM esgotado. Aguarde alguns minutos, verifique o billing do provedor ou troque o provedor/modelo em Configurações → Assistente IA.';
+    }
+
+    if (
+      raw.includes('401') ||
+      raw.includes('403') ||
+      raw.includes('invalid api key') ||
+      raw.includes('incorrect api key') ||
+      raw.includes('authentication')
+    ) {
+      return 'Chave da API inválida ou sem permissão. Verifique a chave em Configurações → Assistente IA.';
+    }
+
+    if (
+      raw.includes('timeout') ||
+      raw.includes('econnrefused') ||
+      raw.includes('fetch failed')
+    ) {
+      return 'Não foi possível conectar ao provedor LLM. Verifique URL, rede e se o serviço (ex.: Ollama) está rodando.';
+    }
+
+    const full = this.getErrorMessage(err);
+    if (full.length > 400) return `${full.slice(0, 400)}…`;
+    return full;
+  }
+
+  private async connectMcpClient(
+    mcpUrl: string,
+    mcpAuthToken: string | null,
+    mcpLowcodeApiUrl: string | null,
+    accessToken: string,
+  ): Promise<{
+    client: Client;
+    tools: Awaited<ReturnType<Client['listTools']>>['tools'];
+  }> {
+    const headers: Record<string, string> = {
+      'X-Access-Token': accessToken,
+    };
+    if (mcpAuthToken) {
+      headers['Authorization'] = `Bearer ${mcpAuthToken}`;
+    }
+
+    const lowcodeApiUrl =
+      mcpLowcodeApiUrl?.trim().replace(/\/$/, '') ||
+      Env.APP_SERVER_URL.replace(/\/$/, '');
+    headers['X-Lowcode-Api-Url'] = lowcodeApiUrl;
+
+    const transport = new NodeHttpTransport(new URL(mcpUrl), headers);
+    const client = new Client({ name: 'lowcodejs-chat', version: '1.0.0' });
+    await client.connect(transport);
+    const { tools } = await client.listTools();
+    return { client, tools };
+  }
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
@@ -321,7 +320,7 @@ export default class ChatSocketService implements ChatSocketContractService {
           message: 'Conectando ao servidor MCP...',
         });
 
-        const { client, tools: mcpTools } = await connectMcpClient(
+        const { client, tools: mcpTools } = await this.connectMcpClient(
           mcpUrl,
           mcpAuthToken,
           mcpLowcodeApiUrl,
@@ -405,7 +404,7 @@ export default class ChatSocketService implements ChatSocketContractService {
             }
           } catch (err) {
             console.error('Erro no processamento:', err);
-            const errorMsg = formatChatUserError(err);
+            const errorMsg = this.formatChatUserError(err);
             try {
               socket.emit(E_CHAT_EVENT.MESSAGE, {
                 content: `Não foi possível concluir a resposta: ${errorMsg}`,
@@ -428,7 +427,7 @@ export default class ChatSocketService implements ChatSocketContractService {
         });
       } catch (err) {
         console.error('Erro ao inicializar chat socket:', err);
-        const errorMsg = getErrorMessage(err);
+        const errorMsg = this.getErrorMessage(err);
         try {
           socket.emit(E_CHAT_EVENT.ERROR, {
             message: `Erro no servidor: ${errorMsg}`,

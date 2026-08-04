@@ -47,13 +47,6 @@ import type {
  * interna é segura porque guardada por checagem de objeto — evita espalhar
  * `as` pelos acessos ao pacote importado.
  */
-function toRecord(value: unknown): Record<string, unknown> {
-  if (value !== null && typeof value === 'object') {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    return value as Record<string, unknown>;
-  }
-  return {};
-}
 
 type ExportedField = {
   name: string;
@@ -139,6 +132,13 @@ type NormalizedPackage = {
 
 @Service()
 export default class ImportTableUseCase {
+  private toRecord(value: unknown): Record<string, unknown> {
+    if (value !== null && typeof value === 'object') {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      return value as Record<string, unknown>;
+    }
+    return {};
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
@@ -162,8 +162,8 @@ export default class ImportTableUseCase {
         );
       }
 
-      const content = toRecord(payload.fileContent);
-      const header = toRecord(content.header);
+      const content = this.toRecord(payload.fileContent);
+      const header = this.toRecord(content.header);
 
       if (header.platform !== 'lowcodejs') {
         return left(
@@ -788,7 +788,7 @@ export default class ImportTableUseCase {
       if (!Array.isArray(sub)) continue;
       for (const subRow of sub) {
         if (subRow && typeof subRow === 'object') {
-          renameKeys(toRecord(subRow), subRewrite);
+          renameKeys(this.toRecord(subRow), subRewrite);
         }
       }
     }

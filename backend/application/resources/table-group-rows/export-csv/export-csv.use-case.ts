@@ -22,26 +22,25 @@ import type { GroupRowExportCsvPayload } from './export-csv.validator';
 
 type Response = Either<HTTPException, Readable>;
 
-function buildFields(groupFields: IField[]): {
-  csvFields: CsvField[];
-  exportableFields: IField[];
-} {
-  const exportableFields = groupFields.filter(
-    (f) => !f.native || f.slug === '_id' || f.slug === 'creator',
-  );
-
-  const csvFields: CsvField[] = exportableFields.map((field) => ({
-    label: field.name,
-    value: field.slug,
-  }));
-
-  return { csvFields, exportableFields };
-}
-
 type Payload = Merge<GroupRowExportCsvPayload, { __actorUserId?: string }>;
 
 @Service()
 export default class GroupRowExportCsvUseCase {
+  private buildFields(groupFields: IField[]): {
+    csvFields: CsvField[];
+    exportableFields: IField[];
+  } {
+    const exportableFields = groupFields.filter(
+      (f) => !f.native || f.slug === '_id' || f.slug === 'creator',
+    );
+
+    const csvFields: CsvField[] = exportableFields.map((field) => ({
+      label: field.name,
+      value: field.slug,
+    }));
+
+    return { csvFields, exportableFields };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -121,7 +120,7 @@ export default class GroupRowExportCsvUseCase {
         `[group-rows > export-csv] table=${table.slug} group=${payload.groupSlug} count=${items.length}`,
       );
 
-      const { csvFields, exportableFields } = buildFields(groupFields);
+      const { csvFields, exportableFields } = this.buildFields(groupFields);
 
       const csvRows = items.map((item) => {
         const out: Record<string, unknown> = {};

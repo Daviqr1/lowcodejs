@@ -29,21 +29,20 @@ type ValidationError = {
 
 // `error` no handler é Record<string, unknown>; narra `error.validation` (AJV)
 // para ValidationError[] sem asserção.
-function toValidationErrors(value: unknown): ValidationError[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (item): item is ValidationError =>
-      !!item &&
-      typeof item === 'object' &&
-      'message' in item &&
-      'instancePath' in item,
-  );
-}
-
 import { ErrorHandlerContractService } from './error-handler-contract.service';
 
 @Service()
 export default class ErrorHandlerService implements ErrorHandlerContractService {
+  private toValidationErrors(value: unknown): ValidationError[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter(
+      (item): item is ValidationError =>
+        !!item &&
+        typeof item === 'object' &&
+        'message' in item &&
+        'instancePath' in item,
+    );
+  }
   handle(
     error: unknown,
     request: FastifyRequest,
@@ -86,7 +85,7 @@ export default class ErrorHandlerService implements ErrorHandlerContractService 
     }
 
     if (fastifyError.code === 'FST_ERR_VALIDATION') {
-      const validation = toValidationErrors(fastifyError.validation);
+      const validation = this.toValidationErrors(fastifyError.validation);
 
       const errors = validation.reduce(
         (acc: Record<string, string>, err: ValidationError) => {

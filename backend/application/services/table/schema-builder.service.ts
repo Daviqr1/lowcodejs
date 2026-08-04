@@ -18,12 +18,12 @@ import { SchemaBuilderContractService } from './schema-builder-contract.service'
 
 // Type-guard: estreita uma chave arbitrária para `keyof` do objeto, permitindo o
 // index-access sem asserção quando a presença já foi garantida por guarda.
-function hasKey<T extends object>(obj: T, key: PropertyKey): key is keyof T {
-  return key in obj;
-}
 
 @Service()
 export default class MongooseSchemaBuilder implements SchemaBuilderContractService {
+  private hasKey<T extends object>(obj: T, key: PropertyKey): key is keyof T {
+    return key in obj;
+  }
   constructor(private readonly fieldGroup: FieldGroupBuilderContractService) {}
 
   private static readonly FieldTypeMapper: Record<
@@ -269,7 +269,7 @@ export default class MongooseSchemaBuilder implements SchemaBuilderContractServi
 
     // Os guardas acima cobrem `!(field.type in mapper)`; hasKey estreita a chave
     // para o index-access sem asserção.
-    if (hasKey(mapper, field.type)) return mapper[field.type];
+    if (this.hasKey(mapper, field.type)) return mapper[field.type];
     return {
       [field.slug]: {
         type: FieldTypeMapper[field.type] || 'String',
