@@ -13,11 +13,11 @@ import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
 import { FieldCreatePayload } from '@application/repositories/field/field-contract.repository';
 import { TableCreatePayload } from '@application/repositories/table/table-contract.repository';
-import MongooseSchemaBuilder from '@application/services/table/schema-builder.service';
 import { kernel } from '@start/kernel';
 import { createAuthenticatedUser } from '@test/helpers/auth.helper';
+import { makeSchemaBuilder } from '@test/helpers/builder.helper';
 
-const schemaBuilder = new MongooseSchemaBuilder();
+const schemaBuilder = makeSchemaBuilder();
 
 describe('E2E Table Field Create Controller', () => {
   beforeEach(async () => {

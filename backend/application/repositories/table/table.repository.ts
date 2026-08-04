@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { ITable } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Table as Model } from '@application/model/table.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 import { getDataConnection } from '@config/database.config';
 
 function assertITable(value: Record<string, unknown>): asserts value is ITable {
@@ -22,7 +22,7 @@ import type {
 
 @Service()
 export default class TableMongooseRepository implements TableContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [
     { path: 'logo' },
@@ -53,7 +53,7 @@ export default class TableMongooseRepository implements TableContractRepository 
 
     if (payload?.search) {
       where.name = {
-        $regex: this.query.normalize(payload.search),
+        $regex: this.search.normalize(payload.search),
         $options: 'i',
       };
     }

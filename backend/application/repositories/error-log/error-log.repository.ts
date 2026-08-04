@@ -1,6 +1,7 @@
 import { Service } from 'fastify-decorators';
 
 import { ErrorLog } from '@application/model/error-log.model';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import {
   ErrorLogContractRepository,
@@ -33,7 +34,10 @@ type ErrorLogLean = {
   updatedAt: Date;
 };
 
-function buildFilter(payload: ErrorLogQueryPayload): Record<string, unknown> {
+function buildFilter(
+  payload: ErrorLogQueryPayload,
+  search: SearchContractService,
+): Record<string, unknown> {
   // Nada anônimo: ignora qualquer log sem usuário (inclusive registros legados
   // gravados antes do hook passar a exigir usuário autenticado).
   const filter: Record<string, unknown> = { user: { $ne: null } };
@@ -43,7 +47,7 @@ function buildFilter(payload: ErrorLogQueryPayload): Record<string, unknown> {
   }
 
   if (payload.search) {
-    filter.message = { $regex: payload.search, $options: 'i' };
+    filter.message = { $regex: search.escape(payload.search), $options: 'i' };
   }
 
   const createdAt: Record<string, Date> = {};
@@ -91,6 +95,10 @@ function toEntity(doc: ErrorLogLean): IErrorLog {
 
 @Service()
 export default class ErrorLogMongooseRepository extends ErrorLogContractRepository {
+  constructor(private readonly search: SearchContractService) {
+    super();
+  }
+
   async create(payload: ErrorLogCreatePayload): Promise<void> {
     await ErrorLog.create({
       statusCode: payload.statusCode,
@@ -111,7 +119,7 @@ export default class ErrorLogMongooseRepository extends ErrorLogContractReposito
       sort = payload.sort;
     }
 
-    const docs = await ErrorLog.find(buildFilter(payload))
+    const docs = await ErrorLog.find(buildFilter(payload, this.search))
       .populate('user', 'name email')
       .sort(sort)
       .skip(skip)
@@ -122,7 +130,7 @@ export default class ErrorLogMongooseRepository extends ErrorLogContractReposito
   }
 
   async count(payload: ErrorLogQueryPayload): Promise<number> {
-    return ErrorLog.countDocuments(buildFilter(payload));
+    return ErrorLog.countDocuments(buildFilter(payload, this.search));
   }
 
   async setResolved(id: string, resolved: boolean): Promise<boolean> {

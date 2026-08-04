@@ -8,7 +8,7 @@ import {
   type TStorageMigrationStatus,
 } from '@application/core/entity.core';
 import { Storage as Model } from '@application/model/storage.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   StorageContractRepository,
@@ -20,7 +20,7 @@ import type {
 
 @Service()
 export default class StorageMongooseRepository implements StorageContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private buildWhereClause(
     payload?: StorageQueryPayload,
@@ -31,7 +31,7 @@ export default class StorageMongooseRepository implements StorageContractReposit
 
     if (payload?.search) {
       where.originalName = {
-        $regex: this.query.normalize(payload.search),
+        $regex: this.search.normalize(payload.search),
         $options: 'i',
       };
     }

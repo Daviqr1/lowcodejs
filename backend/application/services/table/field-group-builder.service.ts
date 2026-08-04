@@ -11,6 +11,7 @@ import { E_FIELD_TYPE } from '@application/core/entity.core';
 import { Storage } from '@application/model/storage.model';
 import { UserGroup } from '@application/model/user-group.model';
 import { User } from '@application/model/user.model';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
 
@@ -31,20 +32,7 @@ const GROUP_POPULATE_BY_FIELD_TYPE: Partial<
 
 @Service()
 export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContractService {
-  // Duplicado do QueryBuilder de proposito: o QueryBuilder delega a este seam,
-  // entao injetar o QueryBuilder aqui criaria ciclo de DI. A funcao e pura e
-  // estavel (escape + classes de acentos para busca case/acento-insensitive).
-  private normalize(search: string): string {
-    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return escapedSearch
-      .replace(/a/gi, '[aáàâãä]')
-      .replace(/e/gi, '[eéèêë]')
-      .replace(/i/gi, '[iíìîï]')
-      .replace(/o/gi, '[oóòôõö]')
-      .replace(/u/gi, '[uúùûü]')
-      .replace(/c/gi, '[cç]')
-      .replace(/n/gi, '[nñ]');
-  }
+  constructor(private readonly search: SearchContractService) {}
 
   buildEmbeddedSchema(
     field: IField,
@@ -129,7 +117,7 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           groupField.type === E_FIELD_TYPE.TEXT_LONG
         ) {
           filter[embeddedPath] = {
-            $regex: this.normalize(String(payload[payloadKey])),
+            $regex: this.search.normalize(String(payload[payloadKey])),
             $options: 'i',
           };
         }
@@ -198,7 +186,7 @@ export default class MongooseFieldGroupBuilder implements FieldGroupBuilderContr
           const embeddedPath = `${field.slug}.${groupField.slug}`;
           searchQuery.push({
             [embeddedPath]: {
-              $regex: this.normalize(String(search)),
+              $regex: this.search.normalize(String(search)),
               $options: 'i',
             },
           });

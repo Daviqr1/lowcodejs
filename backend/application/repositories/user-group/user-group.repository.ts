@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 import { E_ROLE, type IGroup } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { UserGroup as Model } from '@application/model/user-group.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   UserGroupContractRepository,
@@ -15,7 +15,7 @@ import type {
 
 @Service()
 export default class UserGroupMongooseRepository implements UserGroupContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [{ path: 'permissions' }];
 
@@ -37,11 +37,14 @@ export default class UserGroupMongooseRepository implements UserGroupContractRep
     if (payload?.search) {
       where.$or = [
         {
-          name: { $regex: this.query.normalize(payload.search), $options: 'i' },
+          name: {
+            $regex: this.search.normalize(payload.search),
+            $options: 'i',
+          },
         },
         {
           description: {
-            $regex: this.query.normalize(payload.search),
+            $regex: this.search.normalize(payload.search),
             $options: 'i',
           },
         },

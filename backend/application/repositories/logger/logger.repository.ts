@@ -2,7 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { FindOptions, ILogger } from '@application/core/entity.core';
 import { Logger as Model } from '@application/model/logger.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import {
   LoggerContractRepository,
@@ -13,7 +13,7 @@ import {
 
 @Service()
 export default class LoggerMongooseRepository implements LoggerContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [
     { path: 'user' },
@@ -46,7 +46,7 @@ export default class LoggerMongooseRepository implements LoggerContractRepositor
     }
 
     if (payload?.search) {
-      const term = this.query.normalize(payload.search);
+      const term = this.search.normalize(payload.search);
       where.$or = [
         { url: { $regex: term, $options: 'i' } },
         { object_id: { $regex: term, $options: 'i' } },

@@ -6,8 +6,7 @@ import {
   type IField,
   type IFieldConfigurationRelationship,
 } from '@application/core/entity.core';
-
-import MongooseSchemaBuilder from './schema-builder.service';
+import { makeSchemaBuilder } from '@test/helpers/builder.helper';
 
 type RelationshipFieldOverrides = {
   multiple: boolean;
@@ -50,7 +49,7 @@ function makeRelationshipField(overrides: RelationshipFieldOverrides): IField {
 }
 
 describe('MongooseSchemaBuilder — RELATIONSHIP storage role', () => {
-  const builder = new MongooseSchemaBuilder();
+  const builder = makeSchemaBuilder();
 
   it('OWNS_FK (1:1 source) declara FK single com ref, nao array', () => {
     const field = makeRelationshipField({

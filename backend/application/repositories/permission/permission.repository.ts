@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IPermission } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Permission as Model } from '@application/model/permission.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   PermissionContractRepository,
@@ -14,7 +14,7 @@ import type {
 
 @Service()
 export default class PermissionMongooseRepository implements PermissionContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private buildWhereClause(
     payload?: PermissionQueryPayload,
@@ -23,7 +23,7 @@ export default class PermissionMongooseRepository implements PermissionContractR
 
     if (payload?.search) {
       where.name = {
-        $regex: this.query.normalize(payload.search),
+        $regex: this.search.normalize(payload.search),
         $options: 'i',
       };
     }

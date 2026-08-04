@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 import { E_ROLE, type IUser } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { User as Model } from '@application/model/user.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   UserContractRepository,
@@ -15,7 +15,7 @@ import type {
 
 @Service()
 export default class UserMongooseRepository implements UserContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [
     { path: 'group', populate: { path: 'permissions' } },
@@ -64,11 +64,14 @@ export default class UserMongooseRepository implements UserContractRepository {
     if (payload?.search) {
       where.$or = [
         {
-          name: { $regex: this.query.normalize(payload.search), $options: 'i' },
+          name: {
+            $regex: this.search.normalize(payload.search),
+            $options: 'i',
+          },
         },
         {
           email: {
-            $regex: this.query.normalize(payload.search),
+            $regex: this.search.normalize(payload.search),
             $options: 'i',
           },
         },

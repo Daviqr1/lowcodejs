@@ -3,7 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { IField } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Field as Model } from '@application/model/field.model';
-import { SearchNormalizer } from '@application/services/table/search-normalizer';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   FieldContractRepository,
@@ -14,6 +14,8 @@ import type {
 
 @Service()
 export default class FieldMongooseRepository implements FieldContractRepository {
+  constructor(private readonly search: SearchContractService) {}
+
   private buildWhereClause(
     payload?: FieldQueryPayload,
   ): Record<string, unknown> {
@@ -27,7 +29,7 @@ export default class FieldMongooseRepository implements FieldContractRepository 
 
     if (payload?.search) {
       where.name = {
-        $regex: SearchNormalizer.normalize(payload.search),
+        $regex: this.search.normalize(payload.search),
         $options: 'i',
       };
     }

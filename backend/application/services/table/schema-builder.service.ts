@@ -14,7 +14,6 @@ import {
 import { RelationshipStorage } from '@application/services/relationship/relationship.service';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
-import MongooseFieldGroupBuilder from './field-group-builder.service';
 import { SchemaBuilderContractService } from './schema-builder-contract.service';
 
 // Type-guard: estreita uma chave arbitrária para `keyof` do objeto, permitindo o
@@ -25,13 +24,7 @@ function hasKey<T extends object>(obj: T, key: PropertyKey): key is keyof T {
 
 @Service()
 export default class MongooseSchemaBuilder implements SchemaBuilderContractService {
-  // Seam puro/stateless da fatia FIELD_GROUP. Em producao o DI injeta o impl
-  // registrado; o default mantem a construcao manual (e2e specs) funcionando sem
-  // wiring extra. Como o seam nao tem estado nem dependencias, ambos sao
-  // equivalentes em comportamento.
-  constructor(
-    private readonly fieldGroup: FieldGroupBuilderContractService = new MongooseFieldGroupBuilder(),
-  ) {}
+  constructor(private readonly fieldGroup: FieldGroupBuilderContractService) {}
 
   private static readonly FieldTypeMapper: Record<
     keyof typeof E_FIELD_TYPE,

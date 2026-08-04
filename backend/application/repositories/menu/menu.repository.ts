@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import type { IMenu } from '@application/core/entity.core';
 import type { FindOptions } from '@application/core/entity.core';
 import { Menu as Model } from '@application/model/menu.model';
-import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import type {
   MenuContractRepository,
@@ -16,7 +16,7 @@ import type {
 
 @Service()
 export default class MenuMongooseRepository implements MenuContractRepository {
-  constructor(private readonly query: QueryBuilderContractService) {}
+  constructor(private readonly search: SearchContractService) {}
 
   private readonly populateOptions = [
     { path: 'table' },
@@ -42,10 +42,16 @@ export default class MenuMongooseRepository implements MenuContractRepository {
     if (payload?.search) {
       where.$or = [
         {
-          name: { $regex: this.query.normalize(payload.search), $options: 'i' },
+          name: {
+            $regex: this.search.normalize(payload.search),
+            $options: 'i',
+          },
         },
         {
-          slug: { $regex: this.query.normalize(payload.search), $options: 'i' },
+          slug: {
+            $regex: this.search.normalize(payload.search),
+            $options: 'i',
+          },
         },
       ];
     }

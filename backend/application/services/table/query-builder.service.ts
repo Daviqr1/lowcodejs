@@ -8,11 +8,11 @@ import type {
   IRow,
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
+import { SearchContractService } from '@application/services/search/search-contract.service';
 
 import { FieldGroupBuilderContractService } from './field-group-builder-contract.service';
 import { QueryBuilderContractService } from './query-builder-contract.service';
 import { RelationshipBuilderContractService } from './relationship-builder-contract.service';
-import { SearchNormalizer } from './search-normalizer';
 
 export type Query = Record<string, unknown>;
 
@@ -32,10 +32,11 @@ export default class MongooseQueryBuilder implements QueryBuilderContractService
   constructor(
     private readonly fieldGroup: FieldGroupBuilderContractService,
     private readonly relationship: RelationshipBuilderContractService,
+    private readonly search: SearchContractService,
   ) {}
 
   normalize(search: string): string {
-    return SearchNormalizer.normalize(search);
+    return this.search.normalize(search);
   }
 
   async build(
