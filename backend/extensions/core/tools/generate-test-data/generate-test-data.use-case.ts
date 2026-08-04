@@ -7,15 +7,13 @@ import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 
-import {
-  BATCH_SIZE,
-  buildEstimate,
-  estimateRowSizeBytes,
-  resolveRealTargetQuantity,
-  type TestDataEstimate,
-} from './generate-test-data.estimate';
 import type { GenerateTestDataPayload } from './generate-test-data.types';
 import { GenerationJobRegistryContractService } from './generation-job-registry-contract.service';
+import {
+  BATCH_SIZE,
+  type TestDataEstimate,
+  TestDataEstimateContractService,
+} from './test-data-estimate-contract.service';
 
 type MockField = {
   native?: boolean;
@@ -32,6 +30,7 @@ export default class GenerateTestDataUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly modelBuilder: ModelBuilderContractService,
     private readonly registry: GenerationJobRegistryContractService,
+    private readonly estimateService: TestDataEstimateContractService,
   ) {}
 
   /**
@@ -50,7 +49,7 @@ export default class GenerateTestDataUseCase {
         );
       }
 
-      return right(buildEstimate(table, payload.quantity));
+      return right(this.estimateService.buildEstimate(table, payload.quantity));
     } catch (error) {
       console.error('[generate-test-data][estimate][error]:', error);
       return left(
@@ -127,8 +126,11 @@ export default class GenerateTestDataUseCase {
     // Teto de inserção física derivado do orçamento de bytes (disco/Mongo) e do
     // tamanho médio da linha desta tabela — em vez de um número fixo. Acima do
     // teto, insere o máximo real possível e simula o progresso restante até 100%.
-    const rowBytes = estimateRowSizeBytes(table);
-    const realTargetQuantity = resolveRealTargetQuantity(rowBytes, quantity);
+    const rowBytes = this.estimateService.estimateRowSizeBytes(table);
+    const realTargetQuantity = this.estimateService.resolveRealTargetQuantity(
+      rowBytes,
+      quantity,
+    );
 
     // 1. Trata o primeiro campo RELATIONSHIP (se houver) gerando registros relacionados.
     const relFields = (table.fields || []).filter(

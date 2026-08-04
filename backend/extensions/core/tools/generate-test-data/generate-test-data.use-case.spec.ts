@@ -4,19 +4,16 @@ import { E_TABLE_STYLE } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import type { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 
-import {
-  buildEstimate,
-  estimateRowSizeBytes,
-  HARD_REAL_CAP,
-  resolveRealTargetQuantity,
-} from './generate-test-data.estimate';
 import GenerateTestDataUseCase from './generate-test-data.use-case';
 import GenerationJobRegistryService from './generation-job-registry.service';
+import { HARD_REAL_CAP } from './test-data-estimate-contract.service';
+import TestDataEstimateService from './test-data-estimate.service';
 
 describe('Generate Test Data Use Case', () => {
   let tableRepository: TableInMemoryRepository;
   let modelBuilder: ModelBuilderContractService;
   let registry: GenerationJobRegistryService;
+  const estimateService = new TestDataEstimateService();
   let sut: GenerateTestDataUseCase;
 
   beforeEach(() => {
@@ -30,7 +27,12 @@ describe('Generate Test Data Use Case', () => {
       }),
     } as unknown as ModelBuilderContractService;
     registry = new GenerationJobRegistryService();
-    sut = new GenerateTestDataUseCase(tableRepository, modelBuilder, registry);
+    sut = new GenerateTestDataUseCase(
+      tableRepository,
+      modelBuilder,
+      registry,
+      estimateService,
+    );
   });
 
   it('deve retornar TABLE_NOT_FOUND se a tabela alvo não existir', async () => {
@@ -122,8 +124,8 @@ describe('Generate Test Data Use Case', () => {
 
   describe('helpers de estimativa', () => {
     it('estimateRowSizeBytes cresce com campos não-nativos', () => {
-      const empty = estimateRowSizeBytes({ fields: [] });
-      const withFields = estimateRowSizeBytes({
+      const empty = estimateService.estimateRowSizeBytes({ fields: [] });
+      const withFields = estimateService.estimateRowSizeBytes({
         fields: [
           { type: 'TEXT_SHORT', format: 'EMAIL', slug: 'email' },
           { type: 'TEXT_LONG', slug: 'bio' },
@@ -138,7 +140,7 @@ describe('Generate Test Data Use Case', () => {
       // Orçamento minúsculo: 1 KB. Com ~250 bytes/linha cabem poucas linhas.
       process.env.GENERATE_TEST_DATA_MAX_BYTES = String(1024);
       try {
-        const cap = resolveRealTargetQuantity(250, 1_000_000);
+        const cap = estimateService.resolveRealTargetQuantity(250, 1_000_000);
         expect(cap).toBeLessThan(1_000_000);
         expect(cap).toBeGreaterThanOrEqual(1);
       } finally {
@@ -148,7 +150,7 @@ describe('Generate Test Data Use Case', () => {
     });
 
     it('buildEstimate não simula quando a quantidade cabe no teto', () => {
-      const estimate = buildEstimate({ fields: [] }, 100);
+      const estimate = estimateService.buildEstimate({ fields: [] }, 100);
       expect(estimate.realTargetQuantity).toBe(100);
       expect(estimate.willSimulate).toBe(false);
       expect(estimate.simulatedQuantity).toBe(0);
