@@ -20,7 +20,8 @@ import { StorageMigrationWorkerContractService } from '@application/services/sto
 import StorageMigrationWorkerService from '@application/services/storage-migration/storage-migration-worker.service';
 import { CsvImportSocketContractService } from '@application/services/csv-import/csv-import-socket-contract.service';
 import CsvImportSocketService from '@application/services/csv-import/csv-import-socket.service';
-import { initTableImportSocket } from '@extensions/core/tools/tables-import-export/import-table.socket';
+import { ImportTableSocketContractService } from '@extensions/core/tools/tables-import-export/import-table-socket-contract.service';
+import ImportTableSocketService from '@extensions/core/tools/tables-import-export/import-table-socket.service';
 import { CsvImportWorkerContractService } from '@application/services/csv-import/csv-import-worker-contract.service';
 import CsvImportWorkerService from '@application/services/csv-import/csv-import-worker.service';
 import { MongooseConnect } from '@config/database.config';
@@ -131,7 +132,9 @@ async function start(): Promise<void> {
     ).init(io, jwtDecode);
     console.info('Socket.IO notifications namespace initialized');
 
-    initTableImportSocket(io, jwtDecode);
+    getInstanceByToken<ImportTableSocketContractService>(
+      ImportTableSocketService,
+    ).init(io, jwtDecode);
     console.info('Socket.IO table-import namespace initialized');
 
     await sweepStaleMigrations();

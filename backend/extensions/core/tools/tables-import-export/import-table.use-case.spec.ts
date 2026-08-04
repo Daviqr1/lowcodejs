@@ -14,6 +14,7 @@ import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-
 import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
 import ImportTableUseCase from './import-table.use-case';
+import InMemoryImportTableSocketService from './in-memory-import-table-socket.service';
 
 vi.mock('slugify', () => ({
   default: vi.fn((name: string) => name.toLowerCase().replace(/\s+/g, '-')),
@@ -108,6 +109,7 @@ describe('Import Table Use Case', () => {
       menuInMemoryRepository,
       schemaBuilder,
       new SlugService(),
+      new InMemoryImportTableSocketService(),
     );
   });
 

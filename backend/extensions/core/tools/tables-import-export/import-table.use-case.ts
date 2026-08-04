@@ -32,10 +32,10 @@ import { SlugContractService } from '@application/services/slug/slug-contract.se
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import {
-  emitTableImportEvent,
   TABLE_IMPORT_EVENT,
   type TableImportPhase,
-} from './import-table.socket';
+} from './import-table-socket-contract.service';
+import { ImportTableSocketContractService } from './import-table-socket-contract.service';
 import type {
   ImportedTableSummary,
   ImportTableResponse,
@@ -146,6 +146,7 @@ export default class ImportTableUseCase {
     private readonly menuRepository: MenuContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
     private readonly slugService: SlugContractService,
+    private readonly importSocket: ImportTableSocketContractService,
   ) {}
 
   async execute(
@@ -399,7 +400,7 @@ export default class ImportTableUseCase {
       );
 
       if (payload.jobId) {
-        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
+        this.importSocket.emit(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
           job_id: payload.jobId,
           importedFields,
           importedRows: importedRowCount,
@@ -419,7 +420,7 @@ export default class ImportTableUseCase {
     } catch (error) {
       console.error('[tools > import-table][error]:', error);
       if (payload.jobId) {
-        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
+        this.importSocket.emit(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
           job_id: payload.jobId,
           message: 'Erro interno ao importar. Nenhuma alteração foi concluída.',
         });
@@ -446,7 +447,7 @@ export default class ImportTableUseCase {
     failed: number,
   ): void {
     if (!payload.jobId) return;
-    emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.PROGRESS, {
+    this.importSocket.emit(payload.ownerId, TABLE_IMPORT_EVENT.PROGRESS, {
       job_id: payload.jobId,
       phase,
       processed,
@@ -591,7 +592,7 @@ export default class ImportTableUseCase {
       }));
 
       if (payload.jobId) {
-        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
+        this.importSocket.emit(payload.ownerId, TABLE_IMPORT_EVENT.COMPLETED, {
           job_id: payload.jobId,
           importedFields: 0,
           importedRows: importedRowCount,
@@ -611,7 +612,7 @@ export default class ImportTableUseCase {
     } catch (error) {
       console.error('[tools > import-table][data-only][error]:', error);
       if (payload.jobId) {
-        emitTableImportEvent(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
+        this.importSocket.emit(payload.ownerId, TABLE_IMPORT_EVENT.ERROR, {
           job_id: payload.jobId,
           message: 'Erro interno ao importar os dados.',
         });
