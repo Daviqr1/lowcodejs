@@ -18,6 +18,16 @@ export abstract class HttpResponseContractService {
    * com `page: 1` maior que `lastPage: 0` (o front ja compensava isso na mao em
    * `pagination.tsx`). `firstPage` continua `0` quando nao ha resultado.
    */
+  /**
+   * Resposta de download CSV: os seis controllers de export repetiam os mesmos
+   * tres headers antes do `send`.
+   */
+  abstract sendCsv(
+    response: FastifyReply,
+    filename: string,
+    body: unknown,
+  ): FastifyReply;
+
   abstract paginationMeta(
     total: number,
     payload: { page: number; perPage: number },

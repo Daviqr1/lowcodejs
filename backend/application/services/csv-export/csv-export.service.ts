@@ -2,6 +2,7 @@ import { AsyncParser } from '@json2csv/node';
 import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 
+import HTTPException from '@application/core/exception.core';
 import { DateContractService } from '@application/services/date/date-contract.service';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
@@ -69,5 +70,19 @@ export default class CsvExportService implements CsvExportContractService {
     const input = Readable.from(options.source, { objectMode: true });
     // `parse` devolve JSON2CSVNodeTransform, que estende Transform -> Readable.
     return parser.parse(input);
+  }
+
+  rejectWhenOverLimit(total: number): HTTPException | null {
+    if (total <= EXPORT_CSV_LIMIT) return null;
+
+    return HTTPException.UnprocessableEntity(
+      `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
+      'EXPORT_LIMIT_EXCEEDED',
+    );
+  }
+
+  toHttpException(error: unknown): HTTPException | null {
+    if (!(error instanceof ExportLimitExceededError)) return null;
+    return HTTPException.UnprocessableEntity(error.message, error.cause);
   }
 }

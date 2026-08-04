@@ -29,6 +29,7 @@ describe('Table Export CSV Use Case', () => {
     sut = new TableExportCsvUseCase(
       repo,
       new CsvExportService(new SlugService(), new DateService()),
+      new DateService(),
     );
   });
 

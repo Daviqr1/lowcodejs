@@ -57,10 +57,6 @@ export default class {
       CsvExportService,
     ).filename(`tabela-${params.slug}`);
 
-    return response
-      .header('Content-Type', 'text/csv; charset=utf-8')
-      .header('Content-Disposition', `attachment; filename="${filename}"`)
-      .header('Cache-Control', 'no-store')
-      .send(result.value);
+    return this.http.sendCsv(response, filename, result.value);
   }
 }

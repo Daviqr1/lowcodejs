@@ -8,10 +8,9 @@ import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import {
   CsvExportContractService,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
   type CsvField,
 } from '@application/services/csv-export/csv-export-contract.service';
+import { DateContractService } from '@application/services/date/date-contract.service';
 
 import type { MenuExportCsvPayload } from './export-csv.validator';
 
@@ -47,10 +46,8 @@ export default class MenuExportCsvUseCase {
     if (typeof menu.parent === 'string') parent = menu.parent;
     let isInitial = 'false';
     if (menu.isInitial) isInitial = 'true';
-    let createdAt = '';
-    if (menu.createdAt) createdAt = new Date(menu.createdAt).toISOString();
-    let updatedAt = '';
-    if (menu.updatedAt) updatedAt = new Date(menu.updatedAt).toISOString();
+    const createdAt = this.date.toIso(menu.createdAt);
+    const updatedAt = this.date.toIso(menu.updatedAt);
     return {
       _id: menu._id,
       name: menu.name ?? '',
@@ -68,6 +65,7 @@ export default class MenuExportCsvUseCase {
   constructor(
     private readonly menuRepository: MenuContractRepository,
     private readonly csvExport: CsvExportContractService,
+    private readonly date: DateContractService,
   ) {}
 
   async execute(payload: MenuExportCsvPayload): Promise<Response> {
@@ -85,14 +83,8 @@ export default class MenuExportCsvUseCase {
         trashed: payload.trashed ?? false,
       });
 
-      if (total > EXPORT_CSV_LIMIT) {
-        return left(
-          HTTPException.UnprocessableEntity(
-            `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
-            'EXPORT_LIMIT_EXCEEDED',
-          ),
-        );
-      }
+      const overLimit = this.csvExport.rejectWhenOverLimit(total);
+      if (overLimit) return left(overLimit);
 
       console.info(`[menu > export-csv] count=${total}`);
 
@@ -114,11 +106,8 @@ export default class MenuExportCsvUseCase {
 
       return right(stream);
     } catch (error) {
-      if (error instanceof ExportLimitExceededError) {
-        return left(
-          HTTPException.UnprocessableEntity(error.message, error.cause),
-        );
-      }
+      const limitError = this.csvExport.toHttpException(error);
+      if (limitError) return left(limitError);
       console.error('[menu > export-csv][error]:', error);
       return left(
         HTTPException.InternalServerError(

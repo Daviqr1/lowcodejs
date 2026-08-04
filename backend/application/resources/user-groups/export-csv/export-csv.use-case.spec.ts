@@ -36,6 +36,7 @@ describe('User Group Export CSV Use Case', () => {
       userRepo,
       groupResolver,
       new CsvExportService(new SlugService(), new DateService()),
+      new DateService(),
     );
   });
 

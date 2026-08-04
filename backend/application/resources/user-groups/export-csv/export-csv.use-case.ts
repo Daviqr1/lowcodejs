@@ -9,10 +9,9 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import {
   CsvExportContractService,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
   type CsvField,
 } from '@application/services/csv-export/csv-export-contract.service';
+import { DateContractService } from '@application/services/date/date-contract.service';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
 import type { UserGroupExportCsvPayload } from './export-csv.validator';
@@ -36,10 +35,8 @@ export default class UserGroupExportCsvUseCase {
     if (Array.isArray(group.permissions)) {
       permissionsCount = group.permissions.length;
     }
-    let createdAt = '';
-    if (group.createdAt) createdAt = new Date(group.createdAt).toISOString();
-    let updatedAt = '';
-    if (group.updatedAt) updatedAt = new Date(group.updatedAt).toISOString();
+    const createdAt = this.date.toIso(group.createdAt);
+    const updatedAt = this.date.toIso(group.updatedAt);
 
     return {
       _id: group._id,
@@ -56,6 +53,7 @@ export default class UserGroupExportCsvUseCase {
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
     private readonly csvExport: CsvExportContractService,
+    private readonly date: DateContractService,
   ) {}
 
   async execute(payload: UserGroupExportCsvPayload): Promise<Response> {
@@ -79,14 +77,8 @@ export default class UserGroupExportCsvUseCase {
         hideMaster,
       });
 
-      if (total > EXPORT_CSV_LIMIT) {
-        return left(
-          HTTPException.UnprocessableEntity(
-            `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
-            'EXPORT_LIMIT_EXCEEDED',
-          ),
-        );
-      }
+      const overLimit = this.csvExport.rejectWhenOverLimit(total);
+      if (overLimit) return left(overLimit);
 
       console.info(
         `[user-groups > export-csv] user=${payload.user?._id ?? 'unknown'} count=${total}`,
@@ -111,11 +103,8 @@ export default class UserGroupExportCsvUseCase {
 
       return right(stream);
     } catch (error) {
-      if (error instanceof ExportLimitExceededError) {
-        return left(
-          HTTPException.UnprocessableEntity(error.message, error.cause),
-        );
-      }
+      const limitError = this.csvExport.toHttpException(error);
+      if (limitError) return left(limitError);
       console.error('[user-groups > export-csv][error]:', error);
       return left(
         HTTPException.InternalServerError(

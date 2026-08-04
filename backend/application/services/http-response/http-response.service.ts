@@ -17,6 +17,18 @@ export default class HttpResponseService implements HttpResponseContractService 
     });
   }
 
+  sendCsv(
+    response: FastifyReply,
+    filename: string,
+    body: unknown,
+  ): FastifyReply {
+    return response
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .header('Cache-Control', 'no-store')
+      .send(body);
+  }
+
   paginationMeta(
     total: number,
     payload: { page: number; perPage: number },

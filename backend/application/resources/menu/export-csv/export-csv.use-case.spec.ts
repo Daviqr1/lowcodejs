@@ -29,6 +29,7 @@ describe('Menu Export CSV Use Case', () => {
     sut = new MenuExportCsvUseCase(
       repo,
       new CsvExportService(new SlugService(), new DateService()),
+      new DateService(),
     );
   });
 

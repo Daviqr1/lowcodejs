@@ -8,10 +8,9 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import {
   CsvExportContractService,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
   type CsvField,
 } from '@application/services/csv-export/csv-export-contract.service';
+import { DateContractService } from '@application/services/date/date-contract.service';
 
 import type { UserExportCsvPayload } from './export-csv.validator';
 
@@ -34,10 +33,8 @@ export default class UserExportCsvUseCase {
     if (typeof user.group === 'object' && user.group?.name) {
       groupName = user.group.name;
     }
-    let createdAt = '';
-    if (user.createdAt) createdAt = new Date(user.createdAt).toISOString();
-    let updatedAt = '';
-    if (user.updatedAt) updatedAt = new Date(user.updatedAt).toISOString();
+    const createdAt = this.date.toIso(user.createdAt);
+    const updatedAt = this.date.toIso(user.updatedAt);
 
     return {
       _id: user._id,
@@ -52,6 +49,7 @@ export default class UserExportCsvUseCase {
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly csvExport: CsvExportContractService,
+    private readonly date: DateContractService,
   ) {}
 
   async execute(payload: UserExportCsvPayload): Promise<Response> {
@@ -66,14 +64,8 @@ export default class UserExportCsvUseCase {
 
       const total = await this.userRepository.count(payload);
 
-      if (total > EXPORT_CSV_LIMIT) {
-        return left(
-          HTTPException.UnprocessableEntity(
-            `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
-            'EXPORT_LIMIT_EXCEEDED',
-          ),
-        );
-      }
+      const overLimit = this.csvExport.rejectWhenOverLimit(total);
+      if (overLimit) return left(overLimit);
 
       console.info(
         `[users > export-csv] user=${payload.user?._id ?? 'unknown'} count=${total}`,
@@ -95,11 +87,8 @@ export default class UserExportCsvUseCase {
 
       return right(stream);
     } catch (error) {
-      if (error instanceof ExportLimitExceededError) {
-        return left(
-          HTTPException.UnprocessableEntity(error.message, error.cause),
-        );
-      }
+      const limitError = this.csvExport.toHttpException(error);
+      if (limitError) return left(limitError);
       console.error('[users > export-csv][error]:', error);
       return left(
         HTTPException.InternalServerError(

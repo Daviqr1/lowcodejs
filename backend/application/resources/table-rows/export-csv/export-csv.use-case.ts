@@ -9,8 +9,6 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import {
   CsvExportContractService,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
   type CsvField,
 } from '@application/services/csv-export/csv-export-contract.service';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
@@ -93,14 +91,8 @@ export default class TableRowExportCsvUseCase {
         guardQueryArg,
       );
 
-      if (total > EXPORT_CSV_LIMIT) {
-        return left(
-          HTTPException.UnprocessableEntity(
-            `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
-            'EXPORT_LIMIT_EXCEEDED',
-          ),
-        );
-      }
+      const overLimit = this.csvExport.rejectWhenOverLimit(total);
+      if (overLimit) return left(overLimit);
 
       console.info(
         `[table-rows > export-csv] table=${table.slug} user=${payload.user ?? 'unknown'} count=${total}`,
@@ -141,11 +133,8 @@ export default class TableRowExportCsvUseCase {
 
       return right(stream);
     } catch (error) {
-      if (error instanceof ExportLimitExceededError) {
-        return left(
-          HTTPException.UnprocessableEntity(error.message, error.cause),
-        );
-      }
+      const limitError = this.csvExport.toHttpException(error);
+      if (limitError) return left(limitError);
       console.error('[table-rows > export-csv][error]:', error);
       return left(
         HTTPException.InternalServerError(

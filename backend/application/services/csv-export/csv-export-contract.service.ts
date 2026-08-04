@@ -1,5 +1,7 @@
 import type { Readable } from 'node:stream';
 
+import type HTTPException from '@application/core/exception.core';
+
 export const EXPORT_CSV_LIMIT = 500_000;
 
 export class ExportLimitExceededError extends Error {
@@ -52,4 +54,17 @@ export abstract class CsvExportContractService {
   abstract buildStream<TRow extends Record<string, unknown>>(
     options: CsvStreamOptions<TRow>,
   ): Readable;
+
+  /**
+   * Recusa a exportacao antes de abrir o stream quando o `count()` estoura o
+   * teto. `null` libera. Os seis use-cases de export repetiam este 422.
+   */
+  abstract rejectWhenOverLimit(total: number): HTTPException | null;
+
+  /**
+   * Converte o `ExportLimitExceededError` lancado no meio do stream (defesa em
+   * profundidade do `iterateInBatches`) no mesmo 422. `null` para qualquer
+   * outro erro, que o chamador trata como erro interno.
+   */
+  abstract toHttpException(error: unknown): HTTPException | null;
 }

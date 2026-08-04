@@ -12,10 +12,9 @@ import {
 } from '@application/repositories/table/table-contract.repository';
 import {
   CsvExportContractService,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
   type CsvField,
 } from '@application/services/csv-export/csv-export-contract.service';
+import { DateContractService } from '@application/services/date/date-contract.service';
 
 import type { TableExportCsvPayload } from './export-csv.validator';
 
@@ -44,10 +43,8 @@ export default class TableExportCsvUseCase {
   private toCsvRow(table: ITable): Record<string, unknown> {
     let trashed = 'false';
     if (table.trashed) trashed = 'true';
-    let createdAt = '';
-    if (table.createdAt) createdAt = new Date(table.createdAt).toISOString();
-    let updatedAt = '';
-    if (table.updatedAt) updatedAt = new Date(table.updatedAt).toISOString();
+    const createdAt = this.date.toIso(table.createdAt);
+    const updatedAt = this.date.toIso(table.updatedAt);
     return {
       _id: table._id,
       name: table.name ?? '',
@@ -63,6 +60,7 @@ export default class TableExportCsvUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly csvExport: CsvExportContractService,
+    private readonly date: DateContractService,
   ) {}
 
   async execute(payload: TableExportCsvPayload): Promise<Response> {
@@ -85,14 +83,8 @@ export default class TableExportCsvUseCase {
 
       const total = await this.tableRepository.count(filter);
 
-      if (total > EXPORT_CSV_LIMIT) {
-        return left(
-          HTTPException.UnprocessableEntity(
-            `Resultado excede o limite de ${EXPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas. Refine os filtros antes de exportar.`,
-            'EXPORT_LIMIT_EXCEEDED',
-          ),
-        );
-      }
+      const overLimit = this.csvExport.rejectWhenOverLimit(total);
+      if (overLimit) return left(overLimit);
 
       console.info(`[table-base > export-csv] count=${total}`);
 
@@ -113,11 +105,8 @@ export default class TableExportCsvUseCase {
 
       return right(stream);
     } catch (error) {
-      if (error instanceof ExportLimitExceededError) {
-        return left(
-          HTTPException.UnprocessableEntity(error.message, error.cause),
-        );
-      }
+      const limitError = this.csvExport.toHttpException(error);
+      if (limitError) return left(limitError);
       console.error('[table-base > export-csv][error]:', error);
       return left(
         HTTPException.InternalServerError(

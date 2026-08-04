@@ -30,6 +30,7 @@ describe('User Export CSV Use Case', () => {
     sut = new UserExportCsvUseCase(
       repo,
       new CsvExportService(new SlugService(), new DateService()),
+      new DateService(),
     );
   });
 
