@@ -4,6 +4,7 @@ import { E_FIELD_VALIDATION } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import FieldValidationRuleRegistryService from '@application/services/field-validation/rule-registry.service';
 import { makeTextShortField } from '@test/helpers/field-factory.helper';
 import { makeTable } from '@test/helpers/table-factory.helper';
 
@@ -19,7 +20,11 @@ describe('FieldValidationService', () => {
     tableRepository = new TableInMemoryRepository();
     rowRepository = new RowInMemoryRepository();
     userRepository = new UserInMemoryRepository();
-    sut = new FieldValidationService(rowRepository, userRepository);
+    sut = new FieldValidationService(
+      rowRepository,
+      userRepository,
+      new FieldValidationRuleRegistryService(),
+    );
   });
 
   describe('IS_UNIQUE', () => {

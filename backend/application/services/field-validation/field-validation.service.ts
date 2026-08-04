@@ -1,20 +1,21 @@
 import { Service } from 'fastify-decorators';
 
 import { E_FIELD_TYPE } from '@application/core/entity.core';
-import { getValidationRule } from '@application/core/validations/registry';
-import type { ValidationDeps } from '@application/core/validations/rule.contract';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { RowTableContext } from '@application/repositories/row/row-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 
 import type { FieldValidationOptions } from './field-validation-contract.service';
 import { FieldValidationContractService } from './field-validation-contract.service';
+import { FieldValidationRuleRegistryContractService } from './rule-registry-contract.service';
+import type { ValidationDeps } from './rules/rule.contract';
 
 @Service()
 export default class FieldValidationService implements FieldValidationContractService {
   constructor(
     private readonly rowRepository: RowContractRepository,
     private readonly userRepository: UserContractRepository,
+    private readonly ruleRegistry: FieldValidationRuleRegistryContractService,
   ) {}
 
   // Monta as dependencias de banco com a tabela atual capturada no closure.
@@ -62,7 +63,7 @@ export default class FieldValidationService implements FieldValidationContractSe
       const value = payload[field.slug];
 
       for (const configured of field.validations) {
-        const rule = getValidationRule(configured.rule);
+        const rule = this.ruleRegistry.get(configured.rule);
         if (!rule) continue;
 
         const error = await rule.validate(value, configured.config ?? {}, {

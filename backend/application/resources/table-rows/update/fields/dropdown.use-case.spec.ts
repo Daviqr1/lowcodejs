@@ -4,6 +4,7 @@ import RowInMemoryRepository from '@application/repositories/row/row-in-memory.r
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import FieldValidationService from '@application/services/field-validation/field-validation.service';
+import FieldValidationRuleRegistryService from '@application/services/field-validation/rule-registry.service';
 import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import InMemoryKanbanCommentMentionService from '@application/services/kanban-comment-mention/in-memory-kanban-comment-mention.service';
@@ -48,7 +49,11 @@ describe('Table Row Update - DROPDOWN', () => {
       new InMemoryKanbanCommentMentionService(),
       new InMemoryRowMemberNotificationService(),
       new InMemoryFieldVisibilityService(),
-      new FieldValidationService(rowRepository, new UserInMemoryRepository()),
+      new FieldValidationService(
+        rowRepository,
+        new UserInMemoryRepository(),
+        new FieldValidationRuleRegistryService(),
+      ),
       new InMemoryRowAccessGuardService(),
       new SlugService(),
       new RowOwnershipService(),
