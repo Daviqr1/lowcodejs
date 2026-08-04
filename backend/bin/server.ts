@@ -10,11 +10,10 @@ import StorageMongooseRepository from '@application/repositories/storage/storage
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { initNotificationsSocket } from '@application/resources/notifications/notifications.socket';
 import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
-import { startEmailWorker } from '@application/services/email-queue/worker';
+import { EmailWorkerContractService } from '@application/services/email-queue/email-worker-contract.service';
+import EmailWorkerService from '@application/services/email-queue/email-worker.service';
 import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bootstrap';
 import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
-import { EmailContractService } from '@application/services/email/email-contract.service';
-import NodemailerEmailService from '@application/services/email/email.service';
 import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
 import { initCsvImportSocket } from '@application/resources/table-rows/import-csv/import-csv.socket';
 import { initTableImportSocket } from '@extensions/core/tools/tables-import-export/import-table.socket';
@@ -149,10 +148,7 @@ async function start(): Promise<void> {
     });
     console.info('Storage migration worker started');
 
-    const emailService = getInstanceByToken<EmailContractService>(
-      NodemailerEmailService,
-    );
-    startEmailWorker({ emailService });
+    getInstanceByToken<EmailWorkerContractService>(EmailWorkerService).start();
     console.info('Email worker started');
 
     const { namespace: csvImportNamespace, storeResult: csvImportStoreResult } =
