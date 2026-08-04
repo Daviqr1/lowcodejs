@@ -4,11 +4,11 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RelationshipDeletionContractService } from '@application/services/relationship/relationship-deletion-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 
 import type { TableRowDeletePayload } from './delete.validator';
 
@@ -29,6 +29,7 @@ export default class TableRowDeleteUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly relationshipDeletion: RelationshipDeletionContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -54,7 +55,7 @@ export default class TableRowDeleteUseCase {
           );
         }
 
-        const creatorId = resolveCreatorId(current.creator);
+        const creatorId = this.rowOwnership.resolveCreatorId(current.creator);
         if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
           return left(
             HTTPException.Forbidden(

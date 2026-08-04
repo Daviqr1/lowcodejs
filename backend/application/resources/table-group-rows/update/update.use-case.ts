@@ -5,12 +5,12 @@ import { left, right } from '@application/core/either.core';
 import type { IField, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
-import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 
 import { assertCanWriteParentRow } from '../guard-parent-row';
 
@@ -39,6 +39,8 @@ export default class GroupRowUpdateUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
+    private readonly rowPayloadValidator: RowPayloadValidatorContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -73,7 +75,7 @@ export default class GroupRowUpdateUseCase {
       // Valida os campos do item contra os campos do grupo (skipMissing)
       const groupFields: IField[] = group.fields || [];
 
-      const errors = RowPayloadValidator.validate(
+      const errors = this.rowPayloadValidator.validate(
         payload,
         groupFields,
         table.groups,
@@ -109,7 +111,9 @@ export default class GroupRowUpdateUseCase {
 
       // Convidado contributor só altera itens da row pai que ele criou.
       if (payload.__ownOnly) {
-        const creatorId = resolveCreatorId(existingRow.creator);
+        const creatorId = this.rowOwnership.resolveCreatorId(
+          existingRow.creator,
+        );
         if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
           return left(
             HTTPException.Forbidden(

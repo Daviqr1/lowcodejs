@@ -4,10 +4,10 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 
 import { assertCanWriteParentRow } from '../guard-parent-row';
 
@@ -29,6 +29,7 @@ export default class GroupRowDeleteUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -65,7 +66,9 @@ export default class GroupRowDeleteUseCase {
 
       // Convidado contributor só remove itens da row pai que ele criou.
       if (payload.__ownOnly) {
-        const creatorId = resolveCreatorId(existingRow.creator);
+        const creatorId = this.rowOwnership.resolveCreatorId(
+          existingRow.creator,
+        );
         if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
           return left(
             HTTPException.Forbidden(

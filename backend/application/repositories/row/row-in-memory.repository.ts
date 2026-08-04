@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { IRow, Merge } from '@application/core/entity.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 
 import type {
   RowBulkDeletePayload,
@@ -16,6 +16,10 @@ import type {
   RowUpdatePayload,
 } from './row-contract.repository';
 import { RowContractRepository } from './row-contract.repository';
+
+// Double de teste: o scanner do DI ignora `*-in-memory.*`, entao nao ha
+// container aqui. O RowOwnershipService e puro (constructor sem argumentos).
+const rowOwnership = new RowOwnershipService();
 
 /** Compara valores tolerando `Date`/`ObjectId` (que nao batem por identidade). */
 function looseEquals(left: unknown, right: unknown): boolean {
@@ -364,7 +368,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     for (const row of collection) {
       if (
         payload.creatorId &&
-        resolveCreatorId(row.creator) !== payload.creatorId
+        rowOwnership.resolveCreatorId(row.creator) !== payload.creatorId
       )
         continue;
       if (payload.ids.includes(row._id) && row.trashedAt == null) {
@@ -383,7 +387,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     for (const row of collection) {
       if (
         payload.creatorId &&
-        resolveCreatorId(row.creator) !== payload.creatorId
+        rowOwnership.resolveCreatorId(row.creator) !== payload.creatorId
       )
         continue;
       if (payload.ids.includes(row._id) && row.trashedAt != null) {
@@ -403,7 +407,7 @@ export default class RowInMemoryRepository implements RowContractRepository {
     for (const row of collection) {
       const ownedByOther =
         !!payload.creatorId &&
-        resolveCreatorId(row.creator) !== payload.creatorId;
+        rowOwnership.resolveCreatorId(row.creator) !== payload.creatorId;
       if (
         !ownedByOther &&
         payload.ids.includes(row._id) &&
@@ -426,7 +430,10 @@ export default class RowInMemoryRepository implements RowContractRepository {
     const collection = this.getCollection(table.slug);
     const remaining = collection.filter((item) => {
       if (item.trashedAt == null) return true;
-      if (creatorId && resolveCreatorId(item.creator) !== creatorId)
+      if (
+        creatorId &&
+        rowOwnership.resolveCreatorId(item.creator) !== creatorId
+      )
         return true;
       return false;
     });

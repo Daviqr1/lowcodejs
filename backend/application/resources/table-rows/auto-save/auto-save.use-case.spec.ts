@@ -8,7 +8,10 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
+import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
 
 import TableRowAutoSaveUseCase from './auto-save.use-case';
 
@@ -64,6 +67,8 @@ describe('Table Row Auto Save Use Case', () => {
       tableRepo,
       rowRepo,
       new InMemoryRowAccessGuardService(),
+      new RowOwnershipService(),
+      new RowPayloadValidatorService(new MongooseIdentifierService()),
     );
   });
 

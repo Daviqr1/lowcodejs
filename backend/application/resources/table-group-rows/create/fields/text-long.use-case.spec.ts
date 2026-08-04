@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { E_FIELD_FORMAT } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
+import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
 import { makeTextLongField } from '@test/helpers/field-factory.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
@@ -26,6 +29,8 @@ describe('Group Row Create - TEXT_LONG', () => {
       rowRepository,
       rowPasswordService,
       new InMemoryRowAccessGuardService(),
+      new RowOwnershipService(),
+      new RowPayloadValidatorService(new MongooseIdentifierService()),
     );
   });
 

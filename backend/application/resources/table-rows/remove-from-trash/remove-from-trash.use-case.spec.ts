@@ -4,6 +4,7 @@ import { E_TABLE_STYLE } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 
 import TableRowRemoveFromTrashUseCase from './remove-from-trash.use-case';
 
@@ -30,6 +31,7 @@ describe('Table Row Remove From Trash Use Case', () => {
       tableInMemoryRepository,
       rowInMemoryRepository,
       new InMemoryRowAccessGuardService(),
+      new RowOwnershipService(),
     );
     vi.clearAllMocks();
   });

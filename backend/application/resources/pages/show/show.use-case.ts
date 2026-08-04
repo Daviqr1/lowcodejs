@@ -4,10 +4,10 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IMenu, IUser, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { MenuVisibility } from '@application/core/menu-visibility.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
+import { MenuVisibilityContractService } from '@application/services/menu-visibility/menu-visibility-contract.service';
 
 import type { PageShowPayload } from './show.validator';
 
@@ -26,6 +26,7 @@ export default class PageShowUseCase {
     private readonly menuRepository: MenuContractRepository,
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly menuVisibility: MenuVisibilityContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -78,6 +79,6 @@ export default class PageShowUseCase {
     const byId = new Map<string, IMenu>();
     for (const item of menus) byId.set(String(item._id), item);
 
-    return MenuVisibility.isVisible(menu, byId, userGroupIds);
+    return this.menuVisibility.isVisible(menu, byId, userGroupIds);
   }
 }

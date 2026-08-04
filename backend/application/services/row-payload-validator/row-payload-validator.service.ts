@@ -1,19 +1,24 @@
+import { Service } from 'fastify-decorators';
+
 import {
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   type IField,
   type IGroupConfiguration,
-} from './entity.core';
+} from '@application/core/entity.core';
 import {
   CNPJ_REGEX,
   CPF_REGEX,
   DECIMAL_REGEX,
   EMAIL_REGEX,
   INTEGER_REGEX,
-  OBJECT_ID_REGEX,
   PHONE_REGEX,
   URL_REGEX,
-} from './field-rules.core';
+} from '@application/core/field-rules.core';
+import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
+
+import type { RowPayloadValidateOptions } from './row-payload-validator-contract.service';
+import { RowPayloadValidatorContractService } from './row-payload-validator-contract.service';
 
 type FieldFormat = (typeof E_FIELD_FORMAT)[keyof typeof E_FIELD_FORMAT];
 
@@ -53,22 +58,21 @@ const FORMAT_VALIDATORS: Record<string, { regex: RegExp; message: string }> = {
   },
 };
 
-type ValidateRowPayloadOptions = {
-  skipMissing?: boolean;
-};
+@Service()
+export default class RowPayloadValidatorService implements RowPayloadValidatorContractService {
+  constructor(private readonly identifier: IdentifierContractService) {}
 
-export class RowPayloadValidator {
-  private static isValidObjectId(value: unknown): boolean {
-    return typeof value === 'string' && OBJECT_ID_REGEX.test(value);
+  private isValidObjectId(value: unknown): boolean {
+    return typeof value === 'string' && this.identifier.isValid(value);
   }
 
-  private static isValidISODate(value: unknown): boolean {
+  private isValidISODate(value: unknown): boolean {
     if (typeof value !== 'string') return false;
     const date = new Date(value);
     return !isNaN(date.getTime());
   }
 
-  private static validateFormat(
+  private validateFormat(
     value: string,
     format: FieldFormat | null,
   ): string | null {
@@ -81,7 +85,7 @@ export class RowPayloadValidator {
     return null;
   }
 
-  private static validateFieldValue(
+  private validateFieldValue(
     value: unknown,
     field: IField,
     groups?: IGroupConfiguration[],
@@ -101,10 +105,7 @@ export class RowPayloadValidator {
       case E_FIELD_TYPE.TEXT_SHORT: {
         if (typeof value !== 'string') return 'Deve ser um texto';
 
-        const formatError = RowPayloadValidator.validateFormat(
-          value,
-          field.format ?? null,
-        );
+        const formatError = this.validateFormat(value, field.format ?? null);
         if (formatError) return formatError;
         return null;
       }
@@ -115,7 +116,7 @@ export class RowPayloadValidator {
       }
 
       case E_FIELD_TYPE.DATE: {
-        if (!RowPayloadValidator.isValidISODate(value))
+        if (!this.isValidISODate(value))
           return 'Deve ser uma data válida no formato ISO 8601';
 
         return null;
@@ -139,7 +140,7 @@ export class RowPayloadValidator {
           return 'Deve ser uma lista';
         }
         for (const item of value) {
-          if (!RowPayloadValidator.isValidObjectId(item)) {
+          if (!this.isValidObjectId(item)) {
             return 'Todos os itens devem ser IDs válidos';
           }
         }
@@ -181,7 +182,7 @@ export class RowPayloadValidator {
             if (groupField.native) continue; // Skip native fields
             if (groupField.trashed) continue; // Skip trashed fields
             const fieldValue = record[groupField.slug];
-            const fieldError = RowPayloadValidator.validateFieldValue(
+            const fieldError = this.validateFieldValue(
               fieldValue,
               groupField,
               groups,
@@ -204,11 +205,11 @@ export class RowPayloadValidator {
     }
   }
 
-  static validate(
+  validate(
     payload: Record<string, unknown>,
     fields: IField[],
     groups?: IGroupConfiguration[],
-    options: ValidateRowPayloadOptions = {},
+    options: RowPayloadValidateOptions = {},
   ): Record<string, string> | null {
     const errors: Record<string, string> = {};
 
@@ -232,11 +233,7 @@ export class RowPayloadValidator {
       }
 
       const value = payload[field.slug];
-      const error = RowPayloadValidator.validateFieldValue(
-        value,
-        field,
-        groups,
-      );
+      const error = this.validateFieldValue(value, field, groups);
 
       if (error) {
         errors[field.slug] = error;

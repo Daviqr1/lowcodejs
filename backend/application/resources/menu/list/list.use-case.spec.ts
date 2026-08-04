@@ -6,6 +6,7 @@ import TableInMemoryRepository from '@application/repositories/table/table-in-me
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import MenuVisibilityService from '@application/services/menu-visibility/menu-visibility.service';
 import PermissionService from '@application/services/permission/permission.service';
 
 import MenuListUseCase from './list.use-case';
@@ -32,6 +33,7 @@ describe('Menu List Use Case', () => {
       tableInMemoryRepository,
       permissionService,
       groupResolver,
+      new MenuVisibilityService(),
     );
   });
 

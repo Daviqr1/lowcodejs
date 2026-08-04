@@ -10,6 +10,7 @@ import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import { groupItems } from '@test/helpers/row-data.helper';
 
 import GroupRowDeleteUseCase from './delete.use-case';
@@ -121,6 +122,7 @@ describe('Group Row Delete Use Case', () => {
       tableRepository,
       rowRepository,
       new InMemoryRowAccessGuardService(),
+      new RowOwnershipService(),
     );
   });
 

@@ -13,11 +13,11 @@ import {
   E_TABLE_PERMISSION,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { MenuVisibility } from '@application/core/menu-visibility.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
+import { MenuVisibilityContractService } from '@application/services/menu-visibility/menu-visibility-contract.service';
 import { PermissionContractService } from '@application/services/permission/permission-contract.service';
 
 type Response = Either<HTTPException, Entity[]>;
@@ -46,6 +46,7 @@ export default class MenuListUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly permissionService: PermissionContractService,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly menuVisibility: MenuVisibilityContractService,
   ) {}
 
   // Menu do tipo TABLE/FORM só aparece se o usuário tem a permissão da tabela
@@ -140,7 +141,7 @@ export default class MenuListUseCase {
       const visible: Entity[] = [];
 
       for (const menu of menus) {
-        if (!MenuVisibility.isVisible(menu, byId, userGroupIds)) continue;
+        if (!this.menuVisibility.isVisible(menu, byId, userGroupIds)) continue;
 
         const requiredPermission = TABLE_LINKED_PERMISSION[menu.type];
         if (requiredPermission && menu.table) {

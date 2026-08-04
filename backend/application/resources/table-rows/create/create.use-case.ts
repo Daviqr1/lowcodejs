@@ -5,7 +5,6 @@ import { left, right } from '@application/core/either.core';
 import type { IField, IRow, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
@@ -14,6 +13,7 @@ import { FieldVisibilityContractService } from '@application/services/field-visi
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
@@ -44,6 +44,7 @@ export default class TableRowCreateUseCase {
     private readonly fieldValidation: FieldValidationContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly slugService: SlugContractService,
+    private readonly rowPayloadValidator: RowPayloadValidatorContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -110,7 +111,7 @@ export default class TableRowCreateUseCase {
       // payload. Roda antes da validacao para um USER required com a flag passar.
       this.applyUserSelfFill(payload, table.fields, creatorId);
 
-      const errors = RowPayloadValidator.validate(
+      const errors = this.rowPayloadValidator.validate(
         payload,
         table.fields,
         table.groups,

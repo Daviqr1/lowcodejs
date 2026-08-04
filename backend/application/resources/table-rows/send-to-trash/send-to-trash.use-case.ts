@@ -4,10 +4,10 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 
 import type { TableRowSendToTrashPayload } from './send-to-trash.validator';
 
@@ -28,6 +28,7 @@ export default class TableRowSendToTrashUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -54,7 +55,7 @@ export default class TableRowSendToTrashUseCase {
 
       // Convidado contributor só envia para lixeira o que criou.
       if (payload.__ownOnly) {
-        const creatorId = resolveCreatorId(row.creator);
+        const creatorId = this.rowOwnership.resolveCreatorId(row.creator);
         if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
           return left(
             HTTPException.Forbidden(

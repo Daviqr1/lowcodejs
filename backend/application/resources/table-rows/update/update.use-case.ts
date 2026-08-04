@@ -10,8 +10,6 @@ import type {
 } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
-import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
@@ -20,7 +18,9 @@ import { FieldVisibilityContractService } from '@application/services/field-visi
 import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
@@ -54,6 +54,8 @@ export default class TableRowUpdateUseCase {
     private readonly fieldValidation: FieldValidationContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly slugService: SlugContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
+    private readonly rowPayloadValidator: RowPayloadValidatorContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -136,7 +138,7 @@ export default class TableRowUpdateUseCase {
       // payload. Roda antes da validacao (mesma regra do create).
       this.applyUserSelfFill(payload, table.fields, actorUserId);
 
-      const errors = RowPayloadValidator.validate(
+      const errors = this.rowPayloadValidator.validate(
         payload,
         table.fields,
         table.groups,
@@ -419,7 +421,7 @@ export default class TableRowUpdateUseCase {
       return HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND');
     }
 
-    const creatorId = resolveCreatorId(current.creator);
+    const creatorId = this.rowOwnership.resolveCreatorId(current.creator);
     if (!payload.__actorUserId || creatorId !== payload.__actorUserId) {
       return HTTPException.Forbidden(
         'Você só pode editar os seus próprios registros',

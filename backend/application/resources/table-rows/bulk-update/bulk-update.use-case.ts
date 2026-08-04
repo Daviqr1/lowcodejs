@@ -8,10 +8,13 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { FieldValidationContractService } from '@application/services/field-validation/field-validation-contract.service';
 import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
 import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
 import SlugService from '@application/services/slug/slug.service';
 
@@ -60,6 +63,8 @@ export default class BulkUpdateUseCase {
       fieldValidation,
       rowAccessGuard,
       new SlugService(),
+      new RowOwnershipService(),
+      new RowPayloadValidatorService(new MongooseIdentifierService()),
     );
   }
 

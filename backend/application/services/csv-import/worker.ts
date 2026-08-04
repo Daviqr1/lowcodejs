@@ -16,7 +16,6 @@ import {
   type IField,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
-import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import {
@@ -27,8 +26,10 @@ import {
   type CsvImportSocketInit,
 } from '@application/resources/table-rows/import-csv/import-csv.socket';
 import FieldValueService from '@application/services/field-value/field-value.service';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
 import { createBullMQConnection } from '@config/redis.config';
 
 import {
@@ -43,6 +44,9 @@ export const IMPORT_CSV_LIMIT = 10_000;
 // O worker ainda e funcao solta (vira service no passo dos workers). O
 // FieldValueService e puro, entao instanciar aqui e seguro.
 const fieldValue = new FieldValueService();
+const rowPayloadValidator = new RowPayloadValidatorService(
+  new MongooseIdentifierService(),
+);
 
 const PROGRESS_INTERVAL = 100;
 
@@ -176,7 +180,7 @@ async function processImportJob(
 
     payload['creator'] = userId;
 
-    const errors = RowPayloadValidator.validate(payload, table.fields, groups);
+    const errors = rowPayloadValidator.validate(payload, table.fields, groups);
 
     if (errors) {
       skipped++;

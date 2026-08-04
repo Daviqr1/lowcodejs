@@ -3,11 +3,11 @@ import { Service } from 'fastify-decorators';
 import { Either, left, right } from '@application/core/either.core';
 import { E_ROW_STATUS, IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { resolveCreatorId } from '@application/core/row-ownership.core';
-import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
+import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 
 import { DraftTable } from './draft-table';
 
@@ -31,6 +31,8 @@ export default class TableRowAutoSaveUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly rowOwnership: RowOwnershipContractService,
+    private readonly rowPayloadValidator: RowPayloadValidatorContractService,
   ) {}
 
   async execute({
@@ -61,7 +63,7 @@ export default class TableRowAutoSaveUseCase {
         );
       });
 
-      const errors = RowPayloadValidator.validate(
+      const errors = this.rowPayloadValidator.validate(
         payload,
         fields,
         table.groups,
@@ -140,7 +142,7 @@ export default class TableRowAutoSaveUseCase {
       // Sem isto qualquer usuario com CREATE_ROW sobrescrevia o rascunho de
       // outro — e o `draftState` ainda despublicava o registro alheio.
       if (ownOnly) {
-        const creatorId = resolveCreatorId(row.creator);
+        const creatorId = this.rowOwnership.resolveCreatorId(row.creator);
         if (!actorUserId || creatorId !== actorUserId) {
           return left(
             HTTPException.Forbidden(
