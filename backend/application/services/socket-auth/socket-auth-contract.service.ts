@@ -10,7 +10,19 @@ export type JwtDecoder = (value: string) => IJWTPayload | null;
  * o mesmo esqueleto: ler o cookie do handshake, decodificar o token, conferir
  * que e do tipo ACCESS e pendurar o payload em `socket.data.user`.
  */
+export type SocketAuthOptions = {
+  /**
+   * Exige privilegio MASTER pelo **fecho de grupos** (principal + adicionais
+   * + englobados), nao pelo `role` do JWT — consistente com o RoleMiddleware.
+   */
+  requireMaster?: boolean;
+};
+
 export abstract class SocketAuthContractService {
   /** Instala o middleware de autenticacao no namespace. */
-  abstract protect(namespace: Namespace, decode: JwtDecoder): void;
+  abstract protect(
+    namespace: Namespace,
+    decode: JwtDecoder,
+    options?: SocketAuthOptions,
+  ): void;
 }

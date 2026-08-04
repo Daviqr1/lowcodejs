@@ -10,12 +10,14 @@ import StorageMongooseRepository from '@application/repositories/storage/storage
 import { initChatSocket } from '@application/resources/chat/chat.socket';
 import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
 import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
-import { initStorageMigrationSocket } from '@application/resources/storage-migration/storage-migration.socket';
+import { StorageMigrationSocketContractService } from '@application/services/storage-migration/storage-migration-socket-contract.service';
+import StorageMigrationSocketService from '@application/services/storage-migration/storage-migration-socket.service';
 import { EmailWorkerContractService } from '@application/services/email-queue/email-worker-contract.service';
 import EmailWorkerService from '@application/services/email-queue/email-worker.service';
 import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bootstrap';
 import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
-import { startStorageMigrationWorker } from '@application/services/storage-migration/worker';
+import { StorageMigrationWorkerContractService } from '@application/services/storage-migration/storage-migration-worker-contract.service';
+import StorageMigrationWorkerService from '@application/services/storage-migration/storage-migration-worker.service';
 import { initCsvImportSocket } from '@application/resources/table-rows/import-csv/import-csv.socket';
 import { initTableImportSocket } from '@extensions/core/tools/tables-import-export/import-table.socket';
 import { startCsvImportWorker } from '@application/services/csv-import/worker';
@@ -27,7 +29,6 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import RowAccessGuardService from '@application/services/row-access-guard/row-access-guard.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
-import StorageService from '@application/services/storage/storage.service';
 import { MongooseConnect } from '@config/database.config';
 import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import SettingEnvSyncService from '@application/services/setting-env-sync/setting-env-sync.service';
@@ -126,7 +127,9 @@ async function start(): Promise<void> {
     const io = initChatSocket(httpServer, jwtDecode);
     console.info('Socket.IO chat initialized');
 
-    const migrationNamespace = initStorageMigrationSocket(io, jwtDecode);
+    getInstanceByToken<StorageMigrationSocketContractService>(
+      StorageMigrationSocketService,
+    ).init(io, jwtDecode);
     console.info('Socket.IO storage-migration namespace initialized');
 
     getInstanceByToken<NotificationSocketContractService>(
@@ -139,16 +142,9 @@ async function start(): Promise<void> {
 
     await sweepStaleMigrations();
 
-    const storageRepository = getInstanceByToken<StorageContractRepository>(
-      StorageMongooseRepository,
-    );
-    const storageService = getInstanceByToken<StorageService>(StorageService);
-
-    startStorageMigrationWorker({
-      namespace: migrationNamespace,
-      storageRepository,
-      storageService,
-    });
+    getInstanceByToken<StorageMigrationWorkerContractService>(
+      StorageMigrationWorkerService,
+    ).start();
     console.info('Storage migration worker started');
 
     getInstanceByToken<EmailWorkerContractService>(EmailWorkerService).start();

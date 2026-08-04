@@ -16,6 +16,7 @@
  *   - Delete each file_id from the opposite driver and emit progress.
  */
 import { Worker, type Job } from 'bullmq';
+import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 import type { Namespace } from 'socket.io';
 
@@ -24,17 +25,11 @@ import {
   type TStorageLocation,
 } from '@application/core/entity.core';
 import type { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
-import {
-  STORAGE_MIGRATION_EVENT,
-  type StorageMigrationCompletedEvent,
-  type StorageMigrationFileFailedEvent,
-  type StorageMigrationFileMigratedEvent,
-  type StorageMigrationProgressEvent,
-} from '@application/resources/storage-migration/storage-migration.socket';
-import IoredisService from '@application/services/redis/redis.service';
-import SlugService from '@application/services/slug/slug.service';
+import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import StorageService from '@application/services/storage/storage.service';
-import StorageConfigService from '@application/services/storage-config/storage-config.service';
+import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
+// A fachada e a unica que sabe despachar por driver (`forDriver`), e a
+// migracao precisa ler de um driver e escrever no outro.
 
 import {
   STORAGE_MIGRATION_JOB,
@@ -42,13 +37,15 @@ import {
   type CleanupJobPayload,
   type MigrateJobPayload,
 } from './storage-migration-queue-contract.service';
-
-// O worker ainda e funcao solta (vira service no passo dos workers).
-const redisService = new IoredisService();
-
-// O worker ainda e funcao solta (vira service no passo dos workers). O
-// StorageConfigService so le `process.env` e mantem cache proprio.
-const storageConfig = new StorageConfigService(new SlugService());
+import { StorageMigrationSocketContractService } from './storage-migration-socket-contract.service';
+import {
+  STORAGE_MIGRATION_EVENT,
+  type StorageMigrationCompletedEvent,
+  type StorageMigrationFileFailedEvent,
+  type StorageMigrationFileMigratedEvent,
+  type StorageMigrationProgressEvent,
+} from './storage-migration-socket-contract.service';
+import { StorageMigrationWorkerContractService } from './storage-migration-worker-contract.service';
 
 const RETRY_LIMIT = 3;
 
@@ -56,9 +53,8 @@ type WorkerDeps = {
   namespace: Namespace;
   storageRepository: StorageContractRepository;
   storageService: StorageService;
+  storageConfig: StorageConfigContractService;
 };
-
-let cachedWorker: Worker | null = null;
 
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -171,7 +167,7 @@ async function migrateOneFile(
         target,
         E_STORAGE_MIGRATION_STATUS.IDLE,
       );
-      storageConfig.invalidateMeta(doc.filename);
+      deps.storageConfig.invalidateMeta(doc.filename);
 
       ctx.processed++;
       ctx.succeeded++;
@@ -199,7 +195,7 @@ async function migrateOneFile(
     source,
     E_STORAGE_MIGRATION_STATUS.FAILED,
   );
-  storageConfig.invalidateMeta(doc.filename);
+  deps.storageConfig.invalidateMeta(doc.filename);
   ctx.failed++;
   ctx.processed++;
 
@@ -345,55 +341,90 @@ function isCleanupJob(job: Job): job is Job<CleanupJobPayload> {
   return job.name === STORAGE_MIGRATION_JOB.CLEANUP;
 }
 
-export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
-  if (cachedWorker) return cachedWorker;
+@Service()
+export default class StorageMigrationWorkerService implements StorageMigrationWorkerContractService {
+  private worker: Worker | null = null;
 
-  const worker = new Worker(
-    STORAGE_MIGRATION_QUEUE_NAME,
-    async (job: Job) => {
-      try {
-        if (isMigrateJob(job)) {
-          await handleMigrate(job, deps);
-        } else if (isCleanupJob(job)) {
-          await handleCleanup(job, deps);
-        } else {
-          console.warn(
-            `[StorageMigration Worker] Job desconhecido: ${job.name}`,
+  constructor(
+    private readonly storageRepository: StorageContractRepository,
+    private readonly storageService: StorageService,
+    private readonly storageConfig: StorageConfigContractService,
+    private readonly socket: StorageMigrationSocketContractService,
+    private readonly redis: RedisContractService,
+  ) {}
+
+  start(): Worker {
+    if (this.worker) return this.worker;
+
+    const worker = new Worker(
+      STORAGE_MIGRATION_QUEUE_NAME,
+      async (job: Job) => {
+        try {
+          if (isMigrateJob(job)) {
+            await handleMigrate(job, this.deps());
+          } else if (isCleanupJob(job)) {
+            await handleCleanup(job, this.deps());
+          } else {
+            console.warn(
+              `[StorageMigration Worker] Job desconhecido: ${job.name}`,
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[StorageMigration Worker] Erro no job ${job.id}:`,
+            err,
           );
+          let message = String(err);
+          if (err instanceof Error) message = err.message;
+          this.deps().namespace.emit(STORAGE_MIGRATION_EVENT.ERROR, {
+            job_id: job.id ?? 'unknown',
+            message,
+          });
+          throw err;
         }
-      } catch (err) {
-        console.error(`[StorageMigration Worker] Erro no job ${job.id}:`, err);
-        let message = String(err);
-        if (err instanceof Error) message = err.message;
-        deps.namespace.emit(STORAGE_MIGRATION_EVENT.ERROR, {
-          job_id: job.id ?? 'unknown',
-          message,
-        });
-        throw err;
-      }
-    },
-    {
-      connection: redisService.createQueueConnection(),
-      // BullMQ-level concurrency: process up to N jobs in parallel.
-      // Per-file concurrency is handled inside each job via processInBatches.
-      concurrency: 1,
-    },
-  );
-
-  worker.on('failed', (job: Job | undefined, err: Error) => {
-    console.error(
-      `[StorageMigration Worker] Job ${job?.id} falhou:`,
-      err.message,
+      },
+      {
+        connection: this.redis.createQueueConnection(),
+        // BullMQ-level concurrency: process up to N jobs in parallel.
+        // Per-file concurrency is handled inside each job via processInBatches.
+        concurrency: 1,
+      },
     );
-  });
 
-  cachedWorker = worker;
-  return worker;
-}
+    worker.on('failed', (job: Job | undefined, err: Error) => {
+      console.error(
+        `[StorageMigration Worker] Job ${job?.id} falhou:`,
+        err.message,
+      );
+    });
 
-export async function stopStorageMigrationWorker(): Promise<void> {
-  if (cachedWorker) {
-    await cachedWorker.close();
-    cachedWorker = null;
+    this.worker = worker;
+    return worker;
+  }
+
+  async stop(): Promise<void> {
+    if (!this.worker) return;
+    await this.worker.close();
+    this.worker = null;
+  }
+
+  /**
+   * O namespace so existe depois que o socket subiu (`bin/server.ts`); por isso
+   * as deps sao montadas por chamada, nao no constructor.
+   */
+  private deps(): WorkerDeps {
+    const namespace = this.socket.namespace();
+    if (!namespace) {
+      throw new Error(
+        '[StorageMigration Worker] namespace /storage-migration nao inicializado',
+      );
+    }
+
+    return {
+      namespace,
+      storageRepository: this.storageRepository,
+      storageService: this.storageService,
+      storageConfig: this.storageConfig,
+    };
   }
 }
