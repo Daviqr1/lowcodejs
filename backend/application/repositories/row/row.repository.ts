@@ -34,34 +34,33 @@ import type {
 } from './row-contract.repository';
 import { RowContractRepository } from './row-contract.repository';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isSubdocArray(value: unknown): value is SubdocArray {
-  if (!Array.isArray(value)) return false;
-  // Mongoose 8 envolve document arrays em Proxy: `'id' in value` retorna false
-  // mesmo com o metodo presente. Reflect.get dispara o get trap do Proxy.
-  return typeof Reflect.get(value, 'id') === 'function';
-}
-
 type MongooseDocWithToJSON = {
   toJSON(opts: { flattenObjectIds: boolean }): Record<string, unknown>;
   _id: { toString(): string };
 };
 
-function hasToJSON(value: unknown): value is MongooseDocWithToJSON {
-  return isRecord(value) && typeof value['toJSON'] === 'function';
-}
-
-function assertIRow(value: Record<string, unknown>): asserts value is IRow {
-  if (typeof value['_id'] !== 'string') {
-    throw new Error('Invalid row: _id must be string');
-  }
-}
-
 @Service()
 export default class RowMongooseRepository implements RowContractRepository {
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private isSubdocArray(value: unknown): value is SubdocArray {
+    if (!Array.isArray(value)) return false;
+    // Mongoose 8 envolve document arrays em Proxy: `'id' in value` retorna false
+    // mesmo com o metodo presente. Reflect.get dispara o get trap do Proxy.
+    return typeof Reflect.get(value, 'id') === 'function';
+  }
+
+  private hasToJSON(value: unknown): value is MongooseDocWithToJSON {
+    return this.isRecord(value) && typeof value['toJSON'] === 'function';
+  }
+
+  private assertIRow(value: Record<string, unknown>): asserts value is IRow {
+    if (typeof value['_id'] !== 'string') {
+      throw new Error('Invalid row: _id must be string');
+    }
+  }
   constructor(
     private readonly model: ModelBuilderContractService,
     private readonly query: QueryBuilderContractService,
@@ -102,23 +101,23 @@ export default class RowMongooseRepository implements RowContractRepository {
   private transformRow(doc: unknown, fields: IField[] = []): IRow {
     let json: Record<string, unknown>;
 
-    if (hasToJSON(doc)) {
+    if (this.hasToJSON(doc)) {
       json = doc.toJSON({ flattenObjectIds: true });
-    } else if (isRecord(doc)) {
+    } else if (this.isRecord(doc)) {
       json = { ...doc };
     } else {
       json = {};
     }
 
     let id = '';
-    if (isRecord(doc) && doc['_id']) {
+    if (this.isRecord(doc) && doc['_id']) {
       id = String(doc['_id']);
     }
 
     json['_id'] = id;
     // Read-compat: embrulha em array a FK single dos campos OWNS_FK.
     this.relationship.normalizeReadProjection(fields, json);
-    assertIRow(json);
+    this.assertIRow(json);
     return json;
   }
 
@@ -453,7 +452,7 @@ export default class RowMongooseRepository implements RowContractRepository {
 
     const subdocArray = row.get(payload.groupFieldSlug);
 
-    if (!isSubdocArray(subdocArray)) {
+    if (!this.isSubdocArray(subdocArray)) {
       throw new Error('Group field not found');
     }
 
@@ -477,7 +476,7 @@ export default class RowMongooseRepository implements RowContractRepository {
     if (!row) return false;
 
     const subdocArray = row.get(payload.groupFieldSlug);
-    if (!isSubdocArray(subdocArray)) return false;
+    if (!this.isSubdocArray(subdocArray)) return false;
 
     const subdoc = subdocArray.id(payload.itemId);
     if (!subdoc) return false;

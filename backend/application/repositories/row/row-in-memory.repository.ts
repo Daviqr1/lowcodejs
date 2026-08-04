@@ -23,135 +23,143 @@ import { RowContractRepository } from './row-contract.repository';
 const rowOwnership = new RowOwnershipService();
 
 /** Compara valores tolerando `Date`/`ObjectId` (que nao batem por identidade). */
-function looseEquals(left: unknown, right: unknown): boolean {
-  if (left === right) return true;
-  if (left instanceof Date || right instanceof Date) {
-    return (
-      new Date(String(left)).getTime() === new Date(String(right)).getTime()
-    );
-  }
-  if (left == null || right == null) return false;
-  if (typeof left === 'object' || typeof right === 'object') {
-    return String(left) === String(right);
-  }
-  return false;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-/** Resolve `a.b.c` sobre o objeto, como o Mongo faz com dot-path. */
-function readPath(row: Record<string, unknown>, path: string): unknown {
-  if (!path.includes('.')) return row[path];
-
-  let current: unknown = row;
-  for (const part of path.split('.')) {
-    if (!isRecord(current)) return undefined;
-    current = current[part];
-  }
-  return current;
-}
-
-/** Um campo-array casa se QUALQUER elemento casar — semantica do Mongo. */
-function candidateValues(fieldVal: unknown): unknown[] {
-  if (Array.isArray(fieldVal)) return fieldVal;
-  return [fieldVal];
-}
-
-function matchesOperator(
-  operator: string,
-  operand: unknown,
-  fieldVal: unknown,
-): boolean {
-  const values = candidateValues(fieldVal);
-
-  const OPERATORS: Record<string, () => boolean> = {
-    $in: () =>
-      Array.isArray(operand) &&
-      values.some((value) => operand.some((item) => looseEquals(item, value))),
-    $nin: () =>
-      !Array.isArray(operand) ||
-      !values.some((value) => operand.some((item) => looseEquals(item, value))),
-    $eq: () => values.some((value) => looseEquals(value, operand)),
-    $ne: () => !values.some((value) => looseEquals(value, operand)),
-    $exists: () => (fieldVal !== undefined) === Boolean(operand),
-    $gt: () => values.some((value) => Number(value) > Number(operand)),
-    $gte: () => values.some((value) => Number(value) >= Number(operand)),
-    $lt: () => values.some((value) => Number(value) < Number(operand)),
-    $lte: () => values.some((value) => Number(value) <= Number(operand)),
-  };
-
-  const evaluate = OPERATORS[operator];
-  // Operador nao suportado nunca deve liberar a row em silencio: o guard
-  // depende deste double para os testes de negacao.
-  if (!evaluate) {
-    throw new Error(
-      `[row-in-memory] operador de guardQuery nao suportado: ${operator}`,
-    );
-  }
-
-  return evaluate();
-}
-
-/**
- * Aplica um fragmento de guardQuery sobre um item da colecao in-memory.
- *
- * Cobre os operadores que o RowAccessGuard emite ($in, $ne, $exists, ranges de
- * data) com a semantica do Mongo para campos-array e dot-path. Operador
- * desconhecido lanca — antes, qualquer coisa fora de `$in` passava batido e o
- * fragmento restritivo simplesmente nao filtrava.
- */
-function matchesGuardQuery(
-  row: Record<string, unknown>,
-  query: Record<string, unknown>,
-): boolean {
-  if (!query || Object.keys(query).length === 0) return true;
-
-  for (const [key, condition] of Object.entries(query)) {
-    if (key === '$and') {
-      if (!Array.isArray(condition)) continue;
-      if (!condition.every((part) => matchesGuardQuery(row, part)))
-        return false;
-      continue;
-    }
-    if (key === '$or') {
-      if (!Array.isArray(condition)) continue;
-      if (!condition.some((part) => matchesGuardQuery(row, part))) return false;
-      continue;
-    }
-    if (key === '$nor') {
-      if (!Array.isArray(condition)) continue;
-      if (condition.some((part) => matchesGuardQuery(row, part))) return false;
-      continue;
-    }
-
-    const fieldVal = readPath(row, key);
-
-    if (
-      condition !== null &&
-      typeof condition === 'object' &&
-      !Array.isArray(condition)
-    ) {
-      for (const [operator, operand] of Object.entries(condition)) {
-        if (!matchesOperator(operator, operand, fieldVal)) return false;
-      }
-      continue;
-    }
-
-    if (
-      !candidateValues(fieldVal).some((value) => looseEquals(value, condition))
-    )
-      return false;
-  }
-
-  return true;
-}
 
 export default class RowInMemoryRepository
   extends InMemoryRepository
   implements RowContractRepository
 {
+  private looseEquals(left: unknown, right: unknown): boolean {
+    if (left === right) return true;
+    if (left instanceof Date || right instanceof Date) {
+      return (
+        new Date(String(left)).getTime() === new Date(String(right)).getTime()
+      );
+    }
+    if (left == null || right == null) return false;
+    if (typeof left === 'object' || typeof right === 'object') {
+      return String(left) === String(right);
+    }
+    return false;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  /** Resolve `a.b.c` sobre o objeto, como o Mongo faz com dot-path. */
+  private readPath(row: Record<string, unknown>, path: string): unknown {
+    if (!path.includes('.')) return row[path];
+
+    let current: unknown = row;
+    for (const part of path.split('.')) {
+      if (!this.isRecord(current)) return undefined;
+      current = current[part];
+    }
+    return current;
+  }
+
+  /** Um campo-array casa se QUALQUER elemento casar — semantica do Mongo. */
+  private candidateValues(fieldVal: unknown): unknown[] {
+    if (Array.isArray(fieldVal)) return fieldVal;
+    return [fieldVal];
+  }
+
+  private matchesOperator(
+    operator: string,
+    operand: unknown,
+    fieldVal: unknown,
+  ): boolean {
+    const values = this.candidateValues(fieldVal);
+
+    const OPERATORS: Record<string, () => boolean> = {
+      $in: () =>
+        Array.isArray(operand) &&
+        values.some((value) =>
+          operand.some((item) => this.looseEquals(item, value)),
+        ),
+      $nin: () =>
+        !Array.isArray(operand) ||
+        !values.some((value) =>
+          operand.some((item) => this.looseEquals(item, value)),
+        ),
+      $eq: () => values.some((value) => this.looseEquals(value, operand)),
+      $ne: () => !values.some((value) => this.looseEquals(value, operand)),
+      $exists: () => (fieldVal !== undefined) === Boolean(operand),
+      $gt: () => values.some((value) => Number(value) > Number(operand)),
+      $gte: () => values.some((value) => Number(value) >= Number(operand)),
+      $lt: () => values.some((value) => Number(value) < Number(operand)),
+      $lte: () => values.some((value) => Number(value) <= Number(operand)),
+    };
+
+    const evaluate = OPERATORS[operator];
+    // Operador nao suportado nunca deve liberar a row em silencio: o guard
+    // depende deste double para os testes de negacao.
+    if (!evaluate) {
+      throw new Error(
+        `[row-in-memory] operador de guardQuery nao suportado: ${operator}`,
+      );
+    }
+
+    return evaluate();
+  }
+
+  /**
+   * Aplica um fragmento de guardQuery sobre um item da colecao in-memory.
+   *
+   * Cobre os operadores que o RowAccessGuard emite ($in, $ne, $exists, ranges de
+   * data) com a semantica do Mongo para campos-array e dot-path. Operador
+   * desconhecido lanca — antes, qualquer coisa fora de `$in` passava batido e o
+   * fragmento restritivo simplesmente nao filtrava.
+   */
+  private matchesGuardQuery(
+    row: Record<string, unknown>,
+    query: Record<string, unknown>,
+  ): boolean {
+    if (!query || Object.keys(query).length === 0) return true;
+
+    for (const [key, condition] of Object.entries(query)) {
+      if (key === '$and') {
+        if (!Array.isArray(condition)) continue;
+        if (!condition.every((part) => this.matchesGuardQuery(row, part)))
+          return false;
+        continue;
+      }
+      if (key === '$or') {
+        if (!Array.isArray(condition)) continue;
+        if (!condition.some((part) => this.matchesGuardQuery(row, part)))
+          return false;
+        continue;
+      }
+      if (key === '$nor') {
+        if (!Array.isArray(condition)) continue;
+        if (condition.some((part) => this.matchesGuardQuery(row, part)))
+          return false;
+        continue;
+      }
+
+      const fieldVal = this.readPath(row, key);
+
+      if (
+        condition !== null &&
+        typeof condition === 'object' &&
+        !Array.isArray(condition)
+      ) {
+        for (const [operator, operand] of Object.entries(condition)) {
+          if (!this.matchesOperator(operator, operand, fieldVal)) return false;
+        }
+        continue;
+      }
+
+      if (
+        !this.candidateValues(fieldVal).some((value) =>
+          this.looseEquals(value, condition),
+        )
+      )
+        return false;
+    }
+
+    return true;
+  }
   private collections = new Map<string, IRow[]>();
 
   private getCollection(slug: string): IRow[] {
@@ -226,7 +234,7 @@ export default class RowInMemoryRepository
       }
       // Aplica o fragmento de guardQuery (row-access-guard)
       if (payload.guardQuery && Object.keys(payload.guardQuery).length > 0) {
-        if (!matchesGuardQuery(row, payload.guardQuery)) return false;
+        if (!this.matchesGuardQuery(row, payload.guardQuery)) return false;
       }
       return true;
     });
@@ -284,7 +292,7 @@ export default class RowInMemoryRepository
         if (row[key] !== value) return false;
       }
       if (guardQuery && Object.keys(guardQuery).length > 0) {
-        if (!matchesGuardQuery(row, guardQuery)) return false;
+        if (!this.matchesGuardQuery(row, guardQuery)) return false;
       }
       return true;
     }).length;
