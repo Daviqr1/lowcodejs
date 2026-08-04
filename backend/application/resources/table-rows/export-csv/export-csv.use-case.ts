@@ -22,29 +22,28 @@ import type { TableRowExportCsvPayload } from './export-csv.validator';
 
 type Response = Either<HTTPException, Readable>;
 
-function buildFields(
-  tableFields: IField[],
-  hiddenSlugs: Set<string>,
-): {
-  csvFields: CsvField[];
-  exportableFields: IField[];
-} {
-  const exportableFields = tableFields.filter(
-    (f) =>
-      (!f.native || f.slug === '_id' || f.slug === 'creator') &&
-      !hiddenSlugs.has(f.slug),
-  );
-
-  const csvFields: CsvField[] = exportableFields.map((field) => ({
-    label: field.name,
-    value: field.slug,
-  }));
-
-  return { csvFields, exportableFields };
-}
-
 @Service()
 export default class TableRowExportCsvUseCase {
+  private buildFields(
+    tableFields: IField[],
+    hiddenSlugs: Set<string>,
+  ): {
+    csvFields: CsvField[];
+    exportableFields: IField[];
+  } {
+    const exportableFields = tableFields.filter(
+      (f) =>
+        (!f.native || f.slug === '_id' || f.slug === 'creator') &&
+        !hiddenSlugs.has(f.slug),
+    );
+
+    const csvFields: CsvField[] = exportableFields.map((field) => ({
+      label: field.name,
+      value: field.slug,
+    }));
+
+    return { csvFields, exportableFields };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -115,7 +114,10 @@ export default class TableRowExportCsvUseCase {
         isAdministrator: payload.isAdministrator,
       });
 
-      const { csvFields, exportableFields } = buildFields(table.fields, hidden);
+      const { csvFields, exportableFields } = this.buildFields(
+        table.fields,
+        hidden,
+      );
 
       const source = this.csvExport.iterateInBatches({
         payload,

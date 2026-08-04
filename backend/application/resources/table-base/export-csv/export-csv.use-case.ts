@@ -33,34 +33,33 @@ const FIELDS: CsvField[] = [
   { label: 'Atualizado em', value: 'updatedAt' },
 ];
 
-function ownerName(owner: ITable['owner']): string {
-  if (!owner) return '';
-  if (typeof owner === 'string') return owner;
-  return owner.name ?? owner._id ?? '';
-}
-
-function toCsvRow(table: ITable): Record<string, unknown> {
-  let trashed = 'false';
-  if (table.trashed) trashed = 'true';
-  let createdAt = '';
-  if (table.createdAt) createdAt = new Date(table.createdAt).toISOString();
-  let updatedAt = '';
-  if (table.updatedAt) updatedAt = new Date(table.updatedAt).toISOString();
-  return {
-    _id: table._id,
-    name: table.name ?? '',
-    slug: table.slug ?? '',
-    type: table.type ?? '',
-    style: table.style ?? '',
-    owner: ownerName(table.owner),
-    trashed,
-    createdAt,
-    updatedAt,
-  };
-}
-
 @Service()
 export default class TableExportCsvUseCase {
+  private ownerName(owner: ITable['owner']): string {
+    if (!owner) return '';
+    if (typeof owner === 'string') return owner;
+    return owner.name ?? owner._id ?? '';
+  }
+
+  private toCsvRow(table: ITable): Record<string, unknown> {
+    let trashed = 'false';
+    if (table.trashed) trashed = 'true';
+    let createdAt = '';
+    if (table.createdAt) createdAt = new Date(table.createdAt).toISOString();
+    let updatedAt = '';
+    if (table.updatedAt) updatedAt = new Date(table.updatedAt).toISOString();
+    return {
+      _id: table._id,
+      name: table.name ?? '',
+      slug: table.slug ?? '',
+      type: table.type ?? '',
+      style: table.style ?? '',
+      owner: this.ownerName(table.owner),
+      trashed,
+      createdAt,
+      updatedAt,
+    };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly csvExport: CsvExportContractService,
@@ -106,7 +105,7 @@ export default class TableExportCsvUseCase {
             perPage,
             sort,
           });
-          return batch.map(toCsvRow);
+          return batch.map((item) => this.toCsvRow(item));
         },
       });
 

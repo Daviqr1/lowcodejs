@@ -13,15 +13,14 @@ import type {
 } from './authentication-middleware-contract.service';
 import { AuthenticationMiddlewareContractService } from './authentication-middleware-contract.service';
 
-function unauthorized(): HTTPException {
-  return HTTPException.Unauthorized(
-    'Autenticação necessária',
-    'AUTHENTICATION_REQUIRED',
-  );
-}
-
 @Service()
 export default class AuthenticationMiddlewareService implements AuthenticationMiddlewareContractService {
+  private unauthorized(): HTTPException {
+    return HTTPException.Unauthorized(
+      'Autenticação necessária',
+      'AUTHENTICATION_REQUIRED',
+    );
+  }
   constructor(private readonly session: SessionContractService) {}
 
   handle(options: AuthOptions = { optional: false }): RequestHook {
@@ -33,7 +32,7 @@ export default class AuthenticationMiddlewareService implements AuthenticationMi
 
       if (!accessToken) {
         if (options.optional) return;
-        throw unauthorized();
+        throw this.unauthorized();
       }
 
       // `verifyToken` confere assinatura RS256 e expiracao; `decode` apenas
@@ -45,7 +44,7 @@ export default class AuthenticationMiddlewareService implements AuthenticationMi
 
       if (!decoded || decoded.type !== E_JWT_TYPE.ACCESS) {
         if (options.optional) return;
-        throw unauthorized();
+        throw this.unauthorized();
       }
 
       request.user = {

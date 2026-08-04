@@ -54,15 +54,14 @@ const RELATION_DISPLAY_KEYS = [
   'slug',
 ] as const;
 
-function stripHtml(value: string): string {
-  return value
-    .replace(HTML_TAG_REGEX, ' ')
-    .replace(WHITESPACE_REGEX, ' ')
-    .trim();
-}
-
 @Service()
 export default class FieldValueService implements FieldValueContractService {
+  private stripHtml(value: string): string {
+    return value
+      .replace(HTML_TAG_REGEX, ' ')
+      .replace(WHITESPACE_REGEX, ' ')
+      .trim();
+  }
   constructor(private readonly typeGuard: TypeGuardContractService) {}
 
   typeOf(fields: IField[], slug: string): FieldType | undefined {
@@ -164,7 +163,8 @@ export default class FieldValueService implements FieldValueContractService {
     }
 
     if (typeof value === 'string') {
-      if (context.fieldType === E_FIELD_TYPE.TEXT_LONG) return stripHtml(value);
+      if (context.fieldType === E_FIELD_TYPE.TEXT_LONG)
+        return this.stripHtml(value);
       return value;
     }
 

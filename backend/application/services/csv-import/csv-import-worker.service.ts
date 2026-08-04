@@ -58,132 +58,169 @@ type WorkerDeps = {
   relationshipResolver: RelationshipResolverContractService;
 };
 
-function parseCsv(csvContent: string): Promise<Array<Record<string, string>>> {
-  return new Promise((resolve, reject) => {
-    const results: Array<Record<string, string>> = [];
-    const stream = Readable.from(csvContent);
+@Service()
+export default class CsvImportWorkerService
+  extends QueueWorkerBase<CsvImportJobPayload>
+  implements CsvImportWorkerContractService
+{
+  private parseCsv(csvContent: string): Promise<Array<Record<string, string>>> {
+    return new Promise((resolve, reject) => {
+      const results: Array<Record<string, string>> = [];
+      const stream = Readable.from(csvContent);
 
-    stream
-      .pipe(csv())
-      .on('data', (row: Record<string, string>) => {
-        results.push(row);
-      })
-      .on('end', () => {
-        resolve(results);
-      })
-      .on('error', (err: Error) => {
-        reject(err);
-      });
-  });
-}
+      stream
+        .pipe(csv())
+        .on('data', (row: Record<string, string>) => {
+          results.push(row);
+        })
+        .on('end', () => {
+          resolve(results);
+        })
+        .on('error', (err: Error) => {
+          reject(err);
+        });
+    });
+  }
 
-function buildFieldMap(
-  headers: string[],
-  fields: IField[],
-): Map<string, IField> {
-  const map = new Map<string, IField>();
+  private buildFieldMap(
+    headers: string[],
+    fields: IField[],
+  ): Map<string, IField> {
+    const map = new Map<string, IField>();
 
-  for (const header of headers) {
-    let matched: IField | undefined;
+    for (const header of headers) {
+      let matched: IField | undefined;
 
-    for (const field of fields) {
-      if (field.native) continue;
-      if (field.slug === header) {
-        matched = field;
-        break;
-      }
-    }
-
-    if (!matched) {
       for (const field of fields) {
         if (field.native) continue;
-        if (field.name.toLowerCase() === header.toLowerCase()) {
+        if (field.slug === header) {
           matched = field;
           break;
         }
       }
+
+      if (!matched) {
+        for (const field of fields) {
+          if (field.native) continue;
+          if (field.name.toLowerCase() === header.toLowerCase()) {
+            matched = field;
+            break;
+          }
+        }
+      }
+
+      if (matched) {
+        map.set(header, matched);
+      }
     }
 
-    if (matched) {
-      map.set(header, matched);
+    return map;
+  }
+
+  private async processImportJob(
+    job: Job<CsvImportJobPayload>,
+    deps: WorkerDeps,
+  ): Promise<void> {
+    const { slug, userId, csvContent } = job.data;
+    const jobId = job.id ?? '';
+    const room = 'job:' + jobId;
+
+    const table = await deps.tableRepository.findBySlug(slug);
+
+    if (!table) {
+      const errorEvt: CsvImportErrorEvent = {
+        job_id: jobId,
+        message: 'Tabela não encontrada',
+        cause: 'TABLE_NOT_FOUND',
+      };
+      deps.storeResult(jobId, { kind: 'error', event: errorEvt });
+      deps.namespace.to(room).emit(CSV_IMPORT_EVENT.ERROR, errorEvt);
+      return;
     }
-  }
 
-  return map;
-}
+    const rows = await this.parseCsv(csvContent);
 
-async function processImportJob(
-  job: Job<CsvImportJobPayload>,
-  deps: WorkerDeps,
-): Promise<void> {
-  const { slug, userId, csvContent } = job.data;
-  const jobId = job.id ?? '';
-  const room = 'job:' + jobId;
+    if (rows.length > IMPORT_CSV_LIMIT) {
+      const errorEvt: CsvImportErrorEvent = {
+        job_id: jobId,
+        message: `Arquivo excede ${IMPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas`,
+        cause: 'IMPORT_LIMIT_EXCEEDED',
+      };
+      deps.storeResult(jobId, { kind: 'error', event: errorEvt });
+      deps.namespace.to(room).emit(CSV_IMPORT_EVENT.ERROR, errorEvt);
+      return;
+    }
 
-  const table = await deps.tableRepository.findBySlug(slug);
+    const firstRow = rows[0];
+    const headers: string[] = [];
+    if (firstRow) {
+      headers.push(...Object.keys(firstRow));
+    }
+    const fieldMap = this.buildFieldMap(headers, table.fields);
 
-  if (!table) {
-    const errorEvt: CsvImportErrorEvent = {
-      job_id: jobId,
-      message: 'Tabela não encontrada',
-      cause: 'TABLE_NOT_FOUND',
-    };
-    deps.storeResult(jobId, { kind: 'error', event: errorEvt });
-    deps.namespace.to(room).emit(CSV_IMPORT_EVENT.ERROR, errorEvt);
-    return;
-  }
+    const resolvers = await deps.relationshipResolver.build(rows, fieldMap);
 
-  const rows = await parseCsv(csvContent);
+    let imported = 0;
+    let skipped = 0;
+    const total = rows.length;
+    const groups: IGroupConfiguration[] = table.groups ?? [];
+    const guardContext = await deps.rowAccessGuard.resolveContext(userId);
 
-  if (rows.length > IMPORT_CSV_LIMIT) {
-    const errorEvt: CsvImportErrorEvent = {
-      job_id: jobId,
-      message: `Arquivo excede ${IMPORT_CSV_LIMIT.toLocaleString('pt-BR')} linhas`,
-      cause: 'IMPORT_LIMIT_EXCEEDED',
-    };
-    deps.storeResult(jobId, { kind: 'error', event: errorEvt });
-    deps.namespace.to(room).emit(CSV_IMPORT_EVENT.ERROR, errorEvt);
-    return;
-  }
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const payload: Record<string, unknown> = {};
 
-  const firstRow = rows[0];
-  const headers: string[] = [];
-  if (firstRow) {
-    headers.push(...Object.keys(firstRow));
-  }
-  const fieldMap = buildFieldMap(headers, table.fields);
+      for (const [col, field] of fieldMap) {
+        const raw = row[col] ?? '';
+        payload[field.slug] = deps.fieldValue.coerce(
+          raw,
+          field,
+          resolvers.get(col),
+        );
+      }
 
-  const resolvers = await deps.relationshipResolver.build(rows, fieldMap);
+      payload['creator'] = userId;
 
-  let imported = 0;
-  let skipped = 0;
-  const total = rows.length;
-  const groups: IGroupConfiguration[] = table.groups ?? [];
-  const guardContext = await deps.rowAccessGuard.resolveContext(userId);
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const payload: Record<string, unknown> = {};
-
-    for (const [col, field] of fieldMap) {
-      const raw = row[col] ?? '';
-      payload[field.slug] = deps.fieldValue.coerce(
-        raw,
-        field,
-        resolvers.get(col),
+      const errors = deps.rowPayloadValidator.validate(
+        payload,
+        table.fields,
+        groups,
       );
-    }
 
-    payload['creator'] = userId;
+      if (errors) {
+        skipped++;
 
-    const errors = deps.rowPayloadValidator.validate(
-      payload,
-      table.fields,
-      groups,
-    );
+        const isLast = i === rows.length - 1;
+        const isInterval = (i + 1) % PROGRESS_INTERVAL === 0;
 
-    if (errors) {
-      skipped++;
+        if (isInterval || isLast) {
+          const progressEvt: CsvImportProgressEvent = {
+            job_id: jobId,
+            processed: i + 1,
+            total,
+          };
+          deps.namespace.to(room).emit(CSV_IMPORT_EVENT.PROGRESS, progressEvt);
+        }
+
+        continue;
+      }
+
+      await deps.rowPasswordService.hash(payload, table.fields);
+
+      // Sem o sanitize, uma coluna de visibilidade no CSV entrava crua — dava
+      // para importar rows num nivel que o proprio usuario nao enxerga.
+      const sanitized = await deps.rowAccessGuard.composeSanitize(
+        table._id.toString(),
+        payload,
+        guardContext,
+        table,
+        'create',
+        null,
+      );
+
+      await deps.rowRepository.create({ table, data: sanitized });
+
+      imported++;
 
       const isLast = i === rows.length - 1;
       const isInterval = (i + 1) % PROGRESS_INTERVAL === 0;
@@ -196,55 +233,17 @@ async function processImportJob(
         };
         deps.namespace.to(room).emit(CSV_IMPORT_EVENT.PROGRESS, progressEvt);
       }
-
-      continue;
     }
 
-    await deps.rowPasswordService.hash(payload, table.fields);
-
-    // Sem o sanitize, uma coluna de visibilidade no CSV entrava crua — dava
-    // para importar rows num nivel que o proprio usuario nao enxerga.
-    const sanitized = await deps.rowAccessGuard.composeSanitize(
-      table._id.toString(),
-      payload,
-      guardContext,
-      table,
-      'create',
-      null,
-    );
-
-    await deps.rowRepository.create({ table, data: sanitized });
-
-    imported++;
-
-    const isLast = i === rows.length - 1;
-    const isInterval = (i + 1) % PROGRESS_INTERVAL === 0;
-
-    if (isInterval || isLast) {
-      const progressEvt: CsvImportProgressEvent = {
-        job_id: jobId,
-        processed: i + 1,
-        total,
-      };
-      deps.namespace.to(room).emit(CSV_IMPORT_EVENT.PROGRESS, progressEvt);
-    }
+    const completedEvt: CsvImportCompletedEvent = {
+      job_id: jobId,
+      imported,
+      skipped,
+      total,
+    };
+    deps.storeResult(jobId, { kind: 'completed', event: completedEvt });
+    deps.namespace.to(room).emit(CSV_IMPORT_EVENT.COMPLETED, completedEvt);
   }
-
-  const completedEvt: CsvImportCompletedEvent = {
-    job_id: jobId,
-    imported,
-    skipped,
-    total,
-  };
-  deps.storeResult(jobId, { kind: 'completed', event: completedEvt });
-  deps.namespace.to(room).emit(CSV_IMPORT_EVENT.COMPLETED, completedEvt);
-}
-
-@Service()
-export default class CsvImportWorkerService
-  extends QueueWorkerBase<CsvImportJobPayload>
-  implements CsvImportWorkerContractService
-{
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -264,7 +263,7 @@ export default class CsvImportWorkerService
       CSV_IMPORT_QUEUE_NAME,
       async (job: Job<CsvImportJobPayload>): Promise<void> => {
         if (job.name === CSV_IMPORT_JOB.IMPORT) {
-          await processImportJob(job, this.deps());
+          await this.processImportJob(job, this.deps());
           return;
         }
         console.warn(`[CsvImportWorker] Job desconhecido: ${job.name}`);

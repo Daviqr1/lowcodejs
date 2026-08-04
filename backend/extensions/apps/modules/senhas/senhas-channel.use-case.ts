@@ -13,29 +13,29 @@ import type {
   UpdateChannelInput,
 } from './senhas.types';
 
-function toId(value: unknown): string {
-  if (value && typeof value === 'object' && '_id' in value) {
-    return String(value._id);
-  }
-  return String(value);
-}
-
-/**
- * Regras de acesso (passbolt-like):
- * - owner: criador do canal. Único que gerencia (renomear/excluir/membros).
- * - member: owner OU presente em `members`. Pode ler e editar entradas.
- * - canal público (`private: false`): leitura liberada a qualquer autenticado.
- */
 @Service()
 export default class SenhasChannelUseCase {
+  private toId(value: unknown): string {
+    if (value && typeof value === 'object' && '_id' in value) {
+      return String(value._id);
+    }
+    return String(value);
+  }
+
+  /**
+   * Regras de acesso (passbolt-like):
+   * - owner: criador do canal. Único que gerencia (renomear/excluir/membros).
+   * - member: owner OU presente em `members`. Pode ler e editar entradas.
+   * - canal público (`private: false`): leitura liberada a qualquer autenticado.
+   */
   constructor(private readonly userRepository: UserContractRepository) {}
 
   isMember(
     channel: { owner: unknown; members: Array<unknown> },
     userId: string,
   ): boolean {
-    if (toId(channel.owner) === userId) return true;
-    return channel.members.some((m) => toId(m) === userId);
+    if (this.toId(channel.owner) === userId) return true;
+    return channel.members.some((m) => this.toId(m) === userId);
   }
 
   canView(
@@ -74,15 +74,15 @@ export default class SenhasChannelUseCase {
     users: Map<string, IPasswordUserRef>,
     entriesCount: number,
   ): IPasswordChannel {
-    const ownerId = toId(channel.owner);
+    const ownerId = this.toId(channel.owner);
     return {
-      _id: toId(channel._id),
+      _id: this.toId(channel._id),
       name: channel.name,
       description: channel.description ?? null,
       private: channel.private,
       owner: users.get(ownerId) ?? ownerId,
       members: channel.members.map((m) => {
-        const id = toId(m);
+        const id = this.toId(m);
         return users.get(id) ?? id;
       }),
       entriesCount,
@@ -103,8 +103,8 @@ export default class SenhasChannelUseCase {
         .lean();
 
       const userIds = channels.flatMap((c) => [
-        toId(c.owner),
-        ...c.members.map(toId),
+        this.toId(c.owner),
+        ...c.members.map((id) => this.toId(id)),
       ]);
       const users = await this.resolveUsers(userIds);
 
@@ -173,7 +173,7 @@ export default class SenhasChannelUseCase {
           ),
         );
       }
-      if (toId(channel.owner) !== userId) {
+      if (this.toId(channel.owner) !== userId) {
         return left(
           HTTPException.Forbidden(
             'Apenas o dono do canal pode editá-lo',
@@ -190,7 +190,7 @@ export default class SenhasChannelUseCase {
       if (input.members !== undefined) {
         // Garante o owner sempre presente (não pode se remover do canal).
         update.members = Array.from(
-          new Set([toId(channel.owner), ...input.members]),
+          new Set([this.toId(channel.owner), ...input.members]),
         );
       }
 
@@ -204,8 +204,8 @@ export default class SenhasChannelUseCase {
         channel: channelId,
       });
       const users = await this.resolveUsers([
-        toId(updated!.owner),
-        ...updated!.members.map(toId),
+        this.toId(updated!.owner),
+        ...updated!.members.map((id) => this.toId(id)),
       ]);
       return right(this.serialize(updated!, users, count));
     } catch (error) {
@@ -234,7 +234,7 @@ export default class SenhasChannelUseCase {
           ),
         );
       }
-      if (toId(channel.owner) !== userId) {
+      if (this.toId(channel.owner) !== userId) {
         return left(
           HTTPException.Forbidden(
             'Apenas o dono do canal pode excluí-lo',

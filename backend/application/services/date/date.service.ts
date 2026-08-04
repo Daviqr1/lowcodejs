@@ -25,12 +25,11 @@ const PT_BR_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
 
 const DEFAULT_MASK = 'dd/MM/yyyy';
 
-function pad(value: number): string {
-  return value.toString().padStart(2, '0');
-}
-
 @Service()
 export default class DateService implements DateContractService {
+  private pad(value: number): string {
+    return value.toString().padStart(2, '0');
+  }
   now(): Date {
     return new Date();
   }
@@ -42,8 +41,8 @@ export default class DateService implements DateContractService {
 
   isoDate(date: Date): string {
     const year = date.getUTCFullYear();
-    const month = pad(date.getUTCMonth() + 1);
-    const day = pad(date.getUTCDate());
+    const month = this.pad(date.getUTCMonth() + 1);
+    const day = this.pad(date.getUTCDate());
     return `${year}-${month}-${day}`;
   }
 
@@ -72,12 +71,12 @@ export default class DateService implements DateContractService {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
 
     return mask
-      .replace('dd', pad(date.getDate()))
-      .replace('MM', pad(date.getMonth() + 1))
+      .replace('dd', this.pad(date.getDate()))
+      .replace('MM', this.pad(date.getMonth() + 1))
       .replace('yyyy', date.getFullYear().toString())
-      .replace('HH', pad(date.getHours()))
-      .replace('mm', pad(date.getMinutes()))
-      .replace('ss', pad(date.getSeconds()));
+      .replace('HH', this.pad(date.getHours()))
+      .replace('mm', this.pad(date.getMinutes()))
+      .replace('ss', this.pad(date.getSeconds()));
   }
 
   formatPtBR(date: Date): string {
@@ -86,7 +85,7 @@ export default class DateService implements DateContractService {
 
   monthKey(value: Date | string): string {
     const date = new Date(value);
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+    return `${date.getFullYear()}-${this.pad(date.getMonth() + 1)}`;
   }
 
   lastMonths(count: number): MonthBucket[] {
@@ -96,7 +95,7 @@ export default class DateService implements DateContractService {
     for (let offset = count - 1; offset >= 0; offset -= 1) {
       const ref = new Date(now.getFullYear(), now.getMonth() - offset, 1);
       buckets.push({
-        key: `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}`,
+        key: `${ref.getFullYear()}-${this.pad(ref.getMonth() + 1)}`,
         label: MONTH_LABELS_PT[ref.getMonth()],
       });
     }

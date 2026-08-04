@@ -28,168 +28,168 @@ const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
 };
 
 // Narrow para dados dinâmicos de request (query/params) sem asserção.
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value));
-  }
-  return {};
-}
-
-/**
- * Ordem importa: mais específico primeiro.
- * Rotas aninhadas como /tables/:slug/rows/:id/groups/:groupSlug
- * devem bater em GROUP_ROW antes de ROW ou TABLE.
- */
-const OBJECT_MAP: Array<{
-  match: string;
-  object: keyof typeof E_LOGGER_OBJECT_TYPE;
-}> = [
-  // ── Nested (mais específico primeiro) ──
-  { match: '/groups', object: E_LOGGER_OBJECT_TYPE.GROUP_ROW },
-  { match: '/fields', object: E_LOGGER_OBJECT_TYPE.FIELD },
-  { match: '/rows', object: E_LOGGER_OBJECT_TYPE.ROW },
-
-  // ── Top-level ──
-  { match: '/tables', object: E_LOGGER_OBJECT_TYPE.TABLE },
-  { match: '/users', object: E_LOGGER_OBJECT_TYPE.USER },
-  { match: '/user-group', object: E_LOGGER_OBJECT_TYPE.USER_GROUP },
-  { match: '/menu', object: E_LOGGER_OBJECT_TYPE.MENU },
-  { match: '/extensions', object: E_LOGGER_OBJECT_TYPE.EXTENSION },
-  { match: '/pages', object: E_LOGGER_OBJECT_TYPE.PAGE },
-  { match: '/permissions', object: E_LOGGER_OBJECT_TYPE.PERMISSION },
-  { match: '/profile', object: E_LOGGER_OBJECT_TYPE.PROFILE },
-  { match: '/setting', object: E_LOGGER_OBJECT_TYPE.SETTING },
-  { match: '/setup', object: E_LOGGER_OBJECT_TYPE.SETUP },
-  { match: '/storage', object: E_LOGGER_OBJECT_TYPE.STORAGE },
-];
-
-/**
- * Segmentos que NÃO são IDs — usados pelo fallbackIdFromUrl
- * para ignorar partes estáticas da URL.
- */
-const NON_ID_SEGMENTS = new Set([
-  'users',
-  'tables',
-  'rows',
-  'fields',
-  'groups',
-  'menu',
-  'extensions',
-  'pages',
-  'permissions',
-  'profile',
-  'setting',
-  'setup',
-  'storage',
-  'user-group',
-  'authentication',
-  'tools',
-  // sub-rotas estáticas
-  'paginated',
-  'exports',
-  'csv',
-  'bulk-delete',
-  'bulk-restore',
-  'bulk-trash',
-  'empty-trash',
-  'restore',
-  'trash',
-  'reorder',
-  'migration',
-  'start',
-  'cleanup',
-  'status',
-  'active',
-  'toggle',
-  'table-scope',
-  'category',
-  'evaluation',
-  'forum',
-  'messages',
-  'mention-read',
-  'reaction',
-  'sign-in',
-  'sign-up',
-  'sign-out',
-  'refresh-token',
-  'magic-link',
-  'recovery',
-  'request-code',
-  'validate-code',
-  'update-password',
-  'health-check',
-  'step',
-  'admin',
-  'email',
-  'logos',
-  'name',
-  'paging',
-  'upload',
-  'clone-table',
-  'export-table',
-  'import-table',
-]);
-
-function resolveObject(
-  route: string,
-): keyof typeof E_LOGGER_OBJECT_TYPE | null {
-  if (!route) return null;
-
-  for (const { match, object } of OBJECT_MAP) {
-    if (route.includes(match)) return object;
-  }
-
-  return null;
-}
-
-function resolveAction(method: string): keyof typeof E_LOGGER_ACTION_TYPE {
-  return ACTION_MAP[method.toUpperCase()] ?? E_LOGGER_ACTION_TYPE.VIEW;
-}
-
-/**
- * Prioridade de params nomeados pelo Fastify (ex: :rowId, :fieldId, :_id).
- */
-function resolveObjectId(params: unknown = {}): string | null {
-  const record = asRecord(params);
-  const priority = [
-    'itemId',
-    'messageId',
-    'fieldId',
-    'rowId',
-    '_id',
-    'id',
-    'slug',
-    'groupSlug', // menos prioritário — é slug de grupo, não de objeto principal
-  ];
-
-  for (const key of priority) {
-    const value = record[key];
-    if (typeof value === 'string' && value) return value;
-  }
-
-  return null;
-}
-
-/**
- * Fallback: varre a URL de trás pra frente e retorna
- * o primeiro segmento que parece ser um ID (não está em NON_ID_SEGMENTS).
- */
-function fallbackIdFromUrl(url: string): string | null {
-  // Remove query string antes de processar
-  const path = url.split('?')[0];
-  const parts = path.split('/').filter(Boolean).reverse();
-
-  for (const part of parts) {
-    if (!NON_ID_SEGMENTS.has(part)) return part;
-  }
-
-  return null;
-}
-
-const bodySchema = z.record(z.string(), z.unknown());
 
 @Service()
 export default class LoggerHookService implements LoggerHookContractService {
+  private asRecord(value: unknown): Record<string, unknown> {
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value));
+    }
+    return {};
+  }
+
+  /**
+   * Ordem importa: mais específico primeiro.
+   * Rotas aninhadas como /tables/:slug/rows/:id/groups/:groupSlug
+   * devem bater em GROUP_ROW antes de ROW ou TABLE.
+   */
+  OBJECT_MAP: Array<{
+    match: string;
+    object: keyof typeof E_LOGGER_OBJECT_TYPE;
+  }> = [
+    // ── Nested (mais específico primeiro) ──
+    { match: '/groups', object: E_LOGGER_OBJECT_TYPE.GROUP_ROW },
+    { match: '/fields', object: E_LOGGER_OBJECT_TYPE.FIELD },
+    { match: '/rows', object: E_LOGGER_OBJECT_TYPE.ROW },
+
+    // ── Top-level ──
+    { match: '/tables', object: E_LOGGER_OBJECT_TYPE.TABLE },
+    { match: '/users', object: E_LOGGER_OBJECT_TYPE.USER },
+    { match: '/user-group', object: E_LOGGER_OBJECT_TYPE.USER_GROUP },
+    { match: '/menu', object: E_LOGGER_OBJECT_TYPE.MENU },
+    { match: '/extensions', object: E_LOGGER_OBJECT_TYPE.EXTENSION },
+    { match: '/pages', object: E_LOGGER_OBJECT_TYPE.PAGE },
+    { match: '/permissions', object: E_LOGGER_OBJECT_TYPE.PERMISSION },
+    { match: '/profile', object: E_LOGGER_OBJECT_TYPE.PROFILE },
+    { match: '/setting', object: E_LOGGER_OBJECT_TYPE.SETTING },
+    { match: '/setup', object: E_LOGGER_OBJECT_TYPE.SETUP },
+    { match: '/storage', object: E_LOGGER_OBJECT_TYPE.STORAGE },
+  ];
+
+  /**
+   * Segmentos que NÃO são IDs — usados pelo fallbackIdFromUrl
+   * para ignorar partes estáticas da URL.
+   */
+  private readonly NON_ID_SEGMENTS = new Set([
+    'users',
+    'tables',
+    'rows',
+    'fields',
+    'groups',
+    'menu',
+    'extensions',
+    'pages',
+    'permissions',
+    'profile',
+    'setting',
+    'setup',
+    'storage',
+    'user-group',
+    'authentication',
+    'tools',
+    // sub-rotas estáticas
+    'paginated',
+    'exports',
+    'csv',
+    'bulk-delete',
+    'bulk-restore',
+    'bulk-trash',
+    'empty-trash',
+    'restore',
+    'trash',
+    'reorder',
+    'migration',
+    'start',
+    'cleanup',
+    'status',
+    'active',
+    'toggle',
+    'table-scope',
+    'category',
+    'evaluation',
+    'forum',
+    'messages',
+    'mention-read',
+    'reaction',
+    'sign-in',
+    'sign-up',
+    'sign-out',
+    'refresh-token',
+    'magic-link',
+    'recovery',
+    'request-code',
+    'validate-code',
+    'update-password',
+    'health-check',
+    'step',
+    'admin',
+    'email',
+    'logos',
+    'name',
+    'paging',
+    'upload',
+    'clone-table',
+    'export-table',
+    'import-table',
+  ]);
+
+  private resolveObject(
+    route: string,
+  ): keyof typeof E_LOGGER_OBJECT_TYPE | null {
+    if (!route) return null;
+
+    for (const { match, object } of this.OBJECT_MAP) {
+      if (route.includes(match)) return object;
+    }
+
+    return null;
+  }
+
+  private resolveAction(method: string): keyof typeof E_LOGGER_ACTION_TYPE {
+    return ACTION_MAP[method.toUpperCase()] ?? E_LOGGER_ACTION_TYPE.VIEW;
+  }
+
+  /**
+   * Prioridade de params nomeados pelo Fastify (ex: :rowId, :fieldId, :_id).
+   */
+  private resolveObjectId(params: unknown = {}): string | null {
+    const record = this.asRecord(params);
+    const priority = [
+      'itemId',
+      'messageId',
+      'fieldId',
+      'rowId',
+      '_id',
+      'id',
+      'slug',
+      'groupSlug', // menos prioritário — é slug de grupo, não de objeto principal
+    ];
+
+    for (const key of priority) {
+      const value = record[key];
+      if (typeof value === 'string' && value) return value;
+    }
+
+    return null;
+  }
+
+  /**
+   * Fallback: varre a URL de trás pra frente e retorna
+   * o primeiro segmento que parece ser um ID (não está em this.NON_ID_SEGMENTS).
+   */
+  private fallbackIdFromUrl(url: string): string | null {
+    // Remove query string antes de processar
+    const path = url.split('?')[0];
+    const parts = path.split('/').filter(Boolean).reverse();
+
+    for (const part of parts) {
+      if (!this.NON_ID_SEGMENTS.has(part)) return part;
+    }
+
+    return null;
+  }
+
+  private readonly bodySchema = z.record(z.string(), z.unknown());
   constructor(
     private readonly repository: LoggerContractRepository,
     private readonly loggerAudit: LoggerAuditContractService,
@@ -210,15 +210,15 @@ export default class LoggerHookService implements LoggerHookContractService {
 
       if (hasBodyMethod) {
         if (isJson) {
-          const parsed = bodySchema.safeParse(request.body);
+          const parsed = this.bodySchema.safeParse(request.body);
           if (parsed.success) body = parsed.data;
         } else {
           body = { raw: '[Non-JSON payload]' };
         }
       }
 
-      const query = asRecord(request.query);
-      const routeParams = asRecord(request.params);
+      const query = this.asRecord(request.query);
+      const routeParams = this.asRecord(request.params);
       const hasQuery = Object.keys(query).length > 0;
       const hasParams = Object.keys(routeParams).length > 0;
 
@@ -229,10 +229,11 @@ export default class LoggerHookService implements LoggerHookContractService {
       let content: Record<string, unknown> | null = null;
       if (Object.keys(contentParts).length > 0) content = contentParts;
 
-      const action = resolveAction(method);
-      const object = resolveObject(routePattern);
+      const action = this.resolveAction(method);
+      const object = this.resolveObject(routePattern);
       const object_id =
-        resolveObjectId(request.params) ?? fallbackIdFromUrl(request.url);
+        this.resolveObjectId(request.params) ??
+        this.fallbackIdFromUrl(request.url);
       const user_id = response.request.user?.sub ?? null;
 
       // Não loga rotas que não mapeiam para nenhum objeto conhecido

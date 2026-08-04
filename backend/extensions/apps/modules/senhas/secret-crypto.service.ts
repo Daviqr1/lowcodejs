@@ -14,27 +14,26 @@ const ALGORITHM = 'aes-256-gcm';
 const VERSION = 'enc:v1';
 const IV_BYTES = 12; // recomendado para GCM
 
-function getKey(): Buffer {
-  const secret = Env.PASSWORDS_ENCRYPTION_KEY ?? Env.COOKIE_SECRET;
-  if (!secret) {
-    throw new Error(
-      'Chave de criptografia ausente: defina PASSWORDS_ENCRYPTION_KEY (ou COOKIE_SECRET).',
-    );
-  }
-  return createHash('sha256').update(secret, 'utf8').digest();
-}
-
-function isEncrypted(value: string): boolean {
-  return value.startsWith(`${VERSION}:`);
-}
-
 @Service()
 export default class SecretCryptoService implements SecretCryptoContractService {
+  private getKey(): Buffer {
+    const secret = Env.PASSWORDS_ENCRYPTION_KEY ?? Env.COOKIE_SECRET;
+    if (!secret) {
+      throw new Error(
+        'Chave de criptografia ausente: defina PASSWORDS_ENCRYPTION_KEY (ou COOKIE_SECRET).',
+      );
+    }
+    return createHash('sha256').update(secret, 'utf8').digest();
+  }
+
+  private isEncrypted(value: string): boolean {
+    return value.startsWith(`${VERSION}:`);
+  }
   encrypt(plaintext: string | null | undefined): string | null {
     if (plaintext === null || plaintext === undefined) return null;
 
     const iv = randomBytes(IV_BYTES);
-    const cipher = createCipheriv(ALGORITHM, getKey(), iv);
+    const cipher = createCipheriv(ALGORITHM, this.getKey(), iv);
     const ciphertext = Buffer.concat([
       cipher.update(plaintext, 'utf8'),
       cipher.final(),
@@ -56,7 +55,7 @@ export default class SecretCryptoService implements SecretCryptoContractService 
    */
   decrypt(payload: string | null | undefined): string | null {
     if (payload === null || payload === undefined) return null;
-    if (!isEncrypted(payload)) return payload;
+    if (!this.isEncrypted(payload)) return payload;
 
     const [, , ivB64, tagB64, dataB64] = payload.split(':');
     // `dataB64` pode ser string vazia (ciphertext de um plaintext vazio) — por
@@ -67,7 +66,7 @@ export default class SecretCryptoService implements SecretCryptoContractService 
 
     const decipher = createDecipheriv(
       ALGORITHM,
-      getKey(),
+      this.getKey(),
       Buffer.from(ivB64, 'base64'),
     );
     decipher.setAuthTag(Buffer.from(tagB64, 'base64'));

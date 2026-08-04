@@ -31,45 +31,45 @@ import type {
  * string, ObjectId, objeto populado ({ _id }), arrays e arrays aninhados.
  * Retorna ids únicos como string.
  */
-function normalizeUserIds(input: unknown): string[] {
-  const out: string[] = [];
-
-  const push = (value: unknown): void => {
-    if (!value) return;
-    if (Array.isArray(value)) {
-      for (const item of value) push(item);
-      return;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      if (trimmed) out.push(trimmed);
-      return;
-    }
-    if (typeof value === 'object') {
-      let nested: unknown;
-      if ('_id' in value) nested = value._id;
-      if (!nested && 'id' in value) nested = value.id;
-      if (nested) {
-        const asString = String(nested);
-        if (asString && asString !== '[object Object]') out.push(asString);
-        return;
-      }
-      // ObjectId e similares: String() devolve o hex.
-      const asString = String(value);
-      if (asString && asString !== '[object Object]') out.push(asString);
-      return;
-    }
-    const asString = String(value);
-    if (asString) out.push(asString);
-  };
-
-  push(input);
-
-  return Array.from(new Set(out));
-}
 
 @Service()
 export default class SandboxBuilderService implements SandboxBuilderContractService {
+  private normalizeUserIds(input: unknown): string[] {
+    const out: string[] = [];
+
+    const push = (value: unknown): void => {
+      if (!value) return;
+      if (Array.isArray(value)) {
+        for (const item of value) push(item);
+        return;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed) out.push(trimmed);
+        return;
+      }
+      if (typeof value === 'object') {
+        let nested: unknown;
+        if ('_id' in value) nested = value._id;
+        if (!nested && 'id' in value) nested = value.id;
+        if (nested) {
+          const asString = String(nested);
+          if (asString && asString !== '[object Object]') out.push(asString);
+          return;
+        }
+        // ObjectId e similares: String() devolve o hex.
+        const asString = String(value);
+        if (asString && asString !== '[object Object]') out.push(asString);
+        return;
+      }
+      const asString = String(value);
+      if (asString) out.push(asString);
+    };
+
+    push(input);
+
+    return Array.from(new Set(out));
+  }
   constructor(
     private readonly emailService: EmailContractService,
     private readonly notificationService: NotificationContractService,
@@ -93,6 +93,7 @@ export default class SandboxBuilderService implements SandboxBuilderContractServ
       dateService,
       identifier,
     } = this;
+    const normalizeUserIds = this.normalizeUserIds.bind(this);
 
     // Helper to find field definition by slug (handles variations)
     const findFieldDef = (slug: string): FieldDefinition | undefined => {

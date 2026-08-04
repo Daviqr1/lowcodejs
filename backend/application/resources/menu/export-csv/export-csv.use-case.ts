@@ -31,41 +31,40 @@ const FIELDS: CsvField[] = [
   { label: 'Atualizado em', value: 'updatedAt' },
 ];
 
-function buildSort(
-  sort: Record<string, 'asc' | 'desc'>,
-): Record<string, 'asc' | 'desc'> {
-  if (Object.keys(sort).length > 0) return sort;
-  return { order: 'asc' };
-}
-
-function toCsvRow(menu: IMenu): Record<string, unknown> {
-  let table = '';
-  if (typeof menu.table === 'string') table = menu.table;
-  let parent = '';
-  if (typeof menu.parent === 'string') parent = menu.parent;
-  let isInitial = 'false';
-  if (menu.isInitial) isInitial = 'true';
-  let createdAt = '';
-  if (menu.createdAt) createdAt = new Date(menu.createdAt).toISOString();
-  let updatedAt = '';
-  if (menu.updatedAt) updatedAt = new Date(menu.updatedAt).toISOString();
-  return {
-    _id: menu._id,
-    name: menu.name ?? '',
-    slug: menu.slug ?? '',
-    type: menu.type ?? '',
-    table,
-    parent,
-    url: menu.url ?? '',
-    order: menu.order ?? 0,
-    isInitial,
-    createdAt,
-    updatedAt,
-  };
-}
-
 @Service()
 export default class MenuExportCsvUseCase {
+  private buildSort(
+    sort: Record<string, 'asc' | 'desc'>,
+  ): Record<string, 'asc' | 'desc'> {
+    if (Object.keys(sort).length > 0) return sort;
+    return { order: 'asc' };
+  }
+
+  private toCsvRow(menu: IMenu): Record<string, unknown> {
+    let table = '';
+    if (typeof menu.table === 'string') table = menu.table;
+    let parent = '';
+    if (typeof menu.parent === 'string') parent = menu.parent;
+    let isInitial = 'false';
+    if (menu.isInitial) isInitial = 'true';
+    let createdAt = '';
+    if (menu.createdAt) createdAt = new Date(menu.createdAt).toISOString();
+    let updatedAt = '';
+    if (menu.updatedAt) updatedAt = new Date(menu.updatedAt).toISOString();
+    return {
+      _id: menu._id,
+      name: menu.name ?? '',
+      slug: menu.slug ?? '',
+      type: menu.type ?? '',
+      table,
+      parent,
+      url: menu.url ?? '',
+      order: menu.order ?? 0,
+      isInitial,
+      createdAt,
+      updatedAt,
+    };
+  }
   constructor(
     private readonly menuRepository: MenuContractRepository,
     private readonly csvExport: CsvExportContractService,
@@ -105,9 +104,9 @@ export default class MenuExportCsvUseCase {
             perPage,
             search: p.search,
             trashed: p.trashed ?? false,
-            sort: buildSort(p.sort),
+            sort: this.buildSort(p.sort),
           });
-          return batch.map(toCsvRow);
+          return batch.map((item) => this.toCsvRow(item));
         },
       });
 

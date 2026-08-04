@@ -35,93 +35,94 @@ const DISPLAY_CANDIDATE_FIELDS = [
   'slug',
 ] as const;
 
-function isObjectId(value: string): boolean {
-  return OBJECT_ID_REGEX.test(value);
-}
-
-function pickDisplayValue(
-  row: IRow,
-  candidateFields: readonly string[],
-): string | null {
-  for (const slug of candidateFields) {
-    const v = row[slug];
-    if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+@Service()
+export default class RelationshipResolverService implements RelationshipResolverContractService {
+  private isObjectId(value: string): boolean {
+    return OBJECT_ID_REGEX.test(value);
   }
-  return null;
-}
 
-function buildCandidateSlugs(displayFieldSlug: string): string[] {
-  const seen = new Set<string>();
-  const slugs: string[] = [];
-  for (const slug of [displayFieldSlug, ...DISPLAY_CANDIDATE_FIELDS]) {
-    if (!seen.has(slug)) {
-      seen.add(slug);
-      slugs.push(slug);
+  private pickDisplayValue(
+    row: IRow,
+    candidateFields: readonly string[],
+  ): string | null {
+    for (const slug of candidateFields) {
+      const v = row[slug];
+      if (typeof v === 'string' && v.trim().length > 0) return v.trim();
     }
+    return null;
   }
-  return slugs;
-}
 
-function collectDisplayValues(
-  col: string,
-  csvRows: Record<string, string>[],
-): string[] {
-  const unique = new Set<string>();
-  for (const row of csvRows) {
-    const rawCell = row[col] ?? '';
-    if (!rawCell.trim()) continue;
-    for (const part of rawCell.split(';')) {
-      const trimmed = part.trim();
-      if (trimmed && !isObjectId(trimmed)) {
-        unique.add(trimmed);
+  private buildCandidateSlugs(displayFieldSlug: string): string[] {
+    const seen = new Set<string>();
+    const slugs: string[] = [];
+    for (const slug of [displayFieldSlug, ...DISPLAY_CANDIDATE_FIELDS]) {
+      if (!seen.has(slug)) {
+        seen.add(slug);
+        slugs.push(slug);
       }
     }
+    return slugs;
   }
-  return [...unique];
-}
 
-function buildDisplayToIdMap(
-  relRows: IRow[],
-  candidateSlugs: string[],
-  relTableSlug: string,
-): Map<string, string> {
-  const displayToId = new Map<string, string>();
-  for (const relRow of relRows) {
-    const display = pickDisplayValue(relRow, candidateSlugs);
-    if (!display) continue;
-    const lower = display.toLowerCase();
-    if (!displayToId.has(lower)) {
-      displayToId.set(lower, relRow._id);
-    } else {
-      console.warn(
-        `[csv-import:resolver] Valor ambíguo "${display}" na tabela "${relTableSlug}" — usando primeiro match`,
-      );
-    }
-  }
-  return displayToId;
-}
-
-function buildResolver(displayToId: Map<string, string>): RelationshipResolver {
-  return (raw: string): string[] => {
-    const ids: string[] = [];
-    for (const part of raw.split(';')) {
-      const trimmed = part.trim();
-      if (!trimmed) continue;
-      if (isObjectId(trimmed)) {
-        ids.push(trimmed);
-      } else {
-        const id = displayToId.get(trimmed.toLowerCase());
-        if (id) {
-          ids.push(id);
+  private collectDisplayValues(
+    col: string,
+    csvRows: Record<string, string>[],
+  ): string[] {
+    const unique = new Set<string>();
+    for (const row of csvRows) {
+      const rawCell = row[col] ?? '';
+      if (!rawCell.trim()) continue;
+      for (const part of rawCell.split(';')) {
+        const trimmed = part.trim();
+        if (trimmed && !this.isObjectId(trimmed)) {
+          unique.add(trimmed);
         }
       }
     }
-    return ids;
-  };
-}
+    return [...unique];
+  }
 
-@Service()
-export default class RelationshipResolverService implements RelationshipResolverContractService {
+  private buildDisplayToIdMap(
+    relRows: IRow[],
+    candidateSlugs: string[],
+    relTableSlug: string,
+  ): Map<string, string> {
+    const displayToId = new Map<string, string>();
+    for (const relRow of relRows) {
+      const display = this.pickDisplayValue(relRow, candidateSlugs);
+      if (!display) continue;
+      const lower = display.toLowerCase();
+      if (!displayToId.has(lower)) {
+        displayToId.set(lower, relRow._id);
+      } else {
+        console.warn(
+          `[csv-import:resolver] Valor ambíguo "${display}" na tabela "${relTableSlug}" — usando primeiro match`,
+        );
+      }
+    }
+    return displayToId;
+  }
+
+  private buildResolver(
+    displayToId: Map<string, string>,
+  ): RelationshipResolver {
+    return (raw: string): string[] => {
+      const ids: string[] = [];
+      for (const part of raw.split(';')) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        if (this.isObjectId(trimmed)) {
+          ids.push(trimmed);
+        } else {
+          const id = displayToId.get(trimmed.toLowerCase());
+          if (id) {
+            ids.push(id);
+          }
+        }
+      }
+      return ids;
+    };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -139,8 +140,8 @@ export default class RelationshipResolverService implements RelationshipResolver
 
       const relTableSlug = field.relationship.table.slug;
       const displayFieldSlug = field.relationship.field.slug;
-      const candidateSlugs = buildCandidateSlugs(displayFieldSlug);
-      const displayValues = collectDisplayValues(col, csvRows);
+      const candidateSlugs = this.buildCandidateSlugs(displayFieldSlug);
+      const displayValues = this.collectDisplayValues(col, csvRows);
 
       const relatedTable = await this.tableRepository.findBySlug(relTableSlug);
       if (!relatedTable) {
@@ -155,14 +156,14 @@ export default class RelationshipResolverService implements RelationshipResolver
           candidateSlugs,
           displayValues,
         );
-        displayToId = buildDisplayToIdMap(
+        displayToId = this.buildDisplayToIdMap(
           relRows,
           candidateSlugs,
           relTableSlug,
         );
       }
 
-      resolverMap.set(col, buildResolver(displayToId));
+      resolverMap.set(col, this.buildResolver(displayToId));
     }
 
     return resolverMap;

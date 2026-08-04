@@ -21,12 +21,11 @@ import type { MenuUpdatePayload } from './update.validator';
 type Response = Either<HTTPException, Entity>;
 type Payload = MenuUpdatePayload;
 
-function getMenuId(value: Entity['parent'] | undefined): string | null {
-  return value ?? null;
-}
-
 @Service()
 export default class MenuUpdateUseCase {
+  private getMenuId(value: Entity['parent'] | undefined): string | null {
+    return value ?? null;
+  }
   constructor(
     private readonly menuRepository: MenuContractRepository,
     private readonly tableRepository: TableContractRepository,
@@ -245,7 +244,7 @@ export default class MenuUpdateUseCase {
         updatePayload.isInitial = false;
       }
 
-      const currentParentId = getMenuId(existingMenu.parent);
+      const currentParentId = this.getMenuId(existingMenu.parent);
       let nextParentId = currentParentId;
       if (payload.parent !== undefined) nextParentId = payload.parent;
       const parentChanged =

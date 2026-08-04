@@ -23,23 +23,22 @@ import type { GroupFieldUpdatePayload } from './update.validator';
 type Response = Either<HTTPException, Entity>;
 type Payload = GroupFieldUpdatePayload;
 
-function isDefaultValueEqual(
-  a: string | string[] | null | undefined,
-  b: string | string[] | null | undefined,
-): boolean {
-  if (a === b) return true;
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (typeof a === 'string' && typeof b === 'string') return a === b;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((v, i) => v === b[i]);
-  }
-  return false;
-}
-
 @Service()
 export default class GroupFieldUpdateUseCase {
+  private isDefaultValueEqual(
+    a: string | string[] | null | undefined,
+    b: string | string[] | null | undefined,
+  ): boolean {
+    if (a === b) return true;
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (typeof a === 'string' && typeof b === 'string') return a === b;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((v, i) => v === b[i]);
+    }
+    return false;
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
@@ -308,7 +307,7 @@ export default class GroupFieldUpdateUseCase {
     if (payload.required !== field.required) return false;
     if (payload.multiple !== field.multiple) return false;
     if (payload.format !== field.format) return false;
-    if (!isDefaultValueEqual(payload.defaultValue, field.defaultValue))
+    if (!this.isDefaultValueEqual(payload.defaultValue, field.defaultValue))
       return false;
 
     // `locked` e gravavel e tem default `false`: omitir a chave no PUT

@@ -34,55 +34,54 @@ const ORDER_FIELD: Array<[keyof ErrorLogPaginatedPayload, string]> = [
   ['order-url', 'url'],
 ];
 
-function parseStatuses(raw: string | undefined): number[] | undefined {
-  if (!raw) return undefined;
-  const list = raw
-    .split(',')
-    .map((token) => Number(token.trim()))
-    .filter((value) => Number.isInteger(value));
-  if (list.length > 0) return list;
-  return undefined;
-}
-
-function parseDate(raw: string | undefined): Date | undefined {
-  if (!raw) return undefined;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date;
-}
-
-function buildSort(payload: ErrorLogPaginatedPayload): Record<string, 1 | -1> {
-  const sort: Record<string, 1 | -1> = {};
-  for (const [key, field] of ORDER_FIELD) {
-    const direction = payload[key];
-    if (direction === 'asc') sort[field] = 1;
-    if (direction === 'desc') sort[field] = -1;
-  }
-  return sort;
-}
-
-function toQueryPayload(
-  payload: ErrorLogPaginatedPayload,
-): ErrorLogQueryPayload {
-  return {
-    page: payload.page,
-    perPage: payload.perPage,
-    search: payload.search,
-    statuses: parseStatuses(payload.statuses),
-    dateFrom: parseDate(payload['date-from']),
-    dateTo: parseDate(payload['date-to']),
-    resolved: payload.resolved === 'true',
-    sort: buildSort(payload),
-  };
-}
-
 @Service()
 export default class ErrorLogPaginatedUseCase {
+  private parseStatuses(raw: string | undefined): number[] | undefined {
+    if (!raw) return undefined;
+    const list = raw
+      .split(',')
+      .map((token) => Number(token.trim()))
+      .filter((value) => Number.isInteger(value));
+    if (list.length > 0) return list;
+    return undefined;
+  }
+
+  private parseDate(raw: string | undefined): Date | undefined {
+    if (!raw) return undefined;
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return undefined;
+    return date;
+  }
+
+  private buildSort(payload: ErrorLogPaginatedPayload): Record<string, 1 | -1> {
+    const sort: Record<string, 1 | -1> = {};
+    for (const [key, field] of ORDER_FIELD) {
+      const direction = payload[key];
+      if (direction === 'asc') sort[field] = 1;
+      if (direction === 'desc') sort[field] = -1;
+    }
+    return sort;
+  }
+
+  private toQueryPayload(
+    payload: ErrorLogPaginatedPayload,
+  ): ErrorLogQueryPayload {
+    return {
+      page: payload.page,
+      perPage: payload.perPage,
+      search: payload.search,
+      statuses: this.parseStatuses(payload.statuses),
+      dateFrom: this.parseDate(payload['date-from']),
+      dateTo: this.parseDate(payload['date-to']),
+      resolved: payload.resolved === 'true',
+      sort: this.buildSort(payload),
+    };
+  }
   constructor(private readonly repository: ErrorLogContractRepository) {}
 
   async execute(payload: ErrorLogPaginatedPayload): Promise<Response> {
     try {
-      const query = toQueryPayload(payload);
+      const query = this.toQueryPayload(payload);
 
       const data = await this.repository.findMany(query);
       const total = await this.repository.count(query);

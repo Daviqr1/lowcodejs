@@ -17,24 +17,23 @@ import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard
 import { RowAccessGuardContractService } from './row-access-guard-contract.service';
 import type { RowWriteOperation } from './row-access-guard-contract.service';
 
-function isRole(value: string): value is ValueOf<typeof E_ROLE> {
-  return (
-    value === E_ROLE.MASTER ||
-    value === E_ROLE.ADMINISTRATOR ||
-    value === E_ROLE.MANAGER ||
-    value === E_ROLE.REGISTERED
-  );
-}
-
-// user.group é o grupo principal (legacy compat para JWT). Pode ser string
-// (slug/role) ou objeto — só vira role quando bate com um E_ROLE válido.
-function resolveRole(group: unknown): ValueOf<typeof E_ROLE> {
-  if (typeof group === 'string' && isRole(group)) return group;
-  return E_ROLE.REGISTERED;
-}
-
 @Service()
 export default class RowAccessGuardService extends RowAccessGuardContractService {
+  private isRole(value: string): value is ValueOf<typeof E_ROLE> {
+    return (
+      value === E_ROLE.MASTER ||
+      value === E_ROLE.ADMINISTRATOR ||
+      value === E_ROLE.MANAGER ||
+      value === E_ROLE.REGISTERED
+    );
+  }
+
+  // user.group é o grupo principal (legacy compat para JWT). Pode ser string
+  // (slug/role) ou objeto — só vira role quando bate com um E_ROLE válido.
+  private resolveRole(group: unknown): ValueOf<typeof E_ROLE> {
+    if (typeof group === 'string' && this.isRole(group)) return group;
+    return E_ROLE.REGISTERED;
+  }
   constructor(
     private readonly extensionRepository: ExtensionContractRepository,
     private readonly userRepository: UserContractRepository,
@@ -175,7 +174,7 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
       user: {
         sub: user._id,
         email: user.email,
-        role: resolveRole(user.group),
+        role: this.resolveRole(user.group),
         type: 'ACCESS',
       },
       userId,

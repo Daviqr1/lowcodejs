@@ -15,69 +15,68 @@ import type { MenuPaginatedPayload } from './paginated.validator';
 type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = MenuPaginatedPayload;
 
-function getParentId(menu: Entity): string | null {
-  const parent: unknown = menu.parent;
-
-  if (!parent) return null;
-  if (typeof parent === 'string') return parent;
-  if (typeof parent === 'object' && '_id' in parent) {
-    return String(parent._id);
-  }
-
-  return null;
-}
-
-function sortByPosition(menus: Entity[], direction: 'asc' | 'desc'): Entity[] {
-  return [...menus].sort((a, b) => {
-    const orderDiff = (a.order ?? 0) - (b.order ?? 0);
-    if (orderDiff !== 0) {
-      if (direction === 'asc') return orderDiff;
-      return -orderDiff;
-    }
-
-    return a.name.localeCompare(b.name);
-  });
-}
-
-function flattenByHierarchy(
-  menus: Entity[],
-  direction: 'asc' | 'desc',
-): Entity[] {
-  const menuIds = new Set(menus.map((menu) => menu._id));
-  const childrenByParent = new Map<string | null, Entity[]>();
-
-  for (const menu of menus) {
-    const parentId = getParentId(menu);
-    let groupKey: string | null = null;
-    if (parentId && menuIds.has(parentId)) groupKey = parentId;
-    const siblings = childrenByParent.get(groupKey) ?? [];
-
-    siblings.push(menu);
-    childrenByParent.set(groupKey, siblings);
-  }
-
-  for (const [parentId, children] of childrenByParent.entries()) {
-    childrenByParent.set(parentId, sortByPosition(children, direction));
-  }
-
-  const ordered: Entity[] = [];
-
-  function appendChildren(parentId: string | null): void {
-    const children = childrenByParent.get(parentId) ?? [];
-
-    for (const child of children) {
-      ordered.push(child);
-      appendChildren(child._id);
-    }
-  }
-
-  appendChildren(null);
-
-  return ordered;
-}
-
 @Service()
 export default class MenuPaginatedUseCase {
+  private getParentId(menu: Entity): string | null {
+    const parent: unknown = menu.parent;
+
+    if (!parent) return null;
+    if (typeof parent === 'string') return parent;
+    if (typeof parent === 'object' && '_id' in parent) {
+      return String(parent._id);
+    }
+
+    return null;
+  }
+
+  private sortByPosition(menus: Entity[], direction: 'asc' | 'desc'): Entity[] {
+    return [...menus].sort((a, b) => {
+      const orderDiff = (a.order ?? 0) - (b.order ?? 0);
+      if (orderDiff !== 0) {
+        if (direction === 'asc') return orderDiff;
+        return -orderDiff;
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  private flattenByHierarchy(
+    menus: Entity[],
+    direction: 'asc' | 'desc',
+  ): Entity[] {
+    const menuIds = new Set(menus.map((menu) => menu._id));
+    const childrenByParent = new Map<string | null, Entity[]>();
+
+    for (const menu of menus) {
+      const parentId = this.getParentId(menu);
+      let groupKey: string | null = null;
+      if (parentId && menuIds.has(parentId)) groupKey = parentId;
+      const siblings = childrenByParent.get(groupKey) ?? [];
+
+      siblings.push(menu);
+      childrenByParent.set(groupKey, siblings);
+    }
+
+    for (const [parentId, children] of childrenByParent.entries()) {
+      childrenByParent.set(parentId, this.sortByPosition(children, direction));
+    }
+
+    const ordered: Entity[] = [];
+
+    function appendChildren(parentId: string | null): void {
+      const children = childrenByParent.get(parentId) ?? [];
+
+      for (const child of children) {
+        ordered.push(child);
+        appendChildren(child._id);
+      }
+    }
+
+    appendChildren(null);
+
+    return ordered;
+  }
   constructor(private readonly menuRepository: MenuContractRepository) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -105,7 +104,7 @@ export default class MenuPaginatedUseCase {
           sort: { order: payload['order-position'] ?? 'asc' },
         });
 
-        const orderedMenus = flattenByHierarchy(
+        const orderedMenus = this.flattenByHierarchy(
           allMenus,
           payload['order-position'] ?? 'asc',
         );

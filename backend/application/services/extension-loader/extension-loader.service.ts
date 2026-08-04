@@ -19,30 +19,29 @@ const FOLDER_TO_TYPE: Array<[string, ExtensionType]> = [
   ['tools', E_EXTENSION_TYPE.TOOL],
 ];
 
-function resolveExtensionsRoot(): string {
-  return join(process.cwd(), 'extensions');
-}
-
-async function readDirectoryNames(path: string): Promise<string[]> {
-  const entries = await readdir(path, { withFileTypes: true });
-  return entries.filter((e) => e.isDirectory()).map((e) => e.name);
-}
-
-/** Extrai os slots de placement, retornando [] para plugins com kind. */
-function resolvePlacementSlots(
-  placement: { slots: string[] } | { kind: string } | undefined,
-): string[] {
-  if (!placement) return [];
-  if ('slots' in placement) return placement.slots;
-  return [];
-}
-
 @Service()
 export default class ExtensionLoaderService implements ExtensionLoaderContractService {
+  private resolveExtensionsRoot(): string {
+    return join(process.cwd(), 'extensions');
+  }
+
+  private async readDirectoryNames(path: string): Promise<string[]> {
+    const entries = await readdir(path, { withFileTypes: true });
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
+  }
+
+  /** Extrai os slots de placement, retornando [] para plugins com kind. */
+  private resolvePlacementSlots(
+    placement: { slots: string[] } | { kind: string } | undefined,
+  ): string[] {
+    if (!placement) return [];
+    if ('slots' in placement) return placement.slots;
+    return [];
+  }
   constructor(private readonly repository: ExtensionContractRepository) {}
 
   async load(): Promise<LoadExtensionsResult> {
-    const root = resolveExtensionsRoot();
+    const root = this.resolveExtensionsRoot();
 
     if (!existsSync(root)) {
       console.info(
@@ -54,14 +53,14 @@ export default class ExtensionLoaderService implements ExtensionLoaderContractSe
     const presentKeys: ExtensionAvailabilityKey[] = [];
     let invalid = 0;
 
-    const pkgs = await readDirectoryNames(root);
+    const pkgs = await this.readDirectoryNames(root);
 
     for (const pkg of pkgs) {
       for (const [folderName, type] of FOLDER_TO_TYPE) {
         const typeDir = join(root, pkg, folderName);
         if (!existsSync(typeDir)) continue;
 
-        const extensionDirs = await readDirectoryNames(typeDir);
+        const extensionDirs = await this.readDirectoryNames(typeDir);
 
         for (const extensionId of extensionDirs) {
           const manifestPath = join(typeDir, extensionId, 'manifest.json');
@@ -92,7 +91,7 @@ export default class ExtensionLoaderService implements ExtensionLoaderContractSe
                 author: manifest.author ?? null,
                 icon: manifest.icon ?? null,
                 image: manifest.image ?? null,
-                slots: resolvePlacementSlots(manifest.placement),
+                slots: this.resolvePlacementSlots(manifest.placement),
                 route: manifest.route ?? null,
                 configRoute: manifest.configRoute ?? null,
                 submenu: manifest.tool?.submenu ?? null,

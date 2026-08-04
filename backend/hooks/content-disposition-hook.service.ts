@@ -27,20 +27,19 @@ const HASH_NAME_PATTERN = /^\d{1,8}$/;
 const STATIC_CACHE_CONTROL = 'no-cache, must-revalidate';
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
-function resolveDisposition(download: string | null): DispositionMode {
-  if (download === null) return 'inline';
-  return DISPOSITION_MAP[download] ?? 'inline';
-}
-
-function isStaticFilename(filename: string): boolean {
-  const dotIndex = filename.lastIndexOf('.');
-  let stem = filename;
-  if (dotIndex !== -1) stem = filename.slice(0, dotIndex);
-  return !HASH_NAME_PATTERN.test(stem);
-}
-
 @Service()
 export default class ContentDispositionHookService implements ContentDispositionHookContractService {
+  private resolveDisposition(download: string | null): DispositionMode {
+    if (download === null) return 'inline';
+    return DISPOSITION_MAP[download] ?? 'inline';
+  }
+
+  private isStaticFilename(filename: string): boolean {
+    const dotIndex = filename.lastIndexOf('.');
+    let stem = filename;
+    if (dotIndex !== -1) stem = filename.slice(0, dotIndex);
+    return !HASH_NAME_PATTERN.test(stem);
+  }
   constructor(
     private readonly repository: StorageContractRepository,
     private readonly config: StorageConfigContractService,
@@ -61,7 +60,7 @@ export default class ContentDispositionHookService implements ContentDisposition
     }
 
     const query = new URLSearchParams(rawQuery ?? '');
-    const mode = resolveDisposition(query.get('download'));
+    const mode = this.resolveDisposition(query.get('download'));
 
     const meta = await this.resolveMeta(filename);
     if (meta !== null) {
@@ -141,7 +140,7 @@ export default class ContentDispositionHookService implements ContentDisposition
 
     const stats = statSync(fullPath);
 
-    if (isStaticFilename(filename)) {
+    if (this.isStaticFilename(filename)) {
       const etag = `"${stats.mtimeMs.toString(36)}-${stats.size.toString(36)}"`;
       reply.header('etag', etag);
       reply.header('last-modified', stats.mtime.toUTCString());
@@ -175,7 +174,7 @@ export default class ContentDispositionHookService implements ContentDisposition
       result.ContentType || 'application/octet-stream',
     );
 
-    if (isStaticFilename(filename)) {
+    if (this.isStaticFilename(filename)) {
       reply.header('cache-control', STATIC_CACHE_CONTROL);
       if (result.ETag) reply.header('etag', result.ETag);
       if (result.LastModified) {

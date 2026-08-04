@@ -33,27 +33,30 @@ type Payload = TableFieldUpdatePayload;
 // campo e de como o valor trafega na API, chega como null, undefined, string
 // vazia ou array vazio. Semanticamente são todos o mesmo estado (ausência de
 // default), então a comparação precisa normalizá-los antes de decidir igualdade.
-function isEmptyDefaultValue(v: string | string[] | null | undefined): boolean {
-  return v == null || v === '' || (Array.isArray(v) && v.length === 0);
-}
-
-function isDefaultValueEqual(
-  a: string | string[] | null | undefined,
-  b: string | string[] | null | undefined,
-): boolean {
-  if (isEmptyDefaultValue(a) && isEmptyDefaultValue(b)) return true;
-  if (isEmptyDefaultValue(a) || isEmptyDefaultValue(b)) return false;
-  if (a === b) return true;
-  if (typeof a === 'string' && typeof b === 'string') return a === b;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((v, i) => v === b[i]);
-  }
-  return false;
-}
 
 @Service()
 export default class TableFieldUpdateUseCase {
+  private isEmptyDefaultValue(
+    v: string | string[] | null | undefined,
+  ): boolean {
+    return v == null || v === '' || (Array.isArray(v) && v.length === 0);
+  }
+
+  private isDefaultValueEqual(
+    a: string | string[] | null | undefined,
+    b: string | string[] | null | undefined,
+  ): boolean {
+    if (this.isEmptyDefaultValue(a) && this.isEmptyDefaultValue(b)) return true;
+    if (this.isEmptyDefaultValue(a) || this.isEmptyDefaultValue(b))
+      return false;
+    if (a === b) return true;
+    if (typeof a === 'string' && typeof b === 'string') return a === b;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((v, i) => v === b[i]);
+    }
+    return false;
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
@@ -385,7 +388,7 @@ export default class TableFieldUpdateUseCase {
     if (payload.required !== field.required) return false;
     if (payload.multiple !== field.multiple) return false;
     if (payload.format !== field.format) return false;
-    if (!isDefaultValueEqual(payload.defaultValue, field.defaultValue))
+    if (!this.isDefaultValueEqual(payload.defaultValue, field.defaultValue))
       return false;
 
     // `locked` e gravavel e tem default `false` no Zod e no AJV: um PUT que

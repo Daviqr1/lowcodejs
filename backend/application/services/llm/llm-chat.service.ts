@@ -21,146 +21,147 @@ import type { ResolvedLlmConfig } from './llm-config-contract.service';
 import { ClaudeProviderContractService } from './providers/claude-provider-contract.service';
 import { OpenAiCompatProviderContractService } from './providers/openai-compat-provider-contract.service';
 
-function buildUserMessage(userInput: string, file?: FileData): LlmChatMessage {
-  if (!file) {
-    return { role: 'user', content: userInput };
-  }
-
-  const filename = file.filename || 'arquivo';
-
-  if (file.type === 'image' && file.data_uri) {
-    const parts: Array<
-      | { type: 'text'; text: string }
-      | { type: 'image_url'; image_url: { url: string } }
-    > = [];
-    if (userInput) {
-      parts.push({ type: 'text', text: userInput });
-    } else {
-      parts.push({
-        type: 'text',
-        text: `Transcreva e descreva detalhadamente o conteúdo desta imagem (${filename}):`,
-      });
-    }
-    parts.push({ type: 'image_url', image_url: { url: file.data_uri } });
-    return { role: 'user', content: parts };
-  }
-
-  if (file.type === 'pdf') {
-    const extracted = file.extracted_text || '';
-    const pageCount = file.page_count || 0;
-    const prompt = userInput || 'Transcreva e analise o conteúdo deste PDF:';
-    const fullContent = `${prompt}\n\nPDF: ${filename} (${pageCount} página(s))\n\n${extracted}`;
-    return { role: 'user', content: fullContent };
-  }
-
-  return { role: 'user', content: userInput };
-}
-
-function buildLlmTools(
-  mcpTools: Awaited<ReturnType<Client['listTools']>>['tools'],
-): Array<LlmChatTool> | undefined {
-  if (mcpTools.length === 0) return undefined;
-  return mcpTools.map((tool) => ({
-    type: 'function' as const,
-    function: {
-      name: tool.name,
-      description: tool.description || '',
-      parameters: tool.inputSchema || {
-        type: 'object',
-        properties: {},
-      },
-    },
-  }));
-}
-
 const OPENAI_BASE = 'https://api.openai.com/v1';
+
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
-const GEMINI_OPENAI_BASE =
-  'https://generativelanguage.googleapis.com/v1beta/openai';
-
-async function executeMcpTool(params: {
-  mcpClient: Client;
-  toolName: string;
-  toolArgs: Record<string, unknown>;
-  socket: Socket;
-  userId: string;
-}): Promise<string> {
-  const { mcpClient, toolName, toolArgs, socket, userId } = params;
-
-  socket.emit(E_CHAT_EVENT.TOOL_CALL, { name: toolName, args: toolArgs });
-
-  console.log('[MCP Log] tool_call:', toolName, toolArgs);
-  Logger.create({
-    url: `mcp://${toolName}`,
-    user: userId,
-    action: E_LOGGER_ACTION_TYPE.AI_CALL,
-    object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-    object_id: toolName,
-    content: toolArgs,
-  }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
-
-  try {
-    const result = await mcpClient.callTool({
-      name: toolName,
-      arguments: toolArgs,
-    });
-
-    let contentStr = '';
-    if (result.content && Array.isArray(result.content)) {
-      for (const content of result.content) {
-        if (content.type === 'text') {
-          contentStr += content.text || '';
-        } else {
-          contentStr += `[${content.type}]`;
-        }
-      }
-    } else {
-      contentStr = String(result);
-    }
-
-    let preview = contentStr;
-    if (contentStr.length > 150) preview = contentStr.slice(0, 150) + '...';
-
-    socket.emit(E_CHAT_EVENT.TOOL_RESULT, { name: toolName, preview });
-
-    console.log('[MCP Log] tool_result:', toolName, '|', preview);
-    Logger.create({
-      url: `mcp://${toolName}/result`,
-      user: userId,
-      action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
-      object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-      object_id: toolName,
-      content: { preview, length: contentStr.length },
-    }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
-
-    return contentStr;
-  } catch (err) {
-    let errorMsg = String(err);
-    if (err instanceof Error) errorMsg = err.message;
-
-    socket.emit(E_CHAT_EVENT.TOOL_ERROR, {
-      name: toolName,
-      message: errorMsg,
-    });
-
-    console.error('[MCP Log] tool_error:', toolName, errorMsg);
-    Logger.create({
-      url: `mcp://${toolName}/error`,
-      user: userId,
-      action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
-      object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
-      object_id: toolName,
-      content: { error: errorMsg },
-    }).catch((logErr: unknown) =>
-      console.error('[MCP Log] create error:', logErr),
-    );
-
-    return errorMsg;
-  }
-}
 
 @Service()
 export default class LlmChatService implements LlmChatContractService {
+  private buildUserMessage(userInput: string, file?: FileData): LlmChatMessage {
+    if (!file) {
+      return { role: 'user', content: userInput };
+    }
+
+    const filename = file.filename || 'arquivo';
+
+    if (file.type === 'image' && file.data_uri) {
+      const parts: Array<
+        | { type: 'text'; text: string }
+        | { type: 'image_url'; image_url: { url: string } }
+      > = [];
+      if (userInput) {
+        parts.push({ type: 'text', text: userInput });
+      } else {
+        parts.push({
+          type: 'text',
+          text: `Transcreva e descreva detalhadamente o conteúdo desta imagem (${filename}):`,
+        });
+      }
+      parts.push({ type: 'image_url', image_url: { url: file.data_uri } });
+      return { role: 'user', content: parts };
+    }
+
+    if (file.type === 'pdf') {
+      const extracted = file.extracted_text || '';
+      const pageCount = file.page_count || 0;
+      const prompt = userInput || 'Transcreva e analise o conteúdo deste PDF:';
+      const fullContent = `${prompt}\n\nPDF: ${filename} (${pageCount} página(s))\n\n${extracted}`;
+      return { role: 'user', content: fullContent };
+    }
+
+    return { role: 'user', content: userInput };
+  }
+
+  private buildLlmTools(
+    mcpTools: Awaited<ReturnType<Client['listTools']>>['tools'],
+  ): Array<LlmChatTool> | undefined {
+    if (mcpTools.length === 0) return undefined;
+    return mcpTools.map((tool) => ({
+      type: 'function' as const,
+      function: {
+        name: tool.name,
+        description: tool.description || '',
+        parameters: tool.inputSchema || {
+          type: 'object',
+          properties: {},
+        },
+      },
+    }));
+  }
+
+  private readonly GEMINI_OPENAI_BASE =
+    'https://generativelanguage.googleapis.com/v1beta/openai';
+
+  private async executeMcpTool(params: {
+    mcpClient: Client;
+    toolName: string;
+    toolArgs: Record<string, unknown>;
+    socket: Socket;
+    userId: string;
+  }): Promise<string> {
+    const { mcpClient, toolName, toolArgs, socket, userId } = params;
+
+    socket.emit(E_CHAT_EVENT.TOOL_CALL, { name: toolName, args: toolArgs });
+
+    console.log('[MCP Log] tool_call:', toolName, toolArgs);
+    Logger.create({
+      url: `mcp://${toolName}`,
+      user: userId,
+      action: E_LOGGER_ACTION_TYPE.AI_CALL,
+      object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
+      object_id: toolName,
+      content: toolArgs,
+    }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
+
+    try {
+      const result = await mcpClient.callTool({
+        name: toolName,
+        arguments: toolArgs,
+      });
+
+      let contentStr = '';
+      if (result.content && Array.isArray(result.content)) {
+        for (const content of result.content) {
+          if (content.type === 'text') {
+            contentStr += content.text || '';
+          } else {
+            contentStr += `[${content.type}]`;
+          }
+        }
+      } else {
+        contentStr = String(result);
+      }
+
+      let preview = contentStr;
+      if (contentStr.length > 150) preview = contentStr.slice(0, 150) + '...';
+
+      socket.emit(E_CHAT_EVENT.TOOL_RESULT, { name: toolName, preview });
+
+      console.log('[MCP Log] tool_result:', toolName, '|', preview);
+      Logger.create({
+        url: `mcp://${toolName}/result`,
+        user: userId,
+        action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
+        object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
+        object_id: toolName,
+        content: { preview, length: contentStr.length },
+      }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
+
+      return contentStr;
+    } catch (err) {
+      let errorMsg = String(err);
+      if (err instanceof Error) errorMsg = err.message;
+
+      socket.emit(E_CHAT_EVENT.TOOL_ERROR, {
+        name: toolName,
+        message: errorMsg,
+      });
+
+      console.error('[MCP Log] tool_error:', toolName, errorMsg);
+      Logger.create({
+        url: `mcp://${toolName}/error`,
+        user: userId,
+        action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
+        object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
+        object_id: toolName,
+        content: { error: errorMsg },
+      }).catch((logErr: unknown) =>
+        console.error('[MCP Log] create error:', logErr),
+      );
+
+      return errorMsg;
+    }
+  }
   constructor(
     private readonly claude: ClaudeProviderContractService,
     private readonly openAiCompat: OpenAiCompatProviderContractService,
@@ -198,7 +199,7 @@ export default class LlmChatService implements LlmChatContractService {
 
     if (provider === E_AI_LLM_PROVIDER.GEMINI) {
       return this.openAiCompat.create({
-        baseUrl: GEMINI_OPENAI_BASE,
+        baseUrl: this.GEMINI_OPENAI_BASE,
         apiKey: apiKey!,
         model,
       });
@@ -228,10 +229,10 @@ export default class LlmChatService implements LlmChatContractService {
       return { messages, reply: '' };
     }
 
-    messages.push(buildUserMessage(trimmed, file));
+    messages.push(this.buildUserMessage(trimmed, file));
 
     const provider = this.providerFor(llmConfig);
-    const tools = buildLlmTools(mcpTools);
+    const tools = this.buildLlmTools(mcpTools);
 
     const MAX_TOOL_ROUNDS = 25;
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -261,7 +262,7 @@ export default class LlmChatService implements LlmChatContractService {
           toolArgs = {};
         }
 
-        const contentStr = await executeMcpTool({
+        const contentStr = await this.executeMcpTool({
           mcpClient,
           toolName: toolCall.function.name,
           toolArgs,

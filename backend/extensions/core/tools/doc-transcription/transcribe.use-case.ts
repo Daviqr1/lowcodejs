@@ -17,25 +17,25 @@ type Input = {
 type Response = Either<HTTPException, ITranscribeResult>;
 
 // Narrows para a resposta (JSON) da API externa — evita asserção sobre `unknown`.
-function toRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value));
-  }
-  return {};
-}
-function toPrimitive(value: unknown): string | number | boolean | null {
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value;
-  }
-  return null;
-}
 
 @Service()
 export default class TranscribeDocumentUseCase {
+  private toRecord(value: unknown): Record<string, unknown> {
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value));
+    }
+    return {};
+  }
+  private toPrimitive(value: unknown): string | number | boolean | null {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return value;
+    }
+    return null;
+  }
   constructor(
     private readonly configRepository: DocTranscriptionConfigContractRepository,
   ) {}
@@ -131,18 +131,19 @@ export default class TranscribeDocumentUseCase {
         );
       }
 
-      const rawResponse = toRecord(rawData);
+      const rawResponse = this.toRecord(rawData);
       // A API externa retorna { data: {...}, model, usage }
       // O payload de campos está em .data — com fallback para o objeto raiz
       const dataField = rawResponse['data'];
       let raw = rawResponse;
-      if (dataField && typeof dataField === 'object') raw = toRecord(dataField);
+      if (dataField && typeof dataField === 'object')
+        raw = this.toRecord(dataField);
 
       const fields = docType.responseFields.map((rf) => ({
         key: rf.key,
         label: rf.label,
         type: rf.type,
-        value: toPrimitive(raw[rf.key]),
+        value: this.toPrimitive(raw[rf.key]),
       }));
 
       return right({

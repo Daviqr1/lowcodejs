@@ -34,67 +34,66 @@ type ErrorLogLean = {
   updatedAt: Date;
 };
 
-function buildFilter(
-  payload: ErrorLogQueryPayload,
-  search: SearchContractService,
-): Record<string, unknown> {
-  // Nada anônimo: ignora qualquer log sem usuário (inclusive registros legados
-  // gravados antes do hook passar a exigir usuário autenticado).
-  const filter: Record<string, unknown> = { user: { $ne: null } };
-
-  if (payload.statuses && payload.statuses.length > 0) {
-    filter.statusCode = { $in: payload.statuses };
-  }
-
-  if (payload.search) {
-    filter.message = { $regex: search.escape(payload.search), $options: 'i' };
-  }
-
-  const createdAt: Record<string, Date> = {};
-  if (payload.dateFrom) createdAt.$gte = payload.dateFrom;
-  if (payload.dateTo) createdAt.$lte = payload.dateTo;
-  if (Object.keys(createdAt).length > 0) {
-    filter.createdAt = createdAt;
-  }
-
-  // Em aberto inclui registros legados sem o campo (`$ne: true`).
-  if (payload.resolved === true) {
-    filter.resolved = true;
-  } else if (payload.resolved === false) {
-    filter.resolved = { $ne: true };
-  }
-
-  return filter;
-}
-
-function toEntity(doc: ErrorLogLean): IErrorLog {
-  let user: IErrorLogUser | null = null;
-  if (doc.user) {
-    user = {
-      _id: String(doc.user._id),
-      name: doc.user.name ?? '',
-      email: doc.user.email ?? '',
-    };
-  }
-
-  return {
-    _id: String(doc._id),
-    statusCode: doc.statusCode,
-    message: doc.message,
-    cause: doc.cause ?? null,
-    method: doc.method,
-    url: doc.url,
-    user,
-    errors: doc.errors ?? null,
-    resolved: doc.resolved ?? false,
-    resolvedAt: doc.resolvedAt ?? null,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-  };
-}
-
 @Service()
 export default class ErrorLogMongooseRepository implements ErrorLogContractRepository {
+  private buildFilter(
+    payload: ErrorLogQueryPayload,
+    search: SearchContractService,
+  ): Record<string, unknown> {
+    // Nada anônimo: ignora qualquer log sem usuário (inclusive registros legados
+    // gravados antes do hook passar a exigir usuário autenticado).
+    const filter: Record<string, unknown> = { user: { $ne: null } };
+
+    if (payload.statuses && payload.statuses.length > 0) {
+      filter.statusCode = { $in: payload.statuses };
+    }
+
+    if (payload.search) {
+      filter.message = { $regex: search.escape(payload.search), $options: 'i' };
+    }
+
+    const createdAt: Record<string, Date> = {};
+    if (payload.dateFrom) createdAt.$gte = payload.dateFrom;
+    if (payload.dateTo) createdAt.$lte = payload.dateTo;
+    if (Object.keys(createdAt).length > 0) {
+      filter.createdAt = createdAt;
+    }
+
+    // Em aberto inclui registros legados sem o campo (`$ne: true`).
+    if (payload.resolved === true) {
+      filter.resolved = true;
+    } else if (payload.resolved === false) {
+      filter.resolved = { $ne: true };
+    }
+
+    return filter;
+  }
+
+  private toEntity(doc: ErrorLogLean): IErrorLog {
+    let user: IErrorLogUser | null = null;
+    if (doc.user) {
+      user = {
+        _id: String(doc.user._id),
+        name: doc.user.name ?? '',
+        email: doc.user.email ?? '',
+      };
+    }
+
+    return {
+      _id: String(doc._id),
+      statusCode: doc.statusCode,
+      message: doc.message,
+      cause: doc.cause ?? null,
+      method: doc.method,
+      url: doc.url,
+      user,
+      errors: doc.errors ?? null,
+      resolved: doc.resolved ?? false,
+      resolvedAt: doc.resolvedAt ?? null,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
+  }
   constructor(private readonly search: SearchContractService) {}
 
   async create(payload: ErrorLogCreatePayload): Promise<void> {
@@ -117,18 +116,18 @@ export default class ErrorLogMongooseRepository implements ErrorLogContractRepos
       sort = payload.sort;
     }
 
-    const docs = await ErrorLog.find(buildFilter(payload, this.search))
+    const docs = await ErrorLog.find(this.buildFilter(payload, this.search))
       .populate('user', 'name email')
       .sort(sort)
       .skip(skip)
       .limit(payload.perPage)
       .lean<ErrorLogLean[]>();
 
-    return docs.map(toEntity);
+    return docs.map((doc) => this.toEntity(doc));
   }
 
   async count(payload: ErrorLogQueryPayload): Promise<number> {
-    return ErrorLog.countDocuments(buildFilter(payload, this.search));
+    return ErrorLog.countDocuments(this.buildFilter(payload, this.search));
   }
 
   async setResolved(id: string, resolved: boolean): Promise<boolean> {

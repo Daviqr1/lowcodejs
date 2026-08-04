@@ -29,29 +29,28 @@ const FIELDS: CsvField[] = [
   { label: 'Atualizado em', value: 'updatedAt' },
 ];
 
-function toCsvRow(group: IGroup): Record<string, unknown> {
-  let permissionsCount = 0;
-  if (Array.isArray(group.permissions)) {
-    permissionsCount = group.permissions.length;
-  }
-  let createdAt = '';
-  if (group.createdAt) createdAt = new Date(group.createdAt).toISOString();
-  let updatedAt = '';
-  if (group.updatedAt) updatedAt = new Date(group.updatedAt).toISOString();
-
-  return {
-    _id: group._id,
-    name: group.name ?? '',
-    slug: group.slug ?? '',
-    description: group.description ?? '',
-    permissionsCount,
-    createdAt,
-    updatedAt,
-  };
-}
-
 @Service()
 export default class UserGroupExportCsvUseCase {
+  private toCsvRow(group: IGroup): Record<string, unknown> {
+    let permissionsCount = 0;
+    if (Array.isArray(group.permissions)) {
+      permissionsCount = group.permissions.length;
+    }
+    let createdAt = '';
+    if (group.createdAt) createdAt = new Date(group.createdAt).toISOString();
+    let updatedAt = '';
+    if (group.updatedAt) updatedAt = new Date(group.updatedAt).toISOString();
+
+    return {
+      _id: group._id,
+      name: group.name ?? '',
+      slug: group.slug ?? '',
+      description: group.description ?? '',
+      permissionsCount,
+      createdAt,
+      updatedAt,
+    };
+  }
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly userRepository: UserContractRepository,
@@ -104,7 +103,7 @@ export default class UserGroupExportCsvUseCase {
             hideMaster: p.hideMaster,
             sort: p.sort,
           });
-          return batch.map(toCsvRow);
+          return batch.map((item) => this.toCsvRow(item));
         },
       });
 

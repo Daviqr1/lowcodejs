@@ -28,41 +28,40 @@ type Response = Either<
 
 type Payload = TableFieldAddCategoryPayload;
 
-function addCategoryNode(
-  nodes: Array<ICategory>,
-  parentId: string,
-  newNode: ICategory,
-): { updated: Array<ICategory>; inserted: boolean } {
-  let inserted = false;
+@Service()
+export default class TableFieldAddCategoryUseCase {
+  private addCategoryNode(
+    nodes: Array<ICategory>,
+    parentId: string,
+    newNode: ICategory,
+  ): { updated: Array<ICategory>; inserted: boolean } {
+    let inserted = false;
 
-  const updated = nodes.map((node) => {
-    if (node.id === parentId) {
-      inserted = true;
-      return {
-        ...node,
-        children: [...(node.children ?? []), newNode],
-      };
-    }
-
-    if (node.children?.length) {
-      const result = addCategoryNode(node.children, parentId, newNode);
-      if (result.inserted) {
+    const updated = nodes.map((node) => {
+      if (node.id === parentId) {
         inserted = true;
         return {
           ...node,
-          children: result.updated,
+          children: [...(node.children ?? []), newNode],
         };
       }
-    }
 
-    return node;
-  });
+      if (node.children?.length) {
+        const result = this.addCategoryNode(node.children, parentId, newNode);
+        if (result.inserted) {
+          inserted = true;
+          return {
+            ...node,
+            children: result.updated,
+          };
+        }
+      }
 
-  return { updated, inserted };
-}
+      return node;
+    });
 
-@Service()
-export default class TableFieldAddCategoryUseCase {
+    return { updated, inserted };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
@@ -116,7 +115,11 @@ export default class TableFieldAddCategoryUseCase {
         updated = [...existingCategories, newNode];
         inserted = true;
       } else {
-        const result = addCategoryNode(existingCategories, parentId, newNode);
+        const result = this.addCategoryNode(
+          existingCategories,
+          parentId,
+          newNode,
+        );
         updated = result.updated;
         inserted = result.inserted;
       }

@@ -20,26 +20,25 @@ const AUDIT_PROJECTION = {
   updatedAt: 1,
 };
 
-function toObjectIdOrNull(value: unknown): mongoose.Types.ObjectId | null {
-  if (!value) return null;
-  if (value instanceof mongoose.Types.ObjectId) return value;
-  try {
-    return new mongoose.Types.ObjectId(String(value));
-  } catch {
-    return null;
-  }
-}
-
-function toDateOrNull(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
 @Service()
 export default class LoggerAuditService implements LoggerAuditContractService {
+  private toObjectIdOrNull(value: unknown): mongoose.Types.ObjectId | null {
+    if (!value) return null;
+    if (value instanceof mongoose.Types.ObjectId) return value;
+    try {
+      return new mongoose.Types.ObjectId(String(value));
+    } catch {
+      return null;
+    }
+  }
+
+  private toDateOrNull(value: unknown): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
   tableSlugFromRowUrl(url: string | null | undefined): string | null {
     if (!url) return null;
     const path = url.split('?')[0];
@@ -63,7 +62,7 @@ export default class LoggerAuditService implements LoggerAuditContractService {
       .findOne({ slug }, { projection: { _id: 1 } });
     if (!table) return EMPTY_OBJECT_AUDIT;
 
-    const _id = toObjectIdOrNull(objectId);
+    const _id = this.toObjectIdOrNull(objectId);
     if (!_id) return EMPTY_OBJECT_AUDIT;
 
     // Linhas vivem no DB data (apos a dual-connection). Fallback ao DB system
@@ -79,10 +78,10 @@ export default class LoggerAuditService implements LoggerAuditContractService {
     if (!row) return EMPTY_OBJECT_AUDIT;
 
     return {
-      creator: toObjectIdOrNull(row.creator),
-      updater: toObjectIdOrNull(row.updater),
-      objectCreatedAt: toDateOrNull(row.createdAt),
-      objectUpdatedAt: toDateOrNull(row.updatedAt),
+      creator: this.toObjectIdOrNull(row.creator),
+      updater: this.toObjectIdOrNull(row.updater),
+      objectCreatedAt: this.toDateOrNull(row.createdAt),
+      objectUpdatedAt: this.toDateOrNull(row.updatedAt),
     };
   }
 }

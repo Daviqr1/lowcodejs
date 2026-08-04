@@ -17,80 +17,79 @@ const DOCUMENT_TEMPLATE_ID = 'DOCUMENT_TEMPLATE';
 const FORUM_TEMPLATE_ID = 'FORUM_TEMPLATE';
 const CALENDAR_TEMPLATE_ID = 'CALENDAR_TEMPLATE';
 
-function getKanbanTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: KANBAN_TEMPLATE_ID,
-    name: 'Kanban',
-    slug: 'kanban-tarefas',
-    description: 'Modelo predefinido de tarefas em Kanban',
-  };
-}
-
-function getCardsTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: CARDS_TEMPLATE_ID,
-    name: 'Cards',
-    slug: 'cards',
-    description: 'Modelo predefinido para Cards',
-  };
-}
-
-function getMosaicTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: MOSAIC_TEMPLATE_ID,
-    name: 'Mosaico',
-    slug: 'mosaico',
-    description: 'Modelo predefinido para Mosaico',
-  };
-}
-
-function getDocumentTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: DOCUMENT_TEMPLATE_ID,
-    name: 'Documento',
-    slug: 'documento',
-    description: 'Modelo predefinido para documento por índice',
-  };
-}
-
-function getForumTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: FORUM_TEMPLATE_ID,
-    name: 'Forum',
-    slug: 'chat-forum',
-    description: 'Modelo predefinido para canais e mensagens em forum',
-  };
-}
-
-function getCalendarTemplateEntry(): Pick<
-  ITable,
-  '_id' | 'name' | 'slug' | 'description'
-> {
-  return {
-    _id: CALENDAR_TEMPLATE_ID,
-    name: 'Calendario',
-    slug: 'calendario',
-    description: 'Modelo predefinido para agenda/calendário',
-  };
-}
-
 @Service()
 export default class SettingShowUseCase {
+  private getKanbanTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: KANBAN_TEMPLATE_ID,
+      name: 'Kanban',
+      slug: 'kanban-tarefas',
+      description: 'Modelo predefinido de tarefas em Kanban',
+    };
+  }
+
+  private getCardsTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: CARDS_TEMPLATE_ID,
+      name: 'Cards',
+      slug: 'cards',
+      description: 'Modelo predefinido para Cards',
+    };
+  }
+
+  private getMosaicTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: MOSAIC_TEMPLATE_ID,
+      name: 'Mosaico',
+      slug: 'mosaico',
+      description: 'Modelo predefinido para Mosaico',
+    };
+  }
+
+  private getDocumentTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: DOCUMENT_TEMPLATE_ID,
+      name: 'Documento',
+      slug: 'documento',
+      description: 'Modelo predefinido para documento por índice',
+    };
+  }
+
+  private getForumTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: FORUM_TEMPLATE_ID,
+      name: 'Forum',
+      slug: 'chat-forum',
+      description: 'Modelo predefinido para canais e mensagens em forum',
+    };
+  }
+
+  private getCalendarTemplateEntry(): Pick<
+    ITable,
+    '_id' | 'name' | 'slug' | 'description'
+  > {
+    return {
+      _id: CALENDAR_TEMPLATE_ID,
+      name: 'Calendario',
+      slug: 'calendario',
+      description: 'Modelo predefinido para agenda/calendário',
+    };
+  }
   constructor(
     private readonly settingRepository: SettingContractRepository,
     private readonly llmConfig: LlmConfigContractService,
@@ -155,12 +154,12 @@ export default class SettingShowUseCase {
           SETUP_COMPLETED: false,
           SETUP_CURRENT_STEP: 'admin',
           MODEL_CLONE_TABLES: [
-            getKanbanTemplateEntry(),
-            getCardsTemplateEntry(),
-            getMosaicTemplateEntry(),
-            getDocumentTemplateEntry(),
-            getForumTemplateEntry(),
-            getCalendarTemplateEntry(),
+            this.getKanbanTemplateEntry(),
+            this.getCardsTemplateEntry(),
+            this.getMosaicTemplateEntry(),
+            this.getDocumentTemplateEntry(),
+            this.getForumTemplateEntry(),
+            this.getCalendarTemplateEntry(),
           ],
         });
       }
@@ -176,12 +175,12 @@ export default class SettingShowUseCase {
         ...this.redactSecrets(payload.canManageSettings),
         FILE_UPLOAD_ACCEPTED: setting.FILE_UPLOAD_ACCEPTED?.split(';') ?? [],
         MODEL_CLONE_TABLES: [
-          getKanbanTemplateEntry(),
-          getCardsTemplateEntry(),
-          getMosaicTemplateEntry(),
-          getDocumentTemplateEntry(),
-          getForumTemplateEntry(),
-          getCalendarTemplateEntry(),
+          this.getKanbanTemplateEntry(),
+          this.getCardsTemplateEntry(),
+          this.getMosaicTemplateEntry(),
+          this.getDocumentTemplateEntry(),
+          this.getForumTemplateEntry(),
+          this.getCalendarTemplateEntry(),
           ...existingCloneTables,
         ],
       });

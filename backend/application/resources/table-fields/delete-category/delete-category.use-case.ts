@@ -24,45 +24,44 @@ type Response = Either<
 
 type Payload = TableFieldDeleteCategoryPayload;
 
-function collectIds(node: ICategory): Array<string> {
-  const ids = [node.id];
-  const children = node.children ?? [];
-  for (const child of children) {
-    ids.push(...collectIds(child));
-  }
-  return ids;
-}
-
-function removeCategoryNode(
-  nodes: Array<ICategory>,
-  categoryId: string,
-): { updated: Array<ICategory>; removedIds: Array<string> } {
-  let removedIds: Array<string> = [];
-
-  const updated = nodes
-    .filter((node) => {
-      if (node.id === categoryId) {
-        removedIds = collectIds(node);
-        return false;
-      }
-      return true;
-    })
-    .map((node) => {
-      if (!node.children?.length) return node;
-
-      const result = removeCategoryNode(node.children, categoryId);
-      if (result.removedIds.length) {
-        removedIds = result.removedIds;
-        return { ...node, children: result.updated };
-      }
-      return node;
-    });
-
-  return { updated, removedIds };
-}
-
 @Service()
 export default class TableFieldDeleteCategoryUseCase {
+  private collectIds(node: ICategory): Array<string> {
+    const ids = [node.id];
+    const children = node.children ?? [];
+    for (const child of children) {
+      ids.push(...this.collectIds(child));
+    }
+    return ids;
+  }
+
+  private removeCategoryNode(
+    nodes: Array<ICategory>,
+    categoryId: string,
+  ): { updated: Array<ICategory>; removedIds: Array<string> } {
+    let removedIds: Array<string> = [];
+
+    const updated = nodes
+      .filter((node) => {
+        if (node.id === categoryId) {
+          removedIds = this.collectIds(node);
+          return false;
+        }
+        return true;
+      })
+      .map((node) => {
+        if (!node.children?.length) return node;
+
+        const result = this.removeCategoryNode(node.children, categoryId);
+        if (result.removedIds.length) {
+          removedIds = result.removedIds;
+          return { ...node, children: result.updated };
+        }
+        return node;
+      });
+
+    return { updated, removedIds };
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
@@ -105,7 +104,7 @@ export default class TableFieldDeleteCategoryUseCase {
         existingCategories = field.category;
       }
 
-      const { updated, removedIds } = removeCategoryNode(
+      const { updated, removedIds } = this.removeCategoryNode(
         existingCategories,
         payload.categoryId,
       );

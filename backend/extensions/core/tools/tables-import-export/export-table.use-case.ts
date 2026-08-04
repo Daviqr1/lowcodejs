@@ -37,30 +37,29 @@ const USER_REFERENCE_TYPES = new Set<string>([
   E_FIELD_TYPE.CREATOR,
 ]);
 
-function toIdString(value: unknown): string | null {
-  if (!value) return null;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value !== null) {
-    const v: {
-      _id?: unknown;
-      _bsontype?: string;
-      toString?: () => string;
-    } = value;
-    // Mongoose/BSON ObjectId expõe um getter `_id` que retorna a si mesmo —
-    // tratar ObjectId direto pelo toString evita recursão infinita.
-    if (v._bsontype === 'ObjectId' || v._bsontype === 'ObjectID') {
-      if (typeof v.toString === 'function') return v.toString();
-      return String(value);
-    }
-    // Guard contra auto-referência (`v._id === value`) por segurança extra.
-    if (v._id && v._id !== value) return toIdString(v._id);
-    if (typeof v.toString === 'function') return v.toString();
-  }
-  return String(value);
-}
-
 @Service()
 export default class ExportTableUseCase {
+  private toIdString(value: unknown): string | null {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value !== null) {
+      const v: {
+        _id?: unknown;
+        _bsontype?: string;
+        toString?: () => string;
+      } = value;
+      // Mongoose/BSON ObjectId expõe um getter `_id` que retorna a si mesmo —
+      // tratar ObjectId direto pelo toString evita recursão infinita.
+      if (v._bsontype === 'ObjectId' || v._bsontype === 'ObjectID') {
+        if (typeof v.toString === 'function') return v.toString();
+        return String(value);
+      }
+      // Guard contra auto-referência (`v._id === value`) por segurança extra.
+      if (v._id && v._id !== value) return this.toIdString(v._id);
+      if (typeof v.toString === 'function') return v.toString();
+    }
+    return String(value);
+  }
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -303,11 +302,11 @@ export default class ExportTableUseCase {
     const nonNativeFields = table.fields.filter((f) => !f.native);
 
     const exportedRows: ExportedRow[] = rows.map((row) => {
-      const originalId = toIdString(row['_id']) || '';
+      const originalId = this.toIdString(row['_id']) || '';
       const exportedRow: ExportedRow = { _originalId: originalId };
 
       // Campo nativo CREATOR (slug `creator`): viaja como ID de usuário.
-      const creatorId = toIdString(row['creator']);
+      const creatorId = this.toIdString(row['creator']);
       if (creatorId) exportedRow._originalCreator = creatorId;
 
       for (const field of nonNativeFields) {
@@ -331,11 +330,11 @@ export default class ExportTableUseCase {
           if (group && Array.isArray(value)) {
             const subRows = value.map((groupRow: Record<string, unknown>) => {
               const exportedGroupRow: Record<string, unknown> = {};
-              const groupOriginalId = toIdString(groupRow['_id']);
+              const groupOriginalId = this.toIdString(groupRow['_id']);
               if (groupOriginalId) {
                 exportedGroupRow._originalId = groupOriginalId;
               }
-              const groupCreatorId = toIdString(groupRow['creator']);
+              const groupCreatorId = this.toIdString(groupRow['creator']);
               if (groupCreatorId) {
                 exportedGroupRow._originalCreator = groupCreatorId;
               }
@@ -376,10 +375,10 @@ export default class ExportTableUseCase {
   private serializeRelationshipValue(value: unknown): string | string[] | null {
     if (Array.isArray(value)) {
       return value
-        .map((v) => toIdString(v))
+        .map((v) => this.toIdString(v))
         .filter((v): v is string => Boolean(v));
     }
-    return toIdString(value);
+    return this.toIdString(value);
   }
 
   private async exportMenus(tables: ITable[]): Promise<ExportedMenu[]> {
@@ -391,7 +390,7 @@ export default class ExportTableUseCase {
     const allMenus = await this.menuRepository.findMany({ trashed: false });
 
     const linkedMenus = allMenus.filter((m) => {
-      const tid = toIdString(m.table);
+      const tid = this.toIdString(m.table);
       return tid !== null && tableIds.has(tid);
     });
 
@@ -407,14 +406,14 @@ export default class ExportTableUseCase {
         const id = String(current._id);
         if (collected.has(id)) break;
         collected.set(id, current);
-        const parentId = toIdString(current.parent);
+        const parentId = this.toIdString(current.parent);
         current = undefined;
         if (parentId) current = menuById.get(parentId);
       }
     }
 
     return Array.from(collected.values()).map((menu) => {
-      const tid = toIdString(menu.table);
+      const tid = this.toIdString(menu.table);
       let knownTableSlug: string | null = null;
       if (tid) knownTableSlug = tableIdToSlug.get(tid) ?? null;
 
@@ -436,7 +435,7 @@ export default class ExportTableUseCase {
         name: menu.name,
         slug: menu.slug,
         type,
-        parent: toIdString(menu.parent),
+        parent: this.toIdString(menu.parent),
         url,
         html: menu.html ?? null,
         order: menu.order,

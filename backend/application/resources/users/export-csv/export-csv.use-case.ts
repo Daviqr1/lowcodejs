@@ -27,29 +27,28 @@ const FIELDS: CsvField[] = [
   { label: 'Atualizado em', value: 'updatedAt' },
 ];
 
-function toCsvRow(user: IUser): Record<string, string> {
-  let groupName = '';
-  if (typeof user.group === 'object' && user.group?.name) {
-    groupName = user.group.name;
-  }
-  let createdAt = '';
-  if (user.createdAt) createdAt = new Date(user.createdAt).toISOString();
-  let updatedAt = '';
-  if (user.updatedAt) updatedAt = new Date(user.updatedAt).toISOString();
-
-  return {
-    _id: user._id,
-    name: user.name ?? '',
-    email: user.email ?? '',
-    group: groupName,
-    status: user.status ?? '',
-    createdAt,
-    updatedAt,
-  };
-}
-
 @Service()
 export default class UserExportCsvUseCase {
+  private toCsvRow(user: IUser): Record<string, string> {
+    let groupName = '';
+    if (typeof user.group === 'object' && user.group?.name) {
+      groupName = user.group.name;
+    }
+    let createdAt = '';
+    if (user.createdAt) createdAt = new Date(user.createdAt).toISOString();
+    let updatedAt = '';
+    if (user.updatedAt) updatedAt = new Date(user.updatedAt).toISOString();
+
+    return {
+      _id: user._id,
+      name: user.name ?? '',
+      email: user.email ?? '',
+      group: groupName,
+      status: user.status ?? '',
+      createdAt,
+      updatedAt,
+    };
+  }
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly csvExport: CsvExportContractService,
@@ -88,7 +87,7 @@ export default class UserExportCsvUseCase {
             page,
             perPage,
           });
-          return batch.map(toCsvRow);
+          return batch.map((item) => this.toCsvRow(item));
         },
       });
 
