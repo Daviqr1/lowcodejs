@@ -61,220 +61,6 @@ export const ROW_ACCESS_PLUGIN_KEY = 'core:row-access';
  * Runtime (adjustListQuery/canRead) pode receber tableSettings vazio em
  * transições (ex: imediatamente após bind antes do persist).
  */
-function parseSettings(raw: Record<string, unknown>): RowAccessSettings {
-  if (!raw || Object.keys(raw).length === 0) {
-    return DEFAULT_ROW_ACCESS_SETTINGS;
-  }
-  return rowAccessSettingsSchema.parse(raw);
-}
-
-// ── Helpers: visibility field (DROPDOWN stored as array) ──────────────────────
-
-function readVisibility(
-  source: Record<string, unknown> | undefined,
-  slug: string,
-): string | undefined {
-  if (!source) return undefined;
-  const v = source[slug];
-  if (Array.isArray(v)) {
-    if (v.length > 0) return String(v[0]);
-    return undefined;
-  }
-  if (v == null) return undefined;
-  return String(v);
-}
-
-function asVisibilityArray(value: string): [string] {
-  return [value];
-}
-
-function buildDropdownOptions(values: readonly string[]): IDropdown[] {
-  const colorMap: Record<string, string> = {
-    PUBLIC: '#22c55e',
-    INTERNO: '#3b82f6',
-    RESTRITO: '#f59e0b',
-    SIGILOSO: '#ef4444',
-  };
-  return values.map((id) => ({
-    id,
-    label: id.charAt(0) + id.slice(1).toLowerCase(),
-    color: colorMap[id] ?? '#6b7280',
-  }));
-}
-
-// ── Helpers: creator-bypass ───────────────────────────────────────────────────
-
-function rowCreatorMatchesUser(
-  row: IRow | null | undefined,
-  ctx: GuardEvalContext,
-): boolean {
-  if (!row) return false;
-  const creator = row.creator;
-  if (typeof creator !== 'string' || !creator) return false;
-  if (!ctx.userId) return false;
-  return creator === ctx.userId;
-}
-
-// ── Helpers: date-window ──────────────────────────────────────────────────────
-
-function asDate(value: unknown): Date | null {
-  if (value instanceof Date) {
-    if (isNaN(value.getTime())) return null;
-    return value;
-  }
-  if (typeof value === 'string') {
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return null;
-    return d;
-  }
-  return null;
-}
-
-function buildDateWindowQuery(
-  settings: DateWindowSettings,
-  now: Date,
-): Record<string, unknown> {
-  if (settings.mode === 'off') return {};
-
-  if (settings.mode === 'createdAt-sliding') {
-    return {
-      createdAt: {
-        $gte: new Date(now.getTime() - settings.slidingDays * 86400000),
-      },
-    };
-  }
-
-  if (settings.mode === 'createdAt-fixed') {
-    const range: Record<string, Date> = {};
-    if (settings.fixedFrom) range.$gte = new Date(settings.fixedFrom);
-    if (settings.fixedTo) range.$lte = new Date(settings.fixedTo);
-    if (Object.keys(range).length === 0) return {};
-    return { createdAt: range };
-  }
-
-  // field-range
-  return {
-    [settings.validFromSlug]: { $lte: now },
-    [settings.validUntilSlug]: { $gte: now },
-  };
-}
-
-function rowPassesDateWindow(
-  row: IRow,
-  settings: DateWindowSettings,
-  now: Date,
-): boolean {
-  if (settings.mode === 'off') return true;
-
-  if (settings.mode === 'createdAt-sliding') {
-    const created = asDate(row.createdAt);
-    if (!created) return true; // sem createdAt: não bloqueia
-    const threshold = now.getTime() - settings.slidingDays * 86400000;
-    return created.getTime() >= threshold;
-  }
-
-  if (settings.mode === 'createdAt-fixed') {
-    const created = asDate(row.createdAt);
-    if (!created) return true;
-    if (settings.fixedFrom && created < new Date(settings.fixedFrom))
-      return false;
-    if (settings.fixedTo && created > new Date(settings.fixedTo)) return false;
-    return true;
-  }
-
-  // field-range
-  const from = asDate(row[settings.validFromSlug]);
-  const until = asDate(row[settings.validUntilSlug]);
-  if (from && now < from) return false;
-  if (until && now > until) return false;
-  return true;
-}
-
-// ── Helpers: visibility-by-group ──────────────────────────────────────────────
-
-/**
- * IDs de grupo que podem ver rows com esse valor de visibilidade.
- * Vazio = nenhum grupo vê (exceto criador via creator-bypass e privilegiados).
- */
-function groupIdsForValue(
-  settings: RowAccessSettings,
-  value: string | undefined,
-): string[] {
-  if (!value) return [];
-  return settings.visibility.groupMatrix[value] ?? [];
-}
-
-/**
- * Verifica se algum grupo do contexto do usuário tem acesso ao valor.
- */
-function ctxCanSeeValue(
-  settings: RowAccessSettings,
-  value: string | undefined,
-  ctx: GuardEvalContext,
-): boolean {
-  const allowedGroupIds = groupIdsForValue(settings, value);
-  if (allowedGroupIds.length === 0) return false;
-  return allowedGroupIds.some((gid) => ctx.groupIds.has(gid));
-}
-
-/**
- * Valores que o contexto do usuário pode ver (para construir $in na query).
- */
-function visibleValuesForCtx(
-  settings: RowAccessSettings,
-  ctx: GuardEvalContext,
-): string[] {
-  return settings.visibility.values.filter((value) =>
-    ctxCanSeeValue(settings, value, ctx),
-  );
-}
-
-function findFieldBySlug(
-  populatedFields: IField[],
-  slug: string,
-): IField | null {
-  return populatedFields.find((f) => f.slug === slug) ?? null;
-}
-
-// ── Helpers: visibility por campo USER_GROUP ──────────────────────────────────
-
-/**
- * IDs de grupo gravados num campo USER_GROUP da row. O valor pode chegar como
- * array de ids crus (antes do populate) ou de docs populados (`{ _id }`).
- */
-function isRecordWithId(value: unknown): value is { _id: unknown } {
-  return typeof value === 'object' && value !== null && '_id' in value;
-}
-
-function readGroupIds(
-  source: Record<string, unknown> | undefined,
-  slug: string,
-): string[] {
-  if (!source) return [];
-  const value = source[slug];
-  if (!Array.isArray(value)) return [];
-  const ids: string[] = [];
-  for (const item of value) {
-    if (isRecordWithId(item)) {
-      ids.push(String(item._id));
-      continue;
-    }
-    if (item != null) ids.push(String(item));
-  }
-  return ids.filter((id) => id.length > 0);
-}
-
-/**
- * True se algum grupo do contexto do usuário está entre os grupos do campo.
- */
-function ctxIntersectsRowGroups(
-  rowGroupIds: string[],
-  ctx: GuardEvalContext,
-): boolean {
-  return rowGroupIds.some((gid) => ctx.groupIds.has(gid));
-}
-
-// ── Guard ─────────────────────────────────────────────────────────────────────
 
 @Service()
 export class RowAccessControlGuard implements RowAccessGuard {
@@ -294,6 +80,222 @@ export class RowAccessControlGuard implements RowAccessGuard {
     private readonly modelBuilder: ModelBuilderContractService,
   ) {}
 
+  private parseSettings(raw: Record<string, unknown>): RowAccessSettings {
+    if (!raw || Object.keys(raw).length === 0) {
+      return DEFAULT_ROW_ACCESS_SETTINGS;
+    }
+    return rowAccessSettingsSchema.parse(raw);
+  }
+
+  // ── Helpers: visibility field (DROPDOWN stored as array) ──────────────────────
+
+  private readVisibility(
+    source: Record<string, unknown> | undefined,
+    slug: string,
+  ): string | undefined {
+    if (!source) return undefined;
+    const v = source[slug];
+    if (Array.isArray(v)) {
+      if (v.length > 0) return String(v[0]);
+      return undefined;
+    }
+    if (v == null) return undefined;
+    return String(v);
+  }
+
+  private asVisibilityArray(value: string): [string] {
+    return [value];
+  }
+
+  private buildDropdownOptions(values: readonly string[]): IDropdown[] {
+    const colorMap: Record<string, string> = {
+      PUBLIC: '#22c55e',
+      INTERNO: '#3b82f6',
+      RESTRITO: '#f59e0b',
+      SIGILOSO: '#ef4444',
+    };
+    return values.map((id) => ({
+      id,
+      label: id.charAt(0) + id.slice(1).toLowerCase(),
+      color: colorMap[id] ?? '#6b7280',
+    }));
+  }
+
+  // ── Helpers: creator-bypass ───────────────────────────────────────────────────
+
+  private rowCreatorMatchesUser(
+    row: IRow | null | undefined,
+    ctx: GuardEvalContext,
+  ): boolean {
+    if (!row) return false;
+    const creator = row.creator;
+    if (typeof creator !== 'string' || !creator) return false;
+    if (!ctx.userId) return false;
+    return creator === ctx.userId;
+  }
+
+  // ── Helpers: date-window ──────────────────────────────────────────────────────
+
+  private asDate(value: unknown): Date | null {
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) return null;
+      return value;
+    }
+    if (typeof value === 'string') {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return null;
+      return d;
+    }
+    return null;
+  }
+
+  private buildDateWindowQuery(
+    settings: DateWindowSettings,
+    now: Date,
+  ): Record<string, unknown> {
+    if (settings.mode === 'off') return {};
+
+    if (settings.mode === 'createdAt-sliding') {
+      return {
+        createdAt: {
+          $gte: new Date(now.getTime() - settings.slidingDays * 86400000),
+        },
+      };
+    }
+
+    if (settings.mode === 'createdAt-fixed') {
+      const range: Record<string, Date> = {};
+      if (settings.fixedFrom) range.$gte = new Date(settings.fixedFrom);
+      if (settings.fixedTo) range.$lte = new Date(settings.fixedTo);
+      if (Object.keys(range).length === 0) return {};
+      return { createdAt: range };
+    }
+
+    // field-range
+    return {
+      [settings.validFromSlug]: { $lte: now },
+      [settings.validUntilSlug]: { $gte: now },
+    };
+  }
+
+  private rowPassesDateWindow(
+    row: IRow,
+    settings: DateWindowSettings,
+    now: Date,
+  ): boolean {
+    if (settings.mode === 'off') return true;
+
+    if (settings.mode === 'createdAt-sliding') {
+      const created = this.asDate(row.createdAt);
+      if (!created) return true; // sem createdAt: não bloqueia
+      const threshold = now.getTime() - settings.slidingDays * 86400000;
+      return created.getTime() >= threshold;
+    }
+
+    if (settings.mode === 'createdAt-fixed') {
+      const created = this.asDate(row.createdAt);
+      if (!created) return true;
+      if (settings.fixedFrom && created < new Date(settings.fixedFrom))
+        return false;
+      if (settings.fixedTo && created > new Date(settings.fixedTo))
+        return false;
+      return true;
+    }
+
+    // field-range
+    const from = this.asDate(row[settings.validFromSlug]);
+    const until = this.asDate(row[settings.validUntilSlug]);
+    if (from && now < from) return false;
+    if (until && now > until) return false;
+    return true;
+  }
+
+  // ── Helpers: visibility-by-group ──────────────────────────────────────────────
+
+  /**
+   * IDs de grupo que podem ver rows com esse valor de visibilidade.
+   * Vazio = nenhum grupo vê (exceto criador via creator-bypass e privilegiados).
+   */
+  private groupIdsForValue(
+    settings: RowAccessSettings,
+    value: string | undefined,
+  ): string[] {
+    if (!value) return [];
+    return settings.visibility.groupMatrix[value] ?? [];
+  }
+
+  /**
+   * Verifica se algum grupo do contexto do usuário tem acesso ao valor.
+   */
+  private ctxCanSeeValue(
+    settings: RowAccessSettings,
+    value: string | undefined,
+    ctx: GuardEvalContext,
+  ): boolean {
+    const allowedGroupIds = this.groupIdsForValue(settings, value);
+    if (allowedGroupIds.length === 0) return false;
+    return allowedGroupIds.some((gid) => ctx.groupIds.has(gid));
+  }
+
+  /**
+   * Valores que o contexto do usuário pode ver (para construir $in na query).
+   */
+  private visibleValuesForCtx(
+    settings: RowAccessSettings,
+    ctx: GuardEvalContext,
+  ): string[] {
+    return settings.visibility.values.filter((value) =>
+      this.ctxCanSeeValue(settings, value, ctx),
+    );
+  }
+
+  private findFieldBySlug(
+    populatedFields: IField[],
+    slug: string,
+  ): IField | null {
+    return populatedFields.find((f) => f.slug === slug) ?? null;
+  }
+
+  // ── Helpers: visibility por campo USER_GROUP ──────────────────────────────────
+
+  /**
+   * IDs de grupo gravados num campo USER_GROUP da row. O valor pode chegar como
+   * array de ids crus (antes do populate) ou de docs populados (`{ _id }`).
+   */
+  private isRecordWithId(value: unknown): value is { _id: unknown } {
+    return typeof value === 'object' && value !== null && '_id' in value;
+  }
+
+  private readGroupIds(
+    source: Record<string, unknown> | undefined,
+    slug: string,
+  ): string[] {
+    if (!source) return [];
+    const value = source[slug];
+    if (!Array.isArray(value)) return [];
+    const ids: string[] = [];
+    for (const item of value) {
+      if (this.isRecordWithId(item)) {
+        ids.push(String(item._id));
+        continue;
+      }
+      if (item != null) ids.push(String(item));
+    }
+    return ids.filter((id) => id.length > 0);
+  }
+
+  /**
+   * True se algum grupo do contexto do usuário está entre os grupos do campo.
+   */
+  private ctxIntersectsRowGroups(
+    rowGroupIds: string[],
+    ctx: GuardEvalContext,
+  ): boolean {
+    return rowGroupIds.some((gid) => ctx.groupIds.has(gid));
+  }
+
+  // ── Guard ─────────────────────────────────────────────────────────────────────
+
   // ── onTableBound helpers ──────────────────────────────────────────────────
 
   private async ensureDateField(
@@ -301,7 +303,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     slug: string,
     label: string,
   ): Promise<Either<HTTPException, { wasCreated: boolean; field: IField }>> {
-    const existing = findFieldBySlug(populatedFields, slug);
+    const existing = this.findFieldBySlug(populatedFields, slug);
     if (existing) {
       if (existing.type !== E_FIELD_TYPE.DATE) {
         return left(
@@ -346,7 +348,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     settings: RowAccessSettings,
   ): Promise<Either<HTTPException, { wasCreated: boolean; field: IField }>> {
     const slug = settings.visibility.fieldSlug;
-    const existing = findFieldBySlug(populatedFields, slug);
+    const existing = this.findFieldBySlug(populatedFields, slug);
 
     if (existing) {
       if (existing.type !== E_FIELD_TYPE.DROPDOWN) {
@@ -361,7 +363,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
       const existingByIds = new Map(
         (existing.dropdown ?? []).map((o) => [o.id, o]),
       );
-      const defaultOpts = buildDropdownOptions(settings.visibility.values);
+      const defaultOpts = this.buildDropdownOptions(settings.visibility.values);
       const nextDropdown = defaultOpts.map(
         (opt) => existingByIds.get(opt.id) ?? opt,
       );
@@ -397,9 +399,9 @@ export class RowAccessControlGuard implements RowAccessGuard {
       tip: null,
       locked: true,
       native: false,
-      defaultValue: asVisibilityArray(settings.visibility.defaultValue),
+      defaultValue: this.asVisibilityArray(settings.visibility.defaultValue),
       relationship: null,
-      dropdown: buildDropdownOptions(settings.visibility.values),
+      dropdown: this.buildDropdownOptions(settings.visibility.values),
       allowCustomDropdownOptions: false,
       allowCreateRelationshipRecords: false,
       category: [],
@@ -413,7 +415,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     table: ITable,
     rawSettings: Record<string, unknown>,
   ): Promise<Either<HTTPException, GuardBindResult>> {
-    const settings = parseSettings(rawSettings);
+    const settings = this.parseSettings(rawSettings);
 
     const populatedFields = table.fields.filter(
       (f): f is IField => typeof f === 'object' && f !== null,
@@ -425,7 +427,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     //    campo — o usuário cria via "Criar Campo"; aqui só checamos o vínculo).
     if (settings.fieldVisibility.enabled) {
       const slug = settings.fieldVisibility.fieldSlug;
-      const field = findFieldBySlug(populatedFields, slug);
+      const field = this.findFieldBySlug(populatedFields, slug);
       if (!field) {
         return left(
           HTTPException.Conflict(
@@ -503,7 +505,9 @@ export class RowAccessControlGuard implements RowAccessGuard {
     // Idempotente: rows que já têm o campo não são afetadas.
     if (settings.visibility.enabled) {
       const slug = settings.visibility.fieldSlug;
-      const defaultVal = asVisibilityArray(settings.visibility.defaultValue);
+      const defaultVal = this.asVisibilityArray(
+        settings.visibility.defaultValue,
+      );
       await this.rowRepo.updateMany({
         table,
         filter: { [slug]: { $exists: false } },
@@ -528,7 +532,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     _table: ITable,
     rawSettings: Record<string, unknown>,
   ): Record<string, unknown> {
-    const settings = parseSettings(rawSettings);
+    const settings = this.parseSettings(rawSettings);
 
     // FIX: visitante sem userId deve ser bloqueado quando visibility esta habilitada.
     // Retornar {} seria "sem restrição", o que vazaria todas as rows para visitantes.
@@ -552,7 +556,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
 
     // visibility por grupo
     if (settings.visibility.enabled) {
-      const allowed = visibleValuesForCtx(settings, ctx);
+      const allowed = this.visibleValuesForCtx(settings, ctx);
       if (allowed.length === 0) {
         // Nenhum grupo do usuário vê qualquer valor — bloqueia tudo
         restrictiveParts.push({
@@ -578,7 +582,7 @@ export class RowAccessControlGuard implements RowAccessGuard {
     }
 
     // dateWindow
-    const dateFrag = buildDateWindowQuery(settings.dateWindow, new Date());
+    const dateFrag = this.buildDateWindowQuery(settings.dateWindow, new Date());
     if (Object.keys(dateFrag).length > 0) restrictiveParts.push(dateFrag);
 
     const restrictive = this.combineRestrictiveParts(restrictiveParts);
@@ -617,29 +621,35 @@ export class RowAccessControlGuard implements RowAccessGuard {
     _table: ITable,
     rawSettings: Record<string, unknown>,
   ): GuardAccessDecision {
-    const settings = parseSettings(rawSettings);
+    const settings = this.parseSettings(rawSettings);
 
     // 1. Creator bypass (allow vence tudo)
-    if (settings.creatorBypass.enabled && rowCreatorMatchesUser(row, ctx)) {
+    if (
+      settings.creatorBypass.enabled &&
+      this.rowCreatorMatchesUser(row, ctx)
+    ) {
       return 'allow';
     }
 
     // 2. Visibility por grupo
     if (settings.visibility.enabled) {
       if (!ctx.userId) return 'deny'; // visitante
-      const vis = readVisibility(row, settings.visibility.fieldSlug);
-      if (!ctxCanSeeValue(settings, vis, ctx)) return 'deny';
+      const vis = this.readVisibility(row, settings.visibility.fieldSlug);
+      if (!this.ctxCanSeeValue(settings, vis, ctx)) return 'deny';
     }
 
     // 2b. Visibility por campo USER_GROUP
     if (settings.fieldVisibility.enabled) {
       if (!ctx.userId) return 'deny'; // visitante
-      const rowGroups = readGroupIds(row, settings.fieldVisibility.fieldSlug);
-      if (!ctxIntersectsRowGroups(rowGroups, ctx)) return 'deny';
+      const rowGroups = this.readGroupIds(
+        row,
+        settings.fieldVisibility.fieldSlug,
+      );
+      if (!this.ctxIntersectsRowGroups(rowGroups, ctx)) return 'deny';
     }
 
     // 3. Date-window
-    if (!rowPassesDateWindow(row, settings.dateWindow, new Date())) {
+    if (!this.rowPassesDateWindow(row, settings.dateWindow, new Date())) {
       return 'deny';
     }
 
@@ -660,21 +670,24 @@ export class RowAccessControlGuard implements RowAccessGuard {
     operation: 'create' | 'update' | 'delete',
     rawSettings: Record<string, unknown>,
   ): GuardWriteDecision {
-    const settings = parseSettings(rawSettings);
+    const settings = this.parseSettings(rawSettings);
 
     // 1. Creator bypass (update/delete)
     if (
       settings.creatorBypass.enabled &&
       operation !== 'create' &&
-      rowCreatorMatchesUser(currentRow, ctx)
+      this.rowCreatorMatchesUser(currentRow, ctx)
     ) {
       return { decision: 'allow' };
     }
 
     // 2. Visibility: bloquear payload com valor não permitido para o ctx
     if (settings.visibility.enabled && payload && ctx.userId) {
-      const incoming = readVisibility(payload, settings.visibility.fieldSlug);
-      if (incoming && !ctxCanSeeValue(settings, incoming, ctx)) {
+      const incoming = this.readVisibility(
+        payload,
+        settings.visibility.fieldSlug,
+      );
+      if (incoming && !this.ctxCanSeeValue(settings, incoming, ctx)) {
         return { decision: 'deny', reason: 'ROW_WRITE_RESTRICTED' };
       }
     }
@@ -686,11 +699,11 @@ export class RowAccessControlGuard implements RowAccessGuard {
       operation !== 'create' &&
       ctx.userId
     ) {
-      const rowGroups = readGroupIds(
+      const rowGroups = this.readGroupIds(
         currentRow ?? undefined,
         settings.fieldVisibility.fieldSlug,
       );
-      if (!ctxIntersectsRowGroups(rowGroups, ctx)) {
+      if (!this.ctxIntersectsRowGroups(rowGroups, ctx)) {
         return { decision: 'deny', reason: 'ROW_WRITE_RESTRICTED' };
       }
     }
@@ -713,22 +726,22 @@ export class RowAccessControlGuard implements RowAccessGuard {
     currentRow: IRow | null,
     rawSettings: Record<string, unknown>,
   ): Record<string, unknown> {
-    const settings = parseSettings(rawSettings);
+    const settings = this.parseSettings(rawSettings);
     if (!settings.visibility.enabled) return payload;
     if (!ctx.userId) return payload; // visitante — não sanitiza
 
     const slug = settings.visibility.fieldSlug;
-    const incoming = readVisibility(payload, slug);
+    const incoming = this.readVisibility(payload, slug);
     const incomingAllowed =
-      incoming != null && ctxCanSeeValue(settings, incoming, ctx);
+      incoming != null && this.ctxCanSeeValue(settings, incoming, ctx);
 
     if (operation === 'create') {
       if (incomingAllowed) {
-        return { ...payload, [slug]: asVisibilityArray(incoming) };
+        return { ...payload, [slug]: this.asVisibilityArray(incoming) };
       }
       // força o primeiro valor visível ou o defaultValue
-      const fallback = visibleValuesForCtx(settings, ctx)[0];
-      const defaultVisible = ctxCanSeeValue(
+      const fallback = this.visibleValuesForCtx(settings, ctx)[0];
+      const defaultVisible = this.ctxCanSeeValue(
         settings,
         settings.visibility.defaultValue,
         ctx,
@@ -738,17 +751,17 @@ export class RowAccessControlGuard implements RowAccessGuard {
         defaultVisible,
         fallback,
       );
-      return { ...payload, [slug]: asVisibilityArray(finalValue) };
+      return { ...payload, [slug]: this.asVisibilityArray(finalValue) };
     }
 
     // update: preserva valor atual se incoming proibido; normaliza para array
     if (incomingAllowed) {
-      return { ...payload, [slug]: asVisibilityArray(incoming) };
+      return { ...payload, [slug]: this.asVisibilityArray(incoming) };
     }
     const currentValue =
-      readVisibility(currentRow ?? undefined, slug) ??
+      this.readVisibility(currentRow ?? undefined, slug) ??
       settings.visibility.defaultValue;
-    return { ...payload, [slug]: asVisibilityArray(currentValue) };
+    return { ...payload, [slug]: this.asVisibilityArray(currentValue) };
   }
 
   private resolveCreateFallback(

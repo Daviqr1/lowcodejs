@@ -23,7 +23,7 @@ import UserInMemoryRepository from '@application/repositories/user/user-in-memor
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
-import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard';
+import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard.service';
 
 import RowAccessGuardService from './row-access-guard.service';
 

@@ -8,7 +8,7 @@ import TableInMemoryRepository from '@application/repositories/table/table-in-me
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
-import { RowAccessControlGuard } from './guard';
+import { RowAccessControlGuard } from './guard.service';
 import {
   DEFAULT_ROW_ACCESS_SETTINGS,
   type RowAccessSettings,

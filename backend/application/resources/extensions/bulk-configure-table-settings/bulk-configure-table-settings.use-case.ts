@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import { RowAccessControlGuard } from '../../../../extensions/core/plugins/row-access/guard';
+import { RowAccessControlGuard } from '../../../../extensions/core/plugins/row-access/guard.service';
 import { rowAccessSettingsSchema } from '../../../../extensions/core/plugins/row-access/settings-schema';
 
 function isRecord(value: unknown): value is Record<string, unknown> {

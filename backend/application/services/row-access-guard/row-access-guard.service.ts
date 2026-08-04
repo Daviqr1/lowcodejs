@@ -12,7 +12,7 @@ import { ExtensionContractRepository } from '@application/repositories/extension
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
-import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard';
+import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard.service';
 
 import { RowAccessGuardContractService } from './row-access-guard-contract.service';
 import type { RowWriteOperation } from './row-access-guard-contract.service';
