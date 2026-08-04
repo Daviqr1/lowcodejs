@@ -3,6 +3,7 @@ import type { Namespace, Server as SocketIOServer } from 'socket.io';
 
 import type { JwtDecoder } from '@application/services/socket-auth/socket-auth-contract.service';
 import { SocketAuthContractService } from '@application/services/socket-auth/socket-auth-contract.service';
+import { SocketNamespaceBase } from '@application/services/socket-auth/socket-namespace.base';
 
 import type { StoredFinalEvent } from './csv-import-socket-contract.service';
 import {
@@ -15,13 +16,17 @@ import {
 const RESULT_TTL_MS = 10 * 60 * 1000;
 
 @Service()
-export default class CsvImportSocketService implements CsvImportSocketContractService {
-  private current: Namespace | null = null;
+export default class CsvImportSocketService
+  extends SocketNamespaceBase
+  implements CsvImportSocketContractService
+{
   private readonly results = new Map<string, StoredFinalEvent>();
 
-  constructor(private readonly auth: SocketAuthContractService) {}
+  constructor(private readonly auth: SocketAuthContractService) {
+    super();
+  }
 
-  init(io: SocketIOServer, decode: JwtDecoder): Namespace {
+  protected create(io: SocketIOServer, decode: JwtDecoder): Namespace {
     const namespace = io.of(CSV_IMPORT_NAMESPACE);
 
     this.auth.protect(namespace, decode, { requirePrivileged: true });
@@ -42,12 +47,7 @@ export default class CsvImportSocketService implements CsvImportSocketContractSe
       });
     });
 
-    this.current = namespace;
     return namespace;
-  }
-
-  namespace(): Namespace | null {
-    return this.current;
   }
 
   storeResult(jobId: string, result: StoredFinalEvent): void {

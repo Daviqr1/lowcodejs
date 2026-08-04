@@ -3,6 +3,7 @@ import type { Namespace, Server as SocketIOServer } from 'socket.io';
 
 import type { JwtDecoder } from '@application/services/socket-auth/socket-auth-contract.service';
 import { SocketAuthContractService } from '@application/services/socket-auth/socket-auth-contract.service';
+import { SocketNamespaceBase } from '@application/services/socket-auth/socket-namespace.base';
 
 import {
   NOTIFICATIONS_NAMESPACE,
@@ -10,23 +11,21 @@ import {
 } from './notification-socket-contract.service';
 
 @Service()
-export default class NotificationSocketService implements NotificationSocketContractService {
-  private current: Namespace | null = null;
+export default class NotificationSocketService
+  extends SocketNamespaceBase
+  implements NotificationSocketContractService
+{
+  constructor(private readonly auth: SocketAuthContractService) {
+    super();
+  }
 
-  constructor(private readonly auth: SocketAuthContractService) {}
-
-  init(io: SocketIOServer, decode: JwtDecoder): Namespace {
+  protected create(io: SocketIOServer, decode: JwtDecoder): Namespace {
     const namespace = io.of(NOTIFICATIONS_NAMESPACE);
 
     this.auth.protect(namespace, decode);
 
     this.auth.joinUserRoom(namespace);
 
-    this.current = namespace;
     return namespace;
-  }
-
-  namespace(): Namespace | null {
-    return this.current;
   }
 }

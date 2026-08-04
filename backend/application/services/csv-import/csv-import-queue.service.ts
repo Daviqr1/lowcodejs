@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import { Service } from 'fastify-decorators';
 
+import { QueueBase } from '@application/services/queue-worker/queue.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 
 import {
@@ -11,15 +12,16 @@ import {
 } from './csv-import-queue-contract.service';
 
 @Service()
-export default class BullMQCsvImportQueueService implements CsvImportQueueContractService {
-  constructor(private readonly redis: RedisContractService) {}
+export default class BullMQCsvImportQueueService
+  extends QueueBase
+  implements CsvImportQueueContractService
+{
+  constructor(private readonly redis: RedisContractService) {
+    super();
+  }
 
-  // Fila preguicosa: so abre conexao quando algo e realmente enfileirado.
-  private cachedQueue: Queue | null = null;
-
-  private getQueue(): Queue {
-    if (this.cachedQueue) return this.cachedQueue;
-    this.cachedQueue = new Queue(CSV_IMPORT_QUEUE_NAME, {
+  protected createQueue(): Queue {
+    return new Queue(CSV_IMPORT_QUEUE_NAME, {
       connection: this.redis.createQueueConnection(),
       defaultJobOptions: {
         attempts: 1,
@@ -27,22 +29,13 @@ export default class BullMQCsvImportQueueService implements CsvImportQueueContra
         removeOnFail: { count: 50 },
       },
     });
-    return this.cachedQueue;
   }
 
   async enqueue(payload: CsvImportJobPayload): Promise<string> {
-    const queue = this.getQueue();
-    const jobId = `${CSV_IMPORT_JOB.IMPORT}:${Date.now()}:${Math.random()
-      .toString(16)
-      .slice(2, 10)}`;
-    const job = await queue.add(CSV_IMPORT_JOB.IMPORT, payload, { jobId });
+    const jobId = this.buildJobId(CSV_IMPORT_JOB.IMPORT);
+    const job = await this.getQueue().add(CSV_IMPORT_JOB.IMPORT, payload, {
+      jobId,
+    });
     return job.id ?? jobId;
-  }
-
-  async close(): Promise<void> {
-    if (this.cachedQueue) {
-      await this.cachedQueue.close();
-      this.cachedQueue = null;
-    }
   }
 }

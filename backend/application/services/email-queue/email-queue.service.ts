@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import { Service } from 'fastify-decorators';
 
+import { QueueBase } from '@application/services/queue-worker/queue.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 
 import {
@@ -11,15 +12,16 @@ import {
 } from './email-queue-contract.service';
 
 @Service()
-export default class BullMQEmailQueueService implements EmailQueueContractService {
-  constructor(private readonly redis: RedisContractService) {}
+export default class BullMQEmailQueueService
+  extends QueueBase
+  implements EmailQueueContractService
+{
+  constructor(private readonly redis: RedisContractService) {
+    super();
+  }
 
-  // Fila preguicosa: so abre conexao quando algo e realmente enfileirado.
-  private cachedQueue: Queue | null = null;
-
-  private getQueue(): Queue {
-    if (this.cachedQueue) return this.cachedQueue;
-    this.cachedQueue = new Queue(EMAIL_QUEUE_NAME, {
+  protected createQueue(): Queue {
+    return new Queue(EMAIL_QUEUE_NAME, {
       connection: this.redis.createQueueConnection(),
       defaultJobOptions: {
         attempts: 3,
@@ -28,22 +30,11 @@ export default class BullMQEmailQueueService implements EmailQueueContractServic
         removeOnFail: { count: 500 },
       },
     });
-    return this.cachedQueue;
   }
 
   async enqueue(payload: EmailJobPayload): Promise<string> {
-    const queue = this.getQueue();
-    const jobId = `${EMAIL_JOB.SEND}:${Date.now()}:${Math.random()
-      .toString(36)
-      .slice(2, 10)}`;
-    const job = await queue.add(EMAIL_JOB.SEND, payload, { jobId });
+    const jobId = this.buildJobId(EMAIL_JOB.SEND);
+    const job = await this.getQueue().add(EMAIL_JOB.SEND, payload, { jobId });
     return job.id ?? jobId;
-  }
-
-  async close(): Promise<void> {
-    if (this.cachedQueue) {
-      await this.cachedQueue.close();
-      this.cachedQueue = null;
-    }
   }
 }

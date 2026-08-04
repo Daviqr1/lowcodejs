@@ -3,6 +3,7 @@ import type { Namespace, Server as SocketIOServer } from 'socket.io';
 
 import type { JwtDecoder } from '@application/services/socket-auth/socket-auth-contract.service';
 import { SocketAuthContractService } from '@application/services/socket-auth/socket-auth-contract.service';
+import { SocketNamespaceBase } from '@application/services/socket-auth/socket-namespace.base';
 
 import {
   STORAGE_MIGRATION_NAMESPACE,
@@ -10,12 +11,15 @@ import {
 } from './storage-migration-socket-contract.service';
 
 @Service()
-export default class StorageMigrationSocketService implements StorageMigrationSocketContractService {
-  private current: Namespace | null = null;
+export default class StorageMigrationSocketService
+  extends SocketNamespaceBase
+  implements StorageMigrationSocketContractService
+{
+  constructor(private readonly auth: SocketAuthContractService) {
+    super();
+  }
 
-  constructor(private readonly auth: SocketAuthContractService) {}
-
-  init(io: SocketIOServer, decode: JwtDecoder): Namespace {
+  protected create(io: SocketIOServer, decode: JwtDecoder): Namespace {
     const namespace = io.of(STORAGE_MIGRATION_NAMESPACE);
 
     this.auth.protect(namespace, decode, { requireMaster: true });
@@ -29,11 +33,6 @@ export default class StorageMigrationSocketService implements StorageMigrationSo
       });
     });
 
-    this.current = namespace;
     return namespace;
-  }
-
-  namespace(): Namespace | null {
-    return this.current;
   }
 }
