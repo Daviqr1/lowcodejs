@@ -3,8 +3,8 @@ import { Service } from 'fastify-decorators';
 
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
-import LocalStorageService from './local-storage.service';
-import S3StorageService from './s3-storage.service';
+import { LocalStorageContractService } from './local-storage-contract.service';
+import { S3StorageContractService } from './s3-storage-contract.service';
 import type {
   StorageReadResponse,
   StorageUploadResponse,
@@ -15,8 +15,8 @@ import { StorageContractService } from './storage-contract.service';
 @Service()
 export default class StorageService implements StorageContractService {
   constructor(
-    private readonly local: LocalStorageService,
-    private readonly s3: S3StorageService,
+    private readonly local: LocalStorageContractService,
+    private readonly s3: S3StorageContractService,
     private readonly config: StorageConfigContractService,
   ) {}
 

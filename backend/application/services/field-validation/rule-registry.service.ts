@@ -1,5 +1,6 @@
 import { Service } from 'fastify-decorators';
 
+import type { FieldValidationRule } from './field-validation-rule-contract.service';
 import type { ValidationRuleKey } from './rule-registry-contract.service';
 import { FieldValidationRuleRegistryContractService } from './rule-registry-contract.service';
 import areUniqueValues from './rules/are-unique-values';
@@ -16,7 +17,6 @@ import isPhone from './rules/is-phone';
 import isUnique from './rules/is-unique';
 import isUrl from './rules/is-url';
 import notEmpty from './rules/not-empty';
-import type { FieldValidationRule } from './rules/rule.contract';
 import userExists from './rules/user-exists';
 
 // Regra nova: crie `rules/<regra>/index.ts` e acrescente aqui.

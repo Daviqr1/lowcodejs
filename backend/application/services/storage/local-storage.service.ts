@@ -5,16 +5,16 @@ import { access, mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
+import { LocalStorageContractService } from './local-storage-contract.service';
 import { processFile } from './process-file';
 import type {
   StorageReadResponse,
   StorageUploadResponse,
   StorageWriteRawResponse,
 } from './storage-contract.service';
-import { StorageContractService } from './storage-contract.service';
 
 @Service()
-export default class LocalStorageService implements StorageContractService {
+export default class LocalStorageService implements LocalStorageContractService {
   constructor(private readonly config: StorageConfigContractService) {}
 
   async ensureBucket(): Promise<void> {

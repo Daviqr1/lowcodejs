@@ -49,10 +49,12 @@ export abstract class FieldValidationRule {
     config: Record<string, unknown>,
     context: ValidationContext,
   ): Promise<string | null>;
-}
 
-// Valor "vazio" — regras puras (exceto NOT_EMPTY) ignoram para nao duplicar a
-// checagem de obrigatoriedade (a cargo de `required` / NOT_EMPTY).
-export function isEmptyValue(value: unknown): boolean {
-  return value === null || value === undefined || value === '';
+  /**
+   * Valor "vazio". Regras puras (exceto NOT_EMPTY) ignoram, para nao
+   * duplicar a checagem de obrigatoriedade — que e de `required`/NOT_EMPTY.
+   */
+  protected isEmpty(value: unknown): boolean {
+    return value === null || value === undefined || value === '';
+  }
 }

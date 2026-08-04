@@ -13,15 +13,15 @@ import { Readable } from 'node:stream';
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
 import { processFile } from './process-file';
+import { S3StorageContractService } from './s3-storage-contract.service';
 import type {
   StorageReadResponse,
   StorageUploadResponse,
   StorageWriteRawResponse,
 } from './storage-contract.service';
-import { StorageContractService } from './storage-contract.service';
 
 @Service()
-export default class S3StorageService implements StorageContractService {
+export default class S3StorageService implements S3StorageContractService {
   constructor(private readonly config: StorageConfigContractService) {}
 
   private get bucket(): string {

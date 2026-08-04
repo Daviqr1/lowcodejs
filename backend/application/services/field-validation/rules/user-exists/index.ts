@@ -3,8 +3,11 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationContext, ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type {
+  ValidationContext,
+  ValidationFieldShape,
+} from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // "Usuário existe": o valor (id ou e-mail) deve corresponder a um usuario
 // existente. Suporta campo USER (array de ids) e TEXT_SHORT (id/e-mail).
@@ -24,7 +27,7 @@ class UserExistsRule extends FieldValidationRule {
     config: Record<string, unknown>,
     context: ValidationContext,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
 
     const candidates: string[] = [];
     if (Array.isArray(value)) {

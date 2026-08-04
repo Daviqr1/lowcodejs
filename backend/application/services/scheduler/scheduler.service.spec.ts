@@ -6,7 +6,9 @@ import { Interval } from './decorators/interval.decorator';
 import { Timeout } from './decorators/timeout.decorator';
 import { CronExpression } from './enums/cron-expression.enum';
 import { E_SCHEDULER_TYPE } from './enums/scheduler-type.enum';
-import { SchedulerMetadataAccessor } from './schedule-metadata.accessor';
+import ScheduleExplorerService from './schedule-explorer.service';
+import ScheduleMetadataAccessorService from './schedule-metadata-accessor.service';
+import SchedulerOrchestratorService from './scheduler-orchestrator.service';
 import SchedulerRegistry from './scheduler-registry.service';
 import {
   SCHEDULER_NAME,
@@ -14,8 +16,6 @@ import {
   SCHEDULE_CRON_OPTIONS,
 } from './scheduler.constants';
 import { schedulerDiscovery } from './scheduler.discovery';
-import { ScheduleExplorer } from './scheduler.explorer';
-import { SchedulerOrchestrator } from './scheduler.orchestrator';
 
 // Mock do getInstanceByToken (DI): o explorer resolve as classes decoradas por
 // aqui. Preservamos o resto do fastify-decorators (o @Service do registry).
@@ -72,7 +72,7 @@ describe('scheduler / decorators', () => {
       once(): void {}
     }
 
-    const accessor = new SchedulerMetadataAccessor();
+    const accessor = new ScheduleMetadataAccessorService();
     expect(accessor.getSchedulerType(TimerHost.prototype.anon)).toBe(
       E_SCHEDULER_TYPE.INTERVAL,
     );
@@ -183,7 +183,7 @@ describe('scheduler / SchedulerOrchestrator', () => {
 
   it('mountAll cria e registra cron/interval/timeout', () => {
     const registry = new SchedulerRegistry();
-    const orchestrator = new SchedulerOrchestrator(registry);
+    const orchestrator = new SchedulerOrchestratorService(registry);
 
     orchestrator.addCron(() => {}, {
       cronTime: CronExpression.EVERY_5_SECONDS,
@@ -206,7 +206,7 @@ describe('scheduler / SchedulerOrchestrator', () => {
 
   it('cron disabled não inicia; initialDelay agenda o start', () => {
     const registry = new SchedulerRegistry();
-    const orchestrator = new SchedulerOrchestrator(registry);
+    const orchestrator = new SchedulerOrchestratorService(registry);
 
     orchestrator.addCron(() => {}, {
       cronTime: CronExpression.EVERY_5_SECONDS,
@@ -252,10 +252,10 @@ describe('scheduler / ScheduleExplorer', () => {
     instanceMap.set(ExplorerHost, new ExplorerHost());
 
     const registry = new SchedulerRegistry();
-    const orchestrator = new SchedulerOrchestrator(registry);
-    const explorer = new ScheduleExplorer(
+    const orchestrator = new SchedulerOrchestratorService(registry);
+    const explorer = new ScheduleExplorerService(
       orchestrator,
-      new SchedulerMetadataAccessor(),
+      new ScheduleMetadataAccessorService(),
     );
 
     explorer.explore();
@@ -282,10 +282,12 @@ describe('scheduler / ScheduleExplorer', () => {
 
     instanceMap.set(ThrowingHost, new ThrowingHost());
 
-    const orchestrator = new SchedulerOrchestrator(new SchedulerRegistry());
-    const explorer = new ScheduleExplorer(
+    const orchestrator = new SchedulerOrchestratorService(
+      new SchedulerRegistry(),
+    );
+    const explorer = new ScheduleExplorerService(
       orchestrator,
-      new SchedulerMetadataAccessor(),
+      new ScheduleMetadataAccessorService(),
     );
     explorer.explore();
     orchestrator.mountAll();

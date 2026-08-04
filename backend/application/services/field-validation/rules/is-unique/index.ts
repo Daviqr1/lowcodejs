@@ -3,8 +3,11 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationContext, ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type {
+  ValidationContext,
+  ValidationFieldShape,
+} from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // "Valor único": o valor digitado nao pode existir em nenhuma outra row da
 // coluna da propria tabela. No update, ignora a propria row (`currentRowId`).
@@ -22,7 +25,7 @@ class IsUniqueRule extends FieldValidationRule {
     config: Record<string, unknown>,
     context: ValidationContext,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
 
     const count = await context.deps.countFieldValue(
       context.field.slug,

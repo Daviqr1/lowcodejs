@@ -1,9 +1,11 @@
+import { Service } from 'fastify-decorators';
 import { getInstanceByToken } from 'fastify-decorators';
 
 import type { SchedulerTypeValue } from './enums/scheduler-type.enum';
-import { SchedulerMetadataAccessor } from './schedule-metadata.accessor';
+import { ScheduleExplorerContractService } from './schedule-explorer-contract.service';
+import { ScheduleMetadataAccessorContractService } from './schedule-metadata-accessor-contract.service';
+import { SchedulerOrchestratorContractService } from './scheduler-orchestrator-contract.service';
 import { schedulerDiscovery } from './scheduler.discovery';
-import { SchedulerOrchestrator } from './scheduler.orchestrator';
 import type { ScheduledCommand } from './scheduler.types';
 
 /**
@@ -12,10 +14,11 @@ import type { ScheduledCommand } from './scheduler.types';
  * pelo `SchedulerDiscovery` (classes registradas pelos decorators) + resolução
  * via `getInstanceByToken`. O `switch` da fonte vira lookup object (code-pattern).
  */
-export class ScheduleExplorer {
+@Service()
+export default class ScheduleExplorerService implements ScheduleExplorerContractService {
   constructor(
-    private readonly orchestrator: SchedulerOrchestrator,
-    private readonly metadataAccessor: SchedulerMetadataAccessor,
+    private readonly orchestrator: SchedulerOrchestratorContractService,
+    private readonly metadataAccessor: ScheduleMetadataAccessorContractService,
   ) {}
 
   explore(): void {

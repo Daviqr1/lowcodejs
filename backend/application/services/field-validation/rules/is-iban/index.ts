@@ -3,8 +3,8 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type { ValidationFieldShape } from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // mod-97 sobre a string numerica expandida (ISO 7064). IBAN valido => 1.
 function mod97(input: string): number {
@@ -44,7 +44,7 @@ class IsIbanRule extends FieldValidationRule {
   }
 
   async validate(value: unknown): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
     if (typeof value !== 'string') return null;
     if (!isValidIban(value)) return 'IBAN inválido';
     return null;

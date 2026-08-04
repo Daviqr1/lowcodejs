@@ -3,8 +3,8 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type { ValidationFieldShape } from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // "Diferente de": o valor nao pode ser nenhum dos `config.values`.
 class IsNotRule extends FieldValidationRule {
@@ -23,7 +23,7 @@ class IsNotRule extends FieldValidationRule {
     value: unknown,
     config: Record<string, unknown>,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
 
     let disallowed: unknown[] = [];
     if (Array.isArray(config.values)) disallowed = config.values;

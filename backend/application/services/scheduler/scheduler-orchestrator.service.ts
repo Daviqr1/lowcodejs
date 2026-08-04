@@ -1,5 +1,7 @@
 import { CronJob } from 'cron';
+import { Service } from 'fastify-decorators';
 
+import { SchedulerOrchestratorContractService } from './scheduler-orchestrator-contract.service';
 import { SchedulerRegistryContractService } from './scheduler-registry-contract.service';
 import type {
   CronMetadata,
@@ -27,7 +29,8 @@ type TimerDef = {
  * NestJS (`onApplicationBootstrap`/`beforeApplicationShutdown`) viram os métodos
  * públicos `mountAll()`/`clearAll()`, chamados no boot/shutdown pelo bootstrap.
  */
-export class SchedulerOrchestrator {
+@Service()
+export default class SchedulerOrchestratorService implements SchedulerOrchestratorContractService {
   private readonly cronJobs: Record<string, CronDef> = {};
   private readonly timeouts: Record<string, TimerDef> = {};
   private readonly intervals: Record<string, TimerDef> = {};

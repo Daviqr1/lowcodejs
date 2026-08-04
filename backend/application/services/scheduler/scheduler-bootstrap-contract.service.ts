@@ -1,4 +1,4 @@
-import type { SchedulerOrchestrator } from './scheduler.orchestrator';
+import type { SchedulerOrchestratorContractService } from './scheduler-orchestrator-contract.service';
 
 /**
  * Liga a engine de agendamentos no boot: descobre os metodos decorados, monta
@@ -7,5 +7,5 @@ import type { SchedulerOrchestrator } from './scheduler.orchestrator';
  */
 export abstract class SchedulerBootstrapContractService {
   /** Devolve o orchestrator para o shutdown poder chamar `clearAll()`. */
-  abstract bootstrap(): SchedulerOrchestrator;
+  abstract bootstrap(): SchedulerOrchestratorContractService;
 }

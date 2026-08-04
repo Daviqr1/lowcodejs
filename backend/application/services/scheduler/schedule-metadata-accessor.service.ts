@@ -1,4 +1,7 @@
+import { Service } from 'fastify-decorators';
+
 import type { SchedulerTypeValue } from './enums/scheduler-type.enum';
+import { ScheduleMetadataAccessorContractService } from './schedule-metadata-accessor-contract.service';
 import {
   SCHEDULER_NAME,
   SCHEDULER_TYPE,
@@ -17,7 +20,8 @@ import type {
  * `base-cron/schedule-metadata.accessor.ts` — substitui o `Reflector` do NestJS
  * por `reflect-metadata` cru.
  */
-export class SchedulerMetadataAccessor {
+@Service()
+export default class ScheduleMetadataAccessorService implements ScheduleMetadataAccessorContractService {
   getSchedulerType(target: Function): SchedulerTypeValue | undefined {
     return Reflect.getMetadata(SCHEDULER_TYPE, target);
   }

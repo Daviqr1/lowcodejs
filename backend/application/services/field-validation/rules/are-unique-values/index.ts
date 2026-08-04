@@ -1,7 +1,10 @@
 import { E_FIELD_VALIDATION } from '@application/core/entity.core';
 
-import type { ValidationContext, ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type {
+  ValidationContext,
+  ValidationFieldShape,
+} from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // "Valores únicos": campo multiplo cujos elementos devem ser unicos entre si E
 // sem colidir com valores ja presentes na coluna (em outras rows).
@@ -19,7 +22,7 @@ class AreUniqueValuesRule extends FieldValidationRule {
     config: Record<string, unknown>,
     context: ValidationContext,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
     if (!Array.isArray(value)) return null;
 
     const seen = new Set<string>();

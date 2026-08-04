@@ -3,8 +3,8 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type { ValidationFieldShape } from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 class NotEmptyRule extends FieldValidationRule {
   readonly key = E_FIELD_VALIDATION.NOT_EMPTY;
@@ -19,7 +19,7 @@ class NotEmptyRule extends FieldValidationRule {
   }
 
   async validate(value: unknown): Promise<string | null> {
-    if (isEmptyValue(value)) return 'Este campo não pode ser vazio';
+    if (this.isEmpty(value)) return 'Este campo não pode ser vazio';
     if (typeof value === 'string' && value.trim() === '')
       return 'Este campo não pode ser vazio';
     return null;

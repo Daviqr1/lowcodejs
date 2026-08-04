@@ -3,8 +3,11 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationContext, ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type {
+  ValidationContext,
+  ValidationFieldShape,
+} from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // "E-mail existe": o e-mail digitado deve pertencer a um usuario cadastrado.
 class EmailExistsRule extends FieldValidationRule {
@@ -21,7 +24,7 @@ class EmailExistsRule extends FieldValidationRule {
     config: Record<string, unknown>,
     context: ValidationContext,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
     if (typeof value !== 'string') return null;
 
     const exists = await context.deps.userExistsByEmail(value);

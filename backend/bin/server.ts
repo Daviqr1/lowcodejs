@@ -17,7 +17,7 @@ import { EmailWorkerContractService } from '@application/services/email-queue/em
 import EmailWorkerService from '@application/services/email-queue/email-worker.service';
 import { SchedulerBootstrapContractService } from '@application/services/scheduler/scheduler-bootstrap-contract.service';
 import SchedulerBootstrapService from '@application/services/scheduler/scheduler-bootstrap.service';
-import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
+import type { SchedulerOrchestratorContractService } from '@application/services/scheduler/scheduler-orchestrator-contract.service';
 import { StorageMigrationWorkerContractService } from '@application/services/storage-migration/storage-migration-worker-contract.service';
 import StorageMigrationWorkerService from '@application/services/storage-migration/storage-migration-worker.service';
 import { CsvImportSocketContractService } from '@application/services/csv-import/csv-import-socket-contract.service';
@@ -95,7 +95,9 @@ async function start(): Promise<void> {
     // Agendamentos: o hook de limpeza precisa ser registrado ANTES do ready()
     // (Fastify trava addHook depois disso). O bootstrap em si roda após o ready()
     // e preenche o orchestrator lido pelo hook no shutdown.
-    let schedulerOrchestrator: SchedulerOrchestrator | undefined = undefined;
+    let schedulerOrchestrator:
+      | SchedulerOrchestratorContractService
+      | undefined = undefined;
     kernel.addHook('onClose', async () => {
       schedulerOrchestrator?.clearAll();
     });

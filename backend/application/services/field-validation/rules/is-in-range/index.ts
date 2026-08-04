@@ -3,8 +3,8 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../rule.contract';
-import { FieldValidationRule, isEmptyValue } from '../rule.contract';
+import type { ValidationFieldShape } from '../../field-validation-rule-contract.service';
+import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // Coerce number | numeric-string → number; senao null.
 function toNumber(input: unknown): number | null {
@@ -31,7 +31,7 @@ class IsInRangeRule extends FieldValidationRule {
     value: unknown,
     config: Record<string, unknown>,
   ): Promise<string | null> {
-    if (isEmptyValue(value)) return null;
+    if (this.isEmpty(value)) return null;
 
     const num = toNumber(value);
     if (num === null) return 'Deve ser um número';

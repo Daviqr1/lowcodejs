@@ -6,8 +6,11 @@ import {
 } from '@application/core/entity.core';
 import type { IField } from '@application/core/entity.core';
 
+import type {
+  ValidationContext,
+  ValidationDeps,
+} from './field-validation-rule-contract.service';
 import FieldValidationRuleRegistryService from './rule-registry.service';
-import type { ValidationContext, ValidationDeps } from './rules/rule.contract';
 
 const registry = new FieldValidationRuleRegistryService();
 
