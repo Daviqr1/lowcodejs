@@ -1,8 +1,5 @@
-import { Service } from 'fastify-decorators';
-
 import type { IUser } from '@application/core/entity.core';
 
-@Service()
 export abstract class GroupResolverContractService {
   /**
    * Conjunto de ids de grupos que o usuario satisfaz: o fecho transitivo de

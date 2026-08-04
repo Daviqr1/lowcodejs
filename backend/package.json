@@ -18,7 +18,8 @@
     "test:e2e:watch": "vitest --config vitest.e2e.config.ts",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
-    "lint": "eslint . --ext .ts --fix"
+    "lint": "eslint . --ext .ts --fix",
+    "di:check": "node --import @swc-node/register/esm-register scripts/di-check.ts"
   },
   "keywords": [],
   "author": "",

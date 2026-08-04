@@ -1,5 +1,4 @@
 import type { MultipartFile } from '@fastify/multipart';
-import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
 import type { IStorage, Optional } from '@application/core/entity.core';
@@ -26,7 +25,6 @@ export type StorageWriteRawResponse = {
   size: number;
 };
 
-@Service()
 export abstract class StorageContractService {
   abstract upload(
     part: MultipartFile,

@@ -1,5 +1,3 @@
-import { Service } from 'fastify-decorators';
-
 export const EMAIL_QUEUE_NAME = 'email';
 
 export const EMAIL_JOB = {
@@ -16,7 +14,6 @@ export type EmailJobPayload = {
   from?: string;
 };
 
-@Service()
 export abstract class EmailQueueContractService {
   abstract enqueue(payload: EmailJobPayload): Promise<string>;
   abstract close(): Promise<void>;

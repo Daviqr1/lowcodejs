@@ -1,5 +1,3 @@
-import { Service } from 'fastify-decorators';
-
 import type { ITable, IUser, ValueOf } from '@application/core/entity.core';
 import type { E_TABLE_PERMISSION } from '@application/core/entity.core';
 
@@ -24,7 +22,6 @@ export type AccessCheckInput = {
   httpMethod: string;
 };
 
-@Service()
 export abstract class PermissionContractService {
   /**
    * Verifica se o usuario tem a permissao necessaria no seu grupo

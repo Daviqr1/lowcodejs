@@ -1,5 +1,3 @@
-import { Service } from 'fastify-decorators';
-
 import type { IField } from '@application/core/entity.core';
 
 // Contexto de visibilidade de um campo: a lista, o formulario (adicionar/editar)
@@ -16,7 +14,6 @@ export type FieldVisibilityInput = {
   isAdministrator?: boolean;
 };
 
-@Service()
 export abstract class FieldVisibilityContractService {
   /**
    * Slugs dos campos NAO nativos que devem ficar ocultos no contexto para o

@@ -1,5 +1,3 @@
-import { Service } from 'fastify-decorators';
-
 import type { TStorageLocation } from '@application/core/entity.core';
 
 export const STORAGE_MIGRATION_QUEUE_NAME = 'storage-migration';
@@ -31,7 +29,6 @@ export type ActiveJobInfo = {
   progress: number;
 };
 
-@Service()
 export abstract class StorageMigrationQueueContractService {
   abstract enqueueMigration(payload: MigrateJobPayload): Promise<string>;
   abstract enqueueCleanup(payload: CleanupJobPayload): Promise<string>;
