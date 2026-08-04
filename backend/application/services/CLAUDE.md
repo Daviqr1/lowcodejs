@@ -17,6 +17,8 @@ as 4 implementacoes de coercao de valor viraram `FieldValueContractService` e as
 | `date/` | data e hora (ISO, recorte de dia UTC, pt-BR, buckets mensais) |
 | `search/` | normalizar e **escapar** texto para `$regex` |
 | `field-value/` | converter, coagir e formatar valor de campo dinamico |
+| `type-guard/` | `isRecord` (array passa) e `isPlainObject` (array nao passa) |
+| `http-response/` | envelope unico de erro dos controllers (`sendError`) |
 
 > `search.escape()` e obrigatorio em qualquer `$regex` montado a partir de
 > entrada do usuario — sem ele o termo e interpretado como padrao.

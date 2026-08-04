@@ -73,7 +73,7 @@ Convencao: contract = export **nomeado** `<X>Contract(Repository|Service)`;
 impl = **`export default`** do arquivo irmao. `in-memory-*`, `*.worker` e
 drivers nunca colidem — o impl e derivado do base do contract, nao adivinhado.
 
-Hoje registra **59 dependencias**.
+Hoje registra **108 dependencias**.
 
 > `controllers.ts` e `di-registry.ts` continuam modulos, nao services: rodam
 > antes de o container existir. `di-registry` inclusive importa `Env` de
