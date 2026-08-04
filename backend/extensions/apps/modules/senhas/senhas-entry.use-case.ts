@@ -5,8 +5,8 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 
-import { canView, isMember } from './senhas-channel.use-case';
-import { decryptSecret, encryptSecret } from './senhas.crypto';
+import { SecretCryptoContractService } from './secret-crypto-contract.service';
+import SenhasChannelUseCase from './senhas-channel.use-case';
 import { PasswordChannelModel, PasswordEntryModel } from './senhas.model';
 import type {
   CreateEntryInput,
@@ -31,7 +31,11 @@ type ChannelLean = {
 
 @Service()
 export default class SenhasEntryUseCase {
-  constructor(private readonly userRepository: UserContractRepository) {}
+  constructor(
+    private readonly userRepository: UserContractRepository,
+    private readonly crypto: SecretCryptoContractService,
+    private readonly channel: SenhasChannelUseCase,
+  ) {}
 
   private async resolveUsers(
     ids: Array<string>,
@@ -70,8 +74,8 @@ export default class SenhasEntryUseCase {
       title: entry.title,
       username: entry.username ?? null,
       url: entry.url ?? null,
-      secret: decryptSecret(entry.secret) ?? '',
-      notes: decryptSecret(entry.notes),
+      secret: this.crypto.decrypt(entry.secret) ?? '',
+      notes: this.crypto.decrypt(entry.notes),
       author: users.get(authorId) ?? authorId,
       createdAt: new Date(entry.createdAt).toISOString(),
       updatedAt: new Date(entry.updatedAt).toISOString(),
@@ -97,7 +101,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!canView(channel, userId)) {
+      if (!this.channel.canView(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Você não tem acesso a este canal',
@@ -139,7 +143,7 @@ export default class SenhasEntryUseCase {
         );
       }
       // Escrita exige ser membro/owner — mesmo em canal público.
-      if (!isMember(channel, userId)) {
+      if (!this.channel.isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem adicionar senhas',
@@ -153,8 +157,8 @@ export default class SenhasEntryUseCase {
         title: input.title,
         username: input.username ?? null,
         url: input.url ?? null,
-        secret: encryptSecret(input.secret),
-        notes: encryptSecret(input.notes ?? null),
+        secret: this.crypto.encrypt(input.secret),
+        notes: this.crypto.encrypt(input.notes ?? null),
         author: userId,
       });
 
@@ -187,7 +191,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!isMember(channel, userId)) {
+      if (!this.channel.isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem editar senhas',
@@ -215,9 +219,9 @@ export default class SenhasEntryUseCase {
         update.username = input.username ?? null;
       if (input.url !== undefined) update.url = input.url ?? null;
       if (input.secret !== undefined)
-        update.secret = encryptSecret(input.secret);
+        update.secret = this.crypto.encrypt(input.secret);
       if (input.notes !== undefined)
-        update.notes = encryptSecret(input.notes ?? null);
+        update.notes = this.crypto.encrypt(input.notes ?? null);
 
       const updated = await PasswordEntryModel.findByIdAndUpdate(
         entryId,
@@ -253,7 +257,7 @@ export default class SenhasEntryUseCase {
           ),
         );
       }
-      if (!isMember(channel, userId)) {
+      if (!this.channel.isMember(channel, userId)) {
         return left(
           HTTPException.Forbidden(
             'Apenas membros do canal podem excluir senhas',

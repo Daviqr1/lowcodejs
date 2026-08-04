@@ -26,25 +26,25 @@ function toId(value: unknown): string {
  * - member: owner OU presente em `members`. Pode ler e editar entradas.
  * - canal público (`private: false`): leitura liberada a qualquer autenticado.
  */
-export function isMember(
-  channel: { owner: unknown; members: Array<unknown> },
-  userId: string,
-): boolean {
-  if (toId(channel.owner) === userId) return true;
-  return channel.members.some((m) => toId(m) === userId);
-}
-
-export function canView(
-  channel: { owner: unknown; members: Array<unknown>; private: boolean },
-  userId: string,
-): boolean {
-  if (!channel.private) return true;
-  return isMember(channel, userId);
-}
-
 @Service()
 export default class SenhasChannelUseCase {
   constructor(private readonly userRepository: UserContractRepository) {}
+
+  isMember(
+    channel: { owner: unknown; members: Array<unknown> },
+    userId: string,
+  ): boolean {
+    if (toId(channel.owner) === userId) return true;
+    return channel.members.some((m) => toId(m) === userId);
+  }
+
+  canView(
+    channel: { owner: unknown; members: Array<unknown>; private: boolean },
+    userId: string,
+  ): boolean {
+    if (!channel.private) return true;
+    return this.isMember(channel, userId);
+  }
 
   private async resolveUsers(
     ids: Array<string>,
