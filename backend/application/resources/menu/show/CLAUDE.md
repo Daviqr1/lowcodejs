@@ -11,8 +11,10 @@ Exibe um menu pelo ID, incluindo seus filhos diretos.
 3. UseCase:
    - Busca o menu pelo _id via menuRepository.findBy (exact)
    - Busca os filhos diretos: menuRepository.findMany com parent=_id, trashed=false, sort order asc
+   - Resolve `parent` e `table` para objeto (`_id`/`name`/`slug`) — o repositorio
+     normaliza ambos para id, e a response os declara como objeto
    - Retorna o menu com campo children adicionado
-4. Repository: MenuContractRepository (findBy, findMany)
+4. Repository: MenuContractRepository (findBy, findById, findMany), TableContractRepository (findById)
 
 ## Regras de Negocio
 - Retorna o menu mesmo que esteja na lixeira (nao filtra por trashed)

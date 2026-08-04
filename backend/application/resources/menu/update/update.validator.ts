@@ -46,12 +46,14 @@ export const MenuUpdateBodyValidator = z
     visibility: MenuVisibilityValidator,
   })
   .transform((payload) => {
+    // `parent` NAO pode virar `null` por default: o use-case trata
+    // `parent === undefined` como "nao mexer" e `null` como "mover para a raiz".
+    // Forcar o default reparentava todo PATCH parcial para a raiz.
     return {
       ...payload,
       ...(payload.name && {
         slug: slugify(payload.name, { lower: true, trim: true }),
       }),
-      parent: payload.parent ?? null,
     };
   })
   .refine(

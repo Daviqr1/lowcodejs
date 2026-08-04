@@ -6,6 +6,8 @@ import type { IRelationshipDefinition } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 
+import { definitionBelongsToTable } from '../definition-scope';
+
 import type { RelationshipUpdatePayload } from './update.validator';
 
 type Response = Either<HTTPException, IRelationshipDefinition>;
@@ -19,7 +21,7 @@ export default class RelationshipUpdateUseCase {
   async execute(payload: RelationshipUpdatePayload): Promise<Response> {
     try {
       const existing = await this.definitions.findById(payload.id);
-      if (!existing) {
+      if (!existing || !definitionBelongsToTable(existing, payload.slug)) {
         return left(
           HTTPException.NotFound(
             'Relacionamento não encontrado',

@@ -69,7 +69,10 @@ export function useRowUpdateEvaluation(
           newAverage = (oldAverage * oldCount + variables.value) / newCount;
         } else {
           const totalSum = oldAverage * oldCount;
-          newAverage = (totalSum - oldUserValue + variables.value) / oldCount;
+          // `_userValue` preenchido com `_count` zerado é estado inconsistente,
+          // mas dividir por 0 gravaria NaN/Infinity no cache otimista.
+          newCount = Math.max(oldCount, 1);
+          newAverage = (totalSum - oldUserValue + variables.value) / newCount;
         }
 
         const summary: IEvaluationSummary = {

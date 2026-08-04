@@ -173,8 +173,8 @@ function updateFieldInTableCache(
     },
   );
 
-  queryClient.setQueryData<Paginated<ITable>>(
-    queryKeys.tables.list({ page: 1, perPage: 50 }),
+  queryClient.setQueriesData<Paginated<ITable>>(
+    { queryKey: queryKeys.tables.lists() },
     (old) => {
       if (!old) return old;
       return {
@@ -409,8 +409,8 @@ export function useTableFieldManagement(
         },
       );
 
-      queryClient.setQueryData<Paginated<ITable>>(
-        queryKeys.tables.list({ page: 1, perPage: 50 }),
+      queryClient.setQueriesData<Paginated<ITable>>(
+        { queryKey: queryKeys.tables.lists() },
         (old) => {
           if (!old) return old;
           return {

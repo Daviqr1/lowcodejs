@@ -145,7 +145,18 @@ export const MenuUpdateSchema: FastifySchema = {
         type: { type: 'string', description: 'Tipo do menu' },
         parent: { type: 'string', nullable: true, description: 'ID do pai' },
         table: { type: 'string', nullable: true, description: 'ID da tabela' },
-        owner: { type: 'string', nullable: true, description: 'ID do criador' },
+        // Vem populado do repositorio; declarado como `string` era serializado
+        // literalmente como "[object Object]".
+        owner: {
+          type: 'object',
+          nullable: true,
+          description: 'Criador do menu',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+          },
+        },
         html: { type: 'string', nullable: true, description: 'Conteúdo HTML' },
         url: { type: 'string', nullable: true, description: 'URL' },
         icon: {

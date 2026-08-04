@@ -6,6 +6,8 @@ import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 
+import { definitionBelongsToTable } from '../definition-scope';
+
 import type { RelationshipDeletePayload } from './delete.validator';
 
 type Response = Either<HTTPException, null>;
@@ -20,7 +22,7 @@ export default class RelationshipDeleteUseCase {
   async execute(payload: RelationshipDeletePayload): Promise<Response> {
     try {
       const existing = await this.definitions.findById(payload.id);
-      if (!existing) {
+      if (!existing || !definitionBelongsToTable(existing, payload.slug)) {
         return left(
           HTTPException.NotFound(
             'Relacionamento não encontrado',

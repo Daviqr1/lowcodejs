@@ -113,7 +113,11 @@ export default class MenuReorderUseCase {
         await this.menuRepository.update({
           _id: item._id,
           order: item.order,
-          ...(shouldUpdateParents && { parent: item.parent ?? null }),
+          // Mesmo fallback usado na validacao (`:49`): item sem `parent` num
+          // lote misto mantem o pai atual em vez de ir para a raiz.
+          ...(shouldUpdateParents && {
+            parent: nextParentById.get(item._id) ?? null,
+          }),
         });
       }
 

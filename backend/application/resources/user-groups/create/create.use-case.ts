@@ -3,7 +3,10 @@ import slugify from 'slugify';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IGroup as Entity } from '@application/core/entity.core';
+import {
+  SYSTEM_GROUP_SLUGS,
+  type IGroup as Entity,
+} from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 
@@ -21,6 +24,18 @@ export default class UserGroupCreateUseCase {
   async execute(payload: Payload): Promise<Response> {
     try {
       const slug = slugify(payload.name, { trim: true, lower: true });
+
+      // Os grupos de sistema usam slug MAIUSCULO, entao um grupo chamado
+      // "Master" gerava `master` e nao colidia no `findBySlug` — mas
+      // `isPrivileged` comparava em maiusculo e o tratava como privilegiado.
+      if (SYSTEM_GROUP_SLUGS.has(slug.toUpperCase()))
+        return left(
+          HTTPException.Conflict(
+            'Nome reservado para um grupo de sistema',
+            'SYSTEM_GROUP_PROTECTED',
+            { name: 'Nome reservado para um grupo de sistema' },
+          ),
+        );
 
       const group = await this.userGroupRepository.findBySlug(slug);
 

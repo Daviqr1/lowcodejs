@@ -91,13 +91,25 @@ async function processInBatches<T>(
   await Promise.all(workers);
 }
 
+// `processed` conta tudo que saiu da fila (inclusive doc inexistente e doc ja
+// no driver de destino). `succeeded` conta so o que foi realmente copiado —
+// antes o evento `completed` fazia `processed - failed` e reportava os pulados
+// como sucesso.
+type JobProgressContext = {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  total: number;
+  startedAt: number;
+};
+
 async function migrateOneFile(
   fileId: string,
   source: TStorageLocation,
   target: TStorageLocation,
   deps: WorkerDeps,
   jobId: string,
-  ctx: { processed: number; failed: number; total: number; startedAt: number },
+  ctx: JobProgressContext,
 ): Promise<void> {
   const { storageRepository, storageService, namespace } = deps;
 
@@ -154,6 +166,7 @@ async function migrateOneFile(
       invalidateStorageMeta(doc.filename);
 
       ctx.processed++;
+      ctx.succeeded++;
 
       const migratedEvt: StorageMigrationFileMigratedEvent = {
         _id: doc._id,
@@ -196,7 +209,7 @@ function emitProgress(
   namespace: Namespace,
   jobId: string,
   currentFilename: string | null,
-  ctx: { processed: number; failed: number; total: number; startedAt: number },
+  ctx: JobProgressContext,
 ): void {
   const elapsedMs = Date.now() - ctx.startedAt;
   const remaining = ctx.total - ctx.processed;
@@ -222,8 +235,9 @@ async function handleMigrate(
 ): Promise<void> {
   const { source_driver, target_driver, file_ids, concurrency } = job.data;
   const jobId = job.id ?? 'unknown';
-  const ctx = {
+  const ctx: JobProgressContext = {
     processed: 0,
+    succeeded: 0,
     failed: 0,
     total: file_ids.length,
     startedAt: Date.now(),
@@ -252,7 +266,7 @@ async function handleMigrate(
   const completedEvt: StorageMigrationCompletedEvent = {
     job_id: jobId,
     total: ctx.total,
-    succeeded: ctx.processed - ctx.failed,
+    succeeded: ctx.succeeded,
     failed: ctx.failed,
     duration_ms: Date.now() - ctx.startedAt,
   };
@@ -266,8 +280,9 @@ async function handleCleanup(
   const { driver_to_clear, file_ids } = job.data;
   const jobId = job.id ?? 'unknown';
   const impl = deps.storageService.forDriver(driver_to_clear);
-  const ctx = {
+  const ctx: JobProgressContext = {
     processed: 0,
+    succeeded: 0,
     failed: 0,
     total: file_ids.length,
     startedAt: Date.now(),
@@ -285,12 +300,14 @@ async function handleCleanup(
     }
     try {
       await impl.delete(doc.filename);
+      ctx.succeeded++;
     } catch (err) {
       let msg = String(err);
       if (err instanceof Error) msg = err.message;
       console.warn(
         `[StorageMigration Worker] cleanup falhou ${doc.filename}: ${msg}`,
       );
+      ctx.failed++;
     }
     ctx.processed++;
     emitProgress(deps.namespace, jobId, doc.filename, ctx);
@@ -304,7 +321,7 @@ async function handleCleanup(
   const completedEvt: StorageMigrationCompletedEvent = {
     job_id: jobId,
     total: ctx.total,
-    succeeded: ctx.processed - ctx.failed,
+    succeeded: ctx.succeeded,
     failed: ctx.failed,
     duration_ms: Date.now() - ctx.startedAt,
   };

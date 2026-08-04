@@ -41,3 +41,8 @@ operacoes de **link** (link/reorder/unlink) usam permissoes de ROW.
   (`exists`) do par (relationshipId, source, target).
 - `delete` de definicao remove os links associados (`deleteByRelationship`).
 - `list-by-side` pagina os vinculos do registro no lado indicado por `side`.
+- Toda operacao com `:id` valida que a definition pertence a tabela de `:slug`
+  (`definitionBelongsToTable`, em `definition-scope.ts`) — o
+  `TableAccessMiddleware` autoriza contra `:slug`, entao sem essa checagem quem
+  tem acesso a tabela A operaria relacionamentos da tabela B. Fora do escopo, a
+  resposta e 404 `RELATIONSHIP_NOT_FOUND` (nao revela a existencia do id).

@@ -84,6 +84,16 @@ export const MenuCreateSchema: FastifySchema = {
           type: 'O ícone deve ser um texto',
         },
       },
+      order: {
+        type: 'integer',
+        minimum: 0,
+        description:
+          'Posição entre os irmãos. Quando ausente, o item vai para o fim',
+        errorMessage: {
+          type: 'A ordem deve ser um número inteiro',
+          minimum: 'A ordem deve ser maior ou igual a zero',
+        },
+      },
       isInitial: {
         type: 'boolean',
         description: 'Define se este menu será carregado ao acessar o sistema',
@@ -124,7 +134,18 @@ export const MenuCreateSchema: FastifySchema = {
         type: { type: 'string', description: 'Tipo do menu' },
         parent: { type: 'string', nullable: true, description: 'ID do pai' },
         table: { type: 'string', nullable: true, description: 'ID da tabela' },
-        owner: { type: 'string', nullable: true, description: 'ID do criador' },
+        // Vem populado do repositorio; declarado como `string` era serializado
+        // literalmente como "[object Object]".
+        owner: {
+          type: 'object',
+          nullable: true,
+          description: 'Criador do menu',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+          },
+        },
         html: { type: 'string', nullable: true, description: 'Conteúdo HTML' },
         url: { type: 'string', nullable: true, description: 'URL' },
         icon: {

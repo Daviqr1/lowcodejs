@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
+import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
 import MenuShowUseCase from './show.use-case';
 
 let menuInMemoryRepository: MenuInMemoryRepository;
+let tableInMemoryRepository: TableInMemoryRepository;
 let sut: MenuShowUseCase;
 
 describe('Menu Show Use Case', () => {
   beforeEach(() => {
     menuInMemoryRepository = new MenuInMemoryRepository();
-    sut = new MenuShowUseCase(menuInMemoryRepository);
+    tableInMemoryRepository = new TableInMemoryRepository();
+    sut = new MenuShowUseCase(menuInMemoryRepository, tableInMemoryRepository);
   });
 
   it('deve retornar um menu existente', async () => {

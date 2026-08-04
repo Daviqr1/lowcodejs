@@ -22,10 +22,17 @@ export const MenuListSchema: FastifySchema = {
             nullable: true,
             description: 'ID da tabela',
           },
+          // Vem populado do repositorio; declarado como `string` era
+          // serializado literalmente como "[object Object]".
           owner: {
-            type: 'string',
+            type: 'object',
             nullable: true,
-            description: 'ID do criador',
+            description: 'Criador do menu',
+            properties: {
+              _id: { type: 'string' },
+              name: { type: 'string' },
+              email: { type: 'string' },
+            },
           },
           html: {
             type: 'string',

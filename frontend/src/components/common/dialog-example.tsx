@@ -247,7 +247,6 @@ export function TableExample(): React.JSX.Element {
             </DropdownMenu>
           </TableCell>
         </TableRow>
-        <DialogExample ref={dialogButtonRef} />
       </TableBody>
     </Table>
   );

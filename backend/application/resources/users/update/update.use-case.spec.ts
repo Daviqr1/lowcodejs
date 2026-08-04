@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { E_USER_STATUS } from '@application/core/entity.core';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
 import InMemoryEmailQueueService from '@application/services/email-queue/in-memory-email-queue.service';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 import InMemoryPasswordService from '@application/services/password/in-memory-password.service';
 
 import UserUpdateUseCase from './update.use-case';
 
 let userInMemoryRepository: UserInMemoryRepository;
+let groupInMemoryRepository: UserGroupInMemoryRepository;
 let passwordService: InMemoryPasswordService;
 let emailQueue: InMemoryEmailQueueService;
 let sut: UserUpdateUseCase;
@@ -15,12 +18,15 @@ let sut: UserUpdateUseCase;
 describe('User Update Use Case', () => {
   beforeEach(() => {
     userInMemoryRepository = new UserInMemoryRepository();
+    groupInMemoryRepository = new UserGroupInMemoryRepository();
     passwordService = new InMemoryPasswordService();
     emailQueue = new InMemoryEmailQueueService();
     sut = new UserUpdateUseCase(
       userInMemoryRepository,
       passwordService,
       emailQueue,
+      groupInMemoryRepository,
+      new GroupResolverService(groupInMemoryRepository),
     );
   });
 

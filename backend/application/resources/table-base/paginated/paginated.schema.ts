@@ -386,42 +386,9 @@ export const TablePaginatedSchema: FastifySchema = {
                 enum: ['TABLE', 'FIELD_GROUP'],
                 description: 'Tipo da tabela',
               },
-              methods: {
-                type: 'object',
-                properties: {
-                  beforeSave: {
-                    type: 'object',
-                    properties: {
-                      code: {
-                        type: 'string',
-                        nullable: true,
-                        description: 'Código a executar antes de salvar',
-                      },
-                    },
-                  },
-                  afterSave: {
-                    type: 'object',
-                    properties: {
-                      code: {
-                        type: 'string',
-                        nullable: true,
-                        description: 'Código a executar depois de salvar',
-                      },
-                    },
-                  },
-                  onLoad: {
-                    type: 'object',
-                    properties: {
-                      code: {
-                        type: 'string',
-                        nullable: true,
-                        description: 'Código a executar antes de salvar',
-                      },
-                    },
-                  },
-                },
-                description: 'Configuração de métodos da tabela',
-              },
+              // `methods.*.code` (hooks server-side) nao entra na listagem — o
+              // detalhe da tabela (`GET /tables/:slug`) e quem os expoe, atras
+              // do TableAccessMiddleware.
               groups: {
                 type: 'array',
                 description: 'Configuração de grupos de campos',

@@ -247,7 +247,6 @@ export function TableExample(): React.JSX.Element {
             </DropdownMenu>
           </TableCell>
         </TableRow>
-        <SheetExample ref={sheetButtonRef} />
       </TableBody>
     </Table>
   );

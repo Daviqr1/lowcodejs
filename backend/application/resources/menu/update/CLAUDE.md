@@ -7,7 +7,7 @@ Atualiza um item de menu existente.
 
 ## Fluxo
 1. Middleware: AuthenticationMiddleware (obrigatorio)
-2. Validator: MenuUpdateParamsValidator - campos: _id (string, required) | MenuUpdateBodyValidator - campos: name (string, optional), type (enum E_MENU_ITEM_TYPE, optional), table (string, nullable, optional), parent (string, nullable, optional), html (string, nullable, optional), url (string, nullable, optional), order (number int min 0, optional) | Transform: gera slug via slugify(name) se name informado, parent default null | Refinements: url obrigatoria se type=EXTERNAL, html obrigatorio se type=PAGE
+2. Validator: MenuUpdateParamsValidator - campos: _id (string, required) | MenuUpdateBodyValidator - campos: name (string, optional), type (enum E_MENU_ITEM_TYPE, optional), table (string, nullable, optional), parent (string, nullable, optional), html (string, nullable, optional), url (string, nullable, optional), order (number int min 0, optional) | Transform: gera slug via slugify(name) se name informado. `parent` **nao** tem default: ausente = nao mexer no pai; `null` explicito = mover para a raiz | Refinements: url obrigatoria se type=EXTERNAL, html obrigatorio se type=PAGE
 3. UseCase:
    - Busca menu existente pelo _id (nao-trashed)
    - Calcula slug final:

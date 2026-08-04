@@ -93,7 +93,28 @@ function getCalendarTemplateEntry(): Pick<
 export default class SettingShowUseCase {
   constructor(private readonly settingRepository: SettingContractRepository) {}
 
-  async execute(): Promise<Response> {
+  /**
+   * `GET /setting` e auth-only de proposito — alimenta sidebar, paginacao e
+   * upload para qualquer usuario. Mas devolvia tambem as credenciais do banco,
+   * do SMTP, do S3 e as chaves de LLM. Sem MANAGE_SETTINGS elas saem nulas.
+   */
+  private redactSecrets(canManageSettings?: boolean): Record<string, null> {
+    if (canManageSettings) return {};
+
+    return {
+      DATABASE_URL: null,
+      EMAIL_PROVIDER_PASSWORD: null,
+      MCP_SERVER_TOKEN: null,
+      STORAGE_ACCESS_KEY: null,
+      STORAGE_SECRET_KEY: null,
+      LLM_API_KEY: null,
+      OPENAI_API_KEY: null,
+    };
+  }
+
+  async execute(
+    payload: { canManageSettings?: boolean } = {},
+  ): Promise<Response> {
     try {
       const setting = await this.settingRepository.get();
 
@@ -149,6 +170,7 @@ export default class SettingShowUseCase {
       return right({
         ...setting,
         ...projectAiSettingsFields(setting),
+        ...this.redactSecrets(payload.canManageSettings),
         FILE_UPLOAD_ACCEPTED: setting.FILE_UPLOAD_ACCEPTED?.split(';') ?? [],
         MODEL_CLONE_TABLES: [
           getKanbanTemplateEntry(),

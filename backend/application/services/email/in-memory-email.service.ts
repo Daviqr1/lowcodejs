@@ -25,6 +25,8 @@ export default class InMemoryEmailService implements EmailContractService {
   }
 
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    this._checkError('sendEmail');
+
     this.emails.push({
       ...options,
       sentAt: new Date(),

@@ -28,11 +28,10 @@ export function resolveLlmConfig(
     getDefaultLlmModel(provider);
   const baseUrl = setting?.LLM_BASE_URL?.trim() || getDefaultOllamaBaseUrl();
 
-  let isConfigured = Boolean(model?.trim());
+  // O if/else cobre os dois casos; o valor inicial era sempre descartado.
+  let isConfigured = Boolean(apiKey?.trim() && model?.trim());
   if (provider === 'ollama') {
     isConfigured = Boolean(baseUrl?.trim() && model?.trim());
-  } else {
-    isConfigured = Boolean(apiKey?.trim() && model?.trim());
   }
 
   let resolvedBaseUrl = setting?.LLM_BASE_URL?.trim() || null;
