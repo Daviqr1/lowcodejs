@@ -18,7 +18,6 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import type { RelationshipLinkSide } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
-import { buildRelationshipRequiredError } from '@application/services/relationship/relationship.service';
 import { getDataConnection } from '@config/database.config';
 
 import type {
@@ -42,10 +41,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 @Service()
 export default class MongooseRelationshipBuilder implements RelationshipBuilderContractService {
   constructor(
-    private readonly relationship: RelationshipContractService,
     private readonly definitionRepository: RelationshipDefinitionContractRepository,
     private readonly fieldRepository: FieldContractRepository,
     private readonly linkRepository: RelationshipLinkContractRepository,
+    private readonly relationship: RelationshipContractService,
   ) {}
 
   hasManagedRelationships(fields: IField[]): boolean {
@@ -567,7 +566,7 @@ export default class MongooseRelationshipBuilder implements RelationshipBuilderC
       ownerRequired = targetRequired;
       reverseRequired = sourceRequired;
     }
-    if (ownerRequired) return left(buildRelationshipRequiredError());
+    if (ownerRequired) return left(this.relationship.requiredError());
     if (!reverseRequired) return right(true);
 
     // Lado reverso obrigatório: sobra algum outro filho apontando para ele?
@@ -582,7 +581,7 @@ export default class MongooseRelationshipBuilder implements RelationshipBuilderC
     const siblings = await collection.countDocuments({
       [owner.fieldSlug]: fkValue,
     });
-    if (siblings <= 1) return left(buildRelationshipRequiredError());
+    if (siblings <= 1) return left(this.relationship.requiredError());
     return right(true);
   }
 

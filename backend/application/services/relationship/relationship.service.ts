@@ -27,14 +27,6 @@ import type {
   RelationshipReplaceParams,
 } from './relationship-contract.service';
 
-// Erro de dominio: desvincular deixaria um lado obrigatorio sem vinculo (§5.6).
-export function buildRelationshipRequiredError(): HTTPException {
-  return HTTPException.BadRequest(
-    'Campo obrigatório: vincule outro registro antes de desvincular',
-    'RELATIONSHIP_REQUIRED',
-  );
-}
-
 // Cardinalidade derivada dos dois `field.multiple` (nao persistida, §5.2).
 export class RelationshipCardinality {
   static of(
@@ -138,6 +130,14 @@ export default class RelationshipService implements RelationshipContractService 
     private readonly linkRepository: RelationshipLinkContractRepository,
     private readonly fieldRepository: FieldContractRepository,
   ) {}
+
+  // Erro de dominio: desvincular deixaria um lado obrigatorio sem vinculo (§5.6).
+  requiredError(): HTTPException {
+    return HTTPException.BadRequest(
+      'Campo obrigatório: vincule outro registro antes de desvincular',
+      'RELATIONSHIP_REQUIRED',
+    );
+  }
 
   cardinalityOf(
     sourceField: Pick<IField, 'multiple'>,
@@ -331,14 +331,14 @@ export default class RelationshipService implements RelationshipContractService 
       const used = await this.linkRepository.count(definition._id, {
         sourceId: link.sourceId,
       });
-      if (used <= 1) return left(buildRelationshipRequiredError());
+      if (used <= 1) return left(this.requiredError());
     }
 
     if (targetRequired) {
       const used = await this.linkRepository.count(definition._id, {
         targetId: link.targetId,
       });
-      if (used <= 1) return left(buildRelationshipRequiredError());
+      if (used <= 1) return left(this.requiredError());
     }
 
     return right(true);

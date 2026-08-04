@@ -66,10 +66,10 @@ describe('MongooseRelationshipBuilder', () => {
     fieldRepository = new FieldInMemoryRepository();
     service = new RelationshipService(linkRepository, fieldRepository);
     sut = new MongooseRelationshipBuilder(
-      service,
       definitionRepository,
       fieldRepository,
       linkRepository,
+      service,
     );
 
     // 1:N — source (pedidos) aceita multiplos; target (produtos) nao.

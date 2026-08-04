@@ -49,6 +49,12 @@ export type RelationshipReplaceParams = {
 };
 
 export abstract class RelationshipContractService {
+  /**
+   * Erro de dominio: desvincular deixaria um lado obrigatorio sem vinculo.
+   * Fica aqui porque o relationship-builder precisa da mesma mensagem.
+   */
+  abstract requiredError(): HTTPException;
+
   // Cardinalidade derivada dos dois `field.multiple` (nao persistida, §5.2).
   abstract cardinalityOf(
     sourceField: Pick<IField, 'multiple'>,
