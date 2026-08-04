@@ -14,7 +14,8 @@ import { StorageMigrationSocketContractService } from '@application/services/sto
 import StorageMigrationSocketService from '@application/services/storage-migration/storage-migration-socket.service';
 import { EmailWorkerContractService } from '@application/services/email-queue/email-worker-contract.service';
 import EmailWorkerService from '@application/services/email-queue/email-worker.service';
-import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bootstrap';
+import { SchedulerBootstrapContractService } from '@application/services/scheduler/scheduler-bootstrap-contract.service';
+import SchedulerBootstrapService from '@application/services/scheduler/scheduler-bootstrap.service';
 import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
 import { StorageMigrationWorkerContractService } from '@application/services/storage-migration/storage-migration-worker-contract.service';
 import StorageMigrationWorkerService from '@application/services/storage-migration/storage-migration-worker.service';
@@ -101,7 +102,10 @@ async function start(): Promise<void> {
     await kernel.ready();
 
     if (Env.SCHEDULER_ENABLED) {
-      schedulerOrchestrator = bootstrapSchedules();
+      schedulerOrchestrator =
+        getInstanceByToken<SchedulerBootstrapContractService>(
+          SchedulerBootstrapService,
+        ).bootstrap();
       console.info('Scheduler started');
     }
 
