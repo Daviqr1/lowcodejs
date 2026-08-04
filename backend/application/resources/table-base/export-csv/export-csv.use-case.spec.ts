@@ -1,9 +1,12 @@
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import { E_TABLE_STYLE, E_TABLE_TYPE } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import TableExportCsvUseCase from './export-csv.use-case';
 
@@ -23,7 +26,10 @@ let sut: TableExportCsvUseCase;
 describe('Table Export CSV Use Case', () => {
   beforeEach(() => {
     repo = new TableInMemoryRepository();
-    sut = new TableExportCsvUseCase(repo);
+    sut = new TableExportCsvUseCase(
+      repo,
+      new CsvExportService(new SlugService(), new DateService()),
+    );
   });
 
   it('deve gerar CSV com BOM e linhas das tabelas', async () => {

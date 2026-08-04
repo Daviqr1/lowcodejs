@@ -1,16 +1,16 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
-import { buildCsvFilename } from '@application/core/csv/csv-filename';
-import {
-  type CsvField,
-  buildCsvStream,
-} from '@application/core/csv/csv-stream';
 import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table.repository';
+import {
+  CsvExportContractService,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
 
 import { TableRowImportCsvTemplateSchema } from './import-csv.schema';
 import { ImportCsvParamsValidator } from './import-csv.validator';
@@ -57,8 +57,10 @@ export default class {
       Record<string, unknown>
     > {})();
 
-    const stream = buildCsvStream({ source, fields: csvFields });
-    const filename = buildCsvFilename('template-' + params.slug);
+    const csvExport =
+      getInstanceByToken<CsvExportContractService>(CsvExportService);
+    const stream = csvExport.buildStream({ source, fields: csvFields });
+    const filename = csvExport.filename(`template-${params.slug}`);
 
     return response
       .header('Content-Type', 'text/csv; charset=utf-8')

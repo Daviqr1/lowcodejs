@@ -1,18 +1,17 @@
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
-import {
-  buildCsvStream,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
-  iterateInBatches,
-  type CsvField,
-} from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IMenu } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
+import {
+  CsvExportContractService,
+  EXPORT_CSV_LIMIT,
+  ExportLimitExceededError,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
 
 import type { MenuExportCsvPayload } from './export-csv.validator';
 
@@ -67,7 +66,10 @@ function toCsvRow(menu: IMenu): Record<string, unknown> {
 
 @Service()
 export default class MenuExportCsvUseCase {
-  constructor(private readonly menuRepository: MenuContractRepository) {}
+  constructor(
+    private readonly menuRepository: MenuContractRepository,
+    private readonly csvExport: CsvExportContractService,
+  ) {}
 
   async execute(payload: MenuExportCsvPayload): Promise<Response> {
     try {
@@ -95,7 +97,7 @@ export default class MenuExportCsvUseCase {
 
       console.info(`[menu > export-csv] count=${total}`);
 
-      const source = iterateInBatches({
+      const source = this.csvExport.iterateInBatches({
         payload: { ...payload, sort },
         fetchBatch: async (p, page, perPage) => {
           const batch = await this.menuRepository.findMany({
@@ -109,7 +111,7 @@ export default class MenuExportCsvUseCase {
         },
       });
 
-      const stream = buildCsvStream({ source, fields: FIELDS });
+      const stream = this.csvExport.buildStream({ source, fields: FIELDS });
 
       return right(stream);
     } catch (error) {

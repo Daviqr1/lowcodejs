@@ -1,19 +1,18 @@
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
-import {
-  buildCsvStream,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
-  iterateInBatches,
-  type CsvField,
-} from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IField, IRow } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import {
+  CsvExportContractService,
+  EXPORT_CSV_LIMIT,
+  ExportLimitExceededError,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
@@ -53,6 +52,7 @@ export default class TableRowExportCsvUseCase {
     private readonly fieldVisibility: FieldVisibilityContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly fieldValue: FieldValueContractService,
+    private readonly csvExport: CsvExportContractService,
   ) {}
 
   private toCsvRow(row: IRow, fields: IField[]): Record<string, unknown> {
@@ -117,7 +117,7 @@ export default class TableRowExportCsvUseCase {
 
       const { csvFields, exportableFields } = buildFields(table.fields, hidden);
 
-      const source = iterateInBatches({
+      const source = this.csvExport.iterateInBatches({
         payload,
         fetchBatch: async (p, page, perPage) => {
           const skip = (page - 1) * perPage;
@@ -135,7 +135,7 @@ export default class TableRowExportCsvUseCase {
         },
       });
 
-      const stream = buildCsvStream({ source, fields: csvFields });
+      const stream = this.csvExport.buildStream({ source, fields: csvFields });
 
       return right(stream);
     } catch (error) {

@@ -1,8 +1,11 @@
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import UserExportCsvUseCase from './export-csv.use-case';
 
@@ -24,7 +27,10 @@ let sut: UserExportCsvUseCase;
 describe('User Export CSV Use Case', () => {
   beforeEach(() => {
     repo = new UserInMemoryRepository();
-    sut = new UserExportCsvUseCase(repo);
+    sut = new UserExportCsvUseCase(
+      repo,
+      new CsvExportService(new SlugService(), new DateService()),
+    );
   });
 
   it('deve gerar CSV com BOM, cabeçalho e linhas para todos os usuários', async () => {

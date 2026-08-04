@@ -1,19 +1,18 @@
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
-import {
-  buildCsvStream,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
-  iterateInBatches,
-  type CsvField,
-} from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IGroup, IUser } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import {
+  CsvExportContractService,
+  EXPORT_CSV_LIMIT,
+  ExportLimitExceededError,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
 import type { UserGroupExportCsvPayload } from './export-csv.validator';
@@ -57,6 +56,7 @@ export default class UserGroupExportCsvUseCase {
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly csvExport: CsvExportContractService,
   ) {}
 
   async execute(payload: UserGroupExportCsvPayload): Promise<Response> {
@@ -93,7 +93,7 @@ export default class UserGroupExportCsvUseCase {
         `[user-groups > export-csv] user=${payload.user?._id ?? 'unknown'} count=${total}`,
       );
 
-      const source = iterateInBatches({
+      const source = this.csvExport.iterateInBatches({
         payload: { ...payload, sort, hideMaster },
         fetchBatch: async (p, page, perPage) => {
           const batch = await this.userGroupRepository.findMany({
@@ -108,7 +108,7 @@ export default class UserGroupExportCsvUseCase {
         },
       });
 
-      const stream = buildCsvStream({ source, fields: FIELDS });
+      const stream = this.csvExport.buildStream({ source, fields: FIELDS });
 
       return right(stream);
     } catch (error) {

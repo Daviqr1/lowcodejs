@@ -9,9 +9,12 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
 import FieldValueService from '@application/services/field-value/field-value.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import GroupRowExportCsvUseCase from './export-csv.use-case';
 
@@ -66,6 +69,7 @@ describe('Group Row Export CSV Use Case', () => {
       new InMemoryRowPasswordService(),
       new InMemoryRowAccessGuardService(),
       new FieldValueService(),
+      new CsvExportService(new SlugService(), new DateService()),
     );
   });
 

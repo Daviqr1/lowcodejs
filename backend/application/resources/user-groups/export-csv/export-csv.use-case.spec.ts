@@ -1,10 +1,13 @@
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import UserGroupExportCsvUseCase from './export-csv.use-case';
 
@@ -28,7 +31,12 @@ describe('User Group Export CSV Use Case', () => {
     repo = new UserGroupInMemoryRepository();
     userRepo = new UserInMemoryRepository();
     groupResolver = new GroupResolverService(repo);
-    sut = new UserGroupExportCsvUseCase(repo, userRepo, groupResolver);
+    sut = new UserGroupExportCsvUseCase(
+      repo,
+      userRepo,
+      groupResolver,
+      new CsvExportService(new SlugService(), new DateService()),
+    );
   });
 
   it('deve gerar CSV com BOM, cabeçalho e linhas', async () => {

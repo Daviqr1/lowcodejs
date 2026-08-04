@@ -1,13 +1,6 @@
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
-import {
-  buildCsvStream,
-  EXPORT_CSV_LIMIT,
-  ExportLimitExceededError,
-  iterateInBatches,
-  type CsvField,
-} from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { ITable } from '@application/core/entity.core';
@@ -17,6 +10,12 @@ import {
   TableContractRepository,
   type TableQueryPayload,
 } from '@application/repositories/table/table-contract.repository';
+import {
+  CsvExportContractService,
+  EXPORT_CSV_LIMIT,
+  ExportLimitExceededError,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
 
 import type { TableExportCsvPayload } from './export-csv.validator';
 
@@ -62,7 +61,10 @@ function toCsvRow(table: ITable): Record<string, unknown> {
 
 @Service()
 export default class TableExportCsvUseCase {
-  constructor(private readonly tableRepository: TableContractRepository) {}
+  constructor(
+    private readonly tableRepository: TableContractRepository,
+    private readonly csvExport: CsvExportContractService,
+  ) {}
 
   async execute(payload: TableExportCsvPayload): Promise<Response> {
     try {
@@ -95,7 +97,7 @@ export default class TableExportCsvUseCase {
 
       console.info(`[table-base > export-csv] count=${total}`);
 
-      const source = iterateInBatches({
+      const source = this.csvExport.iterateInBatches({
         payload: filter,
         fetchBatch: async (p, page, perPage) => {
           const batch = await this.tableRepository.findMany({
@@ -108,7 +110,7 @@ export default class TableExportCsvUseCase {
         },
       });
 
-      const stream = buildCsvStream({ source, fields: FIELDS });
+      const stream = this.csvExport.buildStream({ source, fields: FIELDS });
 
       return right(stream);
     } catch (error) {

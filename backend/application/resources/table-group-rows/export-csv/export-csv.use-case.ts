@@ -1,11 +1,6 @@
 import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 
-import {
-  buildCsvStream,
-  EXPORT_CSV_LIMIT,
-  type CsvField,
-} from '@application/core/csv/csv-stream';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IField, Merge } from '@application/core/entity.core';
@@ -13,6 +8,11 @@ import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import {
+  CsvExportContractService,
+  EXPORT_CSV_LIMIT,
+  type CsvField,
+} from '@application/services/csv-export/csv-export-contract.service';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
@@ -53,6 +53,7 @@ export default class GroupRowExportCsvUseCase {
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly fieldValue: FieldValueContractService,
+    private readonly csvExport: CsvExportContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -138,7 +139,7 @@ export default class GroupRowExportCsvUseCase {
       });
 
       const source = Readable.from(csvRows, { objectMode: true });
-      const stream = buildCsvStream({ source, fields: csvFields });
+      const stream = this.csvExport.buildStream({ source, fields: csvFields });
 
       return right(stream);
     } catch (error) {

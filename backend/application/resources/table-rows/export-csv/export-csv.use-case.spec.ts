@@ -1,7 +1,6 @@
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import {
   buildFieldPermissions,
   E_FIELD_TYPE,
@@ -10,10 +9,14 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
 import FieldValueService from '@application/services/field-value/field-value.service';
 import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import TableRowExportCsvUseCase from './export-csv.use-case';
 
@@ -69,6 +72,7 @@ describe('Table Row Export CSV Use Case', () => {
       new InMemoryFieldVisibilityService(),
       new InMemoryRowAccessGuardService(),
       new FieldValueService(),
+      new CsvExportService(new SlugService(), new DateService()),
     );
   });
 

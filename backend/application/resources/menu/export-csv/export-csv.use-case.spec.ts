@@ -1,9 +1,12 @@
 import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXPORT_CSV_LIMIT } from '@application/core/csv/csv-stream';
 import { E_MENU_ITEM_TYPE } from '@application/core/entity.core';
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
+import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
+import DateService from '@application/services/date/date.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import MenuExportCsvUseCase from './export-csv.use-case';
 
@@ -23,7 +26,10 @@ let sut: MenuExportCsvUseCase;
 describe('Menu Export CSV Use Case', () => {
   beforeEach(() => {
     repo = new MenuInMemoryRepository();
-    sut = new MenuExportCsvUseCase(repo);
+    sut = new MenuExportCsvUseCase(
+      repo,
+      new CsvExportService(new SlugService(), new DateService()),
+    );
   });
 
   it('deve gerar CSV com BOM e linhas dos menus', async () => {

@@ -1,10 +1,11 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
-import { buildCsvFilename } from '@application/core/csv/csv-filename';
 import { E_ROLE } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { CsvExportContractService } from '@application/services/csv-export/csv-export-contract.service';
+import CsvExportService from '@application/services/csv-export/csv-export.service';
 
 import { TableExportCsvSchema } from './export-csv.schema';
 import TableExportCsvUseCase from './export-csv.use-case';
@@ -45,7 +46,10 @@ export default class {
       });
     }
 
-    const filename = buildCsvFilename('tabelas');
+    const filename =
+      getInstanceByToken<CsvExportContractService>(CsvExportService).filename(
+        'tabelas',
+      );
 
     return response
       .header('Content-Type', 'text/csv; charset=utf-8')
