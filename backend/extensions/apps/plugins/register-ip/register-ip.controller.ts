@@ -12,23 +12,24 @@ import { RegisterIpParamsValidator } from './register-ip.validator';
 
 // IP real do cliente atrás de proxy: prioriza o 1º IP de `x-forwarded-for`,
 // com fallback para `request.ip` (escopado a esta rota — sem mexer no kernel).
-function resolveClientIp(request: FastifyRequest): string {
-  const header = request.headers['x-forwarded-for'];
-
-  let raw = '';
-  if (typeof header === 'string') raw = header;
-  if (Array.isArray(header) && header.length > 0) raw = header[0] ?? '';
-
-  const first = raw.split(',')[0]?.trim();
-  if (first) return first;
-
-  return request.ip;
-}
 
 @Controller({
   route: '/plugins/register-ip',
 })
 export default class {
+  private resolveClientIp(request: FastifyRequest): string {
+    const header = request.headers['x-forwarded-for'];
+
+    let raw = '';
+    if (typeof header === 'string') raw = header;
+    if (Array.isArray(header) && header.length > 0) raw = header[0] ?? '';
+
+    const first = raw.split(',')[0]?.trim();
+    if (first) return first;
+
+    return request.ip;
+  }
+
   private readonly http = getInstanceByToken(HttpResponseService);
 
   constructor(
@@ -57,7 +58,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { slug, rowId } = RegisterIpParamsValidator.parse(request.params);
-    const ip = resolveClientIp(request);
+    const ip = this.resolveClientIp(request);
 
     const result = await this.useCase.execute({ slug, rowId, ip });
 

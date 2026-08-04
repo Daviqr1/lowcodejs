@@ -7,34 +7,34 @@ import type { ValidationFieldShape } from '../../field-validation-rule-contract.
 import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // mod-97 sobre a string numerica expandida (ISO 7064). IBAN valido => 1.
-function mod97(input: string): number {
-  let remainder = 0;
-  for (const char of input) {
-    remainder = (remainder * 10 + Number(char)) % 97;
-  }
-  return remainder;
-}
-
-function isValidIban(raw: string): boolean {
-  const iban = raw.replace(/\s+/g, '').toUpperCase();
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(iban)) return false;
-  if (iban.length < 15 || iban.length > 34) return false;
-
-  // Move os 4 primeiros chars para o fim e expande letras (A=10 ... Z=35).
-  const rearranged = iban.slice(4) + iban.slice(0, 4);
-  let expanded = '';
-  for (const char of rearranged) {
-    if (char >= '0' && char <= '9') {
-      expanded += char;
-      continue;
-    }
-    expanded += String(char.charCodeAt(0) - 55);
-  }
-
-  return mod97(expanded) === 1;
-}
 
 class IsIbanRule extends FieldValidationRule {
+  private mod97(input: string): number {
+    let remainder = 0;
+    for (const char of input) {
+      remainder = (remainder * 10 + Number(char)) % 97;
+    }
+    return remainder;
+  }
+
+  private isValidIban(raw: string): boolean {
+    const iban = raw.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(iban)) return false;
+    if (iban.length < 15 || iban.length > 34) return false;
+
+    // Move os 4 primeiros chars para o fim e expande letras (A=10 ... Z=35).
+    const rearranged = iban.slice(4) + iban.slice(0, 4);
+    let expanded = '';
+    for (const char of rearranged) {
+      if (char >= '0' && char <= '9') {
+        expanded += char;
+        continue;
+      }
+      expanded += String(char.charCodeAt(0) - 55);
+    }
+
+    return this.mod97(expanded) === 1;
+  }
   readonly key = E_FIELD_VALIDATION.IS_IBAN;
   readonly label = 'É IBAN';
   readonly requiresConfig = false;
@@ -46,7 +46,7 @@ class IsIbanRule extends FieldValidationRule {
   async validate(value: unknown): Promise<string | null> {
     if (this.isEmpty(value)) return null;
     if (typeof value !== 'string') return null;
-    if (!isValidIban(value)) return 'IBAN inválido';
+    if (!this.isValidIban(value)) return 'IBAN inválido';
     return null;
   }
 }

@@ -20,26 +20,26 @@ import type {
 const fixtures = new EntityFixtures();
 
 // Refs do double de teste: entidade completa (defaults inertes) a partir do id.
-function storageRef(id: string): IStorage {
-  return fixtures.makeStorage(id);
-}
-function userRef(id: string): IUser {
-  return fixtures.makeUser(id);
-}
-function fieldRef(id: string): IField {
-  return fixtures.makeField(id);
-}
 
 export default class TableInMemoryRepository
   extends InMemoryRepository
   implements TableContractRepository
 {
+  private storageRef(id: string): IStorage {
+    return fixtures.makeStorage(id);
+  }
+  private userRef(id: string): IUser {
+    return fixtures.makeUser(id);
+  }
+  private fieldRef(id: string): IField {
+    return fixtures.makeField(id);
+  }
   items: ITable[] = [];
 
   async create(payload: TableCreatePayload): Promise<ITable> {
     this.checkError('create');
     let logo: IStorage | null = null;
-    if (payload.logo) logo = storageRef(payload.logo);
+    if (payload.logo) logo = this.storageRef(payload.logo);
     const table: ITable = {
       _id: crypto.randomUUID(),
       _schema: payload._schema ?? {},
@@ -49,11 +49,11 @@ export default class TableInMemoryRepository
       slug: payload.slug,
       fields: (payload.fields ?? []).map((f) => {
         if (typeof f === 'object') return f;
-        return fieldRef(f);
+        return this.fieldRef(f);
       }),
       type: payload.type ?? 'TABLE',
       style: payload.style ?? 'LIST',
-      owner: userRef(payload.owner),
+      owner: this.userRef(payload.owner),
       permissions: payload.permissions ?? null,
       members: payload.members ?? [],
       fieldOrderList: payload.fieldOrderList ?? [],
@@ -161,13 +161,13 @@ export default class TableInMemoryRepository
 
     if (payload.logo !== undefined) {
       table.logo = null;
-      if (payload.logo) table.logo = storageRef(payload.logo);
+      if (payload.logo) table.logo = this.storageRef(payload.logo);
     }
     if (payload.fields !== undefined) {
-      table.fields = payload.fields.map((f) => fieldRef(f));
+      table.fields = payload.fields.map((f) => this.fieldRef(f));
     }
     if (payload.owner !== undefined) {
-      table.owner = userRef(payload.owner);
+      table.owner = this.userRef(payload.owner);
     }
     if (payload.permissions !== undefined) {
       table.permissions = payload.permissions;

@@ -9,9 +9,9 @@ import {
 } from 'fastify-decorators';
 
 import { E_EXTENSION_TYPE } from '@application/core/entity.core';
-import HTTPException from '@application/core/exception.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import SenhasChannelUseCase from './senhas-channel.use-case';
 import SenhasEntryUseCase from './senhas-entry.use-case';
@@ -44,17 +44,10 @@ const GUARDS = [AuthenticationMiddleware({ optional: false }), EXTENSION_GUARD];
 
 type Params = { channelId: string; entryId: string };
 
-function sendError(response: FastifyReply, error: HTTPException): void {
-  response.status(error.code).send({
-    message: error.message,
-    code: error.code,
-    cause: error.cause,
-    ...(error.errors && { errors: error.errors }),
-  });
-}
-
 @Controller({ route: '/e/apps/senhas' })
 export default class SenhasController {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
   constructor(
     private readonly channelUseCase: SenhasChannelUseCase = getInstanceByToken(
       SenhasChannelUseCase,
@@ -73,7 +66,7 @@ export default class SenhasController {
     response: FastifyReply,
   ): Promise<void> {
     const result = await this.channelUseCase.list(request.user.sub);
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 
@@ -87,7 +80,7 @@ export default class SenhasController {
   ): Promise<void> {
     const body = CreateChannelValidator.parse(request.body);
     const result = await this.channelUseCase.create(request.user.sub, body);
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(201).send(result.value);
   }
 
@@ -105,7 +98,7 @@ export default class SenhasController {
       request.params.channelId,
       body,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 
@@ -121,7 +114,7 @@ export default class SenhasController {
       request.user.sub,
       request.params.channelId,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 
@@ -137,7 +130,7 @@ export default class SenhasController {
       request.user.sub,
       request.params.channelId,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 
@@ -155,7 +148,7 @@ export default class SenhasController {
       request.params.channelId,
       body,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(201).send(result.value);
   }
 
@@ -174,7 +167,7 @@ export default class SenhasController {
       request.params.entryId,
       body,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 
@@ -191,7 +184,7 @@ export default class SenhasController {
       request.params.channelId,
       request.params.entryId,
     );
-    if (result.isLeft()) return sendError(response, result.value);
+    if (result.isLeft()) return this.http.sendError(response, result.value);
     return response.status(200).send(result.value);
   }
 }

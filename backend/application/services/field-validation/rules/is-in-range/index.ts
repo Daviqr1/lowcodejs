@@ -7,18 +7,18 @@ import type { ValidationFieldShape } from '../../field-validation-rule-contract.
 import { FieldValidationRule } from '../../field-validation-rule-contract.service';
 
 // Coerce number | numeric-string → number; senao null.
-function toNumber(input: unknown): number | null {
-  if (typeof input === 'number' && !Number.isNaN(input)) return input;
-  if (typeof input === 'string' && input.trim() !== '') {
-    const parsed = Number(input);
-    if (!Number.isNaN(parsed)) return parsed;
-  }
-  return null;
-}
 
 // "Maior ou menor que": valor numerico dentro de [min, max]. Ambos opcionais
 // em config; pelo menos um deve estar setado para a regra ter efeito.
 class IsInRangeRule extends FieldValidationRule {
+  private toNumber(input: unknown): number | null {
+    if (typeof input === 'number' && !Number.isNaN(input)) return input;
+    if (typeof input === 'string' && input.trim() !== '') {
+      const parsed = Number(input);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    return null;
+  }
   readonly key = E_FIELD_VALIDATION.IS_IN_RANGE;
   readonly label = 'Maior ou menor que';
   readonly requiresConfig = true;
@@ -33,11 +33,11 @@ class IsInRangeRule extends FieldValidationRule {
   ): Promise<string | null> {
     if (this.isEmpty(value)) return null;
 
-    const num = toNumber(value);
+    const num = this.toNumber(value);
     if (num === null) return 'Deve ser um número';
 
-    const min = toNumber(config.min);
-    const max = toNumber(config.max);
+    const min = this.toNumber(config.min);
+    const max = this.toNumber(config.max);
 
     if (min !== null && num < min) return `Deve ser maior ou igual a ${min}`;
     if (max !== null && num > max) return `Deve ser menor ou igual a ${max}`;
