@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import { BUILTIN_TABLE_TEMPLATE_IDS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {
   SettingContractRepository,
@@ -11,13 +12,6 @@ import { IdentifierContractService } from '@application/services/identifier/iden
 import { LlmConfigContractService } from '@application/services/llm/llm-config-contract.service';
 import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import { StorageContractService } from '@application/services/storage/storage-contract.service';
-
-const BUILTIN_TEMPLATE_IDS = new Set([
-  'KANBAN_TEMPLATE',
-  'CARDS_TEMPLATE',
-  'MOSAIC_TEMPLATE',
-  'DOCUMENT_TEMPLATE',
-]);
 
 type Response = Either<HTTPException, Record<string, unknown>>;
 
@@ -35,7 +29,8 @@ export default class SettingUpdateUseCase {
     try {
       if (Array.isArray(payload.MODEL_CLONE_TABLES)) {
         payload.MODEL_CLONE_TABLES = payload.MODEL_CLONE_TABLES.filter(
-          (id) => !BUILTIN_TEMPLATE_IDS.has(id) && this.identifier.isValid(id),
+          (id) =>
+            !BUILTIN_TABLE_TEMPLATE_IDS.has(id) && this.identifier.isValid(id),
         );
       }
 

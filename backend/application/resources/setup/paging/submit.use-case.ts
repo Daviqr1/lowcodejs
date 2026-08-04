@@ -2,6 +2,7 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
+import { BUILTIN_TABLE_TEMPLATE_IDS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
 import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
@@ -24,15 +25,6 @@ type SetupStepOutput = {
 type Response = Either<HTTPException, SetupStepOutput>;
 
 const CURRENT_STEP: SetupStep = 'paging';
-
-const BUILTIN_TEMPLATE_IDS = new Set([
-  'KANBAN_TEMPLATE',
-  'CARDS_TEMPLATE',
-  'MOSAIC_TEMPLATE',
-  'DOCUMENT_TEMPLATE',
-  'FORUM_TEMPLATE',
-  'CALENDAR_TEMPLATE',
-]);
 
 @Service()
 export default class SetupPagingSubmitUseCase {
@@ -69,7 +61,7 @@ export default class SetupPagingSubmitUseCase {
       let filteredCloneTables: string[] = [];
       if (payload.MODEL_CLONE_TABLES) {
         filteredCloneTables = payload.MODEL_CLONE_TABLES.filter((id) => {
-          if (BUILTIN_TEMPLATE_IDS.has(id)) return false;
+          if (BUILTIN_TABLE_TEMPLATE_IDS.has(id)) return false;
           if (!this.identifier.isValid(id)) return false;
           return true;
         });

@@ -63,4 +63,11 @@ export default class SocketAuthService implements SocketAuthContractService {
       next();
     });
   }
+
+  joinUserRoom(namespace: Namespace): void {
+    namespace.on('connection', (socket) => {
+      const userId: string = socket.data.user?.sub ?? '';
+      if (userId) socket.join(`user:${userId}`);
+    });
+  }
 }

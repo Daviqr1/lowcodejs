@@ -12,11 +12,30 @@
     "target": "es2024",
     "baseUrl": "./",
     "paths": {
-      "@application/*": ["./application/*"],
-      "@bin/*": ["./bin/*"],
-      "@config/*": ["./config/*"],
-      "@database/*": ["./database/*"],
-      "@start/*": ["./start/*"]
+      "@application/*": [
+        "./application/*"
+      ],
+      "@bin/*": [
+        "./bin/*"
+      ],
+      "@config/*": [
+        "./config/*"
+      ],
+      "@database/*": [
+        "./database/*"
+      ],
+      "@extensions/*": [
+        "./extensions/*"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@start/*": [
+        "./start/*"
+      ],
+      "@test/*": [
+        "./test/*"
+      ]
     }
   },
   "module": {

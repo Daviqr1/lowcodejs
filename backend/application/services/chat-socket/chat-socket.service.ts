@@ -24,6 +24,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { getChatSystemPrompt } from '@application/resources/chat/system-prompt';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { LlmChatContractService } from '@application/services/llm/llm-chat-contract.service';
+import type { FileData } from '@application/services/llm/llm-chat.types';
 import type { LlmChatMessage } from '@application/services/llm/llm-chat.types';
 import { LlmConfigContractService } from '@application/services/llm/llm-config-contract.service';
 import {
@@ -34,15 +35,6 @@ import type { JwtDecoder } from '@application/services/socket-auth/socket-auth-c
 import { Env } from '@start/env';
 
 import { ChatSocketContractService } from './chat-socket-contract.service';
-
-type FileData = {
-  type: 'image' | 'pdf';
-  filename: string;
-  content_type?: string;
-  data_uri?: string;
-  extracted_text?: string;
-  page_count?: number;
-};
 
 type ClientMessage = {
   message?: string;

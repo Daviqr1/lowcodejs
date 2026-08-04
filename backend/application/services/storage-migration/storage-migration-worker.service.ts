@@ -25,6 +25,7 @@ import {
   type TStorageLocation,
 } from '@application/core/entity.core';
 import type { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
+import { QueueWorkerBase } from '@application/services/queue-worker/queue-worker.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import StorageService from '@application/services/storage/storage.service';
 import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
@@ -342,20 +343,21 @@ function isCleanupJob(job: Job): job is Job<CleanupJobPayload> {
 }
 
 @Service()
-export default class StorageMigrationWorkerService implements StorageMigrationWorkerContractService {
-  private worker: Worker | null = null;
-
+export default class StorageMigrationWorkerService
+  extends QueueWorkerBase
+  implements StorageMigrationWorkerContractService
+{
   constructor(
     private readonly storageRepository: StorageContractRepository,
     private readonly storageService: StorageService,
     private readonly storageConfig: StorageConfigContractService,
     private readonly socket: StorageMigrationSocketContractService,
     private readonly redis: RedisContractService,
-  ) {}
+  ) {
+    super();
+  }
 
-  start(): Worker {
-    if (this.worker) return this.worker;
-
+  protected createWorker(): Worker {
     const worker = new Worker(
       STORAGE_MIGRATION_QUEUE_NAME,
       async (job: Job) => {
@@ -398,14 +400,7 @@ export default class StorageMigrationWorkerService implements StorageMigrationWo
       );
     });
 
-    this.worker = worker;
     return worker;
-  }
-
-  async stop(): Promise<void> {
-    if (!this.worker) return;
-    await this.worker.close();
-    this.worker = null;
   }
 
   /**

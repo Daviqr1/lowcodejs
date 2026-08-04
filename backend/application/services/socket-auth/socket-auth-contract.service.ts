@@ -28,4 +28,10 @@ export abstract class SocketAuthContractService {
     decode: JwtDecoder,
     options?: SocketAuthOptions,
   ): void;
+
+  /**
+   * Poe cada socket autenticado na room `user:<sub>` — o padrao dos
+   * namespaces que entregam evento por destinatario.
+   */
+  abstract joinUserRoom(namespace: Namespace): void;
 }

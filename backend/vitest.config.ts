@@ -1,40 +1,16 @@
-import swc from 'unplugin-swc';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
+import { sharedPlugins, sharedTest } from './vitest.shared';
+
 export default defineConfig({
-  plugins: [
-    tsconfigPaths(),
-    swc.vite({
-      jsc: {
-        parser: {
-          syntax: 'typescript',
-          decorators: true,
-          dynamicImport: true,
-        },
-        transform: {
-          legacyDecorator: true,
-          decoratorMetadata: true,
-        },
-        target: 'es2024',
-      },
-    }),
-  ],
+  plugins: sharedPlugins,
   test: {
-    root: './',
-    globals: true,
-    environment: 'node',
+    ...sharedTest,
     setupFiles: ['./test/setup.ts'],
     include: [
       '**/*.use-case.spec.ts',
       '**/*.service.spec.ts',
       '**/*.core.spec.ts',
     ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'build/', '**/*.config.*', '**/coverage/**'],
-    },
-    exclude: ['node_modules/', 'build/', '**/*.config.*', '**/coverage/**'],
   },
 });

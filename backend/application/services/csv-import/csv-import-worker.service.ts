@@ -20,6 +20,7 @@ import {
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
+import { QueueWorkerBase } from '@application/services/queue-worker/queue-worker.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
@@ -244,9 +245,10 @@ async function processImportJob(
 }
 
 @Service()
-export default class CsvImportWorkerService implements CsvImportWorkerContractService {
-  private worker: Worker<CsvImportJobPayload> | null = null;
-
+export default class CsvImportWorkerService
+  extends QueueWorkerBase<CsvImportJobPayload>
+  implements CsvImportWorkerContractService
+{
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
@@ -256,11 +258,11 @@ export default class CsvImportWorkerService implements CsvImportWorkerContractSe
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
     private readonly socket: CsvImportSocketContractService,
     private readonly redis: RedisContractService,
-  ) {}
+  ) {
+    super();
+  }
 
-  start(): Worker<CsvImportJobPayload> {
-    if (this.worker) return this.worker;
-
+  protected createWorker(): Worker<CsvImportJobPayload> {
     const worker = new Worker<CsvImportJobPayload>(
       CSV_IMPORT_QUEUE_NAME,
       async (job: Job<CsvImportJobPayload>): Promise<void> => {
@@ -290,14 +292,7 @@ export default class CsvImportWorkerService implements CsvImportWorkerContractSe
       },
     );
 
-    this.worker = worker;
     return worker;
-  }
-
-  async stop(): Promise<void> {
-    if (!this.worker) return;
-    await this.worker.close();
-    this.worker = null;
   }
 
   /**

@@ -170,6 +170,17 @@ export const E_ROLE = {
 
 // Slugs dos grupos do sistema. Grupos com esses slugs nao podem ser
 // editados nem removidos (protecao unica reutilizada pelos use-cases).
+// Ids dos templates de tabela built-in (tool `clone-table`). Nao sao ObjectId:
+// quem consome `MODEL_CLONE_TABLES` precisa distingui-los de referencias reais.
+export const BUILTIN_TABLE_TEMPLATE_IDS = new Set([
+  'KANBAN_TEMPLATE',
+  'CARDS_TEMPLATE',
+  'MOSAIC_TEMPLATE',
+  'DOCUMENT_TEMPLATE',
+  'FORUM_TEMPLATE',
+  'CALENDAR_TEMPLATE',
+]);
+
 export const SYSTEM_GROUP_SLUGS: ReadonlySet<string> = new Set<string>([
   E_ROLE.MASTER,
   E_ROLE.ADMINISTRATOR,

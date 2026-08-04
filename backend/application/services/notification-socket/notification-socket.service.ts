@@ -20,10 +20,7 @@ export default class NotificationSocketService implements NotificationSocketCont
 
     this.auth.protect(namespace, decode);
 
-    namespace.on('connection', (socket) => {
-      const userId: string = socket.data.user?.sub ?? '';
-      if (userId) socket.join(`user:${userId}`);
-    });
+    this.auth.joinUserRoom(namespace);
 
     this.current = namespace;
     return namespace;

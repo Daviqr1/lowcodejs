@@ -2,6 +2,7 @@ import { Worker, type Job } from 'bullmq';
 import { Service } from 'fastify-decorators';
 
 import { EmailContractService } from '@application/services/email/email-contract.service';
+import { QueueWorkerBase } from '@application/services/queue-worker/queue-worker.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import { Env } from '@start/env';
 
@@ -13,17 +14,18 @@ import {
 import { EmailWorkerContractService } from './email-worker-contract.service';
 
 @Service()
-export default class EmailWorkerService implements EmailWorkerContractService {
-  private worker: Worker<EmailJobPayload> | null = null;
-
+export default class EmailWorkerService
+  extends QueueWorkerBase<EmailJobPayload>
+  implements EmailWorkerContractService
+{
   constructor(
     private readonly emailService: EmailContractService,
     private readonly redis: RedisContractService,
-  ) {}
+  ) {
+    super();
+  }
 
-  start(): Worker<EmailJobPayload> {
-    if (this.worker) return this.worker;
-
+  protected createWorker(): Worker<EmailJobPayload> {
     const worker = new Worker<EmailJobPayload>(
       EMAIL_QUEUE_NAME,
       async (job) => {
@@ -53,14 +55,7 @@ export default class EmailWorkerService implements EmailWorkerContractService {
       },
     );
 
-    this.worker = worker;
     return worker;
-  }
-
-  async stop(): Promise<void> {
-    if (!this.worker) return;
-    await this.worker.close();
-    this.worker = null;
   }
 
   private async processSendJob(job: Job<EmailJobPayload>): Promise<void> {
