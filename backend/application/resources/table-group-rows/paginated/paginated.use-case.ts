@@ -3,13 +3,13 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IField, Merge, Paginated } from '@application/core/entity.core';
-import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 import type { GroupRowPaginatedPayload } from './paginated.validator';
@@ -26,6 +26,7 @@ export default class GroupRowPaginatedUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly typeGuard: TypeGuardContractService,
     private readonly http: HttpResponseContractService,
+    private readonly tableGroup: TableGroupContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -34,24 +35,12 @@ export default class GroupRowPaginatedUseCase {
       const perPage = Math.max(1, Number(payload.perPage) || 50);
       const skip = (page - 1) * perPage;
 
-      const table = await this.tableRepository.findBySlug(payload.slug);
-
-      if (!table)
-        return left(
-          HTTPException.NotFound('Tabela não encontrada', 'TABLE_NOT_FOUND'),
-        );
-
-      const groupField = table.fields?.find(
-        (f) =>
-          f.type === E_FIELD_TYPE.FIELD_GROUP &&
-          f.group?.slug === payload.groupSlug,
+      const resolved = await this.tableGroup.resolve(
+        payload.slug,
+        payload.groupSlug,
       );
-
-      if (!groupField) {
-        return left(
-          HTTPException.NotFound('Grupo não encontrado', 'GROUP_NOT_FOUND'),
-        );
-      }
+      if (resolved.isLeft()) return left(resolved.value);
+      const { table, groupField } = resolved.value;
 
       const row = await this.rowRepository.findOne({
         table,

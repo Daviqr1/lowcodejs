@@ -8,6 +8,7 @@ import { InMemoryRowAccessGuardService } from '@application/services/row-access-
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
+import TableGroupService from '@application/services/table-group/table-group.service';
 import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { makeTextLongField } from '@test/helpers/field-factory.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
@@ -26,13 +27,13 @@ describe('Group Row Create - TEXT_LONG', () => {
     rowPasswordService = new InMemoryRowPasswordService();
 
     sut = new GroupRowCreateUseCase(
-      tableRepository,
       rowRepository,
       rowPasswordService,
       new InMemoryRowAccessGuardService(),
       new RowOwnershipService(),
       new RowPayloadValidatorService(new MongooseIdentifierService()),
       new TypeGuardService(),
+      new TableGroupService(tableRepository),
     );
   });
 

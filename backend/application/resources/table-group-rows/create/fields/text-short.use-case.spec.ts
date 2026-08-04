@@ -11,6 +11,7 @@ import { InMemoryRowAccessGuardService } from '@application/services/row-access-
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
+import TableGroupService from '@application/services/table-group/table-group.service';
 import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import {
   makePasswordField,
@@ -35,13 +36,13 @@ describe('Group Row Create - TEXT_SHORT', () => {
     );
 
     sut = new GroupRowCreateUseCase(
-      tableRepository,
       rowRepository,
       rowPasswordService,
       new InMemoryRowAccessGuardService(),
       new RowOwnershipService(),
       new RowPayloadValidatorService(new MongooseIdentifierService()),
       new TypeGuardService(),
+      new TableGroupService(tableRepository),
     );
   });
 

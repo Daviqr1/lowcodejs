@@ -3,14 +3,14 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IField, Merge } from '@application/core/entity.core';
-import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
+import { E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
+import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
 type Response = Either<HTTPException, Record<string, unknown>>;
@@ -30,36 +30,23 @@ type Payload = Merge<
 @Service()
 export default class GroupRowCreateUseCase {
   constructor(
-    private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
     private readonly typeGuard: TypeGuardContractService,
+    private readonly tableGroup: TableGroupContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const table = await this.tableRepository.findBySlug(payload.slug);
-
-      if (!table)
-        return left(
-          HTTPException.NotFound('Tabela não encontrada', 'TABLE_NOT_FOUND'),
-        );
-
-      // Encontra o campo FIELD_GROUP correspondente
-      const groupField = table.fields?.find(
-        (f) =>
-          f.type === E_FIELD_TYPE.FIELD_GROUP &&
-          f.group?.slug === payload.groupSlug,
+      const resolved = await this.tableGroup.resolve(
+        payload.slug,
+        payload.groupSlug,
       );
-
-      if (!groupField) {
-        return left(
-          HTTPException.NotFound('Grupo não encontrado', 'GROUP_NOT_FOUND'),
-        );
-      }
+      if (resolved.isLeft()) return left(resolved.value);
+      const { table, groupField } = resolved.value;
 
       const group = table.groups?.find((g) => g.slug === payload.groupSlug);
 

@@ -2,12 +2,13 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
+import type { Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
+import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 
 import type { GroupRowDeletePayload } from './delete.validator';
 
@@ -28,28 +29,17 @@ export default class GroupRowDeleteUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
+    private readonly tableGroup: TableGroupContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const table = await this.tableRepository.findBySlug(payload.slug);
-
-      if (!table)
-        return left(
-          HTTPException.NotFound('Tabela não encontrada', 'TABLE_NOT_FOUND'),
-        );
-
-      const groupField = table.fields?.find(
-        (f) =>
-          f.type === E_FIELD_TYPE.FIELD_GROUP &&
-          f.group?.slug === payload.groupSlug,
+      const resolved = await this.tableGroup.resolve(
+        payload.slug,
+        payload.groupSlug,
       );
-
-      if (!groupField) {
-        return left(
-          HTTPException.NotFound('Grupo não encontrado', 'GROUP_NOT_FOUND'),
-        );
-      }
+      if (resolved.isLeft()) return left(resolved.value);
+      const { table, groupField } = resolved.value;
 
       // Verifica se a row existe
       const existingRow = await this.rowRepository.findOne({
