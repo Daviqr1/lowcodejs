@@ -11,7 +11,7 @@
 import { Worker, type Job } from 'bullmq';
 
 import { EmailContractService } from '@application/services/email/email-contract.service';
-import { createBullMQConnection } from '@config/redis.config';
+import IoredisService from '@application/services/redis/redis.service';
 import { Env } from '@start/env';
 
 import {
@@ -19,6 +19,9 @@ import {
   EMAIL_QUEUE_NAME,
   type EmailJobPayload,
 } from './email-queue-contract.service';
+
+// O worker ainda e funcao solta (vira service no passo dos workers).
+const redisService = new IoredisService();
 
 type WorkerDeps = {
   emailService: EmailContractService;
@@ -61,7 +64,7 @@ export function startEmailWorker(deps: WorkerDeps): Worker<EmailJobPayload> {
       console.warn(`[EmailWorker] Job desconhecido: ${job.name}`);
     },
     {
-      connection: createBullMQConnection(),
+      connection: redisService.createQueueConnection(),
       concurrency: Env.EMAIL_WORKER_CONCURRENCY,
     },
   );

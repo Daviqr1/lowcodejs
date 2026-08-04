@@ -4,8 +4,8 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
+import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import { StorageContractService } from '@application/services/storage/storage-contract.service';
-import { syncStorageEnv } from '@config/setting-env-sync';
 
 import { SETUP_STEPS, nextStep } from '../setup.steps';
 import type { SetupStep } from '../setup.steps';
@@ -35,6 +35,7 @@ export default class SetupStorageSubmitUseCase {
   constructor(
     private readonly settingRepository: SettingContractRepository,
     private readonly storageService: StorageContractService,
+    private readonly settingEnvSync: SettingEnvSyncContractService,
   ) {}
 
   async execute(payload: Input): Promise<Response> {
@@ -72,7 +73,7 @@ export default class SetupStorageSubmitUseCase {
         SETUP_CURRENT_STEP: next,
       });
 
-      syncStorageEnv(updated);
+      this.settingEnvSync.syncStorage(updated);
 
       if (payload.STORAGE_DRIVER === 's3') {
         await this.storageService.ensureBucket();

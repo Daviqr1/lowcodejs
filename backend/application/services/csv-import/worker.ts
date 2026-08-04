@@ -27,10 +27,10 @@ import {
 } from '@application/resources/table-rows/import-csv/import-csv.socket';
 import FieldValueService from '@application/services/field-value/field-value.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
+import IoredisService from '@application/services/redis/redis.service';
 import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
-import { createBullMQConnection } from '@config/redis.config';
 
 import {
   CSV_IMPORT_JOB,
@@ -38,6 +38,9 @@ import {
   type CsvImportJobPayload,
 } from './csv-import-queue-contract.service';
 import { buildRelationshipResolvers } from './relationship-resolver';
+
+// O worker ainda e funcao solta (vira service no passo dos workers).
+const redisService = new IoredisService();
 
 export const IMPORT_CSV_LIMIT = 10_000;
 
@@ -255,7 +258,7 @@ export function startCsvImportWorker(
       console.warn(`[CsvImportWorker] Job desconhecido: ${job.name}`);
     },
     {
-      connection: createBullMQConnection(),
+      connection: redisService.createQueueConnection(),
       concurrency: 3,
     },
   );

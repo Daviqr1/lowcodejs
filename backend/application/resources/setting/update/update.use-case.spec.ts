@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import SettingInMemoryRepository from '@application/repositories/setting/setting-in-memory.repository';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
+import SettingEnvSyncService from '@application/services/setting-env-sync/setting-env-sync.service';
 import InMemoryStorageService from '@application/services/storage/in-memory-storage.service';
 
 import SettingUpdateUseCase from './update.use-case';
@@ -18,6 +19,7 @@ describe('Setting Update Use Case', () => {
       settingInMemoryRepository,
       storageService,
       new MongooseIdentifierService(),
+      new SettingEnvSyncService(),
     );
   });
 

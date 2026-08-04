@@ -12,8 +12,8 @@ import {
   prepareAiSettingsForSave,
   projectAiSettingsFields,
 } from '@application/services/llm/ai-setting-fields';
+import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import { StorageContractService } from '@application/services/storage/storage-contract.service';
-import { syncStorageEnv } from '@config/setting-env-sync';
 
 const BUILTIN_TEMPLATE_IDS = new Set([
   'KANBAN_TEMPLATE',
@@ -30,6 +30,7 @@ export default class SettingUpdateUseCase {
     private readonly settingRepository: SettingContractRepository,
     private readonly storageService: StorageContractService,
     private readonly identifier: IdentifierContractService,
+    private readonly settingEnvSync: SettingEnvSyncContractService,
   ) {}
 
   async execute(payload: SettingUpdatePayload): Promise<Response> {
@@ -43,7 +44,7 @@ export default class SettingUpdateUseCase {
       const normalized = prepareAiSettingsForSave({ ...payload });
       const updated = await this.settingRepository.update(normalized);
 
-      syncStorageEnv(updated);
+      this.settingEnvSync.syncStorage(updated);
 
       if (payload.STORAGE_DRIVER === 's3') {
         await this.storageService.ensureBucket();

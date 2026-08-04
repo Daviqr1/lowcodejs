@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import { Service } from 'fastify-decorators';
 
-import { createBullMQConnection } from '@config/redis.config';
+import { RedisContractService } from '@application/services/redis/redis-contract.service';
 
 import {
   STORAGE_MIGRATION_JOB,
@@ -12,25 +12,28 @@ import {
   type MigrateJobPayload,
 } from './storage-migration-queue-contract.service';
 
-let cachedQueue: Queue | null = null;
-
-function getQueue(): Queue {
-  if (cachedQueue) return cachedQueue;
-  cachedQueue = new Queue(STORAGE_MIGRATION_QUEUE_NAME, {
-    connection: createBullMQConnection(),
-    defaultJobOptions: {
-      attempts: 1, // we manage retries inside the worker per file
-      removeOnComplete: { count: 50 },
-      removeOnFail: { count: 50 },
-    },
-  });
-  return cachedQueue;
-}
-
 @Service()
 export default class BullMQStorageMigrationQueueService implements StorageMigrationQueueContractService {
+  constructor(private readonly redis: RedisContractService) {}
+
+  // Fila preguicosa: so abre conexao quando algo e realmente enfileirado.
+  private cachedQueue: Queue | null = null;
+
+  private getQueue(): Queue {
+    if (this.cachedQueue) return this.cachedQueue;
+    this.cachedQueue = new Queue(STORAGE_MIGRATION_QUEUE_NAME, {
+      connection: this.redis.createQueueConnection(),
+      defaultJobOptions: {
+        attempts: 1, // we manage retries inside the worker per file
+        removeOnComplete: { count: 50 },
+        removeOnFail: { count: 50 },
+      },
+    });
+    return this.cachedQueue;
+  }
+
   async enqueueMigration(payload: MigrateJobPayload): Promise<string> {
-    const queue = getQueue();
+    const queue = this.getQueue();
     const jobId = `${STORAGE_MIGRATION_JOB.MIGRATE}:${Date.now()}`;
     const job = await queue.add(STORAGE_MIGRATION_JOB.MIGRATE, payload, {
       jobId,
@@ -39,7 +42,7 @@ export default class BullMQStorageMigrationQueueService implements StorageMigrat
   }
 
   async enqueueCleanup(payload: CleanupJobPayload): Promise<string> {
-    const queue = getQueue();
+    const queue = this.getQueue();
     const jobId = `${STORAGE_MIGRATION_JOB.CLEANUP}:${Date.now()}`;
     const job = await queue.add(STORAGE_MIGRATION_JOB.CLEANUP, payload, {
       jobId,
@@ -48,7 +51,7 @@ export default class BullMQStorageMigrationQueueService implements StorageMigrat
   }
 
   async getActiveJob(): Promise<ActiveJobInfo | null> {
-    const queue = getQueue();
+    const queue = this.getQueue();
     const jobs = await queue.getJobs(['active', 'waiting', 'delayed']);
     if (jobs.length === 0) return null;
     const job = jobs[0];
@@ -78,9 +81,9 @@ export default class BullMQStorageMigrationQueueService implements StorageMigrat
   }
 
   async close(): Promise<void> {
-    if (cachedQueue) {
-      await cachedQueue.close();
-      cachedQueue = null;
+    if (this.cachedQueue) {
+      await this.cachedQueue.close();
+      this.cachedQueue = null;
     }
   }
 }

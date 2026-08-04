@@ -29,7 +29,8 @@ import { RowPasswordContractService } from '@application/services/row-password/r
 import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
 import StorageService from '@application/services/storage/storage.service';
 import { MongooseConnect } from '@config/database.config';
-import { syncStorageEnv } from '@config/setting-env-sync';
+import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
+import SettingEnvSyncService from '@application/services/setting-env-sync/setting-env-sync.service';
 import { Env } from '@start/env';
 import { kernel } from '@start/kernel';
 
@@ -54,7 +55,9 @@ async function loadStorageConfig(): Promise<void> {
   const setting = await Setting.findOne().lean();
 
   if (setting) {
-    syncStorageEnv(setting);
+    getInstanceByToken<SettingEnvSyncContractService>(
+      SettingEnvSyncService,
+    ).syncStorage(setting);
     console.info(`[Storage] Driver: ${setting.STORAGE_DRIVER ?? 'local'}`);
   } else {
     console.info('[Storage] Nenhum Setting encontrado, usando driver local');

@@ -2,6 +2,7 @@ import NotificationMongooseRepository from '@application/repositories/notificati
 import UserMongooseRepository from '@application/repositories/user/user.repository';
 import DateService from '@application/services/date/date.service';
 import NodemailerEmailService from '@application/services/email/email.service';
+import EmailConfigService from '@application/services/email-config/email-config.service';
 import FieldValueService from '@application/services/field-value/field-value.service';
 import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import NotificationService from '@application/services/notification/notification.service';
@@ -31,7 +32,7 @@ export function makeSchemaBuilder(): MongooseSchemaBuilder {
 export function makeModelBuilder(): MongooseModelBuilder {
   const userRepository = new UserMongooseRepository(new SearchService());
   const sandboxBuilder = new SandboxBuilderService(
-    new NodemailerEmailService(),
+    new NodemailerEmailService(new EmailConfigService()),
     new NotificationService(new NotificationMongooseRepository()),
     userRepository,
     new FieldValueService(),

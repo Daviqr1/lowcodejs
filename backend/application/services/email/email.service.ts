@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import nodemailer from 'nodemailer';
 
 import { Setting } from '@application/model/setting.model';
-import { buildNodemailerConfig, resolveEmailFrom } from '@config/email.config';
+import { EmailConfigContractService } from '@application/services/email-config/email-config-contract.service';
 
 import {
   EmailContractService,
@@ -16,6 +16,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Service()
 export default class NodemailerEmailService implements EmailContractService {
+  constructor(private readonly emailConfig: EmailConfigContractService) {}
+
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
     const setting = await Setting.findOne().lean();
     if (!setting) {
@@ -25,7 +27,7 @@ export default class NodemailerEmailService implements EmailContractService {
       return { success: false, message: 'SMTP nao configurado' };
     }
 
-    const transportConfig = buildNodemailerConfig(setting);
+    const transportConfig = this.emailConfig.buildTransportConfig(setting);
     if (!transportConfig) {
       console.warn(
         '[NodemailerEmailService] SMTP nao configurado (credenciais ausentes em Setting)',
@@ -41,7 +43,8 @@ export default class NodemailerEmailService implements EmailContractService {
     try {
       const transporter = nodemailer.createTransport(transportConfig);
 
-      const from = options.from ?? resolveEmailFrom(setting) ?? undefined;
+      const from =
+        options.from ?? this.emailConfig.resolveFrom(setting) ?? undefined;
 
       const result = await transporter.sendMail({
         from,

@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import { Service } from 'fastify-decorators';
 
-import { createBullMQConnection } from '@config/redis.config';
+import { RedisContractService } from '@application/services/redis/redis-contract.service';
 
 import {
   EMAIL_JOB,
@@ -10,26 +10,29 @@ import {
   type EmailJobPayload,
 } from './email-queue-contract.service';
 
-let cachedQueue: Queue | null = null;
-
-function getQueue(): Queue {
-  if (cachedQueue) return cachedQueue;
-  cachedQueue = new Queue(EMAIL_QUEUE_NAME, {
-    connection: createBullMQConnection(),
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 },
-      removeOnComplete: { count: 100 },
-      removeOnFail: { count: 500 },
-    },
-  });
-  return cachedQueue;
-}
-
 @Service()
 export default class BullMQEmailQueueService implements EmailQueueContractService {
+  constructor(private readonly redis: RedisContractService) {}
+
+  // Fila preguicosa: so abre conexao quando algo e realmente enfileirado.
+  private cachedQueue: Queue | null = null;
+
+  private getQueue(): Queue {
+    if (this.cachedQueue) return this.cachedQueue;
+    this.cachedQueue = new Queue(EMAIL_QUEUE_NAME, {
+      connection: this.redis.createQueueConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 500 },
+      },
+    });
+    return this.cachedQueue;
+  }
+
   async enqueue(payload: EmailJobPayload): Promise<string> {
-    const queue = getQueue();
+    const queue = this.getQueue();
     const jobId = `${EMAIL_JOB.SEND}:${Date.now()}:${Math.random()
       .toString(36)
       .slice(2, 10)}`;
@@ -38,9 +41,9 @@ export default class BullMQEmailQueueService implements EmailQueueContractServic
   }
 
   async close(): Promise<void> {
-    if (cachedQueue) {
-      await cachedQueue.close();
-      cachedQueue = null;
+    if (this.cachedQueue) {
+      await this.cachedQueue.close();
+      this.cachedQueue = null;
     }
   }
 }

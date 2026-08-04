@@ -31,10 +31,10 @@ import {
   type StorageMigrationFileMigratedEvent,
   type StorageMigrationProgressEvent,
 } from '@application/resources/storage-migration/storage-migration.socket';
+import IoredisService from '@application/services/redis/redis.service';
 import SlugService from '@application/services/slug/slug.service';
 import StorageService from '@application/services/storage/storage.service';
 import StorageConfigService from '@application/services/storage-config/storage-config.service';
-import { createBullMQConnection } from '@config/redis.config';
 
 import {
   STORAGE_MIGRATION_JOB,
@@ -42,6 +42,9 @@ import {
   type CleanupJobPayload,
   type MigrateJobPayload,
 } from './storage-migration-queue-contract.service';
+
+// O worker ainda e funcao solta (vira service no passo dos workers).
+const redisService = new IoredisService();
 
 // O worker ainda e funcao solta (vira service no passo dos workers). O
 // StorageConfigService so le `process.env` e mantem cache proprio.
@@ -370,7 +373,7 @@ export function startStorageMigrationWorker(deps: WorkerDeps): Worker {
       }
     },
     {
-      connection: createBullMQConnection(),
+      connection: redisService.createQueueConnection(),
       // BullMQ-level concurrency: process up to N jobs in parallel.
       // Per-file concurrency is handled inside each job via processInBatches.
       concurrency: 1,
