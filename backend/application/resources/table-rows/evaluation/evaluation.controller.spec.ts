@@ -101,7 +101,9 @@ describe('E2E Table Row Evaluation Controller', () => {
         .set('Cookie', cookies)
         .send({
           value: 5,
-          field: evaluationField._id.toString(),
+          // `field` e o slug, nao o _id: o use-case casa por
+          // `item.slug === payload.field`.
+          field: 'rating',
         });
 
       expect(response.statusCode).toBe(200);

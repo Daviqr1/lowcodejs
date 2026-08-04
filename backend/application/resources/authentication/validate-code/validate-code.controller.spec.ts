@@ -48,6 +48,9 @@ describe('E2E Validate Code Controller', () => {
         .post('/authentication/recovery/validate-code')
         .send({
           code: '123456',
+          // O validator exige o e-mail: sem escopar o codigo ao
+          // solicitante, qualquer codigo vivo autenticaria qualquer conta.
+          email: 'test@example.com',
         });
 
       expect(response.statusCode).toBe(200);

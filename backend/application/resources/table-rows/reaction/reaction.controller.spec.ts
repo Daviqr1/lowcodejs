@@ -102,8 +102,9 @@ describe('E2E Table Row Reaction Controller', () => {
         .set('Cookie', cookies)
         .send({
           type: E_REACTION_TYPE.LIKE,
-          field: reactionField._id.toString(),
-          user: user._id.toString(),
+          // `field` e o slug, nao o _id: o use-case casa por
+          // `item.slug === payload.field`. O ator vem do token.
+          field: 'likes',
         });
 
       expect(response.statusCode).toBe(200);
