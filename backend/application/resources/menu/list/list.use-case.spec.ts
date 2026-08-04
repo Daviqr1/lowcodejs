@@ -33,7 +33,7 @@ describe('Menu List Use Case', () => {
       tableInMemoryRepository,
       permissionService,
       groupResolver,
-      new MenuVisibilityService(),
+      new MenuVisibilityService(permissionService),
     );
   });
 

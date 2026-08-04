@@ -1,5 +1,29 @@
-import type { ITable, IUser, ValueOf } from '@application/core/entity.core';
+import type {
+  IPermissionBinding,
+  ITable,
+  IUser,
+  ValueOf,
+} from '@application/core/entity.core';
 import type { E_TABLE_PERMISSION } from '@application/core/entity.core';
+
+export type BindingCheck = {
+  /** Fecho de grupos do usuario. */
+  groupIds: Set<string>;
+  /** Fecho de capacidades do usuario. */
+  capabilities: Set<string>;
+  /**
+   * Capacidade exigida na intersecao do `GROUP`: nao basta estar no grupo, o
+   * fecho tambem precisa conter esta capacidade. `null` pula a intersecao — e o
+   * caso do menu, onde o binding e so visibilidade, nao permissao.
+   */
+  requiredCapability: string | null;
+  /**
+   * Resposta quando nao ha binding. As acoes de tabela negam (so libera o que
+   * foi explicitamente concedido); campo e menu liberam (ausencia de binding e
+   * a convencao de "visivel").
+   */
+  whenAbsent: boolean;
+};
 
 export type AccessCheckResult = {
   allowed: boolean;
@@ -48,4 +72,18 @@ export abstract class PermissionContractService {
   abstract checkTableAccess(
     input: AccessCheckInput,
   ): Promise<AccessCheckResult>;
+
+  /**
+   * Avalia um binding `{ kind, group }` ja com o fecho do usuario em maos.
+   * PUBLIC libera; NOBODY nega; GROUP libera por intersecao (grupo no fecho E,
+   * quando `requiredCapability` nao e nulo, a capacidade no fecho).
+   *
+   * Fonte unica: a mesma avaliacao existia em tres versoes — acao de tabela,
+   * visibilidade de campo e visibilidade de menu — divergindo justamente no
+   * default sem binding e na exigencia da capacidade. Os dois viraram parametro.
+   */
+  abstract bindingAllows(
+    binding: IPermissionBinding | null | undefined,
+    check: BindingCheck,
+  ): boolean;
 }

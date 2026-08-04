@@ -7,6 +7,7 @@ import {
   E_TABLE_PROFILE,
   E_USER_STATUS,
   TABLE_PROFILE_MATRIX,
+  type IPermissionBinding,
   type ITable,
   type IUser,
   type ValueOf,
@@ -17,6 +18,7 @@ import { GroupResolverContractService } from '@application/services/group-resolv
 import type {
   AccessCheckInput,
   AccessCheckResult,
+  BindingCheck,
 } from './permission-contract.service';
 import { PermissionContractService } from './permission-contract.service';
 
@@ -146,7 +148,9 @@ export default class PermissionService implements PermissionContractService {
     }
 
     // 2. O binding da acao (Grupo|Public|Nobody) libera?
-    if (await this.bindingAllows(table, requiredPermission, user ?? null)) {
+    if (
+      await this.actionBindingAllows(table, requiredPermission, user ?? null)
+    ) {
       return { allowed: true, ownership };
     }
 
@@ -167,26 +171,49 @@ export default class PermissionService implements PermissionContractService {
    * nao possui a permissao "Visualizar registro". PUBLIC e visitantes nao
    * dependem de grupo/capacidade.
    */
-  private async bindingAllows(
+  bindingAllows(
+    binding: IPermissionBinding | null | undefined,
+    check: BindingCheck,
+  ): boolean {
+    if (!binding) return check.whenAbsent;
+
+    if (binding.kind === E_PERMISSION_TARGET.PUBLIC) return true;
+    if (binding.kind !== E_PERMISSION_TARGET.GROUP) return false;
+
+    if (!binding.group) return false;
+    if (
+      check.requiredCapability !== null &&
+      !check.capabilities.has(check.requiredCapability)
+    ) {
+      return false;
+    }
+
+    return check.groupIds.has(binding.group);
+  }
+
+  /** Binding de uma acao de tabela, resolvendo o fecho do usuario na hora. */
+  private async actionBindingAllows(
     table: ITable,
     action: ValueOf<typeof E_TABLE_PERMISSION>,
     user: IUser | null,
   ): Promise<boolean> {
     const binding = table.permissions?.[action];
-    if (!binding) return false;
 
-    if (binding.kind === E_PERMISSION_TARGET.PUBLIC) return true;
-
-    if (binding.kind === E_PERMISSION_TARGET.GROUP) {
-      if (!binding.group) return false;
-
-      const capabilities = await this.groupResolver.resolveCapabilities(user);
-      if (!capabilities.has(action)) return false;
-
-      const groupIds = await this.groupResolver.resolveUserGroupIds(user);
-      return groupIds.has(binding.group);
+    // Resolver o fecho custa duas consultas — so o ramo GROUP precisa dele.
+    if (binding?.kind !== E_PERMISSION_TARGET.GROUP) {
+      return this.bindingAllows(binding, {
+        groupIds: new Set(),
+        capabilities: new Set(),
+        requiredCapability: action,
+        whenAbsent: false,
+      });
     }
 
-    return false;
+    return this.bindingAllows(binding, {
+      groupIds: await this.groupResolver.resolveUserGroupIds(user),
+      capabilities: await this.groupResolver.resolveCapabilities(user),
+      requiredCapability: action,
+      whenAbsent: false,
+    });
   }
 }

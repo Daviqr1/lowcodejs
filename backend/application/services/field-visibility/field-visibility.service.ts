@@ -7,6 +7,7 @@ import {
 } from '@application/core/entity.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
+import { PermissionContractService } from '@application/services/permission/permission-contract.service';
 
 import type {
   FieldVisibilityContext,
@@ -19,6 +20,7 @@ export default class FieldVisibilityService implements FieldVisibilityContractSe
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly permission: PermissionContractService,
   ) {}
 
   async hiddenSlugs(input: FieldVisibilityInput): Promise<Set<string>> {
@@ -90,27 +92,22 @@ export default class FieldVisibilityService implements FieldVisibilityContractSe
     return false;
   }
 
+  /**
+   * Sem binding o campo e visivel (convencao do modelo novo, espelha o
+   * `userSatisfiesBinding` do frontend); GROUP exige a intersecao com
+   * VIEW_FIELD, como as acoes de tabela.
+   */
   private isFieldVisible(
     field: IField,
     context: FieldVisibilityContext,
     groupIds: Set<string>,
     capabilities: Set<string>,
   ): boolean {
-    const binding = field.permissions?.[context];
-
-    // Sem binding: campo visivel (convencao do modelo novo, espelha o
-    // userSatisfiesBinding do frontend).
-    if (!binding) return true;
-
-    if (binding.kind === E_PERMISSION_TARGET.PUBLIC) return true;
-    if (binding.kind === E_PERMISSION_TARGET.NOBODY) return false;
-
-    // GROUP por intersecao: o grupo do binding precisa estar no fecho do usuario
-    // E o fecho precisa conter a capacidade VIEW_FIELD (ver campos). Espelha a
-    // intersecao das acoes de tabela.
-    if (!binding.group) return false;
-    if (!capabilities.has(E_TABLE_PERMISSION.VIEW_FIELD)) return false;
-
-    return groupIds.has(binding.group);
+    return this.permission.bindingAllows(field.permissions?.[context], {
+      groupIds,
+      capabilities,
+      requiredCapability: E_TABLE_PERMISSION.VIEW_FIELD,
+      whenAbsent: true,
+    });
   }
 }

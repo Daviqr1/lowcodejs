@@ -5,6 +5,9 @@ import {
   E_MENU_ITEM_TYPE,
   E_PERMISSION_TARGET,
 } from '@application/core/entity.core';
+import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import PermissionService from '@application/services/permission/permission.service';
 
 import MenuVisibilityService from './menu-visibility.service';
 
@@ -28,7 +31,11 @@ function makeMenu(overrides: Partial<IMenu>): IMenu {
 }
 
 describe('MenuVisibilityService', () => {
-  const sut = new MenuVisibilityService();
+  const sut = new MenuVisibilityService(
+    new PermissionService(
+      new GroupResolverService(new UserGroupInMemoryRepository()),
+    ),
+  );
   const groups = new Set(['grupo-a']);
 
   describe('bindingAllows', () => {

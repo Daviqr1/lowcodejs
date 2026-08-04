@@ -14,6 +14,7 @@ import {
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import PermissionService from '@application/services/permission/permission.service';
 
 import FieldVisibilityService from './field-visibility.service';
 
@@ -86,7 +87,11 @@ describe('Field Visibility Service', () => {
     userRepository = new UserInMemoryRepository();
     groupRepository = new UserGroupInMemoryRepository();
     groupResolver = new GroupResolverService(groupRepository);
-    sut = new FieldVisibilityService(userRepository, groupResolver);
+    sut = new FieldVisibilityService(
+      userRepository,
+      groupResolver,
+      new PermissionService(groupResolver),
+    );
   });
 
   it('binding PUBLIC mantém o campo visível', async () => {

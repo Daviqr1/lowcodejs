@@ -1,21 +1,29 @@
 import { Service } from 'fastify-decorators';
 
 import type { IMenu, IPermissionBinding } from '@application/core/entity.core';
-import { E_PERMISSION_TARGET } from '@application/core/entity.core';
+import { PermissionContractService } from '@application/services/permission/permission-contract.service';
 
 import { MenuVisibilityContractService } from './menu-visibility-contract.service';
 
 @Service()
 export default class MenuVisibilityService implements MenuVisibilityContractService {
+  constructor(private readonly permission: PermissionContractService) {}
+
+  /**
+   * Menu sem binding e visivel. GROUP aqui **nao** passa pela intersecao com
+   * capacidade: o binding do menu e visibilidade de navegacao, nao permissao de
+   * acao — quem entra na rota ainda enfrenta a guarda do recurso.
+   */
   bindingAllows(
     visibility: IPermissionBinding | null | undefined,
     userGroupIds: Set<string>,
   ): boolean {
-    if (!visibility) return true;
-    if (visibility.kind === E_PERMISSION_TARGET.PUBLIC) return true;
-    if (visibility.kind === E_PERMISSION_TARGET.NOBODY) return false;
-    if (!visibility.group) return false;
-    return userGroupIds.has(String(visibility.group));
+    return this.permission.bindingAllows(visibility, {
+      groupIds: userGroupIds,
+      capabilities: new Set(),
+      requiredCapability: null,
+      whenAbsent: true,
+    });
   }
 
   isVisible(
