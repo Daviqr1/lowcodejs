@@ -11,11 +11,12 @@ import {
   resolveRealTargetQuantity,
 } from './generate-test-data.estimate';
 import GenerateTestDataUseCase from './generate-test-data.use-case';
-import { GenerationJobRegistry } from './generation-job-registry';
+import GenerationJobRegistryService from './generation-job-registry.service';
 
 describe('Generate Test Data Use Case', () => {
   let tableRepository: TableInMemoryRepository;
   let modelBuilder: ModelBuilderContractService;
+  let registry: GenerationJobRegistryService;
   let sut: GenerateTestDataUseCase;
 
   beforeEach(() => {
@@ -28,7 +29,8 @@ describe('Generate Test Data Use Case', () => {
         insertMany: vi.fn().mockResolvedValue([]),
       }),
     } as unknown as ModelBuilderContractService;
-    sut = new GenerateTestDataUseCase(tableRepository, modelBuilder);
+    registry = new GenerationJobRegistryService();
+    sut = new GenerateTestDataUseCase(tableRepository, modelBuilder, registry);
   });
 
   it('deve retornar TABLE_NOT_FOUND se a tabela alvo não existir', async () => {
@@ -70,7 +72,7 @@ describe('Generate Test Data Use Case', () => {
     // Aguarda o job em background (roda via setTimeout) concluir
     await new Promise((resolve) => setTimeout(resolve, 150));
 
-    const job = GenerationJobRegistry.getInstance().getJob(result.value.jobId);
+    const job = registry.getJob(result.value.jobId);
     expect(job).toBeDefined();
     expect(job?.status).toBe('completed');
     expect(job?.total).toBe(50);

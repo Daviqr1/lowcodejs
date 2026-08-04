@@ -14,8 +14,6 @@ import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard
 
 import { RowAccessGuardContractService } from './row-access-guard-contract.service';
 
-const GUARDS: Record<string, RowAccessGuard> = {};
-
 function isRole(value: string): value is ValueOf<typeof E_ROLE> {
   return (
     value === E_ROLE.MASTER ||
@@ -41,18 +39,20 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
     private readonly rowAccessGuard: RowAccessControlGuard,
   ) {
     super();
-    RowAccessGuardService.register(
-      this.rowAccessGuard.pluginKey,
-      this.rowAccessGuard,
-    );
+    this.register(this.rowAccessGuard.pluginKey, this.rowAccessGuard);
   }
 
-  static register(key: string, guard: RowAccessGuard): void {
-    GUARDS[key] = guard;
+  // Registro por instancia. Antes era um `const GUARDS = {}` de escopo de
+  // modulo mutado por metodo estatico — estado global escondido atras de um
+  // service, que vazava entre specs.
+  private readonly guards: Record<string, RowAccessGuard> = {};
+
+  register(key: string, guard: RowAccessGuard): void {
+    this.guards[key] = guard;
   }
 
-  static getRegistered(): Record<string, RowAccessGuard> {
-    return GUARDS;
+  getRegistered(): Record<string, RowAccessGuard> {
+    return this.guards;
   }
 
   // ── Context resolution ─────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
       settings: Record<string, unknown>;
     }> = [];
     for (const ext of extensions) {
-      const guard = GUARDS[`${ext.pkg}:${ext.extensionId}`];
+      const guard = this.guards[`${ext.pkg}:${ext.extensionId}`];
       if (!guard) continue;
       const settings = this.extractTableSettings(ext, tableId);
       // Guard sem suporte a scope-all NÃO enforça via binding mode='all'

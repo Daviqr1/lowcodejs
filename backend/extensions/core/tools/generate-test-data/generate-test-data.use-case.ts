@@ -15,7 +15,7 @@ import {
   type TestDataEstimate,
 } from './generate-test-data.estimate';
 import type { GenerateTestDataPayload } from './generate-test-data.types';
-import { GenerationJobRegistry } from './generation-job-registry';
+import { GenerationJobRegistryContractService } from './generation-job-registry-contract.service';
 
 type MockField = {
   native?: boolean;
@@ -31,6 +31,7 @@ export default class GenerateTestDataUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly modelBuilder: ModelBuilderContractService,
+    private readonly registry: GenerationJobRegistryContractService,
   ) {}
 
   /**
@@ -74,9 +75,8 @@ export default class GenerateTestDataUseCase {
       }
 
       const jobId = new mongoose.Types.ObjectId().toString();
-      const registry = GenerationJobRegistry.getInstance();
 
-      registry.setJob(jobId, {
+      this.registry.setJob(jobId, {
         status: 'pending',
         processed: 0,
         total: payload.quantity,
@@ -90,7 +90,7 @@ export default class GenerateTestDataUseCase {
             `[generate-test-data][job ${jobId}] background error:`,
             err,
           );
-          registry.failJob(
+          this.registry.failJob(
             jobId,
             err?.message || 'Erro interno na geração de dados',
           );
@@ -117,8 +117,7 @@ export default class GenerateTestDataUseCase {
     tableId: string,
     quantity: number,
   ): Promise<void> {
-    const registry = GenerationJobRegistry.getInstance();
-    registry.updateProgress(jobId, 0, 'processing');
+    this.registry.updateProgress(jobId, 0, 'processing');
 
     const table = await this.tableRepository.findById(tableId);
     if (!table) {
@@ -194,7 +193,7 @@ export default class GenerateTestDataUseCase {
       const progressScaled = Math.round(
         (processed / realTargetQuantity) * quantity,
       );
-      registry.updateProgress(
+      this.registry.updateProgress(
         jobId,
         Math.min(progressScaled, quantity - 1),
         'processing',
@@ -213,7 +212,7 @@ export default class GenerateTestDataUseCase {
 
       for (let s = 0; s < steps; s++) {
         currentProgress += increment;
-        registry.updateProgress(
+        this.registry.updateProgress(
           jobId,
           Math.min(currentProgress, quantity - 1),
           'processing',
@@ -222,7 +221,7 @@ export default class GenerateTestDataUseCase {
       }
     }
 
-    registry.completeJob(jobId);
+    this.registry.completeJob(jobId);
   }
 
   private generateMockRow(

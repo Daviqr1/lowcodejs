@@ -12,7 +12,8 @@ import {
 } from './generate-test-data.schema';
 import GenerateTestDataUseCase from './generate-test-data.use-case';
 import { GenerateTestDataValidator } from './generate-test-data.validator';
-import { GenerationJobRegistry } from './generation-job-registry';
+import { GenerationJobRegistryContractService } from './generation-job-registry-contract.service';
+import GenerationJobRegistryService from './generation-job-registry.service';
 
 @Controller({
   route: '/tools',
@@ -113,7 +114,9 @@ export default class {
     response: FastifyReply,
   ): Promise<void> {
     const { jobId } = request.params;
-    const job = GenerationJobRegistry.getInstance().getJob(jobId);
+    const job = getInstanceByToken<GenerationJobRegistryContractService>(
+      GenerationJobRegistryService,
+    ).getJob(jobId);
 
     if (!job) {
       return response.status(404).send({

@@ -215,7 +215,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
     const restrictive = makeRestrictiveGuard('fake:r1', {
       visibility: 'PUBLIC',
     });
-    RowAccessGuardService.register(restrictive.pluginKey, restrictive);
+    service.register(restrictive.pluginKey, restrictive);
     await activatePlugin(extensionRepo, restrictive.pluginKey, TABLE_ID);
 
     const result = await service.composeListQuery(
@@ -242,7 +242,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
 
   it('1 restrictive com fragmento → retorna baseQuery + $and com fragmento', async () => {
     const guard = makeRestrictiveGuard('fake:r-one', { visibility: 'PUBLIC' });
-    RowAccessGuardService.register(guard.pluginKey, guard);
+    service.register(guard.pluginKey, guard);
     await activatePlugin(extensionRepo, guard.pluginKey, TABLE_ID);
 
     const result = await service.composeListQuery(
@@ -261,8 +261,8 @@ describe('RowAccessGuardService.composeListQuery', () => {
   it('2 restrictive → retorna baseQuery + $and com ambos fragmentos', async () => {
     const g1 = makeRestrictiveGuard('fake:r-two-a', { visibility: 'PUBLIC' });
     const g2 = makeRestrictiveGuard('fake:r-two-b', { active: true });
-    RowAccessGuardService.register(g1.pluginKey, g1);
-    RowAccessGuardService.register(g2.pluginKey, g2);
+    service.register(g1.pluginKey, g1);
+    service.register(g2.pluginKey, g2);
     await activatePlugin(extensionRepo, g1.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, g2.pluginKey, TABLE_ID);
 
@@ -281,7 +281,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
 
   it('1 permissive com fragmento → retorna $or com [base, base+permissive]', async () => {
     const g = makePermissiveGuard('fake:p-one', { creator: 'u1' });
-    RowAccessGuardService.register(g.pluginKey, g);
+    service.register(g.pluginKey, g);
     await activatePlugin(extensionRepo, g.pluginKey, TABLE_ID);
 
     const result = await service.composeListQuery(
@@ -299,8 +299,8 @@ describe('RowAccessGuardService.composeListQuery', () => {
   it('mix restrictive + permissive → $or com [restrictedBase, base+permissive]', async () => {
     const r = makeRestrictiveGuard('fake:r-mix', { visibility: 'PUBLIC' });
     const p = makePermissiveGuard('fake:p-mix', { creator: 'u1' });
-    RowAccessGuardService.register(r.pluginKey, r);
-    RowAccessGuardService.register(p.pluginKey, p);
+    service.register(r.pluginKey, r);
+    service.register(p.pluginKey, p);
     await activatePlugin(extensionRepo, r.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, p.pluginKey, TABLE_ID);
 
@@ -320,8 +320,8 @@ describe('RowAccessGuardService.composeListQuery', () => {
   it('permissive retornando {} (sentinel) → fragmento filtrado, query igual a apenas restrictive', async () => {
     const r = makeRestrictiveGuard('fake:r-sent', { visibility: 'PUBLIC' });
     const p = makePermissiveGuard('fake:p-sent', {});
-    RowAccessGuardService.register(r.pluginKey, r);
-    RowAccessGuardService.register(p.pluginKey, p);
+    service.register(r.pluginKey, r);
+    service.register(p.pluginKey, p);
     await activatePlugin(extensionRepo, r.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, p.pluginKey, TABLE_ID);
 
@@ -346,7 +346,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
       $and: existingAnd,
     };
     const r = makeRestrictiveGuard('fake:r-and', { visibility: 'PUBLIC' });
-    RowAccessGuardService.register(r.pluginKey, r);
+    service.register(r.pluginKey, r);
     await activatePlugin(extensionRepo, r.pluginKey, TABLE_ID);
 
     const result = await service.composeListQuery(
@@ -382,7 +382,7 @@ describe('RowAccessGuardService.composeReadDecision', () => {
 
   it('privilegiado → true sem consultar guards', async () => {
     const deny = makeRestrictiveGuard('fake:rd-deny', {}, 'deny');
-    RowAccessGuardService.register(deny.pluginKey, deny);
+    service.register(deny.pluginKey, deny);
     await activatePlugin(extensionRepo, deny.pluginKey, TABLE_ID);
 
     const result = await service.composeReadDecision(
@@ -397,7 +397,7 @@ describe('RowAccessGuardService.composeReadDecision', () => {
 
   it('todos abstain → true (default-allow)', async () => {
     const g = makeRestrictiveGuard('fake:rd-abs', {}, 'abstain');
-    RowAccessGuardService.register(g.pluginKey, g);
+    service.register(g.pluginKey, g);
     await activatePlugin(extensionRepo, g.pluginKey, TABLE_ID);
 
     const result = await service.composeReadDecision(
@@ -424,8 +424,8 @@ describe('RowAccessGuardService.composeReadDecision', () => {
   it('1 allow + 1 deny → true (allow vence)', async () => {
     const allow = makePermissiveGuard('fake:rd-allow', {}, 'allow');
     const deny = makeRestrictiveGuard('fake:rd-deny2', {}, 'deny');
-    RowAccessGuardService.register(allow.pluginKey, allow);
-    RowAccessGuardService.register(deny.pluginKey, deny);
+    service.register(allow.pluginKey, allow);
+    service.register(deny.pluginKey, deny);
     await activatePlugin(extensionRepo, allow.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, deny.pluginKey, TABLE_ID);
 
@@ -441,7 +441,7 @@ describe('RowAccessGuardService.composeReadDecision', () => {
 
   it('so deny → false', async () => {
     const deny = makeRestrictiveGuard('fake:rd-onlydeny', {}, 'deny');
-    RowAccessGuardService.register(deny.pluginKey, deny);
+    service.register(deny.pluginKey, deny);
     await activatePlugin(extensionRepo, deny.pluginKey, TABLE_ID);
 
     const result = await service.composeReadDecision(
@@ -456,7 +456,7 @@ describe('RowAccessGuardService.composeReadDecision', () => {
 
   it('so abstain → true', async () => {
     const abs = makeRestrictiveGuard('fake:rd-absonly', {}, 'abstain');
-    RowAccessGuardService.register(abs.pluginKey, abs);
+    service.register(abs.pluginKey, abs);
     await activatePlugin(extensionRepo, abs.pluginKey, TABLE_ID);
 
     const result = await service.composeReadDecision(
@@ -492,7 +492,7 @@ describe('RowAccessGuardService.composeWriteDecision', () => {
       decision: 'deny',
       reason: 'BLOCKED',
     });
-    RowAccessGuardService.register(deny.pluginKey, deny);
+    service.register(deny.pluginKey, deny);
     await activatePlugin(extensionRepo, deny.pluginKey, TABLE_ID);
 
     const result = await service.composeWriteDecision(
@@ -515,8 +515,8 @@ describe('RowAccessGuardService.composeWriteDecision', () => {
       decision: 'deny',
       reason: 'BLOCKED',
     });
-    RowAccessGuardService.register(allow.pluginKey, allow);
-    RowAccessGuardService.register(deny.pluginKey, deny);
+    service.register(allow.pluginKey, allow);
+    service.register(deny.pluginKey, deny);
     await activatePlugin(extensionRepo, allow.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, deny.pluginKey, TABLE_ID);
 
@@ -541,8 +541,8 @@ describe('RowAccessGuardService.composeWriteDecision', () => {
       decision: 'deny',
       reason: 'SECOND_REASON',
     });
-    RowAccessGuardService.register(deny1.pluginKey, deny1);
-    RowAccessGuardService.register(deny2.pluginKey, deny2);
+    service.register(deny1.pluginKey, deny1);
+    service.register(deny2.pluginKey, deny2);
     await activatePlugin(extensionRepo, deny1.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, deny2.pluginKey, TABLE_ID);
 
@@ -565,7 +565,7 @@ describe('RowAccessGuardService.composeWriteDecision', () => {
     const abs = makeRestrictiveGuard('fake:wd-abs', {}, 'abstain', {
       decision: 'abstain',
     });
-    RowAccessGuardService.register(abs.pluginKey, abs);
+    service.register(abs.pluginKey, abs);
     await activatePlugin(extensionRepo, abs.pluginKey, TABLE_ID);
 
     const result = await service.composeWriteDecision(
@@ -620,7 +620,7 @@ describe('RowAccessGuardService.composeSanitize', () => {
       { decision: 'abstain' },
       (p) => ({ ...p, x: 'ZEROED' }),
     );
-    RowAccessGuardService.register(r.pluginKey, r);
+    service.register(r.pluginKey, r);
     await activatePlugin(extensionRepo, r.pluginKey, TABLE_ID);
 
     const result = await service.composeSanitize(
@@ -637,7 +637,7 @@ describe('RowAccessGuardService.composeSanitize', () => {
 
   it('so permissive → payload inalterado (permissive nao sanitiza)', async () => {
     const p = makePermissiveGuard('fake:san-perm', {});
-    RowAccessGuardService.register(p.pluginKey, p);
+    service.register(p.pluginKey, p);
     await activatePlugin(extensionRepo, p.pluginKey, TABLE_ID);
 
     const result = await service.composeSanitize(
@@ -667,8 +667,8 @@ describe('RowAccessGuardService.composeSanitize', () => {
       { decision: 'abstain' },
       (p) => ({ ...p, y: 'zeroed-by-r2' }),
     );
-    RowAccessGuardService.register(r1.pluginKey, r1);
-    RowAccessGuardService.register(r2.pluginKey, r2);
+    service.register(r1.pluginKey, r1);
+    service.register(r2.pluginKey, r2);
     await activatePlugin(extensionRepo, r1.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, r2.pluginKey, TABLE_ID);
 
@@ -700,8 +700,8 @@ describe('RowAccessGuardService.composeSanitize', () => {
       { decision: 'abstain' },
       (p) => ({ ...p, y: 'by-b' }),
     );
-    RowAccessGuardService.register(aGuard.pluginKey, aGuard);
-    RowAccessGuardService.register(bGuard.pluginKey, bGuard);
+    service.register(aGuard.pluginKey, aGuard);
+    service.register(bGuard.pluginKey, bGuard);
 
     await activatePlugin(extensionRepo, bGuard.pluginKey, TABLE_ID);
     await activatePlugin(extensionRepo, aGuard.pluginKey, TABLE_ID);
