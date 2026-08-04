@@ -94,10 +94,8 @@ function toEntity(doc: ErrorLogLean): IErrorLog {
 }
 
 @Service()
-export default class ErrorLogMongooseRepository extends ErrorLogContractRepository {
-  constructor(private readonly search: SearchContractService) {
-    super();
-  }
+export default class ErrorLogMongooseRepository implements ErrorLogContractRepository {
+  constructor(private readonly search: SearchContractService) {}
 
   async create(payload: ErrorLogCreatePayload): Promise<void> {
     await ErrorLog.create({

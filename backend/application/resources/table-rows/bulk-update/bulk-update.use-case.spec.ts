@@ -7,11 +7,17 @@ import UserInMemoryRepository from '@application/repositories/user/user-in-memor
 import FieldValidationService from '@application/services/field-validation/field-validation.service';
 import FieldValidationRuleRegistryService from '@application/services/field-validation/rule-registry.service';
 import InMemoryFieldVisibilityService from '@application/services/field-visibility/in-memory-field-visibility.service';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 import InMemoryKanbanCommentMentionService from '@application/services/kanban-comment-mention/in-memory-kanban-comment-mention.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
+import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
+import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
+import SlugService from '@application/services/slug/slug.service';
+
+import TableRowUpdateUseCase from '../update/update.use-case';
 
 import BulkUpdateUseCase from './bulk-update.use-case';
 
@@ -43,7 +49,7 @@ describe('Bulk Update Use Case', () => {
     scriptExecutionService = new InMemoryScriptExecutionService();
     kanbanCommentMentionService = new InMemoryKanbanCommentMentionService();
 
-    sut = new BulkUpdateUseCase(
+    const updateUseCase = new TableRowUpdateUseCase(
       tableInMemoryRepository,
       rowRepository,
       new UserInMemoryRepository(),
@@ -58,7 +64,12 @@ describe('Bulk Update Use Case', () => {
         new FieldValidationRuleRegistryService(),
       ),
       new InMemoryRowAccessGuardService(),
+      new SlugService(),
+      new RowOwnershipService(),
+      new RowPayloadValidatorService(new MongooseIdentifierService()),
     );
+
+    sut = new BulkUpdateUseCase(tableInMemoryRepository, updateUseCase);
     vi.clearAllMocks();
   });
 

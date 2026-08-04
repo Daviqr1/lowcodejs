@@ -3,20 +3,7 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
-import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
-import { FieldValidationContractService } from '@application/services/field-validation/field-validation-contract.service';
-import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
-import MongooseIdentifierService from '@application/services/identifier/identifier.service';
-import { KanbanCommentMentionContractService } from '@application/services/kanban-comment-mention/kanban-comment-mention-contract.service';
-import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
-import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
-import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
-import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
-import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
-import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
-import SlugService from '@application/services/slug/slug.service';
 
 import TableRowUpdateUseCase from '../update/update.use-case';
 
@@ -37,36 +24,10 @@ type Response = Either<HTTPException, Result>;
  */
 @Service()
 export default class BulkUpdateUseCase {
-  private readonly updateUseCase: TableRowUpdateUseCase;
-
   constructor(
     private readonly tableRepository: TableContractRepository,
-    private readonly rowRepository: RowContractRepository,
-    private readonly userRepository: UserContractRepository,
-    private readonly rowPasswordService: RowPasswordContractService,
-    private readonly scriptExecutionService: ScriptExecutionContractService,
-    private readonly kanbanCommentMentionService: KanbanCommentMentionContractService,
-    private readonly rowMemberNotificationService: RowMemberNotificationContractService,
-    private readonly fieldVisibility: FieldVisibilityContractService,
-    private readonly fieldValidation: FieldValidationContractService,
-    private readonly rowAccessGuard: RowAccessGuardContractService,
-  ) {
-    this.updateUseCase = new TableRowUpdateUseCase(
-      tableRepository,
-      rowRepository,
-      userRepository,
-      rowPasswordService,
-      scriptExecutionService,
-      kanbanCommentMentionService,
-      rowMemberNotificationService,
-      fieldVisibility,
-      fieldValidation,
-      rowAccessGuard,
-      new SlugService(),
-      new RowOwnershipService(),
-      new RowPayloadValidatorService(new MongooseIdentifierService()),
-    );
-  }
+    private readonly updateUseCase: TableRowUpdateUseCase,
+  ) {}
 
   async execute(payload: BulkUpdatePayload): Promise<Response> {
     try {
