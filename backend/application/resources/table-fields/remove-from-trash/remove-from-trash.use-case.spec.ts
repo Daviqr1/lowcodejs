@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import FieldTrashService from '@application/services/field-trash/field-trash.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import TableFieldRemoveFromTrashUseCase from './remove-from-trash.use-case';
@@ -27,6 +28,7 @@ describe('Table Field Remove From Trash Use Case', () => {
       tableInMemoryRepository,
       fieldInMemoryRepository,
       schemaBuilder,
+      new FieldTrashService(),
     );
   });
 

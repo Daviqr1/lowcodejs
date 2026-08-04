@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import FieldTrashService from '@application/services/field-trash/field-trash.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
 
@@ -29,6 +30,7 @@ describe('Table Field Send To Trash Use Case', () => {
       fieldInMemoryRepository,
       schemaBuilder,
       new InMemoryCascadeDropdownConfigRepository(),
+      new FieldTrashService(),
     );
   });
 

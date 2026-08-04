@@ -3,10 +3,10 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type { IField as Entity } from '@application/core/entity.core';
-import { buildFieldPermissions } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { FieldTrashContractService } from '@application/services/field-trash/field-trash-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type { TableFieldRemoveFromTrashPayload } from './remove-from-trash.validator';
@@ -20,6 +20,7 @@ export default class TableFieldRemoveFromTrashUseCase {
     private readonly tableRepository: TableContractRepository,
     private readonly fieldRepository: FieldContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly fieldTrash: FieldTrashContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -38,19 +39,12 @@ export default class TableFieldRemoveFromTrashUseCase {
           HTTPException.NotFound('Campo não encontrado', 'FIELD_NOT_FOUND'),
         );
 
-      if (!field.trashed)
-        return left(
-          HTTPException.Conflict('Campo não está na lixeira', 'NOT_TRASHED'),
-        );
+      const guard = this.fieldTrash.guardRestore(field);
+      if (guard) return left(guard);
 
-      const updatedField = await this.fieldRepository.update({
-        _id: field._id,
-        permissions: buildFieldPermissions(true, true, true),
-        showInFilter: true,
-        required: false,
-        trashed: false,
-        trashedAt: null,
-      });
+      const updatedField = await this.fieldRepository.update(
+        this.fieldTrash.restorePatch(field._id),
+      );
 
       const fields = table.fields.map((f) => {
         if (f._id === field._id) return updatedField;
