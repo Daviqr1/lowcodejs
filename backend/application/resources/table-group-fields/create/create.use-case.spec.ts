@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import FieldValueService from '@application/services/field-value/field-value.service';
 import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
@@ -61,6 +62,7 @@ describe('Group Field Create Use Case', () => {
       schemaBuilder,
       modelBuilder,
       new SlugService(),
+      new FieldValueService(),
     );
   });
 

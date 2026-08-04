@@ -9,6 +9,7 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import FieldValueService from '@application/services/field-value/field-value.service';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 
@@ -64,6 +65,7 @@ describe('Group Row Export CSV Use Case', () => {
       rowRepo,
       new InMemoryRowPasswordService(),
       new InMemoryRowAccessGuardService(),
+      new FieldValueService(),
     );
   });
 

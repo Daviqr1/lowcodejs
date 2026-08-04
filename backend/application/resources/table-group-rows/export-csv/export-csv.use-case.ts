@@ -1,7 +1,6 @@
 import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 
-import { formatCellValue } from '@application/core/csv/csv-format';
 import {
   buildCsvStream,
   EXPORT_CSV_LIMIT,
@@ -14,6 +13,7 @@ import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
@@ -52,6 +52,7 @@ export default class GroupRowExportCsvUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly fieldValue: FieldValueContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -129,7 +130,9 @@ export default class GroupRowExportCsvUseCase {
         const out: Record<string, unknown> = {};
         for (const field of exportableFields) {
           const raw = item[field.slug];
-          out[field.slug] = formatCellValue(raw, { fieldType: field.type });
+          out[field.slug] = this.fieldValue.format(raw, {
+            fieldType: field.type,
+          });
         }
         return out;
       });

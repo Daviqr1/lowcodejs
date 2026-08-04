@@ -11,6 +11,7 @@ import FieldInMemoryRepository from '@application/repositories/field/field-in-me
 import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import FieldValueService from '@application/services/field-value/field-value.service';
 import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
 import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
@@ -129,6 +130,7 @@ describe('Table Field Update - TEXT_LONG', () => {
         new SlugService(),
       ),
       new SlugService(),
+      new FieldValueService(),
     );
   });
 

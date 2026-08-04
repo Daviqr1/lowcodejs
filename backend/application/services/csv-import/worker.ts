@@ -13,8 +13,6 @@ import { Readable } from 'node:stream';
 import type { Namespace } from 'socket.io';
 
 import {
-  E_FIELD_FORMAT,
-  E_FIELD_TYPE,
   type IField,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
@@ -28,6 +26,7 @@ import {
   type CsvImportProgressEvent,
   type CsvImportSocketInit,
 } from '@application/resources/table-rows/import-csv/import-csv.socket';
+import FieldValueService from '@application/services/field-value/field-value.service';
 import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { createBullMQConnection } from '@config/redis.config';
@@ -37,12 +36,13 @@ import {
   CSV_IMPORT_QUEUE_NAME,
   type CsvImportJobPayload,
 } from './csv-import-queue-contract.service';
-import {
-  buildRelationshipResolvers,
-  type RelationshipResolver,
-} from './relationship-resolver';
+import { buildRelationshipResolvers } from './relationship-resolver';
 
 export const IMPORT_CSV_LIMIT = 10_000;
+
+// O worker ainda e funcao solta (vira service no passo dos workers). O
+// FieldValueService e puro, entao instanciar aqui e seguro.
+const fieldValue = new FieldValueService();
 
 const PROGRESS_INTERVAL = 100;
 
@@ -111,70 +111,6 @@ function buildFieldMap(
   return map;
 }
 
-function isUnsupportedImportType(fieldType: IField['type']): boolean {
-  return (
-    fieldType === E_FIELD_TYPE.USER ||
-    fieldType === E_FIELD_TYPE.USER_GROUP ||
-    fieldType === E_FIELD_TYPE.FILE ||
-    fieldType === E_FIELD_TYPE.FIELD_GROUP
-  );
-}
-
-function isArrayFieldType(fieldType: IField['type']): boolean {
-  return (
-    fieldType === E_FIELD_TYPE.DROPDOWN || fieldType === E_FIELD_TYPE.CATEGORY
-  );
-}
-
-function coerceValue(
-  raw: string,
-  field: IField,
-  resolver?: RelationshipResolver,
-): unknown {
-  // RELATIONSHIP: resolve display values para ObjectIds via resolver pré-computado.
-  if (field.type === E_FIELD_TYPE.RELATIONSHIP) {
-    if (raw === '') return undefined;
-    if (!resolver) return undefined;
-    const ids = resolver(raw);
-    if (ids.length === 0) return undefined;
-    return ids;
-  }
-
-  // USER, FILE, FIELD_GROUP são exportados como display names / filenames —
-  // não há como reconstituir os ObjectIDs no import. Retorna undefined.
-  if (isUnsupportedImportType(field.type)) return undefined;
-
-  if (raw === '') return undefined;
-
-  if (field.type === E_FIELD_TYPE.DATE) {
-    const parsed = new Date(raw);
-    if (!isNaN(parsed.getTime())) return parsed;
-    return raw;
-  }
-
-  // DROPDOWN e CATEGORY são exportados como "valor1; valor2" — reconstrói array.
-  if (isArrayFieldType(field.type)) {
-    return raw
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  }
-
-  if (field.format === E_FIELD_FORMAT.INTEGER) {
-    const parsed = parseInt(raw, 10);
-    if (!isNaN(parsed)) return parsed;
-    return raw;
-  }
-
-  if (field.format === E_FIELD_FORMAT.DECIMAL) {
-    const parsed = parseFloat(raw);
-    if (!isNaN(parsed)) return parsed;
-    return raw;
-  }
-
-  return raw;
-}
-
 async function processImportJob(
   job: Job<CsvImportJobPayload>,
   deps: WorkerDeps,
@@ -235,7 +171,7 @@ async function processImportJob(
 
     for (const [col, field] of fieldMap) {
       const raw = row[col] ?? '';
-      payload[field.slug] = coerceValue(raw, field, resolvers.get(col));
+      payload[field.slug] = fieldValue.coerce(raw, field, resolvers.get(col));
     }
 
     payload['creator'] = userId;

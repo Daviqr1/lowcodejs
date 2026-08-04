@@ -1,7 +1,6 @@
 import { Service } from 'fastify-decorators';
 import type { Readable } from 'node:stream';
 
-import { formatCellValue } from '@application/core/csv/csv-format';
 import {
   buildCsvStream,
   EXPORT_CSV_LIMIT,
@@ -15,6 +14,7 @@ import type { IField, IRow } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
@@ -44,15 +44,6 @@ function buildFields(
   return { csvFields, exportableFields };
 }
 
-function toCsvRow(row: IRow, fields: IField[]): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const field of fields) {
-    const raw = row[field.slug];
-    out[field.slug] = formatCellValue(raw, { fieldType: field.type });
-  }
-  return out;
-}
-
 @Service()
 export default class TableRowExportCsvUseCase {
   constructor(
@@ -61,7 +52,18 @@ export default class TableRowExportCsvUseCase {
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly fieldVisibility: FieldVisibilityContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly fieldValue: FieldValueContractService,
   ) {}
+
+  private toCsvRow(row: IRow, fields: IField[]): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const field of fields) {
+      out[field.slug] = this.fieldValue.format(row[field.slug], {
+        fieldType: field.type,
+      });
+    }
+    return out;
+  }
 
   async execute(payload: TableRowExportCsvPayload): Promise<Response> {
     try {
@@ -128,7 +130,7 @@ export default class TableRowExportCsvUseCase {
           });
           return rows.map((row) => {
             this.rowPasswordService.mask(row, table.fields);
-            return toCsvRow(row, exportableFields);
+            return this.toCsvRow(row, exportableFields);
           });
         },
       });

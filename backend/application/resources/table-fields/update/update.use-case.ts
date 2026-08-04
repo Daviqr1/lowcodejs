@@ -15,16 +15,14 @@ import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { RelationshipMaterializationContractService } from '@application/services/relationship/relationship-materialization-contract.service';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 import { deleteCascadeDropdownConfigsForField } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config.model';
 
-import {
-  hasDuplicateDropdownLabels,
-  normalizeDefaultValue,
-} from '../table-field-base.schema';
+import {} from '../table-field-base.schema';
 
 import type { TableFieldUpdatePayload } from './update.validator';
 
@@ -64,6 +62,7 @@ export default class TableFieldUpdateUseCase {
     private readonly modelBuilder: ModelBuilderContractService,
     private readonly relationshipMaterialization: RelationshipMaterializationContractService,
     private readonly slugService: SlugContractService,
+    private readonly fieldValue: FieldValueContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -223,7 +222,7 @@ export default class TableFieldUpdateUseCase {
         );
       }
 
-      if (hasDuplicateDropdownLabels(payload.dropdown)) {
+      if (this.fieldValue.hasDuplicateLabels(payload.dropdown)) {
         return left(
           HTTPException.Conflict(
             'Opções do dropdown não podem ter nomes duplicados',
@@ -245,7 +244,10 @@ export default class TableFieldUpdateUseCase {
 
       let updatedField = await this.fieldRepository.update({
         ...payload,
-        defaultValue: normalizeDefaultValue(payload.type, payload.defaultValue),
+        defaultValue: this.fieldValue.normalizeDefault(
+          payload.type,
+          payload.defaultValue,
+        ),
         _id: field._id,
         slug,
         group: normalizedGroup,
