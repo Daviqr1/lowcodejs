@@ -2,17 +2,13 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type {
-  IMeta,
-  IRow,
-  Merge,
-  Paginated,
-} from '@application/core/entity.core';
+import type { IRow, Merge, Paginated } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { FieldVisibilityContractService } from '@application/services/field-visibility/field-visibility-contract.service';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
@@ -42,6 +38,7 @@ export default class TableRowPaginatedUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly relationshipBuilder: RelationshipBuilderContractService,
     private readonly definitionRepository: RelationshipDefinitionContractRepository,
+    private readonly http: HttpResponseContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -136,16 +133,9 @@ export default class TableRowPaginatedUseCase {
       if (fetchAll) perPage = total;
       let page = payload.page;
       if (fetchAll) page = 1;
-      let lastPage = Math.ceil(total / payload.perPage);
-      if (fetchAll) lastPage = 1;
-
-      const meta: IMeta = {
-        total,
-        perPage,
-        page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, { page, perPage });
+      // fetchAll traz tudo numa pagina so.
+      if (fetchAll) meta.lastPage = 1;
 
       const hidden = await this.fieldVisibility.hiddenSlugs({
         fields: table.fields,

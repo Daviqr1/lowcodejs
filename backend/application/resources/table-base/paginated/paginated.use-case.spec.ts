@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { E_TABLE_STYLE, E_TABLE_TYPE } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import TablePaginatedUseCase from './paginated.use-case';
 
@@ -11,7 +12,10 @@ let sut: TablePaginatedUseCase;
 describe('Table Paginated Use Case', () => {
   beforeEach(() => {
     tableInMemoryRepository = new TableInMemoryRepository();
-    sut = new TablePaginatedUseCase(tableInMemoryRepository);
+    sut = new TablePaginatedUseCase(
+      tableInMemoryRepository,
+      new HttpResponseService(),
+    );
   });
 
   it('deve retornar lista vazia quando nao houver tabelas', async () => {

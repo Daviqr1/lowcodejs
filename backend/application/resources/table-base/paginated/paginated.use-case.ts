@@ -4,12 +4,12 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type {
   ITable as Entity,
-  IMeta,
   Paginated,
 } from '@application/core/entity.core';
 import { E_TABLE_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { TablePaginatedPayload } from './paginated.validator';
 
@@ -18,7 +18,10 @@ type Payload = TablePaginatedPayload;
 
 @Service()
 export default class TablePaginatedUseCase {
-  constructor(private readonly tableRepository: TableContractRepository) {}
+  constructor(
+    private readonly tableRepository: TableContractRepository,
+    private readonly http: HttpResponseContractService,
+  ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
@@ -48,15 +51,7 @@ export default class TablePaginatedUseCase {
         owner: payload.owner,
       });
 
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: IMeta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({
         meta,

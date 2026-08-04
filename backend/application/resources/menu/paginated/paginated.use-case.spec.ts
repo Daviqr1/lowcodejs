@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import MenuPaginatedUseCase from './paginated.use-case';
 
@@ -10,7 +11,10 @@ let sut: MenuPaginatedUseCase;
 describe('Menu Paginated Use Case', () => {
   beforeEach(() => {
     menuInMemoryRepository = new MenuInMemoryRepository();
-    sut = new MenuPaginatedUseCase(menuInMemoryRepository);
+    sut = new MenuPaginatedUseCase(
+      menuInMemoryRepository,
+      new HttpResponseService(),
+    );
   });
 
   it('deve retornar lista vazia quando nao houver menus', async () => {

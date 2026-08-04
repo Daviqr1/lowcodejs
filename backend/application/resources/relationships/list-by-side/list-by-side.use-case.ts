@@ -6,6 +6,7 @@ import type { IMeta, IRelationshipLink } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 
@@ -21,6 +22,7 @@ export default class RelationshipListBySideUseCase {
     private readonly definitions: RelationshipDefinitionContractRepository,
     private readonly relationship: RelationshipContractService,
     private readonly relationshipBuilder: RelationshipBuilderContractService,
+    private readonly http: HttpResponseContractService,
   ) {}
 
   async execute(payload: RelationshipListBySidePayload): Promise<Response> {
@@ -66,17 +68,9 @@ export default class RelationshipListBySideUseCase {
         total = page.total;
       }
 
-      const lastPage = Math.max(1, Math.ceil(total / payload.perPage));
-
       return right({
         data,
-        meta: {
-          total,
-          page: payload.page,
-          perPage: payload.perPage,
-          lastPage,
-          firstPage: 1,
-        },
+        meta: this.http.paginationMeta(total, payload),
       });
     } catch (error) {
       console.error('[relationships > list-by-side][error]:', error);

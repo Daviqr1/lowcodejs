@@ -2,16 +2,12 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type {
-  IField,
-  IMeta,
-  Merge,
-  Paginated,
-} from '@application/core/entity.core';
+import type { IField, Merge, Paginated } from '@application/core/entity.core';
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
@@ -29,6 +25,7 @@ export default class GroupRowPaginatedUseCase {
     private readonly rowPasswordService: RowPasswordContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly typeGuard: TypeGuardContractService,
+    private readonly http: HttpResponseContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -87,15 +84,7 @@ export default class GroupRowPaginatedUseCase {
       }
 
       const total = allItems.length;
-      const lastPage = Math.max(1, Math.ceil(total / perPage));
-
-      const meta: IMeta = {
-        total,
-        perPage,
-        page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, { page, perPage });
 
       const paginated = allItems.slice(skip, skip + perPage);
 

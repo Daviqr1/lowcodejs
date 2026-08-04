@@ -8,6 +8,7 @@ import {
   type ErrorLogQueryPayload,
   type IErrorLog,
 } from '@application/repositories/error-log/error-log-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { ErrorLogPaginatedPayload } from './paginated.validator';
 
@@ -77,7 +78,10 @@ export default class ErrorLogPaginatedUseCase {
       sort: this.buildSort(payload),
     };
   }
-  constructor(private readonly repository: ErrorLogContractRepository) {}
+  constructor(
+    private readonly repository: ErrorLogContractRepository,
+    private readonly http: HttpResponseContractService,
+  ) {}
 
   async execute(payload: ErrorLogPaginatedPayload): Promise<Response> {
     try {
@@ -85,15 +89,7 @@ export default class ErrorLogPaginatedUseCase {
 
       const data = await this.repository.findMany(query);
       const total = await this.repository.count(query);
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: Meta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Math.min(total, 1),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({ meta, data });
     } catch (error) {

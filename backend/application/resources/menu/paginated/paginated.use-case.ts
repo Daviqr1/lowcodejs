@@ -2,13 +2,10 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type {
-  IMenu as Entity,
-  IMeta,
-  Paginated,
-} from '@application/core/entity.core';
+import type { IMenu as Entity, Paginated } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { MenuPaginatedPayload } from './paginated.validator';
 
@@ -77,7 +74,10 @@ export default class MenuPaginatedUseCase {
 
     return ordered;
   }
-  constructor(private readonly menuRepository: MenuContractRepository) {}
+  constructor(
+    private readonly menuRepository: MenuContractRepository,
+    private readonly http: HttpResponseContractService,
+  ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
@@ -128,15 +128,7 @@ export default class MenuPaginatedUseCase {
         });
       }
 
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: IMeta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({
         meta,

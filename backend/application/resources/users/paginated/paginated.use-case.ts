@@ -2,13 +2,10 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type {
-  IUser as Entity,
-  IMeta,
-  Paginated,
-} from '@application/core/entity.core';
+import type { IUser as Entity, Paginated } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { UserPaginatedPayload } from './paginated.validator';
 
@@ -17,7 +14,10 @@ type Payload = UserPaginatedPayload;
 
 @Service()
 export default class UserPaginatedUseCase {
-  constructor(private readonly userRepository: UserContractRepository) {}
+  constructor(
+    private readonly userRepository: UserContractRepository,
+    private readonly http: HttpResponseContractService,
+  ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
@@ -33,15 +33,7 @@ export default class UserPaginatedUseCase {
 
       const total = await this.userRepository.count(payload);
 
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: IMeta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({
         meta,

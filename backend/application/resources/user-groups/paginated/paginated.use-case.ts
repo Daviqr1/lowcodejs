@@ -4,7 +4,6 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type {
   IGroup as Entity,
-  IMeta,
   IUser,
   Paginated,
 } from '@application/core/entity.core';
@@ -12,6 +11,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { UserGroupPaginatedPayload } from './paginated.validator';
 
@@ -24,6 +24,7 @@ export default class UserGroupPaginatedUseCase {
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly http: HttpResponseContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -56,15 +57,7 @@ export default class UserGroupPaginatedUseCase {
         hideMaster,
       });
 
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: IMeta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({
         meta,

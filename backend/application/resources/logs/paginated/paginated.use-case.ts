@@ -4,11 +4,11 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import type {
   ILogger as Entity,
-  IMeta,
   Paginated,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { LoggerContractRepository } from '@application/repositories/logger/logger-contract.repository';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 import type { LoggerPaginatedPayload } from './paginated.validator';
 
@@ -17,7 +17,10 @@ type Payload = LoggerPaginatedPayload;
 
 @Service()
 export default class LoggerPaginatedUseCase {
-  constructor(private readonly loggerRepository: LoggerContractRepository) {}
+  constructor(
+    private readonly loggerRepository: LoggerContractRepository,
+    private readonly http: HttpResponseContractService,
+  ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
@@ -27,15 +30,7 @@ export default class LoggerPaginatedUseCase {
 
       const total = await this.loggerRepository.count(payload);
 
-      const lastPage = Math.ceil(total / payload.perPage);
-
-      const meta: IMeta = {
-        total,
-        perPage: payload.perPage,
-        page: payload.page,
-        lastPage,
-        firstPage: Number(total > 0),
-      };
+      const meta = this.http.paginationMeta(total, payload);
 
       return right({
         meta,

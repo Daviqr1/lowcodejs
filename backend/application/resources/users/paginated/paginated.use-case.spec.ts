@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { E_ROLE, type IUser } from '@application/core/entity.core';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import UserPaginatedUseCase from './paginated.use-case';
 
@@ -11,7 +12,10 @@ let sut: UserPaginatedUseCase;
 describe('User Paginated Use Case', () => {
   beforeEach(() => {
     userInMemoryRepository = new UserInMemoryRepository();
-    sut = new UserPaginatedUseCase(userInMemoryRepository);
+    sut = new UserPaginatedUseCase(
+      userInMemoryRepository,
+      new HttpResponseService(),
+    );
   });
 
   it('deve retornar lista vazia quando nao houver usuarios', async () => {
@@ -25,7 +29,9 @@ describe('User Paginated Use Case', () => {
     expect(result.value.data).toHaveLength(0);
     expect(result.value.meta.total).toBe(0);
     expect(result.value.meta.firstPage).toBe(0);
-    expect(result.value.meta.lastPage).toBe(0);
+    // Lista vazia tem lastPage 1, nao 0: `page: 1` nao pode ser maior que o
+    // total de paginas.
+    expect(result.value.meta.lastPage).toBe(1);
   });
 
   it('deve retornar lista de usuarios quando existirem', async () => {
