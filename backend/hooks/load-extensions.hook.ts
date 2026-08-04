@@ -1,15 +1,13 @@
 import { getInstanceByToken } from 'fastify-decorators';
 
-import { loadExtensions } from '@application/core/extensions/loader';
-import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
-import ExtensionMongooseRepository from '@application/repositories/extension/extension.repository';
+import { ExtensionLoaderContractService } from '@application/services/extension-loader/extension-loader-contract.service';
+import ExtensionLoaderService from '@application/services/extension-loader/extension-loader.service';
 
 export async function LoadExtensionHook(): Promise<void> {
   try {
-    const repo = getInstanceByToken<ExtensionContractRepository>(
-      ExtensionMongooseRepository,
-    );
-    await loadExtensions(repo);
+    await getInstanceByToken<ExtensionLoaderContractService>(
+      ExtensionLoaderService,
+    ).load();
   } catch (error) {
     console.error('[Extensions] Falha ao carregar registry no onReady:', error);
   }

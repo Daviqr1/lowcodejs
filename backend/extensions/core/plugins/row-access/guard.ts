@@ -36,7 +36,7 @@ import type {
   GuardEvalContext,
   GuardWriteDecision,
   RowAccessGuard,
-} from '@application/core/extensions/row-access-guard.contract';
+} from '@application/core/row-access-guard.contract';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';

@@ -28,10 +28,14 @@
 import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { resolveLoggerObjectAudit } from '../../application/core/logger/resolve-object-audit';
+import LoggerAuditService from '../../application/services/logger-audit/logger-audit.service';
 import { TaskLogger } from '../shared/task-logger';
 
 config({ path: '.env', quiet: true });
+
+// Migration roda fora do container de DI. As conexoes chegam por parametro
+// de metodo, entao o service nao precisa de nada no constructor.
+const loggerAudit = new LoggerAuditService();
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
@@ -66,7 +70,7 @@ async function backfillLoggerAudit(
   for await (const log of cursor) {
     scanned++;
 
-    const audit = await resolveLoggerObjectAudit({
+    const audit = await loggerAudit.resolve({
       systemDb,
       dataDb,
       object: log.object ?? null,

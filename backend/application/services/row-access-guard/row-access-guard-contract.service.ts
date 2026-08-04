@@ -2,7 +2,7 @@ import type { IRow, ITable } from '@application/core/entity.core';
 import type {
   GuardEvalContext,
   GuardWriteDecision,
-} from '@application/core/extensions/row-access-guard.contract';
+} from '@application/core/row-access-guard.contract';
 
 /**
  * Contrato do serviço que compõe os row-access guards ativos numa tabela.

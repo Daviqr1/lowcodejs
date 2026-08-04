@@ -6,7 +6,7 @@ import type {
   GuardEvalContext,
   GuardWriteDecision,
   RowAccessGuard,
-} from '@application/core/extensions/row-access-guard.contract';
+} from '@application/core/row-access-guard.contract';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';

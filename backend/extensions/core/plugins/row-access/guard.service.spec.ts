@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { GuardEvalContext } from '@application/core/extensions/row-access-guard.contract';
+import type { GuardEvalContext } from '@application/core/row-access-guard.contract';
 import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';

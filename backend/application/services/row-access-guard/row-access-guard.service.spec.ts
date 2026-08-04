@@ -12,7 +12,7 @@ import type {
   GuardEvalContext,
   GuardWriteDecision,
   RowAccessGuard,
-} from '@application/core/extensions/row-access-guard.contract';
+} from '@application/core/row-access-guard.contract';
 import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
 import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';

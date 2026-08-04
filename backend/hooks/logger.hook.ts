@@ -8,14 +8,15 @@ import {
   E_LOGGER_OBJECT_TYPE,
 } from '@application/core/entity.core';
 import {
-  EMPTY_OBJECT_AUDIT,
-  resolveLoggerObjectAudit,
-} from '@application/core/logger/resolve-object-audit';
-import {
   LoggerContractRepository,
   LoggerCreatePayload,
 } from '@application/repositories/logger/logger-contract.repository';
 import LoggerMongooseRepository from '@application/repositories/logger/logger.repository';
+import {
+  EMPTY_OBJECT_AUDIT,
+  LoggerAuditContractService,
+} from '@application/services/logger-audit/logger-audit-contract.service';
+import LoggerAuditService from '@application/services/logger-audit/logger-audit.service';
 import { getDataConnection } from '@config/database.config';
 
 const ACTION_MAP: Record<string, keyof typeof E_LOGGER_ACTION_TYPE> = {
@@ -259,7 +260,9 @@ export async function LoggerUserActionHook(
     const systemDb = mongoose.connection.db;
     const dataDb = getDataConnection().db;
     if (systemDb && dataDb) {
-      audit = await resolveLoggerObjectAudit({
+      audit = await getInstanceByToken<LoggerAuditContractService>(
+        LoggerAuditService,
+      ).resolve({
         systemDb,
         dataDb,
         object,
