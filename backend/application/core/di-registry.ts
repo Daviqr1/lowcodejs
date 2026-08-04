@@ -95,6 +95,16 @@ export async function registerDependencies(): Promise<void> {
       root: join(process.cwd(), 'application/services'),
       kinds: ['service'],
     },
+    // Middlewares e hooks seguem nos seus diretorios — a convencao de
+    // nomes e a mesma, so o root muda.
+    {
+      root: join(process.cwd(), 'application/middlewares'),
+      kinds: ['service'],
+    },
+    {
+      root: join(process.cwd(), 'hooks'),
+      kinds: ['service'],
+    },
     {
       root: join(process.cwd(), 'extensions'),
       kinds: ['repository', 'service'],
