@@ -14,7 +14,7 @@
 import type { Namespace, Server as SocketIOServer } from 'socket.io';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
-import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
+import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 
 export const NOTIFICATIONS_NAMESPACE = '/notifications';
 

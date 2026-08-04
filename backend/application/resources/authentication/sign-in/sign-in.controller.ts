@@ -2,19 +2,19 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import {
-  getActiveAccountId,
-  getRequestCookie,
   MAX_AUTH_ACCOUNTS,
-  readAccountSessions,
   REFRESH_TOKEN_COOKIE,
-  setActiveSession,
-  writeAccountSessions,
-} from '@application/utils/cookies.util';
-import { createTokens } from '@application/utils/jwt.util';
+} from '@application/services/session/session-contract.service';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { SignInSchema } from './sign-in.schema';
 import SignInUseCase from './sign-in.use-case';
 import { SignInBodyValidator } from './sign-in.validator';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 @Controller({
   route: 'authentication',
@@ -45,11 +45,11 @@ export default class {
       });
     }
 
-    const tokens = await createTokens(result.value, response);
+    const tokens = await session.createTokens(result.value, response);
     const accountId = result.value._id.toString();
 
-    const currentActiveId = getActiveAccountId(request);
-    const sessions = readAccountSessions(request);
+    const currentActiveId = session.getActiveAccountId(request);
+    const sessions = session.readAccountSessions(request);
 
     const existingIds = new Set<string>(Object.keys(sessions));
     if (currentActiveId) existingIds.add(currentActiveId);
@@ -65,7 +65,7 @@ export default class {
     // Preserva a sessão ativa atual (de outra conta) movendo-a para o mapa de
     // sessões inativas antes de promover a nova conta.
     if (currentActiveId && currentActiveId !== accountId) {
-      const currentRefreshToken = getRequestCookie(
+      const currentRefreshToken = session.getRequestCookie(
         request,
         REFRESH_TOKEN_COOKIE,
       );
@@ -74,8 +74,8 @@ export default class {
 
     delete sessions[accountId];
 
-    writeAccountSessions(response, sessions);
-    setActiveSession(response, accountId, { ...tokens });
+    session.writeAccountSessions(response, sessions);
+    session.setActiveSession(response, accountId, { ...tokens });
 
     return response.status(200).send();
   }

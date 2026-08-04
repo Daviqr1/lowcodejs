@@ -25,7 +25,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import UserMongooseRepository from '@application/repositories/user/user.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
-import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
+import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 
 export const STORAGE_MIGRATION_NAMESPACE = '/storage-migration';
 

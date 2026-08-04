@@ -14,7 +14,7 @@ import type { Server } from 'node:http';
 
 import { loadControllers } from '@application/core/controllers';
 import { registerDependencies } from '@application/core/di-registry';
-import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
+import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { StorageContentDispositionHook } from '@hooks/content-disposition.hook';
 import { ErrorLogHook } from '@hooks/error-log.hook';
 import { LoadExtensionHook } from '@hooks/load-extensions.hook';

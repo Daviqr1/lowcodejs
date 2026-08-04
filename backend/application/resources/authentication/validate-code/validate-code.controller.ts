@@ -1,12 +1,16 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
-import { setActiveSession } from '@application/utils/cookies.util';
-import { createTokens } from '@application/utils/jwt.util';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { ValidateCodeSchema } from './validate-code.schema';
 import ValidateCodeUseCase from './validate-code.use-case';
 import { ValidateCodeBodyValidator } from './validate-code.validator';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 @Controller({
   route: 'authentication',
@@ -40,9 +44,9 @@ export default class {
       });
     }
 
-    const tokens = await createTokens(result.value.user, response);
+    const tokens = await session.createTokens(result.value.user, response);
 
-    setActiveSession(response, result.value.user._id.toString(), {
+    session.setActiveSession(response, result.value.user._id.toString(), {
       ...tokens,
     });
 

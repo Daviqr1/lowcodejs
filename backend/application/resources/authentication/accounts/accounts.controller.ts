@@ -5,18 +5,15 @@ import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
 import { toUserResponse } from '@application/resources/users/users.mapper';
-import {
-  clearActiveAccountCookie,
-  getActiveAccountId,
-  getRequestCookie,
-  readAccountSessions,
-  REFRESH_TOKEN_COOKIE,
-  setActiveAccountCookie,
-  writeAccountSessions,
-} from '@application/utils/cookies.util';
-import { verifyToken } from '@application/utils/jwt.util';
+import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { AuthenticationAccountsSchema } from './accounts.schema';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 @Controller({
   route: 'authentication',
@@ -40,9 +37,12 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const activeId = getActiveAccountId(request);
-    const activeRefreshToken = getRequestCookie(request, REFRESH_TOKEN_COOKIE);
-    const sessions = readAccountSessions(request);
+    const activeId = session.getActiveAccountId(request);
+    const activeRefreshToken = session.getRequestCookie(
+      request,
+      REFRESH_TOKEN_COOKIE,
+    );
+    const sessions = session.readAccountSessions(request);
 
     // Mapa accountId -> refreshToken (conta ativa + inativas, sem duplicar).
     const candidates = new Map<string, string>();
@@ -57,7 +57,7 @@ export default class {
     const validSessions: Record<string, string> = {};
 
     for (const [accountId, refreshToken] of candidates) {
-      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
         request,
         refreshToken,
       );
@@ -79,7 +79,7 @@ export default class {
     }
 
     // Poda sessões inativas inválidas reescrevendo o cookie consolidado.
-    writeAccountSessions(response, validSessions);
+    session.writeAccountSessions(response, validSessions);
 
     const activeIsValid = accounts.some(
       (account) => account._id.toString() === activeId,
@@ -89,9 +89,9 @@ export default class {
     if (activeId && activeIsValid) activeAccountId = activeId;
 
     if (activeAccountId) {
-      setActiveAccountCookie(response, activeAccountId);
+      session.setActiveAccountCookie(response, activeAccountId);
     } else {
-      clearActiveAccountCookie(response);
+      session.clearActiveAccountCookie(response);
     }
 
     return response.status(200).send({

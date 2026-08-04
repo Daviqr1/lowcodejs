@@ -4,18 +4,16 @@ import { Controller, POST, getInstanceByToken } from 'fastify-decorators';
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
-import {
-  getActiveAccountId,
-  getRequestCookie,
-  readAccountSessions,
-  REFRESH_TOKEN_COOKIE,
-  setActiveSession,
-  writeAccountSessions,
-} from '@application/utils/cookies.util';
-import { createTokens, verifyToken } from '@application/utils/jwt.util';
+import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { SwitchAccountSchema } from './switch-account.schema';
 import { SwitchAccountBodyValidator } from './switch-account.validator';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 @Controller({
   route: 'authentication',
@@ -40,13 +38,13 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { accountId } = SwitchAccountBodyValidator.parse(request.body);
-    const currentActiveId = getActiveAccountId(request);
+    const currentActiveId = session.getActiveAccountId(request);
 
     if (accountId === currentActiveId) {
       return response.status(200).send({ activeAccountId: accountId });
     }
 
-    const sessions = readAccountSessions(request);
+    const sessions = session.readAccountSessions(request);
     const targetRefreshToken = sessions[accountId];
 
     if (!targetRefreshToken) {
@@ -57,7 +55,7 @@ export default class {
       });
     }
 
-    const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+    const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
       request,
       targetRefreshToken,
     );
@@ -68,7 +66,7 @@ export default class {
       refreshTokenDecoded.sub !== accountId
     ) {
       delete sessions[accountId];
-      writeAccountSessions(response, sessions);
+      session.writeAccountSessions(response, sessions);
 
       return response.status(401).send({
         message: 'Refresh token inválido ou expirado',
@@ -90,17 +88,20 @@ export default class {
       });
     }
 
-    const tokens = await createTokens(result.value, response);
+    const tokens = await session.createTokens(result.value, response);
 
     // Alvo deixa de ser inativo; a conta ativa atual passa a inativa.
     delete sessions[accountId];
-    const currentRefreshToken = getRequestCookie(request, REFRESH_TOKEN_COOKIE);
+    const currentRefreshToken = session.getRequestCookie(
+      request,
+      REFRESH_TOKEN_COOKIE,
+    );
     if (currentActiveId && currentRefreshToken) {
       sessions[currentActiveId] = currentRefreshToken;
     }
-    writeAccountSessions(response, sessions);
+    session.writeAccountSessions(response, sessions);
 
-    setActiveSession(response, accountId, { ...tokens });
+    session.setActiveSession(response, accountId, { ...tokens });
 
     return response.status(200).send({ activeAccountId: accountId });
   }

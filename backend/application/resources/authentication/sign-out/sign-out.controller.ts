@@ -4,16 +4,15 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
-import {
-  clearAllSessions,
-  readAccountSessions,
-  setActiveSession,
-  writeAccountSessions,
-} from '@application/utils/cookies.util';
-import { createTokens, verifyToken } from '@application/utils/jwt.util';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { SignOutSchema } from './sign-out.schema';
 import { SignOutBodyValidator } from './sign-out.validator';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 const SUCCESS_MESSAGE = 'Logout realizado com sucesso';
 
@@ -40,11 +39,11 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { all } = SignOutBodyValidator.parse(request.body ?? {});
-    const sessions = readAccountSessions(request);
+    const sessions = session.readAccountSessions(request);
     const sessionIds = Object.keys(sessions);
 
     if (all || sessionIds.length === 0) {
-      clearAllSessions(response);
+      session.clearAllSessions(response);
 
       return response.status(200).send({
         message: SUCCESS_MESSAGE,
@@ -56,7 +55,7 @@ export default class {
     for (const nextAccountId of sessionIds) {
       const refreshToken = sessions[nextAccountId];
 
-      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
         request,
         refreshToken,
       );
@@ -77,11 +76,11 @@ export default class {
         continue;
       }
 
-      const tokens = await createTokens(result.value, response);
+      const tokens = await session.createTokens(result.value, response);
 
       delete sessions[nextAccountId];
-      writeAccountSessions(response, sessions);
-      setActiveSession(response, nextAccountId, { ...tokens });
+      session.writeAccountSessions(response, sessions);
+      session.setActiveSession(response, nextAccountId, { ...tokens });
 
       return response.status(200).send({
         message: SUCCESS_MESSAGE,
@@ -90,7 +89,7 @@ export default class {
     }
 
     // Nenhuma sessão inativa válida restante: encerra tudo.
-    clearAllSessions(response);
+    session.clearAllSessions(response);
 
     return response.status(200).send({
       message: SUCCESS_MESSAGE,

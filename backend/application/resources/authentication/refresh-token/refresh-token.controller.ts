@@ -3,16 +3,16 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import {
-  getActiveAccountId,
-  getRequestCookie,
-  REFRESH_TOKEN_COOKIE,
-  setActiveSession,
-} from '@application/utils/cookies.util';
-import { createTokens, verifyToken } from '@application/utils/jwt.util';
+import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
+import { SessionContractService } from '@application/services/session/session-contract.service';
+import SessionService from '@application/services/session/session.service';
 
 import { RefreshTokenSchema } from './refresh-token.schema';
 import RefreshTokenUseCase from './refresh-token.use-case';
+
+// Resolvido no import do modulo — `loadControllers()` roda depois de
+// `registerDependencies()`, entao o container ja esta populado.
+const session = getInstanceByToken<SessionContractService>(SessionService);
 
 @Controller({
   route: 'authentication',
@@ -37,7 +37,10 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     try {
-      const refreshToken = getRequestCookie(request, REFRESH_TOKEN_COOKIE);
+      const refreshToken = session.getRequestCookie(
+        request,
+        REFRESH_TOKEN_COOKIE,
+      );
 
       if (!refreshToken) {
         return response.status(401).send({
@@ -47,12 +50,12 @@ export default class {
         });
       }
 
-      const refreshTokenDecoded: IJWTPayload | null = await verifyToken(
+      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
         request,
         refreshToken,
       );
 
-      const activeAccountId = getActiveAccountId(request);
+      const activeAccountId = session.getActiveAccountId(request);
 
       if (
         !refreshTokenDecoded ||
@@ -81,9 +84,11 @@ export default class {
         });
       }
 
-      const tokens = await createTokens(result.value, response);
+      const tokens = await session.createTokens(result.value, response);
 
-      setActiveSession(response, refreshTokenDecoded.sub, { ...tokens });
+      session.setActiveSession(response, refreshTokenDecoded.sub, {
+        ...tokens,
+      });
 
       return response.status(200).send();
     } catch (_error) {

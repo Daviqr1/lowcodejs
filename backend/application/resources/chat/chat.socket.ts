@@ -27,7 +27,7 @@ import { resolveLlmConfig } from '@application/services/llm/ai-setting-fields';
 import type { LlmChatMessage } from '@application/services/llm/llm-chat.types';
 import { getLlmProviderLabel } from '@application/services/llm/llm-defaults';
 import { runChatCompletion } from '@application/services/llm/run-chat-completion';
-import { ACCESS_TOKEN_COOKIE } from '@application/utils/cookies.util';
+import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { Env } from '@start/env';
 
 import { getChatSystemPrompt } from './system-prompt';
