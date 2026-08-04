@@ -59,6 +59,9 @@ const SYSTEM_ITEMS: Array<CapabilityMenuItem> = [
     icon: PuzzleIcon,
     capability: E_AREA_CAPABILITY.MANAGE_TOOLS,
   },
+];
+
+const LOG_ITEMS: Array<MenuItem> = [
   { title: 'Histórico de ações', url: '/logs', icon: HistoryIcon },
   { title: 'Histórico de erros', url: '/error-logs', icon: TriangleAlertIcon },
 ];
@@ -81,6 +84,7 @@ export const getStaticMenusByCapabilities = (
     before: [],
     after: [
       { title: 'Sistema', items },
+      { title: 'Logs', items: LOG_ITEMS },
       {
         title: 'Conta',
         items: [{ title: 'Perfil', url: '/profile', icon: UserIcon }],
