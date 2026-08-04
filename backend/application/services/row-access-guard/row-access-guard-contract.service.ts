@@ -1,4 +1,5 @@
 import type { IRow, ITable } from '@application/core/entity.core';
+import type HTTPException from '@application/core/exception.core';
 import type {
   GuardEvalContext,
   GuardWriteDecision,
@@ -10,7 +11,39 @@ import type {
  * contrato; o di-registry resolve para a implementação Mongoose, e os testes
  * usam a in-memory permissiva.
  */
+export type RowWriteOperation = 'create' | 'update' | 'delete';
+
 export abstract class RowAccessGuardContractService {
+  /**
+   * Mantem so os ids cuja row o ator pode escrever. Rows negadas somem em
+   * silencio — mesmo comportamento do `__ownOnly`. Privilegiado bypassa.
+   */
+  abstract filterWritableIds(input: {
+    table: ITable;
+    ids: string[];
+    actorUserId?: string;
+    operation: RowWriteOperation;
+  }): Promise<string[]>;
+
+  /**
+   * Item de grupo e subdocumento da row pai: quem nao le a row nao le os
+   * itens. Sem isso, uma row escondida pelo guard na listagem tinha o
+   * conteudo dos grupos acessivel por `/rows/:rowId/groups/:groupSlug`.
+   * Devolve NotFound (nao Forbidden) para nao vazar a existencia da row.
+   */
+  abstract assertCanReadParentRow(input: {
+    table: ITable;
+    row: IRow;
+    actorUserId?: string;
+  }): Promise<HTTPException | null>;
+
+  abstract assertCanWriteParentRow(input: {
+    table: ITable;
+    row: IRow;
+    actorUserId?: string;
+    operation: RowWriteOperation;
+  }): Promise<HTTPException | null>;
+
   abstract resolveContext(
     userId: string | undefined,
   ): Promise<GuardEvalContext>;

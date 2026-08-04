@@ -9,8 +9,6 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 
-import { assertCanWriteParentRow } from '../guard-parent-row';
-
 import type { GroupRowDeletePayload } from './delete.validator';
 
 type Response = Either<HTTPException, null>;
@@ -79,7 +77,7 @@ export default class GroupRowDeleteUseCase {
         }
       }
 
-      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+      const denied = await this.rowAccessGuard.assertCanWriteParentRow({
         table,
         row: existingRow,
         actorUserId: payload.__actorUserId,

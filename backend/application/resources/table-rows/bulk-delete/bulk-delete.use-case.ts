@@ -8,8 +8,6 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
-import { filterWritableIds } from '../guard-filter';
-
 import type { BulkDeletePayload } from './bulk-delete.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
@@ -46,18 +44,12 @@ export default class BulkDeleteUseCase {
 
       // Exclusao permanente: o guard precisa filtrar antes, senao um usuario
       // apaga em lote rows que nem enxerga na listagem.
-      const allowedIds = await filterWritableIds(
-        {
-          rowRepository: this.rowRepository,
-          rowAccessGuard: this.rowAccessGuard,
-        },
-        {
-          table,
-          ids: payload.ids,
-          actorUserId: payload.__actorUserId,
-          operation: 'delete',
-        },
-      );
+      const allowedIds = await this.rowAccessGuard.filterWritableIds({
+        table,
+        ids: payload.ids,
+        actorUserId: payload.__actorUserId,
+        operation: 'delete',
+      });
 
       if (allowedIds.length === 0) return right({ deleted: 0 });
 

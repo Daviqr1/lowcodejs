@@ -13,8 +13,6 @@ import { RowOwnershipContractService } from '@application/services/row-ownership
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 
-import { assertCanWriteParentRow } from '../guard-parent-row';
-
 type Response = Either<HTTPException, Record<string, unknown>>;
 type Payload = Merge<
   Record<string, unknown>,
@@ -151,7 +149,7 @@ export default class GroupRowAutoSaveUseCase {
         }
       }
 
-      const denied = await assertCanWriteParentRow(this.rowAccessGuard, {
+      const denied = await this.rowAccessGuard.assertCanWriteParentRow({
         table,
         row: parentRow,
         actorUserId,

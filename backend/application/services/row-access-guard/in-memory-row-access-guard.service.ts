@@ -12,6 +12,19 @@ import type {
 import { RowAccessGuardContractService } from './row-access-guard-contract.service';
 
 export class InMemoryRowAccessGuardService extends RowAccessGuardContractService {
+  // Double permissivo: nao filtra nem nega nada.
+  async filterWritableIds(input: { ids: string[] }): Promise<string[]> {
+    return input.ids;
+  }
+
+  async assertCanReadParentRow(): Promise<null> {
+    return null;
+  }
+
+  async assertCanWriteParentRow(): Promise<null> {
+    return null;
+  }
+
   async resolveContext(userId: string | undefined): Promise<GuardEvalContext> {
     return {
       user: undefined,

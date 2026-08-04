@@ -15,8 +15,6 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
-import { assertCanReadParentRow } from '../guard-parent-row';
-
 import type { GroupRowPaginatedPayload } from './paginated.validator';
 
 type Response = Either<HTTPException, Paginated<Record<string, unknown>>>;
@@ -70,7 +68,7 @@ export default class GroupRowPaginatedUseCase {
           HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND'),
         );
 
-      const denied = await assertCanReadParentRow(this.rowAccessGuard, {
+      const denied = await this.rowAccessGuard.assertCanReadParentRow({
         table,
         row,
         actorUserId: payload.__actorUserId,

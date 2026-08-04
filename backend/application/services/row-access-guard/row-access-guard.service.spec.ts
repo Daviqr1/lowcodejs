@@ -211,6 +211,7 @@ describe('RowAccessGuardService.composeListQuery', () => {
       extensionRepo,
       new UserInMemoryRepository(),
       new DummyGroupResolver(),
+      new RowInMemoryRepository(),
       makeRowAccessControlGuard(),
     );
   });
@@ -380,6 +381,7 @@ describe('RowAccessGuardService.composeReadDecision', () => {
       extensionRepo,
       new UserInMemoryRepository(),
       new DummyGroupResolver(),
+      new RowInMemoryRepository(),
       makeRowAccessControlGuard(),
     );
   });
@@ -487,6 +489,7 @@ describe('RowAccessGuardService.composeWriteDecision', () => {
       extensionRepo,
       new UserInMemoryRepository(),
       new DummyGroupResolver(),
+      new RowInMemoryRepository(),
       makeRowAccessControlGuard(),
     );
   });
@@ -612,6 +615,7 @@ describe('RowAccessGuardService.composeSanitize', () => {
       extensionRepo,
       new UserInMemoryRepository(),
       new DummyGroupResolver(),
+      new RowInMemoryRepository(),
       makeRowAccessControlGuard(),
     );
   });

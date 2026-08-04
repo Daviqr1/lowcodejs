@@ -17,8 +17,6 @@ import { FieldValueContractService } from '@application/services/field-value/fie
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
-import { assertCanReadParentRow } from '../guard-parent-row';
-
 import type { GroupRowExportCsvPayload } from './export-csv.validator';
 
 type Response = Either<HTTPException, Readable>;
@@ -89,7 +87,7 @@ export default class GroupRowExportCsvUseCase {
         );
       }
 
-      const denied = await assertCanReadParentRow(this.rowAccessGuard, {
+      const denied = await this.rowAccessGuard.assertCanReadParentRow({
         table,
         row,
         actorUserId: payload.__actorUserId,

@@ -2,17 +2,20 @@ import { Service } from 'fastify-decorators';
 
 import type { IRow, ITable, ValueOf } from '@application/core/entity.core';
 import { E_ROLE } from '@application/core/entity.core';
+import HTTPException from '@application/core/exception.core';
 import type {
   GuardEvalContext,
   GuardWriteDecision,
   RowAccessGuard,
 } from '@application/core/row-access-guard.contract';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
+import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard';
 
 import { RowAccessGuardContractService } from './row-access-guard-contract.service';
+import type { RowWriteOperation } from './row-access-guard-contract.service';
 
 function isRole(value: string): value is ValueOf<typeof E_ROLE> {
   return (
@@ -36,6 +39,7 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
     private readonly extensionRepository: ExtensionContractRepository,
     private readonly userRepository: UserContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly rowRepository: RowContractRepository,
     private readonly rowAccessGuard: RowAccessControlGuard,
   ) {
     super();
@@ -46,6 +50,89 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
   // modulo mutado por metodo estatico — estado global escondido atras de um
   // service, que vazava entre specs.
   private readonly guards: Record<string, RowAccessGuard> = {};
+
+  async filterWritableIds(input: {
+    table: ITable;
+    ids: string[];
+    actorUserId?: string;
+    operation: RowWriteOperation;
+  }): Promise<string[]> {
+    const ctx = await this.resolveContext(input.actorUserId);
+    if (ctx.isPrivileged) return input.ids;
+
+    const tableId = input.table._id.toString();
+
+    const checked = await Promise.all(
+      input.ids.map(async (_id) => {
+        const row = await this.rowRepository.findOne({
+          table: input.table,
+          query: { _id },
+        });
+        if (!row) return null;
+
+        const decision = await this.composeWriteDecision(
+          tableId,
+          row,
+          ctx,
+          input.table,
+          null,
+          input.operation,
+        );
+        if (decision.decision === 'deny') return null;
+
+        return _id;
+      }),
+    );
+
+    return checked.filter((id): id is string => id !== null);
+  }
+
+  async assertCanReadParentRow(input: {
+    table: ITable;
+    row: IRow;
+    actorUserId?: string;
+  }): Promise<HTTPException | null> {
+    const ctx = await this.resolveContext(input.actorUserId);
+    const canRead = await this.composeReadDecision(
+      input.table._id.toString(),
+      input.row,
+      ctx,
+      input.table,
+    );
+
+    // NotFound (e nao Forbidden) para nao vazar a existencia da row.
+    if (!canRead) {
+      return HTTPException.NotFound('Registro não encontrado', 'ROW_NOT_FOUND');
+    }
+
+    return null;
+  }
+
+  async assertCanWriteParentRow(input: {
+    table: ITable;
+    row: IRow;
+    actorUserId?: string;
+    operation: RowWriteOperation;
+  }): Promise<HTTPException | null> {
+    const ctx = await this.resolveContext(input.actorUserId);
+    const decision = await this.composeWriteDecision(
+      input.table._id.toString(),
+      input.row,
+      ctx,
+      input.table,
+      null,
+      input.operation,
+    );
+
+    if (decision.decision === 'deny') {
+      return HTTPException.Forbidden(
+        decision.reason ?? 'Acesso negado',
+        'ROW_WRITE_RESTRICTED',
+      );
+    }
+
+    return null;
+  }
 
   register(key: string, guard: RowAccessGuard): void {
     this.guards[key] = guard;

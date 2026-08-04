@@ -8,8 +8,6 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
-import { filterWritableIds } from '../guard-filter';
-
 import type { BulkTrashPayload } from './bulk-trash.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
@@ -49,13 +47,12 @@ export default class BulkTrashUseCase {
         actorUserId = payload.__actorUserId;
       }
 
-      const allowedIds = await filterWritableIds(
-        {
-          rowRepository: this.rowRepository,
-          rowAccessGuard: this.rowAccessGuard,
-        },
-        { table, ids: payload.ids, actorUserId, operation: 'delete' },
-      );
+      const allowedIds = await this.rowAccessGuard.filterWritableIds({
+        table,
+        ids: payload.ids,
+        actorUserId,
+        operation: 'delete',
+      });
 
       if (allowedIds.length === 0) {
         return right({ modified: 0 });
