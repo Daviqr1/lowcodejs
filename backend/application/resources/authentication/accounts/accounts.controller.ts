@@ -4,12 +4,16 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/resources/profile/show/show.use-case';
-import { toUserResponse } from '@application/resources/users/users.mapper';
 import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import { AuthenticationAccountsSchema } from './accounts.schema';
+
+const userMapper =
+  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.
@@ -74,7 +78,7 @@ export default class {
 
       if (result.isLeft()) continue;
 
-      accounts.push(toUserResponse(result.value));
+      accounts.push(userMapper.toResponse(result.value));
       if (accountId !== activeId) validSessions[accountId] = refreshToken;
     }
 

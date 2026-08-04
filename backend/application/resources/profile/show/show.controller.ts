@@ -2,10 +2,14 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { toUserResponse } from '@application/resources/users/users.mapper';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import { ProfileShowSchema } from './show.schema';
 import ProfileShowUseCase from './show.use-case';
+
+const userMapper =
+  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller({
   route: 'profile',
@@ -47,7 +51,7 @@ export default class {
     const { capabilities, ...user } = result.value;
 
     return response.status(200).send({
-      ...toUserResponse(user),
+      ...userMapper.toResponse(user),
       capabilities,
     });
   }

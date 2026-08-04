@@ -9,8 +9,6 @@ import { RelationshipLinkContractRepository } from '@application/repositories/re
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 
-import { definitionBelongsToTable } from '../definition-scope';
-
 import type { RelationshipListBySidePayload } from './list-by-side.validator';
 
 type ListResult = { data: IRelationshipLink[]; meta: IMeta };
@@ -28,7 +26,10 @@ export default class RelationshipListBySideUseCase {
   async execute(payload: RelationshipListBySidePayload): Promise<Response> {
     try {
       const definition = await this.definitions.findById(payload.id);
-      if (!definition || !definitionBelongsToTable(definition, payload.slug)) {
+      if (
+        !definition ||
+        !this.relationship.belongsToTable(definition, payload.slug)
+      ) {
         return left(
           HTTPException.NotFound(
             'Relacionamento não encontrado',

@@ -7,8 +7,6 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 
-import { definitionBelongsToTable } from '../definition-scope';
-
 import type { RelationshipReorderPayload } from './reorder.validator';
 
 type Response = Either<HTTPException, null>;
@@ -24,7 +22,10 @@ export default class RelationshipReorderUseCase {
   async execute(payload: RelationshipReorderPayload): Promise<Response> {
     try {
       const definition = await this.definitions.findById(payload.id);
-      if (!definition || !definitionBelongsToTable(definition, payload.slug)) {
+      if (
+        !definition ||
+        !this.relationship.belongsToTable(definition, payload.slug)
+      ) {
         return left(
           HTTPException.NotFound(
             'Relacionamento não encontrado',

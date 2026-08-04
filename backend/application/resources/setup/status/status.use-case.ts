@@ -6,8 +6,7 @@ import { E_ROLE } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
-
-import { SETUP_STEPS } from '../setup.steps';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type SetupStatusResponse = {
   completed: boolean;

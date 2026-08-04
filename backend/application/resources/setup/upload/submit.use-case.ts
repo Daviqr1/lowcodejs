@@ -4,9 +4,9 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
-
-import { SETUP_STEPS, nextStep } from '../setup.steps';
-import type { SetupStep } from '../setup.steps';
+import type { SetupStep } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SetupStepsContractService } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type Input = {
   FILE_UPLOAD_MAX_SIZE: number;
@@ -27,7 +27,10 @@ const CURRENT_STEP: SetupStep = 'upload';
 
 @Service()
 export default class SetupUploadSubmitUseCase {
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly setupSteps: SetupStepsContractService,
+  ) {}
 
   async execute(payload: Input): Promise<Response> {
     try {
@@ -52,7 +55,7 @@ export default class SetupUploadSubmitUseCase {
         );
       }
 
-      const next = nextStep(CURRENT_STEP);
+      const next = this.setupSteps.next(CURRENT_STEP);
 
       const updated = await this.settingRepository.update({
         FILE_UPLOAD_MAX_SIZE: payload.FILE_UPLOAD_MAX_SIZE,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 
 import UserGroupUpdateUseCase from './update.use-case';
 
@@ -10,7 +11,10 @@ let sut: UserGroupUpdateUseCase;
 describe('UserGroup Update Use Case', () => {
   beforeEach(() => {
     userGroupInMemoryRepository = new UserGroupInMemoryRepository();
-    sut = new UserGroupUpdateUseCase(userGroupInMemoryRepository);
+    sut = new UserGroupUpdateUseCase(
+      userGroupInMemoryRepository,
+      new GroupResolverService(userGroupInMemoryRepository),
+    );
   });
 
   it('deve atualizar um grupo de usuarios com sucesso', async () => {

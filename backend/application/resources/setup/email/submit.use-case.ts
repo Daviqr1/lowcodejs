@@ -4,9 +4,8 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
-
-import { SETUP_STEPS } from '../setup.steps';
-import type { SetupStep } from '../setup.steps';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import type { SetupStep } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type Input = {
   EMAIL_PROVIDER_HOST?: string | null;

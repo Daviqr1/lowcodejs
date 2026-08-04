@@ -131,6 +131,13 @@ export default class RelationshipService implements RelationshipContractService 
     private readonly fieldRepository: FieldContractRepository,
   ) {}
 
+  belongsToTable(definition: IRelationshipDefinition, slug: string): boolean {
+    return (
+      definition.source?.table?.slug === slug ||
+      definition.target?.table?.slug === slug
+    );
+  }
+
   // Erro de dominio: desvincular deixaria um lado obrigatorio sem vinculo (§5.6).
   requiredError(): HTTPException {
     return HTTPException.BadRequest(

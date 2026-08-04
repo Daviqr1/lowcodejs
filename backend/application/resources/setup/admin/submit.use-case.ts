@@ -12,8 +12,8 @@ import { SettingContractRepository } from '@application/repositories/setting/set
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
-
-import { SETUP_STEPS, nextStep } from '../setup.steps';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SetupStepsContractService } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type SetupAdminInput = {
   name: string;
@@ -38,6 +38,7 @@ export default class SetupAdminSubmitUseCase {
     private readonly userRepository: UserContractRepository,
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly passwordService: PasswordContractService,
+    private readonly setupSteps: SetupStepsContractService,
   ) {}
 
   async execute(payload: SetupAdminInput): Promise<Response> {
@@ -109,7 +110,7 @@ export default class SetupAdminSubmitUseCase {
         status: E_USER_STATUS.ACTIVE,
       });
 
-      const next = nextStep('admin');
+      const next = this.setupSteps.next('admin');
       const updated = await this.settingRepository.update({
         SETUP_CURRENT_STEP: next,
       });

@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { E_RELATIONSHIP_ON_DELETE } from '@application/core/entity.core';
+import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
+import RelationshipLinkInMemoryRepository from '@application/repositories/relationship-link/relationship-link-in-memory.repository';
+import RelationshipService from '@application/services/relationship/relationship.service';
 
 import RelationshipUpdateUseCase from './update.use-case';
 
@@ -31,7 +34,13 @@ async function makeDefinition(): Promise<string> {
 describe('Relationship Update Use Case', () => {
   beforeEach(() => {
     definitions = new RelationshipDefinitionInMemoryRepository();
-    sut = new RelationshipUpdateUseCase(definitions);
+    sut = new RelationshipUpdateUseCase(
+      definitions,
+      new RelationshipService(
+        new RelationshipLinkInMemoryRepository(),
+        new FieldInMemoryRepository(),
+      ),
+    );
   });
 
   it('atualiza a definicao pelo slug do lado source', async () => {

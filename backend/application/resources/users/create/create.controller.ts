@@ -4,12 +4,15 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
-
-import { toUserResponse } from '../users.mapper';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import { UserCreateSchema } from './create.schema';
 import UserCreateUseCase from './create.use-case';
 import { UserCreateBodyValidator } from './create.validator';
+
+const userMapper =
+  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller()
 export default class {
@@ -47,6 +50,6 @@ export default class {
       });
     }
 
-    return response.status(201).send(toUserResponse(result.value));
+    return response.status(201).send(userMapper.toResponse(result.value));
   }
 }

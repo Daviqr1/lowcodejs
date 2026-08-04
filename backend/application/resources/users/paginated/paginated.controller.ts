@@ -2,12 +2,15 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-
-import { toUserPaginatedResponse } from '../users.mapper';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import { UserPaginatedSchema } from './paginated.schema';
 import UserPaginatedUseCase from './paginated.use-case';
 import { UserPaginatedQueryValidator } from './paginated.validator';
+
+const userMapper =
+  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller({
   route: '/users',
@@ -52,6 +55,8 @@ export default class {
       });
     }
 
-    return response.status(200).send(toUserPaginatedResponse(result.value));
+    return response
+      .status(200)
+      .send(userMapper.toPaginatedResponse(result.value));
   }
 }

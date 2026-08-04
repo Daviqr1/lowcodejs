@@ -6,9 +6,9 @@ import { BUILTIN_TABLE_TEMPLATE_IDS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
 import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
-
-import { SETUP_STEPS, nextStep } from '../setup.steps';
-import type { SetupStep } from '../setup.steps';
+import type { SetupStep } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SetupStepsContractService } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type Input = {
   PAGINATION_PER_PAGE: number;
@@ -31,6 +31,7 @@ export default class SetupPagingSubmitUseCase {
   constructor(
     private readonly settingRepository: SettingContractRepository,
     private readonly identifier: IdentifierContractService,
+    private readonly setupSteps: SetupStepsContractService,
   ) {}
 
   async execute(payload: Input): Promise<Response> {
@@ -56,7 +57,7 @@ export default class SetupPagingSubmitUseCase {
         );
       }
 
-      const next = nextStep(CURRENT_STEP);
+      const next = this.setupSteps.next(CURRENT_STEP);
 
       let filteredCloneTables: string[] = [];
       if (payload.MODEL_CLONE_TABLES) {

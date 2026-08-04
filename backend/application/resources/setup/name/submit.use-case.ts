@@ -4,9 +4,9 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
-
-import { SETUP_STEPS, nextStep } from '../setup.steps';
-import type { SetupStep } from '../setup.steps';
+import type { SetupStep } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SETUP_STEPS } from '@application/services/setup-steps/setup-steps-contract.service';
+import { SetupStepsContractService } from '@application/services/setup-steps/setup-steps-contract.service';
 
 type Input = {
   SYSTEM_NAME: string;
@@ -26,7 +26,10 @@ const CURRENT_STEP: SetupStep = 'name';
 
 @Service()
 export default class SetupNameSubmitUseCase {
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly setupSteps: SetupStepsContractService,
+  ) {}
 
   async execute(payload: Input): Promise<Response> {
     try {
@@ -51,7 +54,7 @@ export default class SetupNameSubmitUseCase {
         );
       }
 
-      const next = nextStep(CURRENT_STEP);
+      const next = this.setupSteps.next(CURRENT_STEP);
 
       const updated = await this.settingRepository.update({
         SYSTEM_NAME: payload.SYSTEM_NAME,

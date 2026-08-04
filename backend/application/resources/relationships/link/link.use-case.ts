@@ -9,8 +9,6 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 
-import { definitionBelongsToTable } from '../definition-scope';
-
 import type { RelationshipLinkRequestPayload } from './link.validator';
 
 type Response = Either<HTTPException, IRelationshipLink>;
@@ -27,7 +25,10 @@ export default class RelationshipLinkUseCase {
   async execute(payload: RelationshipLinkRequestPayload): Promise<Response> {
     try {
       const definition = await this.definitions.findById(payload.id);
-      if (!definition || !definitionBelongsToTable(definition, payload.slug)) {
+      if (
+        !definition ||
+        !this.relationship.belongsToTable(definition, payload.slug)
+      ) {
         return left(
           HTTPException.NotFound(
             'Relacionamento não encontrado',

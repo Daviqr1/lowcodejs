@@ -7,6 +7,32 @@ import { GroupResolverContractService } from './group-resolver-contract.service'
 
 @Service()
 export default class GroupResolverService implements GroupResolverContractService {
+  hasCycle(
+    groupId: string,
+    encompasses: string[],
+    groups: Array<Pick<IGroup, '_id' | 'encompasses'>>,
+  ): boolean {
+    const graph = new Map<string, string[]>();
+    for (const group of groups) {
+      graph.set(group._id, group.encompasses ?? []);
+    }
+    // Simula o estado pos-update: as arestas propostas substituem as atuais.
+    graph.set(groupId, encompasses);
+
+    const visited = new Set<string>();
+    const queue: string[] = [...encompasses];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (current === undefined) continue;
+      if (current === groupId) return true;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      queue.push(...(graph.get(current) ?? []));
+    }
+
+    return false;
+  }
   constructor(private readonly groupRepository: UserGroupContractRepository) {}
 
   async resolveUserGroupIds(user: IUser | null): Promise<Set<string>> {

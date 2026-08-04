@@ -6,8 +6,7 @@ import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import type { IGroup as Entity } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
-
-import { GroupCycle } from '../group-cycle';
+import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
 import type { UserGroupUpdatePayload } from './update.validator';
 
@@ -18,6 +17,7 @@ type Payload = UserGroupUpdatePayload;
 export default class UserGroupUpdateUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
+    private readonly groupResolver: GroupResolverContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -64,7 +64,7 @@ export default class UserGroupUpdateUseCase {
 
         const groups = await this.userGroupRepository.findMany();
 
-        if (GroupCycle.hasCycle(group._id, payload.encompasses, groups))
+        if (this.groupResolver.hasCycle(group._id, payload.encompasses, groups))
           return left(
             HTTPException.BadRequest(
               'Hierarquia de grupos circular detectada',

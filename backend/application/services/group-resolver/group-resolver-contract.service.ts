@@ -1,6 +1,18 @@
 import type { IUser } from '@application/core/entity.core';
+import type { IGroup } from '@application/core/entity.core';
 
 export abstract class GroupResolverContractService {
+  /**
+   * `true` quando atribuir `encompasses` a `groupId` fecharia um ciclo. Quem
+   * pertence a um grupo herda o acesso de tudo que ele engloba (fecho
+   * transitivo), entao a hierarquia precisa ser um DAG.
+   */
+  abstract hasCycle(
+    groupId: string,
+    encompasses: string[],
+    groups: Array<Pick<IGroup, '_id' | 'encompasses'>>,
+  ): boolean;
+
   /**
    * Conjunto de ids de grupos que o usuario satisfaz: o fecho transitivo de
    * `{group} ∪ groups` seguindo `encompasses`. Usado para decidir se um binding

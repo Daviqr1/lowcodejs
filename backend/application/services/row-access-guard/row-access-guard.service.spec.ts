@@ -39,6 +39,10 @@ function makeRowAccessControlGuard(): RowAccessControlGuard {
 
 // Dummy GroupResolver — nenhum usuario é privilegiado nos testes de compose
 class DummyGroupResolver extends GroupResolverContractService {
+  hasCycle(): boolean {
+    return false;
+  }
+
   async resolveUserGroupIds(): Promise<Set<string>> {
     return new Set();
   }
