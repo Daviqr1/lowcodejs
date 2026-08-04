@@ -45,9 +45,15 @@ export default class SocketAuthService implements SocketAuthContractService {
         return;
       }
 
-      if (options.requireMaster) {
+      if (options.requireMaster || options.requirePrivileged) {
         const user = await this.userRepository.findById(decoded.sub);
-        if (!(await this.groupResolver.isMaster(user))) {
+
+        let allowed = await this.groupResolver.isPrivileged(user);
+        if (options.requireMaster) {
+          allowed = await this.groupResolver.isMaster(user);
+        }
+
+        if (!allowed) {
           next(new Error('Acesso negado.'));
           return;
         }

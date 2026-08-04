@@ -16,6 +16,9 @@ export type SocketAuthOptions = {
    * + englobados), nao pelo `role` do JWT — consistente com o RoleMiddleware.
    */
   requireMaster?: boolean;
+
+  /** Exige MASTER ou ADMINISTRATOR, tambem pelo fecho de grupos. */
+  requirePrivileged?: boolean;
 };
 
 export abstract class SocketAuthContractService {

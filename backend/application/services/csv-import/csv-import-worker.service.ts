@@ -9,6 +9,7 @@
  */
 import { Worker, type Job } from 'bullmq';
 import csv from 'csv-parser';
+import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 import type { Namespace } from 'socket.io';
 
@@ -18,38 +19,29 @@ import {
 } from '@application/core/entity.core';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import {
-  CSV_IMPORT_EVENT,
-  type CsvImportCompletedEvent,
-  type CsvImportErrorEvent,
-  type CsvImportProgressEvent,
-  type CsvImportSocketInit,
-} from '@application/resources/table-rows/import-csv/import-csv.socket';
-import FieldValueService from '@application/services/field-value/field-value.service';
-import MongooseIdentifierService from '@application/services/identifier/identifier.service';
-import IoredisService from '@application/services/redis/redis.service';
+import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
+import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
-import RowPayloadValidatorService from '@application/services/row-payload-validator/row-payload-validator.service';
+import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 
 import {
   CSV_IMPORT_JOB,
   CSV_IMPORT_QUEUE_NAME,
   type CsvImportJobPayload,
 } from './csv-import-queue-contract.service';
+import {
+  CSV_IMPORT_EVENT,
+  type CsvImportCompletedEvent,
+  type CsvImportErrorEvent,
+  type CsvImportProgressEvent,
+  type CsvImportSocketInit,
+} from './csv-import-socket-contract.service';
+import { CsvImportSocketContractService } from './csv-import-socket-contract.service';
+import { CsvImportWorkerContractService } from './csv-import-worker-contract.service';
 import { buildRelationshipResolvers } from './relationship-resolver';
 
-// O worker ainda e funcao solta (vira service no passo dos workers).
-const redisService = new IoredisService();
-
 export const IMPORT_CSV_LIMIT = 10_000;
-
-// O worker ainda e funcao solta (vira service no passo dos workers). O
-// FieldValueService e puro, entao instanciar aqui e seguro.
-const fieldValue = new FieldValueService();
-const rowPayloadValidator = new RowPayloadValidatorService(
-  new MongooseIdentifierService(),
-);
 
 const PROGRESS_INTERVAL = 100;
 
@@ -60,9 +52,9 @@ type WorkerDeps = {
   rowRepository: RowContractRepository;
   rowPasswordService: RowPasswordContractService;
   rowAccessGuard: RowAccessGuardContractService;
+  fieldValue: FieldValueContractService;
+  rowPayloadValidator: RowPayloadValidatorContractService;
 };
-
-let cachedWorker: Worker<CsvImportJobPayload> | null = null;
 
 function parseCsv(csvContent: string): Promise<Array<Record<string, string>>> {
   return new Promise((resolve, reject) => {
@@ -178,12 +170,20 @@ async function processImportJob(
 
     for (const [col, field] of fieldMap) {
       const raw = row[col] ?? '';
-      payload[field.slug] = fieldValue.coerce(raw, field, resolvers.get(col));
+      payload[field.slug] = deps.fieldValue.coerce(
+        raw,
+        field,
+        resolvers.get(col),
+      );
     }
 
     payload['creator'] = userId;
 
-    const errors = rowPayloadValidator.validate(payload, table.fields, groups);
+    const errors = deps.rowPayloadValidator.validate(
+      payload,
+      table.fields,
+      groups,
+    );
 
     if (errors) {
       skipped++;
@@ -243,47 +243,84 @@ async function processImportJob(
   deps.namespace.to(room).emit(CSV_IMPORT_EVENT.COMPLETED, completedEvt);
 }
 
-export function startCsvImportWorker(
-  deps: WorkerDeps,
-): Worker<CsvImportJobPayload> {
-  if (cachedWorker) return cachedWorker;
+@Service()
+export default class CsvImportWorkerService implements CsvImportWorkerContractService {
+  private worker: Worker<CsvImportJobPayload> | null = null;
 
-  const worker = new Worker<CsvImportJobPayload>(
-    CSV_IMPORT_QUEUE_NAME,
-    async (job: Job<CsvImportJobPayload>): Promise<void> => {
-      if (job.name === CSV_IMPORT_JOB.IMPORT) {
-        await processImportJob(job, deps);
-        return;
-      }
-      console.warn(`[CsvImportWorker] Job desconhecido: ${job.name}`);
-    },
-    {
-      connection: redisService.createQueueConnection(),
-      concurrency: 3,
-    },
-  );
+  constructor(
+    private readonly tableRepository: TableContractRepository,
+    private readonly rowRepository: RowContractRepository,
+    private readonly rowPasswordService: RowPasswordContractService,
+    private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly fieldValue: FieldValueContractService,
+    private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly socket: CsvImportSocketContractService,
+    private readonly redis: RedisContractService,
+  ) {}
 
-  worker.on('completed', (job: Job<CsvImportJobPayload>): void => {
-    console.info(`[CsvImportWorker] Job ${job.id} processado`);
-  });
+  start(): Worker<CsvImportJobPayload> {
+    if (this.worker) return this.worker;
 
-  worker.on(
-    'failed',
-    (job: Job<CsvImportJobPayload> | undefined, err: Error): void => {
-      console.error(
-        `[CsvImportWorker] Job ${job?.id} falhou (tentativa ${job?.attemptsMade ?? '?'}):`,
-        err.message,
+    const worker = new Worker<CsvImportJobPayload>(
+      CSV_IMPORT_QUEUE_NAME,
+      async (job: Job<CsvImportJobPayload>): Promise<void> => {
+        if (job.name === CSV_IMPORT_JOB.IMPORT) {
+          await processImportJob(job, this.deps());
+          return;
+        }
+        console.warn(`[CsvImportWorker] Job desconhecido: ${job.name}`);
+      },
+      {
+        connection: this.redis.createQueueConnection(),
+        concurrency: 3,
+      },
+    );
+
+    worker.on('completed', (job: Job<CsvImportJobPayload>): void => {
+      console.info(`[CsvImportWorker] Job ${job.id} processado`);
+    });
+
+    worker.on(
+      'failed',
+      (job: Job<CsvImportJobPayload> | undefined, err: Error): void => {
+        console.error(
+          `[CsvImportWorker] Job ${job?.id} falhou (tentativa ${job?.attemptsMade ?? '?'}):`,
+          err.message,
+        );
+      },
+    );
+
+    this.worker = worker;
+    return worker;
+  }
+
+  async stop(): Promise<void> {
+    if (!this.worker) return;
+    await this.worker.close();
+    this.worker = null;
+  }
+
+  /**
+   * O namespace so existe depois que o socket sobe (`bin/server.ts`); por isso
+   * as deps sao montadas por chamada, nao no constructor.
+   */
+  private deps(): WorkerDeps {
+    const namespace = this.socket.namespace();
+    if (!namespace) {
+      throw new Error(
+        '[CsvImportWorker] namespace /csv-import nao inicializado',
       );
-    },
-  );
+    }
 
-  cachedWorker = worker;
-  return worker;
-}
-
-export async function stopCsvImportWorker(): Promise<void> {
-  if (cachedWorker) {
-    await cachedWorker.close();
-    cachedWorker = null;
+    return {
+      namespace,
+      storeResult: (jobId, result) => this.socket.storeResult(jobId, result),
+      tableRepository: this.tableRepository,
+      rowRepository: this.rowRepository,
+      rowPasswordService: this.rowPasswordService,
+      rowAccessGuard: this.rowAccessGuard,
+      fieldValue: this.fieldValue,
+      rowPayloadValidator: this.rowPayloadValidator,
+    };
   }
 }

@@ -18,17 +18,11 @@ import { bootstrapSchedules } from '@application/services/scheduler/scheduler.bo
 import type { SchedulerOrchestrator } from '@application/services/scheduler/scheduler.orchestrator';
 import { StorageMigrationWorkerContractService } from '@application/services/storage-migration/storage-migration-worker-contract.service';
 import StorageMigrationWorkerService from '@application/services/storage-migration/storage-migration-worker.service';
-import { initCsvImportSocket } from '@application/resources/table-rows/import-csv/import-csv.socket';
+import { CsvImportSocketContractService } from '@application/services/csv-import/csv-import-socket-contract.service';
+import CsvImportSocketService from '@application/services/csv-import/csv-import-socket.service';
 import { initTableImportSocket } from '@extensions/core/tools/tables-import-export/import-table.socket';
-import { startCsvImportWorker } from '@application/services/csv-import/worker';
-import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import RowMongooseRepository from '@application/repositories/row/row.repository';
-import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import TableMongooseRepository from '@application/repositories/table/table.repository';
-import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
-import RowAccessGuardService from '@application/services/row-access-guard/row-access-guard.service';
-import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
-import BcryptRowPasswordService from '@application/services/row-password/row-password.service';
+import { CsvImportWorkerContractService } from '@application/services/csv-import/csv-import-worker-contract.service';
+import CsvImportWorkerService from '@application/services/csv-import/csv-import-worker.service';
 import { MongooseConnect } from '@config/database.config';
 import { SettingEnvSyncContractService } from '@application/services/setting-env-sync/setting-env-sync-contract.service';
 import SettingEnvSyncService from '@application/services/setting-env-sync/setting-env-sync.service';
@@ -150,30 +144,14 @@ async function start(): Promise<void> {
     getInstanceByToken<EmailWorkerContractService>(EmailWorkerService).start();
     console.info('Email worker started');
 
-    const { namespace: csvImportNamespace, storeResult: csvImportStoreResult } =
-      initCsvImportSocket(io, jwtDecode);
+    getInstanceByToken<CsvImportSocketContractService>(
+      CsvImportSocketService,
+    ).init(io, jwtDecode);
     console.info('Socket.IO csv-import namespace initialized');
 
-    const csvTableRepository = getInstanceByToken<TableContractRepository>(
-      TableMongooseRepository,
-    );
-    const csvRowRepository = getInstanceByToken<RowContractRepository>(
-      RowMongooseRepository,
-    );
-    const csvRowPasswordService =
-      getInstanceByToken<RowPasswordContractService>(BcryptRowPasswordService);
-    const csvRowAccessGuard = getInstanceByToken<RowAccessGuardContractService>(
-      RowAccessGuardService,
-    );
-
-    startCsvImportWorker({
-      namespace: csvImportNamespace,
-      storeResult: csvImportStoreResult,
-      tableRepository: csvTableRepository,
-      rowRepository: csvRowRepository,
-      rowPasswordService: csvRowPasswordService,
-      rowAccessGuard: csvRowAccessGuard,
-    });
+    getInstanceByToken<CsvImportWorkerContractService>(
+      CsvImportWorkerService,
+    ).start();
     console.info('CSV import worker started');
 
     // RowAccessGuard: deps e registro do guard fluem por DI (@Service +
