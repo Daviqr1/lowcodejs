@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import z, { ZodError } from 'zod';
 
 import HTTPException from '@application/core/exception.core';
+import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
 type ValidationErrorDetail = {
   instancePath: string;
@@ -43,18 +44,16 @@ export default class ErrorHandlerService implements ErrorHandlerContractService 
         'instancePath' in item,
     );
   }
+  constructor(private readonly http: HttpResponseContractService) {}
+
   handle(
     error: unknown,
     request: FastifyRequest,
     response: FastifyReply,
   ): FastifyReply {
     if (error instanceof HTTPException) {
-      return response.status(error.code).send({
-        message: error.message,
-        code: error.code,
-        cause: error.cause,
-        ...(error.errors && { errors: error.errors }),
-      });
+      this.http.sendError(response, error);
+      return response;
     }
 
     if (error instanceof ZodError) {

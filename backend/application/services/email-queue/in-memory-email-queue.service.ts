@@ -1,4 +1,5 @@
 import type { Merge } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import {
   EmailQueueContractService,
@@ -7,25 +8,15 @@ import {
 
 type StoredJob = Merge<EmailJobPayload, { id: string; enqueuedAt: Date }>;
 
-export default class InMemoryEmailQueueService implements EmailQueueContractService {
+export default class InMemoryEmailQueueService
+  extends InMemoryRepository
+  implements EmailQueueContractService
+{
   private jobs: StoredJob[] = [];
   private counter = 0;
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async enqueue(payload: EmailJobPayload): Promise<string> {
-    this._checkError('enqueue');
+    this.checkError('enqueue');
     this.counter += 1;
     const id = `mem-${this.counter}`;
     this.jobs.push({ ...payload, id, enqueuedAt: new Date() });

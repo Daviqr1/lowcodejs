@@ -7,6 +7,7 @@ import { PopulateBuilderContractService } from '@application/services/table/popu
 import { QueryBuilderContractService } from '@application/services/table/query-builder-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 import type { RelationshipHydratableDoc } from '@application/services/table/relationship-builder-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 import { getDataConnection } from '@config/database.config';
 
 // Interseção com Array<T>: mantém `&` (Merge mapearia as chaves e destruiria a
@@ -41,10 +42,6 @@ type MongooseDocWithToJSON = {
 
 @Service()
 export default class RowMongooseRepository implements RowContractRepository {
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-  }
-
   private isSubdocArray(value: unknown): value is SubdocArray {
     if (!Array.isArray(value)) return false;
     // Mongoose 8 envolve document arrays em Proxy: `'id' in value` retorna false
@@ -53,7 +50,9 @@ export default class RowMongooseRepository implements RowContractRepository {
   }
 
   private hasToJSON(value: unknown): value is MongooseDocWithToJSON {
-    return this.isRecord(value) && typeof value['toJSON'] === 'function';
+    return (
+      this.typeGuard.isRecord(value) && typeof value['toJSON'] === 'function'
+    );
   }
 
   private assertIRow(value: Record<string, unknown>): asserts value is IRow {
@@ -66,6 +65,7 @@ export default class RowMongooseRepository implements RowContractRepository {
     private readonly query: QueryBuilderContractService,
     private readonly populate: PopulateBuilderContractService,
     private readonly relationship: RelationshipBuilderContractService,
+    private readonly typeGuard: TypeGuardContractService,
   ) {}
 
   // Hidrata os paths RELATIONSHIP geridos por links nos docs antes do populate,
@@ -103,14 +103,14 @@ export default class RowMongooseRepository implements RowContractRepository {
 
     if (this.hasToJSON(doc)) {
       json = doc.toJSON({ flattenObjectIds: true });
-    } else if (this.isRecord(doc)) {
+    } else if (this.typeGuard.isRecord(doc)) {
       json = { ...doc };
     } else {
       json = {};
     }
 
     let id = '';
-    if (this.isRecord(doc) && doc['_id']) {
+    if (this.typeGuard.isRecord(doc) && doc['_id']) {
       id = String(doc['_id']);
     }
 

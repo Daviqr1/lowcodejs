@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import MongooseIdentifierService from '@application/services/identifier/identifier.service';
 
 import RelationshipResolverService from './relationship-resolver.service';
 
@@ -80,6 +81,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
@@ -111,6 +113,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
@@ -138,6 +141,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
@@ -162,6 +166,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
@@ -185,6 +190,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');
@@ -229,6 +235,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     // USER não gera resolver — worker.ts coerceValue retornará undefined via isUnsupportedImportType
@@ -248,6 +255,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     expect(resolvers.has('produto')).toBe(false);
@@ -272,6 +280,7 @@ describe('buildRelationshipResolvers', () => {
     const resolvers = await new RelationshipResolverService(
       tableRepo,
       rowRepo,
+      new MongooseIdentifierService(),
     ).build(csvRows, fieldMap);
 
     const resolver = resolvers.get('produto');

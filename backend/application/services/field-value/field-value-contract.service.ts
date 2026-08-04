@@ -51,6 +51,18 @@ export abstract class FieldValueContractService {
   abstract format(value: unknown, context?: FieldValueFormatContext): string;
 
   /**
+   * Texto de um valor solto: string sai como esta, numero vira string, o resto
+   * vira `''`. Nao confundir com `format` — este nao conhece tipo de campo.
+   */
+  abstract readString(value: unknown): string;
+
+  /**
+   * Lista de ids a partir do que um campo USER/RELATIONSHIP guarda: array ou
+   * valor unico, cada item ja como string ou como documento populado (`{ _id }`).
+   */
+  abstract toIdList(input: unknown): string[];
+
+  /**
    * Normaliza `defaultValue` para a forma que o tipo do campo armazena:
    * string para TEXT_SHORT/TEXT_LONG/DATE, string[] para os de multipla
    * escolha, `null` para o resto.

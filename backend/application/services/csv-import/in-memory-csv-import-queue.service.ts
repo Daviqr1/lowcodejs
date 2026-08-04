@@ -1,4 +1,5 @@
 import type { Merge } from '@application/core/entity.core';
+import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 
 import {
   CsvImportQueueContractService,
@@ -7,25 +8,15 @@ import {
 
 type StoredJob = Merge<CsvImportJobPayload, { id: string; enqueuedAt: Date }>;
 
-export default class InMemoryCsvImportQueueService implements CsvImportQueueContractService {
+export default class InMemoryCsvImportQueueService
+  extends InMemoryRepository
+  implements CsvImportQueueContractService
+{
   private jobs: StoredJob[] = [];
   private counter = 0;
-  private _forcedErrors = new Map<string, Error>();
-
-  simulateError(method: string, error: Error): void {
-    this._forcedErrors.set(method, error);
-  }
-
-  private _checkError(method: string): void {
-    const err = this._forcedErrors.get(method);
-    if (err) {
-      this._forcedErrors.delete(method);
-      throw err;
-    }
-  }
 
   async enqueue(payload: CsvImportJobPayload): Promise<string> {
-    this._checkError('enqueue');
+    this.checkError('enqueue');
     this.counter += 1;
     const id = `mem-${this.counter}`;
     this.jobs.push({ ...payload, id, enqueuedAt: new Date() });

@@ -12,7 +12,9 @@ import {
 import { EntityFixtures } from '@application/repositories/entity-fixtures';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailService from '@application/services/email/in-memory-email.service';
+import FieldValueService from '@application/services/field-value/field-value.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { groupItems } from '@test/helpers/row-data.helper';
 
 import KanbanCommentMentionService from './kanban-comment-mention.service';
@@ -127,10 +129,13 @@ describe('KanbanCommentMentionService', () => {
     userRepository = new UserInMemoryRepository();
     emailService = new InMemoryEmailService();
     notificationService = new InMemoryNotificationService();
+    const typeGuard = new TypeGuardService();
     sut = new KanbanCommentMentionService(
       userRepository,
       emailService,
       notificationService,
+      typeGuard,
+      new FieldValueService(typeGuard),
     );
   });
 

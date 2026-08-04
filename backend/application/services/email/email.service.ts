@@ -3,6 +3,7 @@ import { Service } from 'fastify-decorators';
 import { join } from 'node:path';
 import nodemailer from 'nodemailer';
 
+import { EMAIL_REGEX } from '@application/core/field-rules.core';
 import { Setting } from '@application/model/setting.model';
 import { EmailConfigContractService } from '@application/services/email-config/email-config-contract.service';
 
@@ -11,8 +12,6 @@ import {
   type EmailOptions,
   type EmailResult,
 } from './email-contract.service';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Service()
 export default class NodemailerEmailService implements EmailContractService {

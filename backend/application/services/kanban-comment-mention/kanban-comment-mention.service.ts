@@ -6,7 +6,9 @@ import {
 } from '@application/core/entity.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { EmailContractService } from '@application/services/email/email-contract.service';
+import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { NotificationContractService } from '@application/services/notification/notification-contract.service';
+import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 import { Env } from '@start/env';
 
 import {
@@ -23,37 +25,9 @@ const SNIPPET_LIMIT = 200;
 
 @Service()
 export default class KanbanCommentMentionService implements KanbanCommentMentionContractService {
-  private isObjectRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-  }
-
   private asRecord(value: unknown): Record<string, unknown> {
-    if (this.isObjectRecord(value)) return value;
+    if (this.typeGuard.isPlainObject(value)) return value;
     return {};
-  }
-
-  private readString(value: unknown): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return String(value);
-    return '';
-  }
-
-  private normalizeIdList(input: unknown): string[] {
-    if (!Array.isArray(input)) return [];
-    const result: string[] = [];
-    for (const value of input) {
-      if (typeof value === 'string' && value.length > 0) {
-        result.push(value);
-        continue;
-      }
-      if (this.isObjectRecord(value)) {
-        const id = value._id;
-        if (typeof id === 'string' && id.length > 0) {
-          result.push(id);
-        }
-      }
-    }
-    return result;
   }
 
   private parseNotifiedList(input: unknown): string[] {
@@ -93,6 +67,8 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
     private readonly userRepository: UserContractRepository,
     private readonly emailService: EmailContractService,
     private readonly notificationService: NotificationContractService,
+    private readonly typeGuard: TypeGuardContractService,
+    private readonly fieldValue: FieldValueContractService,
   ) {}
 
   async notifyNewMentions(
@@ -116,7 +92,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
     const titleField = table.fields?.find((f) => f.slug === TITLE_SLUG);
     let cardTitle = '';
     if (titleField) {
-      cardTitle = this.readString(rowRecord[titleField.slug]);
+      cardTitle = this.fieldValue.readString(rowRecord[titleField.slug]);
     }
 
     let changed = false;
@@ -149,7 +125,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
   }): Promise<Record<string, unknown>> {
     const { record, table, row, actorUserId, cardTitle, markChanged } = args;
 
-    const mentions = this.normalizeIdList(record[MENTIONS_SLUG]);
+    const mentions = this.fieldValue.toIdList(record[MENTIONS_SLUG]);
     const notified = this.parseNotifiedList(record[MENTIONS_NOTIFIED_SLUG]);
     const pending = mentions.filter(
       (id) => id.length > 0 && id !== actorUserId && !notified.includes(id),
@@ -163,8 +139,8 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
     const recipientIds: string[] = [];
     const emails: string[] = [];
     for (const user of users) {
-      const id = this.readString(user._id);
-      const email = this.readString(user.email).trim().toLowerCase();
+      const id = this.fieldValue.readString(user._id);
+      const email = this.fieldValue.readString(user.email).trim().toLowerCase();
       if (id.length === 0) continue;
       if (email.length === 0) continue;
       recipientIds.push(id);
@@ -177,7 +153,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
       table,
       row,
       cardTitle,
-      commentText: this.readString(record[COMMENT_TEXT_SLUG]),
+      commentText: this.fieldValue.readString(record[COMMENT_TEXT_SLUG]),
     });
 
     await this.dispatchInAppNotification({
@@ -186,7 +162,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
       table,
       row,
       cardTitle,
-      commentText: this.readString(record[COMMENT_TEXT_SLUG]),
+      commentText: this.fieldValue.readString(record[COMMENT_TEXT_SLUG]),
     });
 
     const newNotified = Array.from(new Set([...notified, ...recipientIds]));
@@ -211,7 +187,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
       if (table.name) data['Tabela'] = table.name;
       if (cardTitle) data['Card'] = cardTitle;
       if (snippet) data['Mensagem'] = snippet;
-      const rowId = this.readString(this.asRecord(row)._id);
+      const rowId = this.fieldValue.readString(this.asRecord(row)._id);
       data['Acessar'] =
         `${Env.APP_CLIENT_URL}/tables/${table.slug}/rows/${rowId}`;
 
@@ -250,7 +226,7 @@ export default class KanbanCommentMentionService implements KanbanCommentMention
       return;
     }
     if (recipientIds.length === 0) return;
-    const rowId = this.readString(this.asRecord(row)._id);
+    const rowId = this.fieldValue.readString(this.asRecord(row)._id);
     const snippet = this.buildSnippet(commentText);
     let title = 'Você foi mencionado em um card';
     if (cardTitle) title = `Você foi mencionado em "${cardTitle}"`;

@@ -195,6 +195,33 @@ export default class FieldValueService implements FieldValueContractService {
     return String(value);
   }
 
+  readString(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    return '';
+  }
+
+  toIdList(input: unknown): string[] {
+    if (!Array.isArray(input)) return this.readId(input);
+
+    const result: string[] = [];
+    for (const value of input) {
+      result.push(...this.readId(value));
+    }
+    return result;
+  }
+
+  /** Um id, como array de 0 ou 1 elemento — o valor pode vir populado. */
+  private readId(value: unknown): string[] {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return [value.trim()];
+    }
+    if (this.typeGuard.isPlainObject(value) && typeof value._id === 'string') {
+      return [value._id];
+    }
+    return [];
+  }
+
   normalizeDefault(
     type: string,
     defaultValue: string | string[] | null | undefined,

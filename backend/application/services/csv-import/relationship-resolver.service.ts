@@ -20,9 +20,9 @@ import {
   type IField,
   type IRow,
 } from '@application/core/entity.core';
-import { OBJECT_ID_REGEX } from '@application/core/field-rules.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
 
 import type { RelationshipResolver } from './relationship-resolver-contract.service';
 import { RelationshipResolverContractService } from './relationship-resolver-contract.service';
@@ -37,10 +37,6 @@ const DISPLAY_CANDIDATE_FIELDS = [
 
 @Service()
 export default class RelationshipResolverService implements RelationshipResolverContractService {
-  private isObjectId(value: string): boolean {
-    return OBJECT_ID_REGEX.test(value);
-  }
-
   private pickDisplayValue(
     row: IRow,
     candidateFields: readonly string[],
@@ -74,7 +70,7 @@ export default class RelationshipResolverService implements RelationshipResolver
       if (!rawCell.trim()) continue;
       for (const part of rawCell.split(';')) {
         const trimmed = part.trim();
-        if (trimmed && !this.isObjectId(trimmed)) {
+        if (trimmed && !this.identifier.isValid(trimmed)) {
           unique.add(trimmed);
         }
       }
@@ -111,7 +107,7 @@ export default class RelationshipResolverService implements RelationshipResolver
       for (const part of raw.split(';')) {
         const trimmed = part.trim();
         if (!trimmed) continue;
-        if (this.isObjectId(trimmed)) {
+        if (this.identifier.isValid(trimmed)) {
           ids.push(trimmed);
         } else {
           const id = displayToId.get(trimmed.toLowerCase());
@@ -126,6 +122,7 @@ export default class RelationshipResolverService implements RelationshipResolver
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly rowRepository: RowContractRepository,
+    private readonly identifier: IdentifierContractService,
   ) {}
 
   async build(

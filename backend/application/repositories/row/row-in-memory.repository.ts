@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { IRow, Merge } from '@application/core/entity.core';
 import { InMemoryRepository } from '@application/repositories/in-memory-base.repository';
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
+import TypeGuardService from '@application/services/type-guard/type-guard.service';
 
 import type {
   RowBulkDeletePayload,
@@ -19,8 +20,10 @@ import type {
 import { RowContractRepository } from './row-contract.repository';
 
 // Double de teste: o scanner do DI ignora `*-in-memory.*`, entao nao ha
-// container aqui. O RowOwnershipService e puro (constructor sem argumentos).
+// container aqui. RowOwnershipService e TypeGuardService sao puros (constructor
+// sem argumentos).
 const rowOwnership = new RowOwnershipService();
+const typeGuard = new TypeGuardService();
 
 /** Compara valores tolerando `Date`/`ObjectId` (que nao batem por identidade). */
 
@@ -42,17 +45,13 @@ export default class RowInMemoryRepository
     return false;
   }
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-  }
-
   /** Resolve `a.b.c` sobre o objeto, como o Mongo faz com dot-path. */
   private readPath(row: Record<string, unknown>, path: string): unknown {
     if (!path.includes('.')) return row[path];
 
     let current: unknown = row;
     for (const part of path.split('.')) {
-      if (!this.isRecord(current)) return undefined;
+      if (!typeGuard.isRecord(current)) return undefined;
       current = current[part];
     }
     return current;
