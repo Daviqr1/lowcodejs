@@ -5,11 +5,10 @@ import { E_ROW_STATUS, IRow, Merge } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { DraftTableContractService } from '@application/services/draft-table/draft-table-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
-
-import { DraftTable } from './draft-table';
 
 type Response = Either<HTTPException, IRow>;
 
@@ -33,6 +32,7 @@ export default class TableRowAutoSaveUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly draftTable: DraftTableContractService,
   ) {}
 
   async execute({
@@ -88,7 +88,7 @@ export default class TableRowAutoSaveUseCase {
       // rascunhos parciais sem disparar os validators de obrigatoriedade do
       // Mongoose. O core nao e tocado; a tabela original segue exigindo
       // required no create/update normal.
-      const draftTable = DraftTable.from(table);
+      const draftTable = this.draftTable.from(table);
       const ctx = await this.rowAccessGuard.resolveContext(actorUserId);
       const tableId = table._id.toString();
       const payloadRecord: Record<string, unknown> = payload;

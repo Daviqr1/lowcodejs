@@ -10,7 +10,7 @@ import {
 import type { ITable } from '@application/core/entity.core';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 
-import { DraftTable } from './draft-table';
+import DraftTableService from './draft-table.service';
 
 let tableRepository: TableInMemoryRepository;
 
@@ -84,6 +84,8 @@ async function makeTable(): Promise<ITable> {
 }
 
 describe('DraftTable.from', () => {
+  const sut = new DraftTableService();
+
   beforeEach(() => {
     tableRepository = new TableInMemoryRepository();
   });
@@ -91,7 +93,7 @@ describe('DraftTable.from', () => {
   it('marca todo campo como required:false (top-level, array, embedded e grupo)', async () => {
     const table = await makeTable();
 
-    const draft = DraftTable.from(table);
+    const draft = sut.from(table);
 
     expect(JSON.stringify(draft)).not.toContain('"required":true');
   });
@@ -99,7 +101,7 @@ describe('DraftTable.from', () => {
   it('preserva os campos do schema (apenas relaxa required)', async () => {
     const table = await makeTable();
 
-    const draft = DraftTable.from(table);
+    const draft = sut.from(table);
 
     expect(draft._schema).toHaveProperty('nome');
     expect(draft._schema).toHaveProperty('anexos');
@@ -110,7 +112,7 @@ describe('DraftTable.from', () => {
   it('nao muta a tabela original', async () => {
     const table = await makeTable();
 
-    DraftTable.from(table);
+    sut.from(table);
 
     expect(JSON.stringify(table)).toContain('"required":true');
   });

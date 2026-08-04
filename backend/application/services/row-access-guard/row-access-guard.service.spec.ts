@@ -13,7 +13,7 @@ import type {
   GuardWriteDecision,
   RowAccessGuard,
 } from '@application/core/row-access-guard.contract';
-import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
+import { EntityFixtures } from '@application/repositories/entity-fixtures';
 import type { ExtensionUpsertPayload } from '@application/repositories/extension/extension-contract.repository';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
@@ -26,6 +26,8 @@ import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-
 import { RowAccessControlGuard } from '@extensions/core/plugins/row-access/guard';
 
 import RowAccessGuardService from './row-access-guard.service';
+
+const fixtures = new EntityFixtures();
 
 function makeRowAccessControlGuard(): RowAccessControlGuard {
   return new RowAccessControlGuard(
@@ -84,8 +86,8 @@ const baseUpsert = (
   permissions: { view: [] },
 });
 
-const FAKE_TABLE = makeTable({ _id: 'T1' });
-const FAKE_ROW = makeRow({ _id: 'R1', creator: 'u1' });
+const FAKE_TABLE = fixtures.makeTable({ _id: 'T1' });
+const FAKE_ROW = fixtures.makeRow({ _id: 'R1', creator: 'u1' });
 
 function makeCtx(
   groupIds: string[] = [],

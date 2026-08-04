@@ -1,6 +1,6 @@
 import type { FindOptions, IReaction } from '@application/core/entity.core';
 
-import { makeUser } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   ReactionContractRepository,
@@ -8,6 +8,8 @@ import type {
   ReactionQueryPayload,
   ReactionUpdatePayload,
 } from './reaction-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class ReactionInMemoryRepository implements ReactionContractRepository {
   items: IReaction[] = [];
@@ -30,7 +32,7 @@ export default class ReactionInMemoryRepository implements ReactionContractRepos
       ...payload,
       _id: crypto.randomUUID(),
       // Double de teste: ref populada de usuário com defaults inertes.
-      user: makeUser(payload.user),
+      user: fixtures.makeUser(payload.user),
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,

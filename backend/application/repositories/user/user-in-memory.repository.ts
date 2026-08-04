@@ -4,7 +4,7 @@ import {
   type IUser,
 } from '@application/core/entity.core';
 
-import { makeGroup } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   UserContractRepository,
@@ -13,6 +13,8 @@ import type {
   UserUpdateManyPayload,
   UserUpdatePayload,
 } from './user-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class UserInMemoryRepository implements UserContractRepository {
   items: IUser[] = [];
@@ -36,8 +38,8 @@ export default class UserInMemoryRepository implements UserContractRepository {
       _id: crypto.randomUUID(),
       status: E_USER_STATUS.ACTIVE,
       // Double de teste: refs populadas de grupo com defaults inertes.
-      group: makeGroup(payload.group),
-      groups: (payload.groups ?? []).map((id) => makeGroup(id)),
+      group: fixtures.makeGroup(payload.group),
+      groups: (payload.groups ?? []).map((id) => fixtures.makeGroup(id)),
       notificationsEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),

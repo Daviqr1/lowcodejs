@@ -1,11 +1,13 @@
 import type { ISetting } from '@application/core/entity.core';
 
-import { makeSetting } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   SettingContractRepository,
   SettingUpdatePayload,
 } from './setting-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class SettingInMemoryRepository implements SettingContractRepository {
   private item: ISetting | null = null;
@@ -34,7 +36,7 @@ export default class SettingInMemoryRepository implements SettingContractReposit
       // ISetting completo via fixture; o payload (incl. MODEL_CLONE_TABLES como
       // string[]) sobrescreve — sem asserção, já que ISetting.MODEL_CLONE_TABLES
       // aceita `string | ITable`.
-      this.item = { ...makeSetting(), ...payload };
+      this.item = { ...fixtures.makeSetting(), ...payload };
     } else {
       Object.assign(this.item, payload);
     }

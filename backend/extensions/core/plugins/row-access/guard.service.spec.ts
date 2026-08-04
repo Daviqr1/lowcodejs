@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { GuardEvalContext } from '@application/core/row-access-guard.contract';
-import { makeRow, makeTable } from '@application/repositories/entity-fixtures';
+import { EntityFixtures } from '@application/repositories/entity-fixtures';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
@@ -13,6 +13,8 @@ import {
   DEFAULT_ROW_ACCESS_SETTINGS,
   type RowAccessSettings,
 } from './settings-schema';
+
+const fixtures = new EntityFixtures();
 
 // Testes de métodos puros (adjustListQuery/canRead/canWrite/sanitizeWritePayload):
 // não tocam nas deps (só onTableBound usa). O guard agora é @Service, então
@@ -107,7 +109,11 @@ function visibilityIn(clause: Record<string, unknown>): string[] {
   return [];
 }
 
-const baseTable = makeTable({ _id: 'tab1', name: 'Docs', slug: 'docs' });
+const baseTable = fixtures.makeTable({
+  _id: 'tab1',
+  name: 'Docs',
+  slug: 'docs',
+});
 
 // ── shape ─────────────────────────────────────────────────────────────────────
 
@@ -212,7 +218,7 @@ describe('guard.adjustListQuery', () => {
 
 describe('guard.canRead', () => {
   it('creator-bypass: criador da row sempre allow', () => {
-    const row = makeRow({ creator: 'u1', visibility: ['SIGILOSO'] });
+    const row = fixtures.makeRow({ creator: 'u1', visibility: ['SIGILOSO'] });
     const decision = guard.canRead(
       row,
       makeCtx(['g-manager'], 'u1'),
@@ -223,7 +229,10 @@ describe('guard.canRead', () => {
   });
 
   it('usuario no g-manager lendo SIGILOSO de outro: deny', () => {
-    const row = makeRow({ creator: 'other', visibility: ['SIGILOSO'] });
+    const row = fixtures.makeRow({
+      creator: 'other',
+      visibility: ['SIGILOSO'],
+    });
     const decision = guard.canRead(
       row,
       makeCtx(['g-manager'], 'u1'),
@@ -234,7 +243,7 @@ describe('guard.canRead', () => {
   });
 
   it('usuario no g-manager lendo PUBLIC: abstain', () => {
-    const row = makeRow({ creator: 'other', visibility: ['PUBLIC'] });
+    const row = fixtures.makeRow({ creator: 'other', visibility: ['PUBLIC'] });
     const decision = guard.canRead(
       row,
       makeCtx(['g-manager'], 'u1'),
@@ -245,7 +254,10 @@ describe('guard.canRead', () => {
   });
 
   it('usuario no g-admin lendo SIGILOSO: abstain', () => {
-    const row = makeRow({ creator: 'other', visibility: ['SIGILOSO'] });
+    const row = fixtures.makeRow({
+      creator: 'other',
+      visibility: ['SIGILOSO'],
+    });
     const decision = guard.canRead(
       row,
       makeCtx(['g-admin'], 'u1'),
@@ -256,7 +268,7 @@ describe('guard.canRead', () => {
   });
 
   it('visitante: deny quando visibility habilitada', () => {
-    const row = makeRow({ creator: 'other', visibility: ['PUBLIC'] });
+    const row = fixtures.makeRow({ creator: 'other', visibility: ['PUBLIC'] });
     const decision = guard.canRead(
       row,
       makeVisitorCtx(),
@@ -271,7 +283,7 @@ describe('guard.canRead', () => {
       creatorBypass: { enabled: false },
       dateWindow: { mode: 'createdAt-sliding', slidingDays: 1 },
     });
-    const row = makeRow({
+    const row = fixtures.makeRow({
       creator: 'other',
       visibility: ['PUBLIC'],
       createdAt: new Date(Date.now() - 10 * 86400000),
@@ -294,7 +306,7 @@ describe('guard.canRead', () => {
         fixedTo: new Date(Date.now() + 10 * 86400000).toISOString(),
       },
     });
-    const row = makeRow({
+    const row = fixtures.makeRow({
       creator: 'other',
       visibility: ['PUBLIC'],
       createdAt: new Date(),
@@ -313,7 +325,7 @@ describe('guard.canRead', () => {
 
 describe('guard.canWrite', () => {
   it('creator update: allow (criador edita propria row)', () => {
-    const row = makeRow({ creator: 'u1', visibility: ['PUBLIC'] });
+    const row = fixtures.makeRow({ creator: 'u1', visibility: ['PUBLIC'] });
     const decision = guard.canWrite(
       row,
       makeCtx(['g-manager'], 'u1'),
@@ -393,7 +405,7 @@ describe('guard.sanitizeWritePayload', () => {
   });
 
   it('g-manager update tentando SIGILOSO: preserva valor atual', () => {
-    const current = makeRow({ visibility: ['INTERNO'] });
+    const current = fixtures.makeRow({ visibility: ['INTERNO'] });
     const out = guard.sanitizeWritePayload(
       { visibility: ['SIGILOSO'] },
       makeCtx(['g-manager'], 'u1'),
@@ -406,7 +418,7 @@ describe('guard.sanitizeWritePayload', () => {
   });
 
   it('g-admin update com SIGILOSO: permite (grupo tem acesso)', () => {
-    const current = makeRow({ visibility: ['RESTRITO'] });
+    const current = fixtures.makeRow({ visibility: ['RESTRITO'] });
     const out = guard.sanitizeWritePayload(
       { visibility: ['SIGILOSO'] },
       makeCtx(['g-admin'], 'u1'),
@@ -515,7 +527,10 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
 
   it('canRead: allow (abstain) quando grupos intersectam', () => {
     const settings = makeFieldVisibilitySettings();
-    const row = makeRow({ creator: 'other', 'grupos-acesso': ['g-vendas'] });
+    const row = fixtures.makeRow({
+      creator: 'other',
+      'grupos-acesso': ['g-vendas'],
+    });
     const decision = guard.canRead(
       row,
       makeCtx(['g-vendas']),
@@ -527,7 +542,10 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
 
   it('canRead: deny quando não há interseção de grupos', () => {
     const settings = makeFieldVisibilitySettings();
-    const row = makeRow({ creator: 'other', 'grupos-acesso': ['g-rh'] });
+    const row = fixtures.makeRow({
+      creator: 'other',
+      'grupos-acesso': ['g-rh'],
+    });
     const decision = guard.canRead(
       row,
       makeCtx(['g-vendas']),
@@ -541,7 +559,7 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
     const settings = makeFieldVisibilitySettings({
       creatorBypass: { enabled: true },
     });
-    const row = makeRow({ creator: 'u1', 'grupos-acesso': ['g-rh'] });
+    const row = fixtures.makeRow({ creator: 'u1', 'grupos-acesso': ['g-rh'] });
     const decision = guard.canRead(
       row,
       makeCtx(['g-vendas']),
@@ -553,7 +571,7 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
 
   it('canRead: lê ids de grupo populados ({ _id })', () => {
     const settings = makeFieldVisibilitySettings();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       creator: 'other',
       'grupos-acesso': [{ _id: 'g-vendas', name: 'Vendas' }],
     });
@@ -568,7 +586,10 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
 
   it('canWrite: deny update de row cujos grupos não intersectam', () => {
     const settings = makeFieldVisibilitySettings();
-    const current = makeRow({ creator: 'other', 'grupos-acesso': ['g-rh'] });
+    const current = fixtures.makeRow({
+      creator: 'other',
+      'grupos-acesso': ['g-rh'],
+    });
     const decision = guard.canWrite(
       current,
       makeCtx(['g-vendas']),
@@ -582,7 +603,7 @@ describe('guard.fieldVisibility (campo USER_GROUP)', () => {
 
   it('canWrite: abstain no update quando grupos intersectam', () => {
     const settings = makeFieldVisibilitySettings();
-    const current = makeRow({
+    const current = fixtures.makeRow({
       creator: 'other',
       'grupos-acesso': ['g-vendas'],
     });

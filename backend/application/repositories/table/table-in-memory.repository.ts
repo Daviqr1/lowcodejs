@@ -6,7 +6,7 @@ import type {
   IUser,
 } from '@application/core/entity.core';
 
-import { makeField, makeStorage, makeUser } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   TableContractRepository,
@@ -16,15 +16,17 @@ import type {
   TableUpdatePayload,
 } from './table-contract.repository';
 
+const fixtures = new EntityFixtures();
+
 // Refs do double de teste: entidade completa (defaults inertes) a partir do id.
 function storageRef(id: string): IStorage {
-  return makeStorage(id);
+  return fixtures.makeStorage(id);
 }
 function userRef(id: string): IUser {
-  return makeUser(id);
+  return fixtures.makeUser(id);
 }
 function fieldRef(id: string): IField {
-  return makeField(id);
+  return fixtures.makeField(id);
 }
 
 export default class TableInMemoryRepository implements TableContractRepository {

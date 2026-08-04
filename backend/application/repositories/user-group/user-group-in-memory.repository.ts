@@ -4,7 +4,7 @@ import {
   type IGroup,
 } from '@application/core/entity.core';
 
-import { makePermission } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   UserGroupContractRepository,
@@ -13,6 +13,8 @@ import type {
   UserGroupUpdateManyPayload,
   UserGroupUpdatePayload,
 } from './user-group-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class UserGroupInMemoryRepository implements UserGroupContractRepository {
   items: IGroup[] = [];
@@ -36,7 +38,7 @@ export default class UserGroupInMemoryRepository implements UserGroupContractRep
       _id: crypto.randomUUID(),
       description: payload.description ?? null,
       // Double de teste: refs populadas de permissão com defaults inertes.
-      permissions: payload.permissions.map((p) => makePermission(p)),
+      permissions: payload.permissions.map((p) => fixtures.makePermission(p)),
       encompasses: payload.encompasses ?? [],
       createdAt: new Date(),
       updatedAt: new Date(),

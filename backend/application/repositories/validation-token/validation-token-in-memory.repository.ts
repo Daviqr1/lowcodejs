@@ -3,7 +3,7 @@ import type {
   IValidationToken,
 } from '@application/core/entity.core';
 
-import { makeUser } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   ValidationTokenContractRepository,
@@ -11,6 +11,8 @@ import type {
   ValidationTokenQueryPayload,
   ValidationTokenUpdatePayload,
 } from './validation-token-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class ValidationTokenInMemoryRepository implements ValidationTokenContractRepository {
   items: IValidationToken[] = [];
@@ -40,7 +42,7 @@ export default class ValidationTokenInMemoryRepository implements ValidationToke
       trashedAt: null,
       trashed: false,
       // Double de teste: ref populada de usuário com defaults inertes.
-      user: makeUser(userId),
+      user: fixtures.makeUser(userId),
     };
     this.items.push(token);
     return token;

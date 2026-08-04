@@ -1,6 +1,6 @@
 import type { FindOptions, IEvaluation } from '@application/core/entity.core';
 
-import { makeUser } from '../entity-fixtures';
+import { EntityFixtures } from '../entity-fixtures';
 
 import type {
   EvaluationContractRepository,
@@ -8,6 +8,8 @@ import type {
   EvaluationQueryPayload,
   EvaluationUpdatePayload,
 } from './evaluation-contract.repository';
+
+const fixtures = new EntityFixtures();
 
 export default class EvaluationInMemoryRepository implements EvaluationContractRepository {
   items: IEvaluation[] = [];
@@ -30,7 +32,7 @@ export default class EvaluationInMemoryRepository implements EvaluationContractR
       ...payload,
       _id: crypto.randomUUID(),
       // Double de teste: ref populada de usuário com defaults inertes.
-      user: makeUser(payload.user),
+      user: fixtures.makeUser(payload.user),
       createdAt: new Date(),
       updatedAt: new Date(),
       trashedAt: null,

@@ -1,3 +1,5 @@
+import { Service } from 'fastify-decorators';
+
 import type {
   IEmbeddedSchema,
   ISchema,
@@ -5,29 +7,22 @@ import type {
   ITableSchema,
 } from '@application/core/entity.core';
 
-/**
- * Constroi uma copia da tabela com TODOS os campos marcados como
- * `required: false`, usada exclusivamente pelo auto-save para persistir
- * rascunhos parciais sem disparar os validators de obrigatoriedade do Mongoose.
- *
- * O core (`schema-builder`/`model-builder`) permanece intocado: a tabela
- * original continua gerando o schema com `required` real para create/update
- * normais. Como `buildTable` reconstroi o model a cada chamada, este schema
- * relaxado vive apenas durante a request do auto-save.
- */
-export class DraftTable {
-  private static isEmbeddedSchemaArray(
+import { DraftTableContractService } from './draft-table-contract.service';
+
+@Service()
+export default class DraftTableService implements DraftTableContractService {
+  private isEmbeddedSchemaArray(
     value: ISchema | ISchema[] | IEmbeddedSchema[],
   ): value is IEmbeddedSchema[] {
     return Array.isArray(value) && value[0]?.type === 'Embedded';
   }
 
-  private static relaxTableSchema(schema: ITableSchema): void {
+  private relaxTableSchema(schema: ITableSchema): void {
     for (const value of Object.values(schema)) {
-      if (DraftTable.isEmbeddedSchemaArray(value)) {
+      if (this.isEmbeddedSchemaArray(value)) {
         for (const entry of value) {
           entry.required = false;
-          DraftTable.relaxTableSchema(entry.schema);
+          this.relaxTableSchema(entry.schema);
         }
         continue;
       }
@@ -43,7 +38,7 @@ export class DraftTable {
     }
   }
 
-  static from(table: ITable): ITable {
+  from(table: ITable): ITable {
     const draft = structuredClone(table);
     // Sentinel: força cache miss no ModelBuilder. O cache usa updatedAt como
     // versão; um timestamp diferente garante que o draft model (required: false
@@ -51,7 +46,7 @@ export class DraftTable {
     draft.updatedAt = new Date(0);
 
     if (draft._schema) {
-      DraftTable.relaxTableSchema(draft._schema);
+      this.relaxTableSchema(draft._schema);
     }
 
     if (Array.isArray(draft.groups)) {
@@ -63,7 +58,7 @@ export class DraftTable {
         }
 
         if (group._schema) {
-          DraftTable.relaxTableSchema(group._schema);
+          this.relaxTableSchema(group._schema);
         }
       }
     }

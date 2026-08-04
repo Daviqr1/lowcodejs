@@ -7,7 +7,7 @@ import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import { DraftTable } from '@application/resources/table-rows/auto-save/draft-table';
+import { DraftTableContractService } from '@application/services/draft-table/draft-table-contract.service';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
@@ -41,6 +41,7 @@ export default class GroupRowAutoSaveUseCase {
     private readonly rowAccessGuard: RowAccessGuardContractService,
     private readonly rowOwnership: RowOwnershipContractService,
     private readonly rowPayloadValidator: RowPayloadValidatorContractService,
+    private readonly draftTable: DraftTableContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -123,7 +124,7 @@ export default class GroupRowAutoSaveUseCase {
       // updateGroupItem usam row.save(), que roda os validators do subdoc. O
       // core nao e tocado; a tabela original segue exigindo required nas ops
       // normais.
-      const draftTable = DraftTable.from(table);
+      const draftTable = this.draftTable.from(table);
 
       // A row pai precisa existir e liberar escrita nos dois caminhos — antes
       // so o ramo de update a carregava, e nenhum dos dois checava posse/guard.

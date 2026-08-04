@@ -9,13 +9,15 @@ import {
   type ITable,
   type Merge,
 } from '@application/core/entity.core';
-import { makeRow, makeUser } from '@application/repositories/entity-fixtures';
+import { EntityFixtures } from '@application/repositories/entity-fixtures';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryEmailService from '@application/services/email/in-memory-email.service';
 import InMemoryNotificationService from '@application/services/notification/in-memory-notification.service';
 import { groupItems } from '@test/helpers/row-data.helper';
 
 import KanbanCommentMentionService from './kanban-comment-mention.service';
+
+const fixtures = new EntityFixtures();
 
 function makeField(
   partial: Merge<Partial<IField>, Pick<IField, 'slug' | 'type'>>,
@@ -82,7 +84,7 @@ function makeKanbanTable(): ITable {
     style: 'KANBAN',
     permissions: null,
     members: [],
-    owner: makeUser('owner-1'),
+    owner: fixtures.makeUser('owner-1'),
     fields: [titulo],
     groups: [commentsGroup],
     fieldOrderList: [],
@@ -137,7 +139,7 @@ describe('KanbanCommentMentionService', () => {
       ...makeKanbanTable(),
       groups: [],
     };
-    const row = makeRow({ _id: 'row-1' });
+    const row = fixtures.makeRow({ _id: 'row-1' });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -149,7 +151,7 @@ describe('KanbanCommentMentionService', () => {
 
   it('retorna changed=false quando comentários vazios', async () => {
     const table = makeKanbanTable();
-    const row = makeRow({ _id: 'row-1', comentarios: [] });
+    const row = fixtures.makeRow({ _id: 'row-1', comentarios: [] });
     const result = await sut.notifyNewMentions({
       table,
       row,
@@ -167,7 +169,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [user1] = userRepository.items;
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -195,7 +197,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [author] = userRepository.items;
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -229,7 +231,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [maria, joao] = userRepository.items;
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       titulo: 'Card de teste',
       comentarios: [
@@ -276,7 +278,7 @@ describe('KanbanCommentMentionService', () => {
     });
     const [maria, joao] = userRepository.items;
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       titulo: 'Card',
       comentarios: [
@@ -306,7 +308,7 @@ describe('KanbanCommentMentionService', () => {
     inactive.status = E_USER_STATUS.INACTIVE;
 
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       comentarios: [
         {
@@ -338,7 +340,7 @@ describe('KanbanCommentMentionService', () => {
     emailService.simulateError('sendEmail', new Error('SMTP off'));
 
     const table = makeKanbanTable();
-    const row = makeRow({
+    const row = fixtures.makeRow({
       _id: 'row-1',
       comentarios: [
         {

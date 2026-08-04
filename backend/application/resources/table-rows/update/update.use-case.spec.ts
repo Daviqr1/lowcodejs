@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { E_FIELD_TYPE, E_TABLE_STYLE } from '@application/core/entity.core';
-import { makeField } from '@application/repositories/entity-fixtures';
+import { EntityFixtures } from '@application/repositories/entity-fixtures';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -19,6 +19,8 @@ import InMemoryScriptExecutionService from '@application/services/script-executi
 import SlugService from '@application/services/slug/slug.service';
 
 import TableRowUpdateUseCase from './update.use-case';
+
+const fixtures = new EntityFixtures();
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let rowRepository: RowInMemoryRepository;
@@ -121,7 +123,7 @@ describe('Table Row Update Use Case', () => {
     import('@application/core/entity.core').ITable
   > {
     const userField = {
-      ...makeField('responsavel'),
+      ...fixtures.makeField('responsavel'),
       type: E_FIELD_TYPE.USER,
       fillWithCurrentUserWhenEmpty: true,
     };
