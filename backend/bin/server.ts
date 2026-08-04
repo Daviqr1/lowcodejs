@@ -7,7 +7,8 @@ import type { IJWTPayload } from '@application/core/entity.core';
 import { Setting } from '@application/model/setting.model';
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import StorageMongooseRepository from '@application/repositories/storage/storage.repository';
-import { initChatSocket } from '@application/resources/chat/chat.socket';
+import { ChatSocketContractService } from '@application/services/chat-socket/chat-socket-contract.service';
+import ChatSocketService from '@application/services/chat-socket/chat-socket.service';
 import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
 import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
 import { StorageMigrationSocketContractService } from '@application/services/storage-migration/storage-migration-socket-contract.service';
@@ -123,7 +124,9 @@ async function start(): Promise<void> {
       }
     };
 
-    const io = initChatSocket(httpServer, jwtDecode);
+    const io = getInstanceByToken<ChatSocketContractService>(
+      ChatSocketService,
+    ).init(httpServer, jwtDecode);
     console.info('Socket.IO chat initialized');
 
     getInstanceByToken<StorageMigrationSocketContractService>(

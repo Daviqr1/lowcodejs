@@ -7,7 +7,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { getInstanceByToken } from 'fastify-decorators';
+import { Service } from 'fastify-decorators';
 import * as http from 'node:http';
 import type { Server as HttpServer } from 'node:http';
 import * as https from 'node:https';
@@ -17,20 +17,24 @@ import {
   E_AREA_CAPABILITY,
   E_CHAT_EVENT,
   E_JWT_TYPE,
-  type IJWTPayload,
   type Merge,
 } from '@application/core/entity.core';
 import { Setting } from '@application/model/setting.model';
-import UserMongooseRepository from '@application/repositories/user/user.repository';
-import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
+import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { getChatSystemPrompt } from '@application/resources/chat/system-prompt';
+import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { resolveLlmConfig } from '@application/services/llm/ai-setting-fields';
 import type { LlmChatMessage } from '@application/services/llm/llm-chat.types';
 import { getLlmProviderLabel } from '@application/services/llm/llm-defaults';
 import { runChatCompletion } from '@application/services/llm/run-chat-completion';
-import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
+import {
+  ACCESS_TOKEN_COOKIE,
+  SessionContractService,
+} from '@application/services/session/session-contract.service';
+import type { JwtDecoder } from '@application/services/socket-auth/socket-auth-contract.service';
 import { Env } from '@start/env';
 
-import { getChatSystemPrompt } from './system-prompt';
+import { ChatSocketContractService } from './chat-socket-contract.service';
 
 type FileData = {
   type: 'image' | 'pdf';
@@ -45,21 +49,6 @@ type ClientMessage = {
   message?: string;
   file?: FileData;
 };
-
-function extractCookieValue(
-  cookieHeader: string | undefined,
-  name: string,
-): string | undefined {
-  if (!cookieHeader) return undefined;
-  let lastValue: string | undefined;
-  for (const part of cookieHeader.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) {
-      lastValue = rest.join('=');
-    }
-  }
-  return lastValue;
-}
 
 function getErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return String(err);
@@ -253,175 +242,206 @@ async function connectMcpClient(
   return { client, tools };
 }
 
-export function initChatSocket(
-  httpServer: HttpServer,
-  jwtDecode: (value: string) => IJWTPayload | null,
-): SocketIOServer {
-  const io = new SocketIOServer(httpServer, {
-    path: '/socket.io',
-    cors: {
-      origin: [Env.APP_CLIENT_URL, Env.APP_SERVER_URL, ...Env.ALLOWED_ORIGINS],
-      credentials: true,
-    },
-  });
+@Service()
+export default class ChatSocketService implements ChatSocketContractService {
+  constructor(
+    private readonly userRepository: UserContractRepository,
+    private readonly groupResolver: GroupResolverContractService,
+    private readonly session: SessionContractService,
+  ) {}
 
-  io.on('connection', async (socket) => {
-    const cookieHeader = socket.handshake.headers.cookie;
-    const accessToken = extractCookieValue(cookieHeader, ACCESS_TOKEN_COOKIE);
+  init(httpServer: HttpServer, decode: JwtDecoder): SocketIOServer {
+    const io = new SocketIOServer(httpServer, {
+      path: '/socket.io',
+      cors: {
+        origin: [
+          Env.APP_CLIENT_URL,
+          Env.APP_SERVER_URL,
+          ...Env.ALLOWED_ORIGINS,
+        ],
+        credentials: true,
+      },
+    });
 
-    if (!accessToken) {
-      socket.emit(E_CHAT_EVENT.ERROR, { message: 'Autenticação necessária.' });
-      socket.disconnect();
-      return;
-    }
+    io.on('connection', async (socket) => {
+      const cookieHeader = socket.handshake.headers.cookie;
+      const accessToken = this.session.extractLastCookieValue(
+        cookieHeader,
+        ACCESS_TOKEN_COOKIE,
+      );
 
-    const decoded = jwtDecode(accessToken);
-    if (!decoded || decoded.type !== E_JWT_TYPE.ACCESS) {
-      socket.emit(E_CHAT_EVENT.ERROR, {
-        message: 'Token inválido ou expirado.',
-      });
-      socket.disconnect();
-      return;
-    }
-
-    const user = decoded;
-
-    // Capacidade de chat por grupo (MASTER bypassa). Privilegio MASTER resolvido
-    // pelo fecho de grupos (nao pelo role do JWT). Mantem o chat indisponivel
-    // para grupos sem a permissao, alem do toggle global AI_ASSISTANT_ENABLED.
-    const userRepository = getInstanceByToken(UserMongooseRepository);
-    const groupResolver = getInstanceByToken(GroupResolverService);
-    const fullUser = await userRepository.findById(user.sub);
-
-    if (!(await groupResolver.isMaster(fullUser))) {
-      const capabilities = await groupResolver.resolveCapabilities(fullUser);
-
-      if (!capabilities.has(E_AREA_CAPABILITY.MANAGE_CHAT)) {
+      if (!accessToken) {
         socket.emit(E_CHAT_EVENT.ERROR, {
-          message: 'Você não tem permissão para usar o assistente de IA.',
+          message: 'Autenticação necessária.',
         });
         socket.disconnect();
         return;
       }
-    }
 
-    const setting = await Setting.findOne().lean();
-    const aiEnabled = Boolean(setting?.AI_ASSISTANT_ENABLED);
-    const mcpUrl = setting?.MCP_SERVER_URL ?? null;
-    const mcpAuthToken = setting?.MCP_SERVER_TOKEN ?? null;
-    const mcpLowcodeApiUrl = setting?.MCP_LOWCODE_API_URL ?? null;
-    let llmConfig = resolveLlmConfig(setting);
+      const decoded = decode(accessToken);
+      if (!decoded || decoded.type !== E_JWT_TYPE.ACCESS) {
+        socket.emit(E_CHAT_EVENT.ERROR, {
+          message: 'Token inválido ou expirado.',
+        });
+        socket.disconnect();
+        return;
+      }
 
-    if (!aiEnabled || !mcpUrl || !llmConfig.isConfigured) {
-      socket.emit(E_CHAT_EVENT.ERROR, {
-        message: 'Assistente IA não está habilitado ou não está configurado.',
-      });
-      socket.disconnect();
-      return;
-    }
+      const user = decoded;
 
-    let mcpClient: Client | null = null;
+      // Capacidade de chat por grupo (MASTER bypassa). Privilegio MASTER resolvido
+      // pelo fecho de grupos (nao pelo role do JWT). Mantem o chat indisponivel
+      // para grupos sem a permissao, alem do toggle global AI_ASSISTANT_ENABLED.
+      const fullUser = await this.userRepository.findById(user.sub);
 
-    try {
-      socket.emit(E_CHAT_EVENT.STATUS, {
-        message: 'Conectando ao servidor MCP...',
-      });
+      if (!(await this.groupResolver.isMaster(fullUser))) {
+        const capabilities =
+          await this.groupResolver.resolveCapabilities(fullUser);
 
-      const { client, tools: mcpTools } = await connectMcpClient(
-        mcpUrl,
-        mcpAuthToken,
-        mcpLowcodeApiUrl,
-        accessToken,
-      );
-      mcpClient = client;
+        if (!capabilities.has(E_AREA_CAPABILITY.MANAGE_CHAT)) {
+          socket.emit(E_CHAT_EVENT.ERROR, {
+            message: 'Você não tem permissão para usar o assistente de IA.',
+          });
+          socket.disconnect();
+          return;
+        }
+      }
 
-      const messages: Array<LlmChatMessage> = [
-        {
-          role: 'system',
-          content: getChatSystemPrompt(
-            user.email.split('@')[0],
-            user.email,
-            llmConfig.provider,
-            llmConfig.model,
-          ),
-        },
-      ];
+      const setting = await Setting.findOne().lean();
+      const aiEnabled = Boolean(setting?.AI_ASSISTANT_ENABLED);
+      const mcpUrl = setting?.MCP_SERVER_URL ?? null;
+      const mcpAuthToken = setting?.MCP_SERVER_TOKEN ?? null;
+      const mcpLowcodeApiUrl = setting?.MCP_LOWCODE_API_URL ?? null;
+      let llmConfig = resolveLlmConfig(setting);
 
-      socket.on(
-        E_CHAT_EVENT.HISTORY,
-        (data: {
-          messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-        }) => {
-          if (!Array.isArray(data?.messages)) return;
-          for (const msg of data.messages) {
-            if (
-              (msg.role === 'user' || msg.role === 'assistant') &&
-              typeof msg.content === 'string'
-            ) {
-              messages.push({ role: msg.role, content: msg.content });
+      if (!aiEnabled || !mcpUrl || !llmConfig.isConfigured) {
+        socket.emit(E_CHAT_EVENT.ERROR, {
+          message: 'Assistente IA não está habilitado ou não está configurado.',
+        });
+        socket.disconnect();
+        return;
+      }
+
+      let mcpClient: Client | null = null;
+
+      try {
+        socket.emit(E_CHAT_EVENT.STATUS, {
+          message: 'Conectando ao servidor MCP...',
+        });
+
+        const { client, tools: mcpTools } = await connectMcpClient(
+          mcpUrl,
+          mcpAuthToken,
+          mcpLowcodeApiUrl,
+          accessToken,
+        );
+        mcpClient = client;
+
+        const messages: Array<LlmChatMessage> = [
+          {
+            role: 'system',
+            content: getChatSystemPrompt(
+              user.email.split('@')[0],
+              user.email,
+              llmConfig.provider,
+              llmConfig.model,
+            ),
+          },
+        ];
+
+        socket.on(
+          E_CHAT_EVENT.HISTORY,
+          (data: {
+            messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+          }) => {
+            if (!Array.isArray(data?.messages)) return;
+            for (const msg of data.messages) {
+              if (
+                (msg.role === 'user' || msg.role === 'assistant') &&
+                typeof msg.content === 'string'
+              ) {
+                messages.push({ role: msg.role, content: msg.content });
+              }
+            }
+          },
+        );
+
+        socket.emit(E_CHAT_EVENT.READY, {
+          message: 'Agente pronto! Você pode enviar mensagens.',
+          tools_count: mcpTools.length,
+          llm_provider: llmConfig.provider,
+          llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+          llm_model: llmConfig.model,
+        });
+
+        socket.on(E_CHAT_EVENT.MESSAGE, async (data: ClientMessage) => {
+          try {
+            const latestSetting = await Setting.findOne().lean();
+            llmConfig = resolveLlmConfig(latestSetting);
+
+            const systemPrompt = getChatSystemPrompt(
+              user.email.split('@')[0],
+              user.email,
+              llmConfig.provider,
+              llmConfig.model,
+            );
+            if (messages[0]?.role === 'system') {
+              messages[0] = { role: 'system', content: systemPrompt };
+            }
+
+            socket.emit(E_CHAT_EVENT.LLM_INFO, {
+              llm_provider: llmConfig.provider,
+              llm_provider_label: getLlmProviderLabel(llmConfig.provider),
+              llm_model: llmConfig.model,
+            });
+
+            const { reply } = await runChatCompletion({
+              llmConfig,
+              messages,
+              mcpClient: mcpClient!,
+              mcpTools,
+              socket,
+              userId: user.sub,
+              userInput: (data.message || '').trim(),
+              file: data.file,
+            });
+
+            if (reply) {
+              socket.emit(E_CHAT_EVENT.MESSAGE, { content: reply });
+            }
+          } catch (err) {
+            console.error('Erro no processamento:', err);
+            const errorMsg = formatChatUserError(err);
+            try {
+              socket.emit(E_CHAT_EVENT.MESSAGE, {
+                content: `Não foi possível concluir a resposta: ${errorMsg}`,
+                variant: 'system-warning',
+              });
+            } catch {
+              /* ignore */
             }
           }
-        },
-      );
+        });
 
-      socket.emit(E_CHAT_EVENT.READY, {
-        message: 'Agente pronto! Você pode enviar mensagens.',
-        tools_count: mcpTools.length,
-        llm_provider: llmConfig.provider,
-        llm_provider_label: getLlmProviderLabel(llmConfig.provider),
-        llm_model: llmConfig.model,
-      });
-
-      socket.on(E_CHAT_EVENT.MESSAGE, async (data: ClientMessage) => {
-        try {
-          const latestSetting = await Setting.findOne().lean();
-          llmConfig = resolveLlmConfig(latestSetting);
-
-          const systemPrompt = getChatSystemPrompt(
-            user.email.split('@')[0],
-            user.email,
-            llmConfig.provider,
-            llmConfig.model,
-          );
-          if (messages[0]?.role === 'system') {
-            messages[0] = { role: 'system', content: systemPrompt };
-          }
-
-          socket.emit(E_CHAT_EVENT.LLM_INFO, {
-            llm_provider: llmConfig.provider,
-            llm_provider_label: getLlmProviderLabel(llmConfig.provider),
-            llm_model: llmConfig.model,
-          });
-
-          const { reply } = await runChatCompletion({
-            llmConfig,
-            messages,
-            mcpClient: mcpClient!,
-            mcpTools,
-            socket,
-            userId: user.sub,
-            userInput: (data.message || '').trim(),
-            file: data.file,
-          });
-
-          if (reply) {
-            socket.emit(E_CHAT_EVENT.MESSAGE, { content: reply });
-          }
-        } catch (err) {
-          console.error('Erro no processamento:', err);
-          const errorMsg = formatChatUserError(err);
+        socket.on('disconnect', async () => {
           try {
-            socket.emit(E_CHAT_EVENT.MESSAGE, {
-              content: `Não foi possível concluir a resposta: ${errorMsg}`,
-              variant: 'system-warning',
-            });
+            if (mcpClient) {
+              await mcpClient.close();
+            }
           } catch {
             /* ignore */
           }
+        });
+      } catch (err) {
+        console.error('Erro ao inicializar chat socket:', err);
+        const errorMsg = getErrorMessage(err);
+        try {
+          socket.emit(E_CHAT_EVENT.ERROR, {
+            message: `Erro no servidor: ${errorMsg}`,
+          });
+        } catch {
+          /* ignore */
         }
-      });
-
-      socket.on('disconnect', async () => {
         try {
           if (mcpClient) {
             await mcpClient.close();
@@ -429,27 +449,10 @@ export function initChatSocket(
         } catch {
           /* ignore */
         }
-      });
-    } catch (err) {
-      console.error('Erro ao inicializar chat socket:', err);
-      const errorMsg = getErrorMessage(err);
-      try {
-        socket.emit(E_CHAT_EVENT.ERROR, {
-          message: `Erro no servidor: ${errorMsg}`,
-        });
-      } catch {
-        /* ignore */
+        socket.disconnect();
       }
-      try {
-        if (mcpClient) {
-          await mcpClient.close();
-        }
-      } catch {
-        /* ignore */
-      }
-      socket.disconnect();
-    }
-  });
+    });
 
-  return io;
+    return io;
+  }
 }
