@@ -10,13 +10,12 @@ import {
   DECIMAL_REGEX,
   EMAIL_REGEX,
   INTEGER_REGEX,
+  OBJECT_ID_REGEX,
   PHONE_REGEX,
   URL_REGEX,
 } from './field-rules.core';
 
 type FieldFormat = (typeof E_FIELD_FORMAT)[keyof typeof E_FIELD_FORMAT];
-
-const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
 
 // Validacao por `format` (legado, sincrona, roda em todos os caminhos de escrita
 // de row). Os regexes vivem em `field-rules.core.ts` — a mesma fonte usada pela

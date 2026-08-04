@@ -1,5 +1,3 @@
-import slugify from 'slugify';
-
 import { right } from '@application/core/either.core';
 import {
   E_TABLE_STYLE,
@@ -22,11 +20,7 @@ export async function createMosaicTemplate(
   payload: CloneTableUseCasePayload,
   deps: CloneTableDeps,
 ): Promise<CloneTableResponse> {
-  const newSlug = slugify(payload.name, {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
+  const newSlug = deps.slugService.normalize(payload.name);
 
   const { fields, orderList, orderForm, orderFilter, orderDetail } =
     await buildMosaicFields(deps.fieldRepository);

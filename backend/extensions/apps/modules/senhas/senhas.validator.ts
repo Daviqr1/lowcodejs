@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+import { OBJECT_ID_REGEX } from '@application/core/field-rules.core';
+
 /** Validadores Zod do módulo Senhas. Mensagens em PT-BR. */
 
 const objectId = z
   .string()
   .trim()
-  .regex(/^[a-f\d]{24}$/i, 'Identificador inválido');
+  .regex(OBJECT_ID_REGEX, 'Identificador inválido');
 
 export const CreateChannelValidator = z.object({
   name: z.string().trim().min(1, 'Nome é obrigatório').max(120),

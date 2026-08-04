@@ -1,5 +1,4 @@
 import { Service } from 'fastify-decorators';
-import slugify from 'slugify';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
@@ -13,6 +12,7 @@ import HTTPException from '@application/core/exception.core';
 import { ExtensionContractRepository } from '@application/repositories/extension/extension-contract.repository';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
 import type { MenuCreatePayload } from './create.validator';
 
@@ -25,6 +25,7 @@ export default class MenuCreateUseCase {
     private readonly menuRepository: MenuContractRepository,
     private readonly tableRepository: TableContractRepository,
     private readonly extensionRepository: ExtensionContractRepository,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -46,10 +47,7 @@ export default class MenuCreateUseCase {
             ),
           );
 
-        slug = slugify(slug.concat('-').concat(parent.slug), {
-          lower: true,
-          trim: true,
-        });
+        slug = this.slugService.normalize(slug.concat('-').concat(parent.slug));
       }
 
       const menu = await this.menuRepository.findBySlug(slug, {

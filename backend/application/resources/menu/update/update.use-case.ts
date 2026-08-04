@@ -1,5 +1,4 @@
 import { Service } from 'fastify-decorators';
-import slugify from 'slugify';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
@@ -15,6 +14,7 @@ import {
   type MenuUpdatePayload as RepositoryMenuUpdatePayload,
 } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
 import type { MenuUpdatePayload } from './update.validator';
 
@@ -31,6 +31,7 @@ export default class MenuUpdateUseCase {
     private readonly menuRepository: MenuContractRepository,
     private readonly tableRepository: TableContractRepository,
     private readonly extensionRepository: ExtensionContractRepository,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -125,10 +126,9 @@ export default class MenuUpdateUseCase {
               ),
             );
 
-          finalSlug = slugify(finalSlug.concat('-').concat(parent.slug), {
-            lower: true,
-            trim: true,
-          });
+          finalSlug = this.slugService.normalize(
+            finalSlug.concat('-').concat(parent.slug),
+          );
         }
       } else if (existingMenu.parent) {
         const currentParent = await this.menuRepository.findById(
@@ -136,12 +136,8 @@ export default class MenuUpdateUseCase {
           { trashed: false },
         );
         if (currentParent) {
-          finalSlug = slugify(
+          finalSlug = this.slugService.normalize(
             finalSlug.concat('-').concat(currentParent.slug),
-            {
-              lower: true,
-              trim: true,
-            },
           );
         }
       }

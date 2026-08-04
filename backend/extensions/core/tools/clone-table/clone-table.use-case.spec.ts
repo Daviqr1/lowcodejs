@@ -4,6 +4,7 @@ import { buildFieldPermissions } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
 import CloneTableUseCase from './clone-table.use-case';
@@ -27,6 +28,7 @@ describe('Clone Table Use Case', () => {
       fieldInMemoryRepository,
       rowInMemoryRepository,
       schemaBuilder,
+      new SlugService(),
     );
   });
 

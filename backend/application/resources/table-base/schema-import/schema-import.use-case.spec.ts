@@ -8,6 +8,7 @@ import {
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
@@ -52,6 +53,7 @@ describe('Schema Import Use Case', () => {
       fieldInMemoryRepository,
       userGroupInMemoryRepository,
       schemaBuilder,
+      new SlugService(),
     );
   });
 

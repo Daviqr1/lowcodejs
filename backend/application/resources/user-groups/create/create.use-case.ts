@@ -1,5 +1,4 @@
 import { Service } from 'fastify-decorators';
-import slugify from 'slugify';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
@@ -9,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
 import type { UserGroupCreatePayload } from './create.validator';
 
@@ -19,11 +19,12 @@ type Payload = UserGroupCreatePayload;
 export default class UserGroupCreateUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const slug = slugify(payload.name, { trim: true, lower: true });
+      const slug = this.slugService.normalize(payload.name);
 
       // Os grupos de sistema usam slug MAIUSCULO, entao um grupo chamado
       // "Master" gerava `master` e nao colidia no `findBySlug` — mas

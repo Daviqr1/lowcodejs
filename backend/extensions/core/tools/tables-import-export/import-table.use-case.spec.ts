@@ -9,6 +9,7 @@ import FieldInMemoryRepository from '@application/repositories/field/field-in-me
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 import { makeTextShortField } from '@test/helpers/field-factory.helper';
 
@@ -106,6 +107,7 @@ describe('Import Table Use Case', () => {
       rowInMemoryRepository,
       menuInMemoryRepository,
       schemaBuilder,
+      new SlugService(),
     );
   });
 

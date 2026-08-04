@@ -1,10 +1,14 @@
-import slugify from 'slugify';
 import z from 'zod';
 
 import {
   E_MENU_ITEM_TYPE,
   E_PERMISSION_TARGET,
 } from '@application/core/entity.core';
+import SlugService from '@application/services/slug/slug.service';
+
+// Schema Zod de escopo de modulo: avaliado no import, quando o container de DI
+// ainda nao existe. O SlugService e puro (constructor sem argumentos).
+const slugService = new SlugService();
 
 // Visibilidade da opção de menu (Grupo|Public|Nobody).
 export const MenuVisibilityValidator = z
@@ -57,7 +61,7 @@ export const MenuCreateBodyValidator = z
   .transform((payload) => {
     return {
       ...payload,
-      slug: slugify(payload.name, { lower: true, trim: true }),
+      slug: slugService.normalize(payload.name),
       parent: payload.parent ?? null,
     };
   })

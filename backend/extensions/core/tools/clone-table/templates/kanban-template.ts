@@ -1,5 +1,3 @@
-import slugify from 'slugify';
-
 import { right } from '@application/core/either.core';
 import {
   buildFieldPermissions,
@@ -28,11 +26,7 @@ export async function createKanbanTemplate(
   payload: CloneTableUseCasePayload,
   deps: CloneTableDeps,
 ): Promise<CloneTableResponse> {
-  const newSlug = slugify(payload.name, {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
+  const newSlug = deps.slugService.normalize(payload.name);
 
   const { fields, groups, orderList, orderForm, orderFilter, orderDetail } =
     await buildKanbanFields(deps.fieldRepository, deps.schemaBuilder);

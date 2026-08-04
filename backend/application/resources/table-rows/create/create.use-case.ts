@@ -5,7 +5,6 @@ import { left, right } from '@application/core/either.core';
 import type { IField, IRow, Merge } from '@application/core/entity.core';
 import { E_FIELD_TYPE, E_ROW_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { FieldSlug } from '@application/core/field-slug.core';
 import { RowPayloadValidator } from '@application/core/row-payload-validator.core';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
@@ -16,6 +15,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
 type Response = Either<HTTPException, IRow>;
 
@@ -43,6 +43,7 @@ export default class TableRowCreateUseCase {
     private readonly fieldVisibility: FieldVisibilityContractService,
     private readonly fieldValidation: FieldValidationContractService,
     private readonly rowAccessGuard: RowAccessGuardContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -148,7 +149,7 @@ export default class TableRowCreateUseCase {
         );
         if (slugField && payload[slugField.slug]) {
           const existing = await this.rowRepository.listSlugs(table);
-          payload.sharedRowSlug = FieldSlug.suggestUnique(
+          payload.sharedRowSlug = this.slugService.unique(
             String(payload[slugField.slug]),
             existing,
           );

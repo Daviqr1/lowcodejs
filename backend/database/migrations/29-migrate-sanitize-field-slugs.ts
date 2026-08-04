@@ -50,7 +50,7 @@ import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import { E_FIELD_TYPE } from '../../application/core/entity.core';
-import { FieldSlug } from '../../application/core/field-slug.core';
+import SlugService from '../../application/services/slug/slug.service';
 import { TaskLogger } from '../shared/task-logger';
 
 config({ path: '.env', quiet: true });
@@ -61,6 +61,10 @@ const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE ?? 'lowcodejs_data';
 const FORCE = process.argv.includes('--force');
 const DRY_RUN = process.argv.includes('--dry-run');
 const TITLE = 'Slugs de campo com caracteres especiais';
+
+// Migration roda fora do container de DI — instancia direto. O SlugService e
+// puro (constructor sem argumentos), entao `new` aqui e seguro.
+const slugService = new SlugService();
 
 const CASCADE_COLLECTION = 'cascade_dropdown_field_configs';
 
@@ -183,13 +187,13 @@ function planField(
   const slug = field.slug;
   if (typeof slug !== 'string' || slug.length === 0) return null;
   if (field.native === true) return null;
-  if (!FieldSlug.getError(slug)) return null;
+  if (!slugService.getError(slug)) return null;
 
   let name = slug;
   if (typeof field.name === 'string' && field.name.length > 0)
     name = field.name;
 
-  const newSlug = FieldSlug.suggestUnique(name, Array.from(used));
+  const newSlug = slugService.unique(name, Array.from(used));
   used.add(newSlug);
 
   return {

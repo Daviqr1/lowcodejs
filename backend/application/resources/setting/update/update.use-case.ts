@@ -3,11 +3,11 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
-import { isValidObjectId } from '@application/core/object-id.util';
 import {
   SettingContractRepository,
   SettingUpdatePayload,
 } from '@application/repositories/setting/setting-contract.repository';
+import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
 import {
   prepareAiSettingsForSave,
   projectAiSettingsFields,
@@ -29,13 +29,14 @@ export default class SettingUpdateUseCase {
   constructor(
     private readonly settingRepository: SettingContractRepository,
     private readonly storageService: StorageContractService,
+    private readonly identifier: IdentifierContractService,
   ) {}
 
   async execute(payload: SettingUpdatePayload): Promise<Response> {
     try {
       if (Array.isArray(payload.MODEL_CLONE_TABLES)) {
         payload.MODEL_CLONE_TABLES = payload.MODEL_CLONE_TABLES.filter(
-          (id) => !BUILTIN_TEMPLATE_IDS.has(id) && isValidObjectId(id),
+          (id) => !BUILTIN_TEMPLATE_IDS.has(id) && this.identifier.isValid(id),
         );
       }
 

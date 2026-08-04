@@ -10,15 +10,16 @@
  *     `item()` por entidade e `done(summary)` com o resumo indentado.
  */
 
+import DateService from '../../application/services/date/date.service';
+
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
 const DIM = '\x1b[2m';
 const RESET = '\x1b[0m';
 
-const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
+// Roda fora do container de DI (scripts de migration/seed). O DateService e
+// puro (constructor sem argumentos).
+const dateService = new DateService();
 
 export class TaskLogger {
   private readonly title: string;
@@ -71,6 +72,6 @@ export class TaskLogger {
   }
 
   private formatDate(date: Date): string {
-    return dateFormatter.format(date);
+    return dateService.formatPtBR(date);
   }
 }

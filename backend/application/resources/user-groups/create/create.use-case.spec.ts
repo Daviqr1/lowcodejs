@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 
 import UserGroupCreateUseCase from './create.use-case';
 
@@ -10,7 +11,10 @@ let sut: UserGroupCreateUseCase;
 describe('UserGroup Create Use Case', () => {
   beforeEach(() => {
     userGroupInMemoryRepository = new UserGroupInMemoryRepository();
-    sut = new UserGroupCreateUseCase(userGroupInMemoryRepository);
+    sut = new UserGroupCreateUseCase(
+      userGroupInMemoryRepository,
+      new SlugService(),
+    );
   });
 
   it('deve criar um grupo de usuarios com sucesso', async () => {

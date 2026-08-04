@@ -7,13 +7,13 @@ import {
   type IField as Entity,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { FieldSlug } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import {
   hasDuplicateDropdownLabels,
   normalizeDefaultValue,
 } from '@application/resources/table-fields/table-field-base.schema';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
@@ -39,6 +39,7 @@ export default class GroupFieldCreateUseCase {
     private readonly fieldRepository: FieldContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
     private readonly modelBuilder: ModelBuilderContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -95,7 +96,7 @@ export default class GroupFieldCreateUseCase {
 
       let slugInput: string | undefined;
       if (payload.tableSlug) slugInput = payload.slug;
-      const resolvedSlug = FieldSlug.resolve({
+      const resolvedSlug = this.slugService.resolve({
         name: payload.name,
         slug: slugInput,
       });

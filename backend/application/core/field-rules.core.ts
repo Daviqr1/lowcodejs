@@ -15,3 +15,15 @@ export const INTEGER_REGEX = /^-?\d+$/;
 export const DECIMAL_REGEX = /^-?\d+(\.\d+)?$/;
 // Numero (inteiro ou decimal, com sinal). Reusado por IS_NUMERIC e IS_IN_RANGE.
 export const NUMERIC_REGEX = /^-?\d+(\.\d+)?$/;
+
+// Limites e formato de slug. Ficam aqui (e nao no SlugService) porque schemas
+// Zod de escopo de modulo precisam deles em tempo de import, quando o container
+// de DI ainda nao existe. O SlugService le daqui — fonte unica.
+export const NAME_MAX_LENGTH = 500;
+export const SLUG_MAX_LENGTH = 80;
+export const SLUG_MIN_LENGTH = 2;
+export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// Identificador de documento (ObjectId hex de 24 chars). Fonte unica — antes
+// existiam 4 reimplementacoes divergentes espalhadas pelo backend.
+export const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;

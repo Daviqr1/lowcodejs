@@ -1,5 +1,4 @@
 import { Service } from 'fastify-decorators';
-import slugify from 'slugify';
 
 import { left, right } from '@application/core/either.core';
 import {
@@ -18,6 +17,7 @@ import {
   TableContractRepository,
   TableCreatePayload,
 } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import {
@@ -59,6 +59,7 @@ export default class CloneTableUseCase {
     private readonly fieldRepository: FieldContractRepository,
     private readonly rowRepository: RowContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   private getTemplateDeps(): CloneTableDeps {
@@ -67,6 +68,7 @@ export default class CloneTableUseCase {
       fieldRepository: this.fieldRepository,
       rowRepository: this.rowRepository,
       schemaBuilder: this.schemaBuilder,
+      slugService: this.slugService,
     };
   }
 
@@ -82,11 +84,7 @@ export default class CloneTableUseCase {
       }
 
       if (!payload.baseTableIds?.length) {
-        const slug = slugify(payload.name, {
-          lower: true,
-          strict: true,
-          trim: true,
-        });
+        const slug = this.slugService.normalize(payload.name);
         const existingTable = await this.tableRepository.findBySlug(slug);
         if (existingTable) {
           return left(
@@ -209,11 +207,7 @@ export default class CloneTableUseCase {
     name: string;
     ownerId: string;
   }): Promise<CloneContext> {
-    const newSlug = slugify(name, {
-      lower: true,
-      strict: true,
-      trim: true,
-    });
+    const newSlug = this.slugService.normalize(name);
 
     const { nativeFields, nativeFieldIds } = await this.createNativeFields();
 
@@ -475,11 +469,7 @@ export default class CloneTableUseCase {
 
     while (
       await this.tableRepository.findBySlug(
-        slugify(candidate, {
-          lower: true,
-          strict: true,
-          trim: true,
-        }),
+        this.slugService.normalize(candidate),
       )
     ) {
       candidate = `${name} ${suffix}`;

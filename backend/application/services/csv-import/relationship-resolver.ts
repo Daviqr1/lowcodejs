@@ -18,12 +18,11 @@ import {
   type IField,
   type IRow,
 } from '@application/core/entity.core';
+import { OBJECT_ID_REGEX } from '@application/core/field-rules.core';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
 export type RelationshipResolver = (raw: string) => string[];
-
-const OBJECT_ID_REGEX = /^[0-9a-f]{24}$/i;
 
 const DISPLAY_CANDIDATE_FIELDS = [
   'name',

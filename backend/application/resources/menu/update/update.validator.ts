@@ -1,9 +1,13 @@
-import slugify from 'slugify';
 import z from 'zod';
 
 import { E_MENU_ITEM_TYPE, Merge } from '@application/core/entity.core';
+import SlugService from '@application/services/slug/slug.service';
 
 import { MenuVisibilityValidator } from '../create/create.validator';
+
+// Schema Zod de escopo de modulo: avaliado no import, quando o container de DI
+// ainda nao existe. O SlugService e puro (constructor sem argumentos).
+const slugService = new SlugService();
 
 export const MenuUpdateParamsValidator = z.object({
   _id: z.string({ message: 'O ID é obrigatório' }).min(1, 'O ID é obrigatório'),
@@ -52,7 +56,7 @@ export const MenuUpdateBodyValidator = z
     return {
       ...payload,
       ...(payload.name && {
-        slug: slugify(payload.name, { lower: true, trim: true }),
+        slug: slugService.normalize(payload.name),
       }),
     };
   })

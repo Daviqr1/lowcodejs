@@ -4,6 +4,7 @@ import type HTTPException from '@application/core/exception.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import type { SlugContractService } from '@application/services/slug/slug-contract.service';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type { CloneTablePayload } from './clone-table.validator';
@@ -31,4 +32,5 @@ export type CloneTableDeps = {
   fieldRepository: FieldContractRepository;
   rowRepository: RowContractRepository;
   schemaBuilder: SchemaBuilderContractService;
+  slugService: SlugContractService;
 };

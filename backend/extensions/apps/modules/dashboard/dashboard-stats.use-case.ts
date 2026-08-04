@@ -6,6 +6,7 @@ import { E_USER_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { DateContractService } from '@application/services/date/date-contract.service';
 import { getDataConnection } from '@config/database.config';
 
 export type DashboardStatsResponse = {
@@ -25,42 +26,12 @@ export type DashboardStatsResponse = {
   }>;
 };
 
-const MONTH_LABELS_PT = [
-  'Jan',
-  'Fev',
-  'Mar',
-  'Abr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Set',
-  'Out',
-  'Nov',
-  'Dez',
-];
-
-function lastSixMonths(): Array<{ key: string; label: string }> {
-  const result: Array<{ key: string; label: string }> = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i -= 1) {
-    const ref = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
-    result.push({ key, label: MONTH_LABELS_PT[ref.getMonth()] });
-  }
-  return result;
-}
-
-function monthKey(date: Date | string): string {
-  const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
 @Service()
 export default class DashboardStatsUseCase {
   constructor(
     private readonly tableRepository: TableContractRepository,
     private readonly userRepository: UserContractRepository,
+    private readonly dateService: DateContractService,
   ) {}
 
   async execute(): Promise<Either<HTTPException, DashboardStatsResponse>> {
@@ -91,10 +62,12 @@ export default class DashboardStatsUseCase {
       const totalRecords = recordCounts.reduce((acc, n) => acc + n, 0);
 
       // Tabelas por mês (últimos 6)
-      const months = lastSixMonths();
+      const months = this.dateService.lastMonths(6);
       const tablesPerMonth = months.map(({ key, label }) => ({
         month: label,
-        tables: tables.filter((t) => monthKey(t.createdAt) === key).length,
+        tables: tables.filter(
+          (t) => this.dateService.monthKey(t.createdAt) === key,
+        ).length,
       }));
 
       // Usuários por status

@@ -11,6 +11,7 @@ import RelationshipDefinitionInMemoryRepository from '@application/repositories/
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import RelationshipMaterializationService from '@application/services/relationship/relationship-materialization.service';
+import SlugService from '@application/services/slug/slug.service';
 import InMemoryModelBuilder from '@application/services/table/in-memory-model-builder.service';
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 
@@ -124,7 +125,9 @@ describe('Table Field Update - USER', () => {
         new RelationshipDefinitionInMemoryRepository(),
         schemaBuilder,
         modelBuilder,
+        new SlugService(),
       ),
+      new SlugService(),
     );
   });
 

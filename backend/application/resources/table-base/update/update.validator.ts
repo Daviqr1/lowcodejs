@@ -1,7 +1,7 @@
-import slugify from 'slugify';
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
+import SlugService from '@application/services/slug/slug.service';
 
 import {
   GroupConfigurationSchema,
@@ -16,6 +16,10 @@ import {
   TablePermissionsSchema,
   TableStyleSchema,
 } from '../table-base.schema';
+
+// Schema Zod de escopo de modulo: avaliado no import, quando o container de DI
+// ainda nao existe. O SlugService e puro (constructor sem argumentos).
+const slugService = new SlugService();
 
 export const TableUpdateBodyValidator = z
   .object({
@@ -47,9 +51,9 @@ export const TableUpdateBodyValidator = z
     owner: z.string().trim().min(1).optional(),
   })
   .transform((data) => {
-    let slug = slugify(data.name, { lower: true, strict: true, trim: true });
+    let slug = slugService.normalize(data.name);
     if (data.slug) {
-      slug = slugify(data.slug, { lower: true, strict: true, trim: true });
+      slug = slugService.normalize(data.slug);
     }
     return { ...data, slug };
   });

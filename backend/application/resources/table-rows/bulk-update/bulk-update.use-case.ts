@@ -13,6 +13,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowMemberNotificationContractService } from '@application/services/row-member-notification/row-member-notification-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { ScriptExecutionContractService } from '@application/services/script-execution/script-execution-contract.service';
+import SlugService from '@application/services/slug/slug.service';
 
 import TableRowUpdateUseCase from '../update/update.use-case';
 
@@ -58,6 +59,7 @@ export default class BulkUpdateUseCase {
       fieldVisibility,
       fieldValidation,
       rowAccessGuard,
+      new SlugService(),
     );
   }
 

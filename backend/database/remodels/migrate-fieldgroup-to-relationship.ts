@@ -29,7 +29,6 @@
 
 import { config } from 'dotenv';
 import mongoose from 'mongoose';
-import slugify from 'slugify';
 
 import {
   buildDefaultTablePermissions,
@@ -40,7 +39,12 @@ import {
   E_TABLE_STYLE,
   E_TABLE_TYPE,
 } from '../../application/core/entity.core';
+import SlugService from '../../application/services/slug/slug.service';
 import { TaskLogger } from '../shared/task-logger';
+
+// Remodel roda fora do container de DI — instancia direto. O SlugService e
+// puro (constructor sem argumentos).
+const slugService = new SlugService();
 
 config({ path: '.env', quiet: true });
 
@@ -319,7 +323,7 @@ async function migrate(): Promise<void> {
 
     const newTableSlug = await uniqueTableSlug(
       systemDb,
-      slugify(`${sourceTable.slug}-${groupFieldSlug}`, { lower: true }),
+      slugService.normalize(`${sourceTable.slug}-${groupFieldSlug}`),
     );
 
     logger.item(
@@ -370,8 +374,8 @@ async function migrate(): Promise<void> {
     const mirrorFieldId = new mongoose.Types.ObjectId();
     const newTableId = new mongoose.Types.ObjectId();
     const newTableName = `${sourceTable.name ?? sourceTable.slug} - ${group.name ?? groupFieldSlug}`;
-    const sourceRelSlug = slugify(`${groupFieldSlug}-rel`, { lower: true });
-    const mirrorSlug = slugify(`${sourceTable.slug}-rel`, { lower: true });
+    const sourceRelSlug = slugService.normalize(`${groupFieldSlug}-rel`);
+    const mirrorSlug = slugService.normalize(`${sourceTable.slug}-rel`);
 
     const newTableStub: TableDoc = {
       _id: newTableId,

@@ -1,6 +1,5 @@
 import { Service } from 'fastify-decorators';
 import yaml from 'js-yaml';
-import slugify from 'slugify';
 import { z } from 'zod';
 
 import type { Either } from '@application/core/either.core';
@@ -18,10 +17,10 @@ import {
   type IField,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { FieldSlug } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import type {
@@ -64,6 +63,7 @@ export default class SchemaImportUseCase {
     private readonly fieldRepository: FieldContractRepository,
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -106,7 +106,7 @@ export default class SchemaImportUseCase {
 
       // PASS 1 — cria tabelas e campos (RELATIONSHIP fica pendente)
       for (const tableDef of validation.data.tables) {
-        const slug = slugify(tableDef.name, { lower: true, trim: true });
+        const slug = this.slugService.normalize(tableDef.name);
 
         if (batchTables.has(slug)) {
           errors.push({
@@ -205,7 +205,7 @@ export default class SchemaImportUseCase {
     const usedSlugs = new Set<string>(nativeFields.map((f) => f.slug));
 
     for (const fieldDef of tableDef.fields) {
-      const fieldSlug = FieldSlug.suggestUnique(fieldDef.name, [...usedSlugs]);
+      const fieldSlug = this.slugService.unique(fieldDef.name, [...usedSlugs]);
       usedSlugs.add(fieldSlug);
 
       const payload = this.buildFieldPayload(fieldDef, fieldSlug);

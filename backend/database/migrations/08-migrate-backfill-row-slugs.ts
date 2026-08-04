@@ -39,7 +39,7 @@ import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import { E_FIELD_TYPE } from '../../application/core/entity.core';
-import { FieldSlug } from '../../application/core/field-slug.core';
+import SlugService from '../../application/services/slug/slug.service';
 import { TaskLogger } from '../shared/task-logger';
 
 config({ path: '.env', quiet: true });
@@ -49,6 +49,10 @@ const DB_DATABASE = process.env.DB_DATABASE ?? 'lowcodejs';
 const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE ?? 'lowcodejs_data';
 const FORCE = process.argv.includes('--force');
 const TITLE = 'Slugs amigáveis das rows';
+
+// Migration roda fora do container de DI — instancia direto. O SlugService e
+// puro (constructor sem argumentos), entao `new` aqui e seguro.
+const slugService = new SlugService();
 
 type SettingMarkerDoc = {
   MIGRATION_ROW_SLUG_BACKFILL_AT?: Date | null;
@@ -139,7 +143,7 @@ async function backfillCollection(
     const raw: unknown = row[fieldSlug];
     if (raw === null || raw === undefined || raw === '') continue;
 
-    const generated = FieldSlug.suggestUnique(String(raw), Array.from(used));
+    const generated = slugService.unique(String(raw), Array.from(used));
     used.add(generated);
 
     await collection.updateOne(

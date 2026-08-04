@@ -9,10 +9,10 @@ import {
   type ITable,
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
-import { FieldSlug } from '@application/core/field-slug.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
@@ -31,6 +31,7 @@ export default class RelationshipMaterializationService implements RelationshipM
     private readonly definitionRepository: RelationshipDefinitionContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
     private readonly modelBuilder: ModelBuilderContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async materialize(
@@ -359,7 +360,7 @@ export default class RelationshipMaterializationService implements RelationshipM
     sourceField: IField,
     targetTable: ITable,
   ): string {
-    const base = FieldSlug.resolve({
+    const base = this.slugService.resolve({
       name: `${sourceTable.name} ${sourceField.name}`,
     });
     let slug = base.slug;

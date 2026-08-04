@@ -1,5 +1,4 @@
 import { Service } from 'fastify-decorators';
-import slugify from 'slugify';
 
 import { left, right } from '@application/core/either.core';
 import {
@@ -19,10 +18,9 @@ import {
 } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import {
-  FIELD_NAME_MAX_LENGTH,
-  FIELD_SLUG_MIN_LENGTH,
-  FieldSlug,
-} from '@application/core/field-slug.core';
+  NAME_MAX_LENGTH,
+  SLUG_MIN_LENGTH,
+} from '@application/core/field-rules.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
@@ -30,6 +28,7 @@ import {
   TableContractRepository,
   type TableCreatePayload,
 } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
 import {
@@ -146,6 +145,7 @@ export default class ImportTableUseCase {
     private readonly rowRepository: RowContractRepository,
     private readonly menuRepository: MenuContractRepository,
     private readonly schemaBuilder: SchemaBuilderContractService,
+    private readonly slugService: SlugContractService,
   ) {}
 
   async execute(
@@ -647,7 +647,7 @@ export default class ImportTableUseCase {
     // Passo 1: preserva e reserva todos os slugs já válidos.
     for (const e of entries) {
       if (out.has(e.slug)) continue;
-      if (!FieldSlug.getError(e.slug)) {
+      if (!this.slugService.getError(e.slug)) {
         used.add(e.slug);
         out.set(e.slug, e.slug);
       }
@@ -657,8 +657,10 @@ export default class ImportTableUseCase {
     for (const e of entries) {
       if (out.has(e.slug)) continue;
       let base =
-        FieldSlug.normalize(e.slug) || FieldSlug.normalize(e.name) || 'campo';
-      if (base.length < FIELD_SLUG_MIN_LENGTH) base = 'campo';
+        this.slugService.normalize(e.slug) ||
+        this.slugService.normalize(e.name) ||
+        'campo';
+      if (base.length < SLUG_MIN_LENGTH) base = 'campo';
       let candidate = base;
       let i = 2;
       while (used.has(candidate)) candidate = `${base}-${i++}`;
@@ -806,15 +808,15 @@ export default class ImportTableUseCase {
         );
       }
 
-      if (field.name.length > FIELD_NAME_MAX_LENGTH) {
+      if (field.name.length > NAME_MAX_LENGTH) {
         return HTTPException.BadRequest(
-          `Título do campo deve ter no máximo ${FIELD_NAME_MAX_LENGTH} caracteres`,
+          `Título do campo deve ter no máximo ${NAME_MAX_LENGTH} caracteres`,
           'INVALID_FIELD_NAME',
           { field: path },
         );
       }
 
-      const slugError = FieldSlug.getError(field.slug);
+      const slugError = this.slugService.getError(field.slug);
       if (slugError) {
         return HTTPException.BadRequest(
           `Slug de campo inválido: ${slugError}`,
@@ -949,7 +951,7 @@ export default class ImportTableUseCase {
     ): { name: string; slug: string } | null => {
       const name = rawName.trim();
       if (!name) return null;
-      const slug = slugify(name, { lower: true, strict: true, trim: true });
+      const slug = this.slugService.normalize(name);
       if (!slug) return null;
       return { name, slug };
     };
@@ -995,7 +997,7 @@ export default class ImportTableUseCase {
       if (!knownSlugs.has(entry.slug)) continue;
       const name = entry.name.trim();
       if (!name) continue;
-      const slug = slugify(name, { lower: true, strict: true, trim: true });
+      const slug = this.slugService.normalize(name);
       if (!slug) continue;
       renames.set(entry.slug, { name, slug });
     }

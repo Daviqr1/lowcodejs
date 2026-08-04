@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import ExtensionInMemoryRepository from '@application/repositories/extension/extension-in-memory.repository';
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 
 import MenuUpdateUseCase from './update.use-case';
 
@@ -20,6 +21,7 @@ describe('Menu Update Use Case', () => {
       menuInMemoryRepository,
       tableInMemoryRepository,
       extensionInMemoryRepository,
+      new SlugService(),
     );
   });
 

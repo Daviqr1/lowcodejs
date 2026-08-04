@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { FIELD_SLUG_PATTERN } from '@application/core/field-slug.core';
+import { SLUG_REGEX } from '@application/core/field-rules.core';
 
 /**
  * Row Access Control — settings schema (v3, group-keyed)
@@ -28,7 +28,7 @@ const visibilityValueSchema = z
 const fieldSlugSchema = z
   .string()
   .min(1)
-  .regex(FIELD_SLUG_PATTERN, 'Slug de campo invalido');
+  .regex(SLUG_REGEX, 'Slug de campo invalido');
 
 const visibilitySettingsSchema = z
   .object({
@@ -107,7 +107,7 @@ const fieldVisibilitySettingsSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.enabled) return;
-    if (!FIELD_SLUG_PATTERN.test(data.fieldSlug)) {
+    if (!SLUG_REGEX.test(data.fieldSlug)) {
       ctx.addIssue({
         code: 'custom',
         path: ['fieldSlug'],

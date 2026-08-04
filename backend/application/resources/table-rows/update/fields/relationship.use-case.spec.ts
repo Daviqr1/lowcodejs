@@ -10,6 +10,7 @@ import { InMemoryRowAccessGuardService } from '@application/services/row-access-
 import InMemoryRowMemberNotificationService from '@application/services/row-member-notification/in-memory-row-member-notification.service';
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import InMemoryScriptExecutionService from '@application/services/script-execution/in-memory-script-execution.service';
+import SlugService from '@application/services/slug/slug.service';
 import { makeRelationshipField } from '@test/helpers/field-factory.helper';
 import { makeTable } from '@test/helpers/table-factory.helper';
 
@@ -49,6 +50,7 @@ describe('Table Row Update - RELATIONSHIP', () => {
       new InMemoryFieldVisibilityService(),
       new FieldValidationService(rowRepository, new UserInMemoryRepository()),
       new InMemoryRowAccessGuardService(),
+      new SlugService(),
     );
   });
 

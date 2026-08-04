@@ -16,6 +16,8 @@ import { ExtensionActiveMiddleware } from '@application/middlewares/extension-ac
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import TableMongooseRepository from '@application/repositories/table/table.repository';
+import { DateContractService } from '@application/services/date/date-contract.service';
+import DateService from '@application/services/date/date.service';
 import MongooseModelBuilder, {
   type Entity,
 } from '@application/services/table/model-builder.service';
@@ -182,13 +184,12 @@ function buildFieldCondition(
 
   if (filter.operator === 'date_between') {
     const range: { $gte?: Date; $lte?: Date } = {};
+    const dateService = getInstanceByToken<DateContractService>(DateService);
     if (filter.dateStart) {
-      const start = new Date(filter.dateStart);
-      range.$gte = new Date(start.setUTCHours(0, 0, 0, 0));
+      range.$gte = dateService.startOfDay(filter.dateStart);
     }
     if (filter.dateEnd) {
-      const end = new Date(filter.dateEnd);
-      range.$lte = new Date(end.setUTCHours(23, 59, 59, 999));
+      range.$lte = dateService.endOfDay(filter.dateEnd);
     }
     return range;
   }

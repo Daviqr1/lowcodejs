@@ -3,8 +3,8 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
-import { isValidObjectId } from '@application/core/object-id.util';
 import { SettingContractRepository } from '@application/repositories/setting/setting-contract.repository';
+import { IdentifierContractService } from '@application/services/identifier/identifier-contract.service';
 
 import { SETUP_STEPS, nextStep } from '../setup.steps';
 import type { SetupStep } from '../setup.steps';
@@ -36,7 +36,10 @@ const BUILTIN_TEMPLATE_IDS = new Set([
 
 @Service()
 export default class SetupPagingSubmitUseCase {
-  constructor(private readonly settingRepository: SettingContractRepository) {}
+  constructor(
+    private readonly settingRepository: SettingContractRepository,
+    private readonly identifier: IdentifierContractService,
+  ) {}
 
   async execute(payload: Input): Promise<Response> {
     try {
@@ -67,7 +70,7 @@ export default class SetupPagingSubmitUseCase {
       if (payload.MODEL_CLONE_TABLES) {
         filteredCloneTables = payload.MODEL_CLONE_TABLES.filter((id) => {
           if (BUILTIN_TEMPLATE_IDS.has(id)) return false;
-          if (!isValidObjectId(id)) return false;
+          if (!this.identifier.isValid(id)) return false;
           return true;
         });
       }

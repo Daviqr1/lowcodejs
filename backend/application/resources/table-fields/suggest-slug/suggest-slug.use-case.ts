@@ -3,8 +3,8 @@ import { Service } from 'fastify-decorators';
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
-import { FieldSlug } from '@application/core/field-slug.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
 import type { TableFieldSuggestSlugPayload } from './suggest-slug.validator';
 
@@ -12,7 +12,10 @@ type Response = Either<HTTPException, { slug: string }>;
 
 @Service()
 export default class TableFieldSuggestSlugUseCase {
-  constructor(private readonly tableRepository: TableContractRepository) {}
+  constructor(
+    private readonly tableRepository: TableContractRepository,
+    private readonly slugService: SlugContractService,
+  ) {}
 
   async execute(payload: TableFieldSuggestSlugPayload): Promise<Response> {
     try {
@@ -29,7 +32,7 @@ export default class TableFieldSuggestSlugUseCase {
         .map((field) => field.slug);
 
       return right({
-        slug: FieldSlug.suggestUnique(payload.name, existingSlugs),
+        slug: this.slugService.unique(payload.name, existingSlugs),
       });
     } catch (error) {
       console.error('[table-fields > suggest-slug][error]:', error);
