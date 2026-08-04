@@ -10,7 +10,7 @@ import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
 import { Readable } from 'node:stream';
 
-import { getS3Client } from '@config/storage.config';
+import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
 import { processFile } from './process-file';
 import type {
@@ -22,12 +22,14 @@ import { StorageContractService } from './storage-contract.service';
 
 @Service()
 export default class S3StorageService implements StorageContractService {
+  constructor(private readonly config: StorageConfigContractService) {}
+
   private get bucket(): string {
     return process.env.STORAGE_BUCKET!;
   }
 
   async ensureBucket(): Promise<void> {
-    const client = getS3Client();
+    const client = this.config.s3Client();
     const endpoint = process.env.STORAGE_ENDPOINT;
 
     try {
@@ -56,7 +58,7 @@ export default class S3StorageService implements StorageContractService {
       `[Storage S3] Upload ${file.filename} (${file.mimetype}, ${file.size} bytes)`,
     );
 
-    await getS3Client().send(
+    await this.config.s3Client().send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: file.filename,
@@ -76,9 +78,9 @@ export default class S3StorageService implements StorageContractService {
 
   async delete(filename: string): Promise<boolean> {
     try {
-      await getS3Client().send(
-        new DeleteObjectCommand({ Bucket: this.bucket, Key: filename }),
-      );
+      await this.config
+        .s3Client()
+        .send(new DeleteObjectCommand({ Bucket: this.bucket, Key: filename }));
       return true;
     } catch (error) {
       console.error('[Storage S3] Erro ao deletar arquivo:', error);
@@ -88,9 +90,9 @@ export default class S3StorageService implements StorageContractService {
 
   async exists(filename: string): Promise<boolean> {
     try {
-      await getS3Client().send(
-        new HeadObjectCommand({ Bucket: this.bucket, Key: filename }),
-      );
+      await this.config
+        .s3Client()
+        .send(new HeadObjectCommand({ Bucket: this.bucket, Key: filename }));
       return true;
     } catch {
       return false;
@@ -98,9 +100,9 @@ export default class S3StorageService implements StorageContractService {
   }
 
   async read(filename: string): Promise<StorageReadResponse> {
-    const result = await getS3Client().send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: filename }),
-    );
+    const result = await this.config
+      .s3Client()
+      .send(new GetObjectCommand({ Bucket: this.bucket, Key: filename }));
 
     if (!result.Body) {
       throw new Error(`[Storage S3] Empty body for ${filename}`);
@@ -125,7 +127,7 @@ export default class S3StorageService implements StorageContractService {
   ): Promise<StorageWriteRawResponse> {
     await this.ensureBucket();
 
-    await getS3Client().send(
+    await this.config.s3Client().send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: filename,

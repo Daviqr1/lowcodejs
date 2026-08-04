@@ -2,9 +2,8 @@ import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
 import { createReadStream, existsSync } from 'node:fs';
 import { access, mkdir, stat, unlink, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 
-import { getLocalStoragePath } from '@config/storage.config';
+import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
 import { processFile } from './process-file';
 import type {
@@ -16,8 +15,10 @@ import { StorageContractService } from './storage-contract.service';
 
 @Service()
 export default class LocalStorageService implements StorageContractService {
+  constructor(private readonly config: StorageConfigContractService) {}
+
   async ensureBucket(): Promise<void> {
-    const storagePath = getLocalStoragePath();
+    const storagePath = this.config.localPath();
     if (!existsSync(storagePath)) {
       await mkdir(storagePath, { recursive: true });
     }
@@ -31,7 +32,7 @@ export default class LocalStorageService implements StorageContractService {
 
     const file = await processFile(part, staticName);
 
-    await writeFile(join(getLocalStoragePath(), file.filename), file.buffer);
+    await writeFile(this.config.localFilePath(file.filename), file.buffer);
 
     return {
       filename: file.filename,
@@ -43,7 +44,7 @@ export default class LocalStorageService implements StorageContractService {
 
   async delete(filename: string): Promise<boolean> {
     try {
-      await unlink(join(getLocalStoragePath(), filename));
+      await unlink(this.config.localFilePath(filename));
       return true;
     } catch (error) {
       console.error('[Storage Local] Erro ao deletar arquivo:', error);
@@ -53,7 +54,7 @@ export default class LocalStorageService implements StorageContractService {
 
   async exists(filename: string): Promise<boolean> {
     try {
-      await access(join(getLocalStoragePath(), filename));
+      await access(this.config.localFilePath(filename));
       return true;
     } catch {
       return false;
@@ -61,7 +62,7 @@ export default class LocalStorageService implements StorageContractService {
   }
 
   async read(filename: string): Promise<StorageReadResponse> {
-    const path = join(getLocalStoragePath(), filename);
+    const path = this.config.localFilePath(filename);
     const stats = await stat(path);
     return {
       stream: createReadStream(path),
@@ -77,7 +78,7 @@ export default class LocalStorageService implements StorageContractService {
     _mimetype: string,
   ): Promise<StorageWriteRawResponse> {
     await this.ensureBucket();
-    const path = join(getLocalStoragePath(), filename);
+    const path = this.config.localFilePath(filename);
     await writeFile(path, body);
     const stats = await stat(path);
     return { size: stats.size };

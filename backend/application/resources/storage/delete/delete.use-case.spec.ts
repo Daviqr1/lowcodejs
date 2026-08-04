@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import StorageInMemoryRepository from '@application/repositories/storage/storage-in-memory.repository';
+import SlugService from '@application/services/slug/slug.service';
 import InMemoryStorageService from '@application/services/storage/in-memory-storage.service';
+import StorageConfigService from '@application/services/storage-config/storage-config.service';
 
 import StorageDeleteUseCase from './delete.use-case';
 
@@ -13,7 +15,11 @@ describe('Storage Delete Use Case', () => {
   beforeEach(() => {
     storageInMemoryRepository = new StorageInMemoryRepository();
     storageService = new InMemoryStorageService();
-    sut = new StorageDeleteUseCase(storageInMemoryRepository, storageService);
+    sut = new StorageDeleteUseCase(
+      storageInMemoryRepository,
+      storageService,
+      new StorageConfigService(new SlugService()),
+    );
   });
 
   it('deve deletar arquivo com sucesso', async () => {

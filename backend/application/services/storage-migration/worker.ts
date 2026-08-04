@@ -31,8 +31,9 @@ import {
   type StorageMigrationFileMigratedEvent,
   type StorageMigrationProgressEvent,
 } from '@application/resources/storage-migration/storage-migration.socket';
-import { invalidateStorageMeta } from '@application/services/storage/storage-meta-cache';
+import SlugService from '@application/services/slug/slug.service';
 import StorageService from '@application/services/storage/storage.service';
+import StorageConfigService from '@application/services/storage-config/storage-config.service';
 import { createBullMQConnection } from '@config/redis.config';
 
 import {
@@ -41,6 +42,10 @@ import {
   type CleanupJobPayload,
   type MigrateJobPayload,
 } from './storage-migration-queue-contract.service';
+
+// O worker ainda e funcao solta (vira service no passo dos workers). O
+// StorageConfigService so le `process.env` e mantem cache proprio.
+const storageConfig = new StorageConfigService(new SlugService());
 
 const RETRY_LIMIT = 3;
 
@@ -163,7 +168,7 @@ async function migrateOneFile(
         target,
         E_STORAGE_MIGRATION_STATUS.IDLE,
       );
-      invalidateStorageMeta(doc.filename);
+      storageConfig.invalidateMeta(doc.filename);
 
       ctx.processed++;
       ctx.succeeded++;
@@ -191,7 +196,7 @@ async function migrateOneFile(
     source,
     E_STORAGE_MIGRATION_STATUS.FAILED,
   );
-  invalidateStorageMeta(doc.filename);
+  storageConfig.invalidateMeta(doc.filename);
   ctx.failed++;
   ctx.processed++;
 

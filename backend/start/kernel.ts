@@ -17,7 +17,8 @@ import { registerDependencies } from '@application/core/di-registry';
 import { ErrorHandlerContractService } from '@application/services/error-handler/error-handler-contract.service';
 import ErrorHandlerService from '@application/services/error-handler/error-handler.service';
 import { ACCESS_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
-import { StorageContentDispositionHook } from '@hooks/content-disposition.hook';
+import { ContentDispositionHookContractService } from '@hooks/content-disposition-hook-contract.service';
+import ContentDispositionHookService from '@hooks/content-disposition-hook.service';
 import { ErrorLogHookContractService } from '@hooks/error-log-hook-contract.service';
 import ErrorLogHookService from '@hooks/error-log-hook.service';
 import { LoadExtensionsHookContractService } from '@hooks/load-extensions-hook-contract.service';
@@ -128,8 +129,6 @@ kernel.register(multipart, {
   },
 });
 
-kernel.addHook('onRequest', StorageContentDispositionHook);
-
 kernel.register(swagger, {
   openapi: {
     info: {
@@ -169,6 +168,14 @@ await registerDependencies();
 
 // Hooks e error handler resolvidos do container — precisa ser depois do
 // `registerDependencies()` acima.
+const contentDispositionHook =
+  getInstanceByToken<ContentDispositionHookContractService>(
+    ContentDispositionHookService,
+  );
+kernel.addHook('onRequest', (request, response) =>
+  contentDispositionHook.handle(request, response),
+);
+
 const loggerHook =
   getInstanceByToken<LoggerHookContractService>(LoggerHookService);
 kernel.addHook('onResponse', (request, response) =>

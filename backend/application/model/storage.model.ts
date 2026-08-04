@@ -7,8 +7,13 @@ import {
   type Merge,
   type TStorageLocation,
 } from '@application/core/entity.core';
-import { getStorageDriver } from '@config/storage.config';
+import SlugService from '@application/services/slug/slug.service';
+import StorageConfigService from '@application/services/storage-config/storage-config.service';
 import { Env } from '@start/env';
+
+// Default de schema Mongoose: avaliado no import do model, antes de o
+// container existir. O StorageConfigService so le `process.env`.
+const storageConfig = new StorageConfigService(new SlugService());
 
 type Entity = Merge<Omit<Core, '_id'>, mongoose.Document>;
 
@@ -24,7 +29,7 @@ export const Schema = new mongoose.Schema(
       type: String,
       enum: Object.values(E_STORAGE_LOCATION),
       required: true,
-      default: (): TStorageLocation => getStorageDriver(),
+      default: (): TStorageLocation => storageConfig.driver(),
     },
     migration_status: {
       type: String,

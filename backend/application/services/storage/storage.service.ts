@@ -1,7 +1,7 @@
 import type { MultipartFile } from '@fastify/multipart';
 import { Service } from 'fastify-decorators';
 
-import { getStorageDriver } from '@config/storage.config';
+import { StorageConfigContractService } from '@application/services/storage-config/storage-config-contract.service';
 
 import LocalStorageService from './local-storage.service';
 import S3StorageService from './s3-storage.service';
@@ -14,11 +14,14 @@ import { StorageContractService } from './storage-contract.service';
 
 @Service()
 export default class StorageService implements StorageContractService {
-  private readonly local = new LocalStorageService();
-  private readonly s3 = new S3StorageService();
+  constructor(
+    private readonly local: LocalStorageService,
+    private readonly s3: S3StorageService,
+    private readonly config: StorageConfigContractService,
+  ) {}
 
   private get impl(): StorageContractService {
-    if (getStorageDriver() === 's3') return this.s3;
+    if (this.config.driver() === 's3') return this.s3;
     return this.local;
   }
 
