@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -30,16 +31,16 @@ type LogoutMode = 'current' | 'all';
 
 const LOGOUT_COPY = {
   current: {
-    title: 'Sair desta conta',
+    title: 'Sair da conta',
     description:
-      'Você será desconectado desta conta. Outras contas ativas permanecem conectadas. Deseja continuar?',
-    confirmLabel: 'Sair desta conta',
+      'Você será desconectado desta conta. As outras contas conectadas continuam ativas. Deseja continuar?',
+    confirmLabel: 'Sair da conta',
   },
   all: {
     title: 'Sair de todas as contas',
     description:
-      'Você será desconectado de todas as contas ativas e voltará para a tela de login. Deseja continuar?',
-    confirmLabel: 'Sair de todas',
+      'Você será desconectado de todas as contas conectadas e voltará para a tela de login. Deseja continuar?',
+    confirmLabel: 'Sair de todas as contas',
   },
 } satisfies Record<
   LogoutMode,
@@ -200,17 +201,27 @@ export function Profile(): React.JSX.Element {
         >
           {user.status === 'success' && (
             <React.Fragment>
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">{user.data.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {user.data.email}
-                </p>
-              </div>
+              {/* Sem contas indexadas nao ha o que alternar: mostra so quem
+                  esta logado, sem sugerir uma lista de contas. */}
+              {accounts.length === 0 && (
+                <React.Fragment>
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user.data.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.data.email}
+                    </p>
+                  </div>
 
-              <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
+                </React.Fragment>
+              )}
 
               {accounts.length > 0 && (
                 <React.Fragment>
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                    Contas
+                  </DropdownMenuLabel>
+
                   <DropdownMenuGroup>
                     {accounts.map((account) => {
                       const isActive = account._id === activeAccountId;
@@ -222,17 +233,24 @@ export function Profile(): React.JSX.Element {
                           onClick={() => switchAccount(account._id)}
                           className="cursor-pointer"
                         >
-                          <Avatar className="h-6 w-6 mr-2">
+                          <Avatar className="h-6 w-6 mr-2 shrink-0">
                             <AvatarFallback className="text-[10px] bg-muted font-bold text-muted-foreground">
                               {getInitials(account.name)}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="min-w-0 flex-1 truncate">
-                            {account.name}
+                          {/* O e-mail e o unico desempate entre homonimos —
+                              sem ele duas contas ficam indistinguiveis. */}
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate text-sm">
+                              {account.name}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {account.email}
+                            </span>
                           </span>
                           {switchingAccountId === account._id && <Spinner />}
                           {isActive && switchingAccountId !== account._id && (
-                            <Check className="size-4 ml-2" />
+                            <Check className="size-4 ml-2 shrink-0" />
                           )}
                         </DropdownMenuItem>
                       );
@@ -248,7 +266,7 @@ export function Profile(): React.JSX.Element {
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="size-4 mr-2" />
-                      <span>Adicionar conta</span>
+                      <span>Adicionar outra conta</span>
                     </a>
                   </DropdownMenuItem>
 
@@ -267,7 +285,7 @@ export function Profile(): React.JSX.Element {
                     className="flex items-center gap-2"
                   >
                     <User className="size-4 mr-2" />
-                    <span>Perfil</span>
+                    <span>Meu perfil</span>
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
@@ -283,7 +301,14 @@ export function Profile(): React.JSX.Element {
                   <LogOut className="size-4 mr-2" />
                 )}
                 {signOut.status === 'pending' && <Spinner />}
-                <span>Sair desta conta</span>
+                {/* Nomear a conta remove a duvida de "desta" quando ha mais de
+                    uma sessao aberta. */}
+                {accounts.length > 1 && (
+                  <span className="truncate">
+                    Sair da conta {user.data.name}
+                  </span>
+                )}
+                {accounts.length <= 1 && <span>Sair da conta</span>}
               </DropdownMenuItem>
 
               {accounts.length > 1 && (
@@ -296,7 +321,7 @@ export function Profile(): React.JSX.Element {
                     <LogOut className="size-4 mr-2" />
                   )}
                   {signOut.status === 'pending' && <Spinner />}
-                  <span>Sair de todas</span>
+                  <span>Sair de todas as contas</span>
                 </DropdownMenuItem>
               )}
             </React.Fragment>
