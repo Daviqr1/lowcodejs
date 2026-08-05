@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SetupLogosBodyValidator } from './submit.validator';
+import { SetupLogosBodyValidator } from '../_shared.validator';
 
 export const SetupLogosSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],

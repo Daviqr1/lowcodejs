@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { SetupPagingBodyValidator } from '../_shared.validator';
+
 import { SetupPagingSubmitSchema } from './submit.schema';
 import SetupPagingSubmitUseCase from './submit.use-case';
-import { SetupPagingBodyValidator } from './submit.validator';
 
 @Controller({
   route: '/setup',

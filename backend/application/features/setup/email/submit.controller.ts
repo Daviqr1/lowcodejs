@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { SetupEmailBodyValidator } from '../_shared.validator';
+
 import { SetupEmailSubmitSchema } from './submit.schema';
 import SetupEmailSubmitUseCase from './submit.use-case';
-import { SetupEmailBodyValidator } from './submit.validator';
 
 @Controller({
   route: '/setup',

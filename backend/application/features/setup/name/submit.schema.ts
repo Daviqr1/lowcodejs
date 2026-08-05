@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SetupNameBodyValidator } from './submit.validator';
+import { SetupNameBodyValidator } from '../_shared.validator';
 
 export const SetupNameSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],

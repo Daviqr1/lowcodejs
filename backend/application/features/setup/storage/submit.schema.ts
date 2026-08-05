@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SetupStorageBodyValidator } from './submit.validator';
+import { SetupStorageBodyValidator } from '../_shared.validator';
 
 export const SetupStorageSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],

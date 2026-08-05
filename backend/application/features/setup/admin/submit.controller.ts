@@ -5,9 +5,10 @@ import HttpResponseService from '@application/services/http-response/http-respon
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
 
+import { SetupAdminBodyValidator } from '../_shared.validator';
+
 import { SetupAdminSubmitSchema } from './submit.schema';
 import SetupAdminSubmitUseCase from './submit.use-case';
-import { SetupAdminBodyValidator } from './submit.validator';
 
 @Controller({
   route: '/setup',

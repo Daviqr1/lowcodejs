@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SetupAdminBodyValidator } from './submit.validator';
+import { SetupAdminBodyValidator } from '../_shared.validator';
 
 export const SetupAdminSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
