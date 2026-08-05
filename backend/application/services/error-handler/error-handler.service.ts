@@ -110,10 +110,15 @@ export default class ErrorHandlerService implements ErrorHandlerContractService 
 
     console.error(error);
 
-    return response.status(500).send({
-      message: 'Erro interno do servidor',
-      cause: 'SERVER_ERROR',
-      code: 500,
-    });
+    // Passa pelo HTTPException em vez de montar o corpo a mao: o formato da
+    // resposta de erro tem uma fonte so.
+    this.http.sendError(
+      response,
+      HTTPException.InternalServerError(
+        'Erro interno do servidor',
+        'SERVER_ERROR',
+      ),
+    );
+    return response;
   }
 }
