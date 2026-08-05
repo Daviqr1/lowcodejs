@@ -88,8 +88,11 @@ Cada migration segue este esqueleto (ver qualquer `NN-migrate-*.ts`):
    { upsert: true })`) **apenas apos** o sucesso. Migrations da familia
    relationship retem o marker se sobrar campo/definition pendente.
 7. `finally { await conn.close() }` fecha todas as conexoes.
-8. `migrate().catch((e) => { new TaskLogger(TITLE).failed(e); process.exit(1) })`
-   no topo — falha aborta o boot (`set -e`) sem gravar marker.
+8. `try { await migrate() } catch (error) { new TaskLogger(TITLE).failed(error);
+   process.exit(1) }` no topo (top-level `await`, sem cadeia `.catch` —
+   code-pattern regra 7) — falha aborta o boot (`set -e`) sem gravar marker.
+   Quem usa o `runMigration` de `shared/` nao escreve nem isso: o runner ja
+   reporta a falha, basta `await runMigration({ ... })`.
 
 ## Quando criar nova migration
 

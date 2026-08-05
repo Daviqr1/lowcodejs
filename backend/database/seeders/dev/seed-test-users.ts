@@ -103,8 +103,10 @@ async function main(): Promise<void> {
   await mongoose.disconnect();
 }
 
-main().catch(async (error) => {
+try {
+  await main();
+} catch (error) {
   console.error('[seed:test-users][error]:', error);
   await mongoose.disconnect();
   process.exit(1);
-});
+}

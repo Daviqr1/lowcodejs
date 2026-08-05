@@ -59,4 +59,8 @@ async function seed(): Promise<void> {
   }
 }
 
-seed().catch(() => process.exit(1));
+try {
+  await seed();
+} catch {
+  process.exit(1);
+}

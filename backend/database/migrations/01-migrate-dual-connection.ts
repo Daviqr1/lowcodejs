@@ -236,7 +236,9 @@ async function migrate(): Promise<void> {
   }
 }
 
-migrate().catch((error: unknown): void => {
+try {
+  await migrate();
+} catch (error) {
   new TaskLogger(TITLE).failed(error);
   process.exit(1);
-});
+}
