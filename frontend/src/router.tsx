@@ -6,13 +6,17 @@ import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query
 import * as TanstackQuery from './integrations/tanstack-query/root-provider';
 import { routeTree } from './routeTree.gen';
 
-import { QueryClient as queryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 export type RouterContext = {
   queryClient: QueryClient;
 };
 
 export const getRouter = () => {
+  // Uma instancia por chamada: no servidor o `getRouter` roda por requisicao, e
+  // o mesmo client precisa chegar ao contexto das rotas e ao Provider.
+  const queryClient = getQueryClient();
+
   const router = createRouter({
     routeTree,
     context: { queryClient },
@@ -24,7 +28,11 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultStructuralSharing: true,
     Wrap: (props: { children: React.ReactNode }) => {
-      return <TanstackQuery.Provider>{props.children}</TanstackQuery.Provider>;
+      return (
+        <TanstackQuery.Provider queryClient={queryClient}>
+          {props.children}
+        </TanstackQuery.Provider>
+      );
     },
   });
 

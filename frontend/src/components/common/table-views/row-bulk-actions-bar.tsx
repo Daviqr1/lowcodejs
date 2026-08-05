@@ -21,7 +21,7 @@ import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { API } from '@/lib/api';
 import type { ITable } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 type RowBulkActionsBarProps = {
   slug: string;
@@ -55,7 +55,7 @@ export function RowBulkActionsBar({
     },
     onSuccess(result) {
       selection?.clear();
-      QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
+      getQueryClient().invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.modified} registros enviados para lixeira!`;
       if (result.modified === 1) message = '1 registro enviado para lixeira!';
       toast.success(message, {
@@ -72,7 +72,7 @@ export function RowBulkActionsBar({
     },
     onSuccess(result) {
       selection?.clear();
-      QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
+      getQueryClient().invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.modified} registros restaurados!`;
       if (result.modified === 1) message = '1 registro restaurado!';
       toast.success(message, {
@@ -91,7 +91,7 @@ export function RowBulkActionsBar({
     },
     onSuccess(result) {
       selection?.clear();
-      QueryClient.invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
+      getQueryClient().invalidateQueries({ queryKey: queryKeys.rows.lists(slug) });
       let message = `${result.deleted} registros excluídos permanentemente!`;
       if (result.deleted === 1)
         message = '1 registro excluído permanentemente!';

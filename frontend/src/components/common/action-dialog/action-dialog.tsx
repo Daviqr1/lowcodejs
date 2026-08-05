@@ -19,7 +19,7 @@ import {
 import { useDismissableDialog } from '@/hooks/use-dismissable-dialog';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { Merge } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 export type ActionDialogConfig = {
   mutationFn: () => Promise<void>;
@@ -54,7 +54,7 @@ export function ActionDialog({
       close();
 
       for (const key of config.invalidateKeys) {
-        QueryClient.invalidateQueries({ queryKey: key });
+        getQueryClient().invalidateQueries({ queryKey: key });
       }
 
       toast.success(config.toast.title, {

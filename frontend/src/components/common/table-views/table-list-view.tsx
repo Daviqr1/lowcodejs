@@ -36,7 +36,7 @@ import { useFieldColumns } from '@/hooks/use-field-columns';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { API } from '@/lib/api';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
 
 function RowActionsCell({
@@ -62,7 +62,7 @@ function RowActionsCell({
       await API.patch(`/tables/${slug}/rows/${row._id}/trash`);
     },
     onSuccess() {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
       toast.success('Registro enviado para lixeira!');
@@ -74,7 +74,7 @@ function RowActionsCell({
       await API.patch(`/tables/${slug}/rows/${row._id}/restore`);
     },
     onSuccess() {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
       toast.success('Registro restaurado!');
@@ -86,7 +86,7 @@ function RowActionsCell({
       await API.delete(`/tables/${slug}/rows/${row._id}`);
     },
     onSuccess() {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
       toast.success('Registro excluido permanentemente!');

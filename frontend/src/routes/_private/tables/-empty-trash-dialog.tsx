@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 export function TableEmptyTrashDialog(): React.JSX.Element {
   const emptyTrash = useMutation({
@@ -19,7 +19,7 @@ export function TableEmptyTrashDialog(): React.JSX.Element {
       return response.data;
     },
     onSuccess(result) {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
 

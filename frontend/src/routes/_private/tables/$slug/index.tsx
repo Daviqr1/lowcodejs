@@ -9,7 +9,7 @@ import {
 } from '@/hooks/tanstack-query/_query-options';
 import type { ISetting } from '@/lib/interfaces';
 import { createRouteHead } from '@/lib/seo';
-import { useAuthStore } from '@/stores/authentication';
+import { getSessionUser } from '@/lib/session-user';
 
 const defaultSearch = { page: 1 };
 
@@ -43,7 +43,7 @@ export const Route = createFileRoute('/_private/tables/$slug/')({
   },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
-    const isAuthenticated = Boolean(useAuthStore.getState().user);
+    const isAuthenticated = Boolean(getSessionUser(context.queryClient));
     if (!isAuthenticated) return;
 
     // Paginação padrão vem da configuração global (Setting.PAGINATION_PER_PAGE),

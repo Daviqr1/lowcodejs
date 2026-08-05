@@ -26,7 +26,7 @@ import { useTableRowsImportCsv } from '@/hooks/tanstack-query/use-table-rows-imp
 import { useCsvImportSocket } from '@/hooks/use-csv-import-socket';
 import { downloadCsvFromApi } from '@/lib/csv-export';
 import type { Merge } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 type Phase = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
 
@@ -74,7 +74,7 @@ function ImportCsvContent({ slug }: { slug: string }): React.JSX.Element {
   React.useEffect((): void => {
     if (!socket.completed) return;
     setPhase('done');
-    void QueryClient.invalidateQueries({
+    void getQueryClient().invalidateQueries({
       queryKey: queryKeys.rows.lists(slug),
     });
     toast.success('Importação concluída!', {

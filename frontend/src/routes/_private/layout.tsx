@@ -1,4 +1,4 @@
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import { QueryErrorResetBoundary, useQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -38,14 +38,29 @@ export const Route = createFileRoute('/_private')({
       });
     }
 
+    // O store zustand e um singleton de modulo. No servidor ele seria
+    // compartilhado por todas as requisicoes do processo Nitro, misturando a
+    // identidade de usuarios diferentes — por isso so o navegador escreve nele.
+    // Em SSR quem carrega a sessao e o QueryClient da requisicao, e o
+    // `PrivateLayout` sincroniza o store depois da hidratacao.
+    const seedStoreOnBrowser = (
+      accounts: Array<IUser>,
+      activeAccountId: string | null,
+      user: IUser,
+    ): void => {
+      if (typeof window === 'undefined') return;
+
+      useAuthStore.getState().setAccounts(accounts, activeAccountId);
+      // Sessao sem contas indexadas ainda precisa popular o store.
+      if (accounts.length === 0) useAuthStore.getState().setUser(user);
+    };
+
     const seedSession = (
       accounts: Array<IUser>,
       activeAccountId: string | null,
       user: IUser,
     ): void => {
-      useAuthStore.getState().setAccounts(accounts, activeAccountId);
-      // Sessao sem contas indexadas ainda precisa popular o store.
-      if (accounts.length === 0) useAuthStore.getState().setUser(user);
+      seedStoreOnBrowser(accounts, activeAccountId, user);
       context.queryClient.setQueryData(profileDetailOptions().queryKey, user);
       context.queryClient.prefetchQuery(settingOptions());
     };
@@ -55,20 +70,16 @@ export const Route = createFileRoute('/_private')({
       // lista; o store para de mandar id stale no GET /profile.
       const accountsResponse =
         await context.queryClient.ensureQueryData(accountsOptions());
-      useAuthStore
-        .getState()
-        .setAccounts(
-          accountsResponse.accounts,
-          accountsResponse.activeAccountId,
-        );
 
       const user = await context.queryClient.ensureQueryData(
         profileDetailOptions(),
       );
 
-      if (accountsResponse.accounts.length === 0) {
-        useAuthStore.getState().setUser(user);
-      }
+      seedStoreOnBrowser(
+        accountsResponse.accounts,
+        accountsResponse.activeAccountId,
+        user,
+      );
 
       context.queryClient.prefetchQuery(settingOptions());
     } catch {
@@ -99,7 +110,7 @@ export const Route = createFileRoute('/_private')({
         }
       }
 
-      useAuthStore.getState().clear();
+      if (typeof window !== 'undefined') useAuthStore.getState().clear();
 
       // Permitir acesso público a rotas de visualização de tabela
       // O componente e o backend controlam por visibility
@@ -119,7 +130,35 @@ export const Route = createFileRoute('/_private')({
   },
 });
 
+/**
+ * Reidrata o store zustand no navegador a partir do cache da requisicao.
+ *
+ * Num hard load o `beforeLoad` roda no servidor, onde o store nao pode ser
+ * escrito (singleton compartilhado entre requisicoes). Sem esta sincronizacao o
+ * cliente hidratava com o store vazio: o switcher aparecia sem contas e o
+ * layout renderizava o shell de deslogado apesar da sessao estar valida.
+ */
+function useSyncAuthStore(): void {
+  const { data: accountsData } = useQuery(accountsOptions());
+  const { data: profile } = useQuery(profileDetailOptions());
+
+  React.useEffect(() => {
+    if (!profile) return;
+
+    if (accountsData && accountsData.accounts.length > 0) {
+      useAuthStore
+        .getState()
+        .setAccounts(accountsData.accounts, accountsData.activeAccountId);
+      return;
+    }
+
+    useAuthStore.getState().setUser(profile);
+  }, [profile, accountsData]);
+}
+
 function PrivateLayout(): React.JSX.Element {
+  useSyncAuthStore();
+
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = Boolean(user);
 

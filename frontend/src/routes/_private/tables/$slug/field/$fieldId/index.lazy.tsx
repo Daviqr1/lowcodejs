@@ -48,7 +48,7 @@ import type {
   ValueOf,
 } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
-import { QueryClient as queryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 // Deriva o binding de visibilidade a partir do boolean showIn* legado (usado
 // quando o campo ainda não tem o mapa permissions).
@@ -306,7 +306,7 @@ function FieldUpdateContent({
       await API.patch(`/tables/${slug}/fields/${data._id}/trash`);
     },
     onSuccess() {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.detail(slug),
       });
       toast.warning('Campo enviado para lixeira', {
@@ -336,12 +336,12 @@ function FieldUpdateContent({
       return response.data;
     },
     onSuccess(response) {
-      queryClient.setQueryData<IField>(
+      getQueryClient().setQueryData<IField>(
         queryKeys.fields.detail(slug, response._id),
         response,
       );
 
-      queryClient.setQueryData<ITable>(queryKeys.tables.detail(slug), (old) => {
+      getQueryClient().setQueryData<ITable>(queryKeys.tables.detail(slug), (old) => {
         if (!old) return old;
         return {
           ...old,
@@ -352,7 +352,7 @@ function FieldUpdateContent({
         };
       });
 
-      queryClient.setQueriesData<Paginated<ITable>>(
+      getQueryClient().setQueriesData<Paginated<ITable>>(
         { queryKey: queryKeys.tables.lists() },
         (old) => {
           if (!old) return old;
@@ -375,7 +375,7 @@ function FieldUpdateContent({
       );
 
       // Invalidar cache da tabela para refletir mudancas em groups (ex: nome do grupo)
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.detail(slug),
       });
 

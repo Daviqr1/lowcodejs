@@ -7,7 +7,7 @@ import type { AxiosError } from 'axios';
 
 import { API } from '@/lib/api';
 import type { ResetPasswordPayload } from '@/lib/payloads';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/authentication';
 
 type UseAuthenticationResetPasswordProps = Pick<
@@ -25,7 +25,7 @@ export function useAuthenticationResetPassword(
     mutationFn: async function (payload: ResetPasswordPayload) {
       await API.put('/authentication/recovery/update-password', payload);
       useAuthStore.getState().clear();
-      QueryClient.clear();
+      getQueryClient().clear();
     },
     ...props,
   });

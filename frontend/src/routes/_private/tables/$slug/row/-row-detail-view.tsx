@@ -33,7 +33,7 @@ import { useTablePermission } from '@/hooks/use-table-permission';
 import { API } from '@/lib/api';
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { resolveFieldLabel } from '@/lib/table';
 
 type RowDetailViewProps = {
@@ -168,10 +168,10 @@ export function RowDetailView({
       await API.patch(`/tables/${slug}/rows/${rowId}/trash`);
     },
     onSuccess(): void {
-      void QueryClient.invalidateQueries({
+      void getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
-      void QueryClient.invalidateQueries({
+      void getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.detail(slug, rowId),
       });
       toast.success('Registro enviado para lixeira!');
@@ -183,10 +183,10 @@ export function RowDetailView({
       await API.patch(`/tables/${slug}/rows/${rowId}/restore`);
     },
     onSuccess(): void {
-      void QueryClient.invalidateQueries({
+      void getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
-      void QueryClient.invalidateQueries({
+      void getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.detail(slug, rowId),
       });
       toast.success('Registro restaurado!');
@@ -198,7 +198,7 @@ export function RowDetailView({
       await API.delete(`/tables/${slug}/rows/${rowId}`);
     },
     onSuccess(): void {
-      void QueryClient.invalidateQueries({
+      void getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
       toast.success('Registro excluído permanentemente!');

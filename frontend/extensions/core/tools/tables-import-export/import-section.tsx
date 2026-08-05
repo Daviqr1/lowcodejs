@@ -36,7 +36,7 @@ import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { Merge } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
 
 const rootApi = getRouteApi('__root__');
@@ -366,8 +366,8 @@ export function ImportTableSection(): React.JSX.Element {
       resetState();
       if (fileInputRef.current) fileInputRef.current.value = '';
 
-      QueryClient.invalidateQueries({ queryKey: queryKeys.tables.lists() });
-      QueryClient.invalidateQueries({ queryKey: queryKeys.menus.all });
+      getQueryClient().invalidateQueries({ queryKey: queryKeys.tables.lists() });
+      getQueryClient().invalidateQueries({ queryKey: queryKeys.menus.all });
 
       toast.success('Importação concluída!', {
         description: `${data.tables.length} tabela(s), ${data.importedFields} campo(s), ${data.importedRows} registro(s) e ${data.importedMenus} item(ns) de menu`,

@@ -47,7 +47,7 @@ import { API } from '@/lib/api';
 import { formatDate } from '@/lib/format-date';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ITable } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
 
 const ROUTE_ID = '/_private/tables/';
@@ -70,10 +70,10 @@ function ActionsCell({ table }: { table: ITable }): React.JSX.Element {
       await API.delete('/tables/'.concat(table.slug));
     },
     onSuccess() {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.detail(table.slug),
       });
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
       toast.success('Tabela excluída permanentemente!', {
@@ -435,7 +435,7 @@ export function TableTables({
     },
     onSuccess(result) {
       table.resetRowSelection();
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
       let message = `${result.modified} tabelas enviadas para lixeira!`;
@@ -456,7 +456,7 @@ export function TableTables({
     },
     onSuccess(result) {
       table.resetRowSelection();
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
 
@@ -491,7 +491,7 @@ export function TableTables({
     },
     onSuccess(result) {
       table.resetRowSelection();
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.tables.lists(),
       });
       let message = `${result.deleted} tabelas excluídas permanentemente!`;

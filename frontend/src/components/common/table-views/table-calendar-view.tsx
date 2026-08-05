@@ -30,7 +30,7 @@ import type {
 import { E_FIELD_TYPE } from '@/lib/constant';
 import type { IField, IRow, ITable } from '@/lib/interfaces';
 import { isFieldShownInContext } from '@/lib/permission';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { mountRowValue } from '@/lib/table';
 
 type Props = {
@@ -178,10 +178,10 @@ export function TableCalendarView({
     },
     onSuccess: (rowId) => {
       setRowsState((prev) => prev.filter((row) => row._id !== rowId));
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.detail(tableSlug, rowId),
       });
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(tableSlug),
       });
       toast.success('Agendamento excluído com sucesso');

@@ -24,7 +24,7 @@ import { useUpdateTable } from '@/hooks/tanstack-query/use-table-update';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { E_TABLE_STYLE } from '@/lib/constant';
 import type { ITable, Paginated, ValueOf } from '@/lib/interfaces';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { getAllowedTableStyles } from '@/lib/table-style';
 import { cn } from '@/lib/utils';
 
@@ -41,12 +41,12 @@ export function TableStyleViewDropdown({
   // Hook deve ser chamado antes de qualquer return condicional
   const update = useUpdateTable({
     onSuccess(data) {
-      QueryClient.setQueryData<ITable>(
+      getQueryClient().setQueryData<ITable>(
         ['/tables/'.concat(data.slug), data.slug],
         data,
       );
 
-      QueryClient.setQueryData<Paginated<ITable>>(
+      getQueryClient().setQueryData<Paginated<ITable>>(
         ['/tables/paginated'],
         (old) => {
           if (!old) return old;

@@ -13,8 +13,8 @@ const defaultSearch = { page: 1 };
 
 export const Route = createFileRoute('/_private/menus/')({
   beforeLoad: async ({ context, location }) => {
-    const { useAuthStore } = await import('@/stores/authentication');
-    const capabilities = useAuthStore.getState().user?.capabilities;
+    const { getSessionUser } = await import('@/lib/session-user');
+    const capabilities = getSessionUser(context.queryClient)?.capabilities;
     if (!hasAreaCapability(capabilities, E_AREA_CAPABILITY.MANAGE_MENU)) {
       const { redirect } = await import('@tanstack/react-router');
       throw redirect({ to: '/tables' });

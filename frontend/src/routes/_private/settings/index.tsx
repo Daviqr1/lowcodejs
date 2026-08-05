@@ -8,9 +8,9 @@ import { hasAreaCapability } from '@/lib/menu/menu-access-permissions';
 import { createRouteHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/_private/settings/')({
-  beforeLoad: async () => {
-    const { useAuthStore } = await import('@/stores/authentication');
-    const capabilities = useAuthStore.getState().user?.capabilities;
+  beforeLoad: async ({ context }) => {
+    const { getSessionUser } = await import('@/lib/session-user');
+    const capabilities = getSessionUser(context.queryClient)?.capabilities;
     if (!hasAreaCapability(capabilities, E_AREA_CAPABILITY.MANAGE_SETTINGS)) {
       const { redirect } = await import('@tanstack/react-router');
       throw redirect({ to: '/tables' });

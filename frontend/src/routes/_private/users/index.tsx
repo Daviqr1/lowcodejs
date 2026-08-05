@@ -8,13 +8,13 @@ import { E_AREA_CAPABILITY, E_ROLE } from '@/lib/constant';
 import type { ISetting } from '@/lib/interfaces';
 import { hasAreaCapability } from '@/lib/menu/menu-access-permissions';
 import { createRouteHead } from '@/lib/seo';
-import { useAuthStore } from '@/stores/authentication';
+import { getSessionUser } from '@/lib/session-user';
 
 const defaultSearch = { page: 1 };
 
 export const Route = createFileRoute('/_private/users/')({
   beforeLoad: async ({ context, location }) => {
-    const capabilities = useAuthStore.getState().user?.capabilities;
+    const capabilities = getSessionUser(context.queryClient)?.capabilities;
     if (!hasAreaCapability(capabilities, E_AREA_CAPABILITY.MANAGE_USERS)) {
       const { redirect } = await import('@tanstack/react-router');
       throw redirect({ to: '/tables' });

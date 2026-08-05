@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
 import { tableDetailOptions } from '@/hooks/tanstack-query/_query-options';
-import { useAuthStore } from '@/stores/authentication';
+import { getSessionUser } from '@/lib/session-user';
 
 export const Route = createFileRoute('/_private/tables/$slug/row/')({
   validateSearch: z.object({
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_private/tables/$slug/row/')({
     category: z.string().optional(),
   }),
   loader: ({ context, params }): void => {
-    const isAuthenticated = Boolean(useAuthStore.getState().user);
+    const isAuthenticated = Boolean(getSessionUser(context.queryClient));
     if (!isAuthenticated) return;
 
     context.queryClient.prefetchQuery(tableDetailOptions(params.slug));

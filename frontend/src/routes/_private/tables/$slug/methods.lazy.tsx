@@ -23,7 +23,7 @@ import { useUpdateTable } from '@/hooks/tanstack-query/use-table-update';
 import { useTablePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import type { ITable } from '@/lib/interfaces';
-import { QueryClient as queryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 export const Route = createLazyFileRoute('/_private/tables/$slug/methods')({
   component: RouteComponent,
@@ -105,7 +105,7 @@ function MethodsFormContent({
 
   const _update = useUpdateTable({
     onSuccess(response) {
-      queryClient.setQueryData<ITable>(
+      getQueryClient().setQueryData<ITable>(
         queryKeys.tables.detail(tableSlug),
         response,
       );

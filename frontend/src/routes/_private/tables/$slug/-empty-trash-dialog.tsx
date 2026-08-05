@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/hooks/tanstack-query/_query-keys';
 import { API } from '@/lib/api';
 import { handleApiError } from '@/lib/handle-api-error';
-import { QueryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 
 type RowEmptyTrashDialogProps = {
   slug: string;
@@ -24,7 +24,7 @@ export function RowEmptyTrashDialog({
       return response.data;
     },
     onSuccess(result) {
-      QueryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: queryKeys.rows.lists(slug),
       });
 
