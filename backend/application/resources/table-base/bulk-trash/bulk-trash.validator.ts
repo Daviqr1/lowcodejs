@@ -1,7 +1,9 @@
 import z from 'zod';
 
+import { BulkIdsValidator } from '@application/core/validator.core';
+
 export const BulkTrashBodyValidator = z.object({
-  ids: z.array(z.string().trim()).min(1),
+  ids: BulkIdsValidator,
 });
 
 export type BulkTrashPayload = z.infer<typeof BulkTrashBodyValidator>;

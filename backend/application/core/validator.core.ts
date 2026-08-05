@@ -23,6 +23,11 @@ export const PaginationQueryValidator = z.object({
   perPage: PerPageValidator.default(50),
 });
 
+/** `ids` das operacoes em massa. O cap por chamador entra com `.max(n)`. */
+export const BulkIdsValidator = z
+  .array(z.string().trim().min(1))
+  .min(1, 'Selecione pelo menos um item');
+
 /** `?trashed=true|false` — aceita tambem o booleano ja coagido. */
 export const TrashedFlagValidator = z
   .preprocess(

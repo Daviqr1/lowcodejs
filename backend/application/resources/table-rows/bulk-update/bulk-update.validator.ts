@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
+import { BulkIdsValidator } from '@application/core/validator.core';
 
 import { TableRowUpdateBodyValidator } from '../update/update.validator';
 
@@ -9,7 +10,7 @@ export const BulkUpdateParamsValidator = z.object({
 });
 
 export const BulkUpdateBodyValidator = z.object({
-  ids: z.array(z.string().trim()).min(1).max(200),
+  ids: BulkIdsValidator.max(200),
   data: TableRowUpdateBodyValidator.refine(
     (value) => Object.keys(value).length > 0,
     { message: 'Informe ao menos um campo para atualizar' },

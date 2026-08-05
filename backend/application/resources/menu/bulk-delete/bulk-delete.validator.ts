@@ -1,7 +1,9 @@
 import z from 'zod';
 
+import { BulkIdsValidator } from '@application/core/validator.core';
+
 export const MenuBulkDeleteBodyValidator = z.object({
-  ids: z.array(z.string().trim().min(1)).min(1, 'Selecione pelo menos um item'),
+  ids: BulkIdsValidator,
 });
 
 export type MenuBulkDeletePayload = z.infer<typeof MenuBulkDeleteBodyValidator>;

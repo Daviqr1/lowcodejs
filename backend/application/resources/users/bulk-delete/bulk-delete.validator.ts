@@ -1,9 +1,10 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
+import { BulkIdsValidator } from '@application/core/validator.core';
 
 export const UserBulkDeleteBodyValidator = z.object({
-  ids: z.array(z.string().trim().min(1)).min(1, 'Selecione pelo menos um item'),
+  ids: BulkIdsValidator,
 });
 
 export type UserBulkDeletePayload = Merge<
