@@ -10,6 +10,7 @@ import { ExtensionActiveMiddleware } from '@application/middlewares/extension-ac
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { RegisterIpSchema } from './register-ip.schema';
 import RegisterIpUseCase from './register-ip.use-case';
 import { RegisterIpParamsValidator } from './register-ip.validator';
 
@@ -57,6 +58,7 @@ export default class {
           extensionId: 'register-ip',
         }),
       ],
+      schema: RegisterIpSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

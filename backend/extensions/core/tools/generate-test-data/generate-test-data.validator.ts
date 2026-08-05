@@ -7,3 +7,12 @@ export const GenerateTestDataValidator = z.object({
     .min(1, 'Quantidade mínima é 1')
     .max(10_000_000_000_000, 'Quantidade máxima é 10 trilhões'),
 });
+
+/** `:jobId` da rota de status — antes so existia como JSON Schema a mao. */
+export const GenerateTestDataStatusParamsValidator = z.object({
+  jobId: z.string().trim().min(1, 'ID do job é obrigatório'),
+});
+
+export type GenerateTestDataStatusParams = z.infer<
+  typeof GenerateTestDataStatusParamsValidator
+>;

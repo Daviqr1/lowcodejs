@@ -9,6 +9,16 @@ const objectId = z
   .trim()
   .regex(OBJECT_ID_REGEX, 'Identificador inválido');
 
+/** `:channelId` — repetido em 6 rotas, antes so como JSON Schema a mao. */
+export const ChannelParamsValidator = z.object({
+  channelId: objectId,
+});
+
+/** Mais `:entryId` — aponta uma senha dentro do canal. */
+export const EntryParamsValidator = ChannelParamsValidator.extend({
+  entryId: objectId,
+});
+
 export const CreateChannelValidator = z.object({
   name: z.string().trim().min(1, 'Nome é obrigatório').max(120),
   description: z.string().trim().max(2000).nullish(),

@@ -1,3 +1,7 @@
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { UpdateConditionalFieldsConfigValidator } from './conditional-fields.validator';
+
 const Rule = {
   type: 'object',
   additionalProperties: false,
@@ -47,14 +51,7 @@ export const GetConditionalFieldsRuntimeConfigSchema = {
 export const UpdateConditionalFieldsConfigSchema = {
   tags: ['Plugins'],
   summary: 'Atualiza a configuração de campos condicionais da tabela.',
-  body: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['rules'],
-    properties: {
-      rules: { type: 'array', items: Rule },
-    },
-  },
+  body: zodToRouteSchema(UpdateConditionalFieldsConfigValidator),
   response: {
     200: ConfigResponse,
   },

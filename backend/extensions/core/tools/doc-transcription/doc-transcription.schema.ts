@@ -1,3 +1,7 @@
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { UpdateConfigValidator } from './doc-transcription.validator';
+
 const errorBlock = {
   type: 'object',
   properties: {
@@ -90,31 +94,7 @@ export const UpdateConfigSchema = {
   summary: 'Atualizar configuração da transcrição de documentos',
   description:
     'Atualiza a configuração singleton via merge parcial (todos os campos opcionais). Restrito a MASTER e ADMINISTRATOR.',
-  body: {
-    type: 'object',
-    properties: {
-      apiUrl: {
-        type: 'string',
-        nullable: true,
-        description: 'URL da API externa de transcrição',
-      },
-      apiKey: {
-        type: 'string',
-        nullable: true,
-        description: 'Credencial da API externa',
-      },
-      model: {
-        type: 'string',
-        nullable: true,
-        description: 'Modelo opcional informado à API',
-      },
-      documentTypes: {
-        type: 'array',
-        items: documentTypeSchema,
-        description: 'Tipos de documento cadastrados',
-      },
-    },
-  },
+  body: zodToRouteSchema(UpdateConfigValidator),
   response: {
     200: configResponseSchema,
     400: errorBlock,

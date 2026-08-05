@@ -1,6 +1,9 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
 import { buildErrorResponse } from '@application/core/schema.core';
+
+import { CloneTableValidator } from './clone-table.validator';
 
 export const CloneTableSchema: FastifySchema = {
   tags: ['Tools'],
@@ -8,53 +11,7 @@ export const CloneTableSchema: FastifySchema = {
   description:
     'Clones one or more tables using table IDs and an optional name/prefix',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    anyOf: [{ required: ['baseTableId'] }, { required: ['baseTableIds'] }],
-    properties: {
-      baseTableId: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID of the base table',
-        errorMessage: {
-          type: 'O ID da tabela base deve ser um texto',
-          minLength: 'O ID da tabela base é obrigatório',
-        },
-      },
-      baseTableIds: {
-        type: 'array',
-        minItems: 1,
-        items: {
-          type: 'string',
-          minLength: 1,
-        },
-        description: 'IDs of base tables for batch cloning',
-      },
-      copyDataTableIds: {
-        type: 'array',
-        items: {
-          type: 'string',
-          minLength: 1,
-        },
-        description: 'Base table IDs whose row data should be copied',
-      },
-      name: {
-        type: 'string',
-        description:
-          'Name of the new table for single clone, or prefix for batch clone',
-        errorMessage: {
-          type: 'O nome da nova tabela deve ser um texto',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        baseTableId: 'O ID da tabela base é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(CloneTableValidator),
   response: {
     201: {
       description: 'Table cloned successfully',

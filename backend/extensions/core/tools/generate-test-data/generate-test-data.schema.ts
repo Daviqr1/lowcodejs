@@ -1,31 +1,19 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  GenerateTestDataStatusParamsValidator,
+  GenerateTestDataValidator,
+} from './generate-test-data.validator';
+
 export const GenerateTestDataSchema: FastifySchema = {
   tags: ['Tools'],
   summary: 'Gerar dados de teste',
   description:
     'Inicia um job assíncrono para gerar registros de teste em massa para uma tabela selecionada.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['tableId', 'quantity'],
-    properties: {
-      tableId: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID da tabela alvo',
-      },
-      quantity: {
-        type: 'number',
-        minimum: 1,
-        maximum: 10000000000000,
-        description:
-          'Quantidade de registros a gerar. A inserção física é limitada por um ' +
-          'orçamento de bytes (ver endpoint /estimate); acima do teto o progresso é simulado.',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(GenerateTestDataValidator),
   response: {
     202: {
       description: 'Job iniciado com sucesso',
@@ -66,24 +54,7 @@ export const GenerateTestDataEstimateSchema: FastifySchema = {
     'serão inseridos de verdade (teto por orçamento de bytes) x simulados, o ' +
     'espaço estimado e avisos de impacto.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['tableId', 'quantity'],
-    properties: {
-      tableId: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID da tabela alvo',
-      },
-      quantity: {
-        type: 'number',
-        minimum: 1,
-        maximum: 10000000000000,
-        description: 'Quantidade pretendida de registros',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(GenerateTestDataValidator),
   response: {
     200: {
       description: 'Estimativa calculada',
@@ -122,16 +93,7 @@ export const GetTestDataStatusSchema: FastifySchema = {
   description:
     'Retorna o progresso (percentual) e o status atual de um job de geração de registros.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['jobId'],
-    properties: {
-      jobId: {
-        type: 'string',
-        description: 'ID do job retornado ao iniciar a geração',
-      },
-    },
-  },
+  params: zodToRouteSchema(GenerateTestDataStatusParamsValidator),
   response: {
     200: {
       description: 'Detalhes do progresso',

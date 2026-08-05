@@ -1,3 +1,13 @@
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  CascadeDropdownChildOptionsQueryValidator,
+  CascadeDropdownConfigBodyValidator,
+  CascadeDropdownOptionsParamsValidator,
+  CascadeDropdownParamsValidator,
+  CascadeDropdownParentOptionsQueryValidator,
+} from './cascade-dropdown.validator';
+
 const ErrorResponse = {
   type: 'object',
   properties: {
@@ -55,27 +65,9 @@ const configResponseSchema = {
   },
 };
 
-const configParams = {
-  type: 'object',
-  required: ['slug', 'fieldId'],
-  properties: {
-    slug: { type: 'string', description: 'Slug da tabela' },
-    fieldId: { type: 'string', description: 'ID do campo de relacionamento' },
-  },
-};
+const configParams = zodToRouteSchema(CascadeDropdownParamsValidator);
 
-const optionsParams = {
-  type: 'object',
-  required: ['slug', 'targetTableSlug', 'fieldId'],
-  properties: {
-    slug: { type: 'string', description: 'Slug da tabela de origem' },
-    targetTableSlug: {
-      type: 'string',
-      description: 'Slug da tabela alvo do relacionamento',
-    },
-    fieldId: { type: 'string', description: 'ID do campo de relacionamento' },
-  },
-};
+const optionsParams = zodToRouteSchema(CascadeDropdownOptionsParamsValidator);
 
 export const CascadeDropdownGetConfigSchema = {
   tags: ['Dropdown em Cascata'],
@@ -97,29 +89,7 @@ export const CascadeDropdownSaveConfigSchema = {
   description:
     'Salva a configuração do dropdown em cascata de um campo de relacionamento.',
   params: configParams,
-  body: {
-    type: 'object',
-    required: [
-      'sourceTableId',
-      'sourceTableSlug',
-      'parentFieldId',
-      'parentFieldSlug',
-      'childFieldId',
-      'childFieldSlug',
-    ],
-    properties: {
-      sourceTableId: { type: 'string' },
-      sourceTableSlug: { type: 'string' },
-      parentFieldId: { type: 'string' },
-      parentFieldSlug: { type: 'string' },
-      childFieldId: { type: 'string' },
-      childFieldSlug: { type: 'string' },
-      enabled: { type: 'boolean' },
-      parentWidth: { type: 'number' },
-      childWidth: { type: 'number' },
-      filters: { type: 'array', items: filterSchema },
-    },
-  },
+  body: zodToRouteSchema(CascadeDropdownConfigBodyValidator),
   response: {
     200: configResponseSchema,
     400: ErrorResponse,
@@ -134,12 +104,7 @@ export const CascadeDropdownParentOptionsSchema = {
   summary: 'Listar opções do campo controlador (pai)',
   description: 'Lista as opções do campo pai do dropdown em cascata.',
   params: optionsParams,
-  querystring: {
-    type: 'object',
-    properties: {
-      search: { type: 'string', description: 'Filtro textual opcional' },
-    },
-  },
+  querystring: zodToRouteSchema(CascadeDropdownParentOptionsQueryValidator),
   response: {
     200: {
       type: 'array',
@@ -163,23 +128,7 @@ export const CascadeDropdownChildOptionsSchema = {
   description:
     'Lista as opções do campo filho do dropdown em cascata, filtradas pelo valor do pai.',
   params: optionsParams,
-  querystring: {
-    type: 'object',
-    required: ['parentValue'],
-    properties: {
-      parentValue: {
-        type: 'string',
-        description: 'Valor selecionado no campo pai',
-      },
-      search: { type: 'string', description: 'Filtro textual opcional' },
-      page: { type: 'number', default: 1, description: 'Página (default 1)' },
-      perPage: {
-        type: 'number',
-        default: 20,
-        description: 'Itens por página (default 20)',
-      },
-    },
-  },
+  querystring: zodToRouteSchema(CascadeDropdownChildOptionsQueryValidator),
   response: {
     200: {
       type: 'object',
