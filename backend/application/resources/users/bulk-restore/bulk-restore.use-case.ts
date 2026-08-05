@@ -6,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
-import type { UserBulkRestorePayload } from './bulk-restore.validator';
+import type { UserBulkRestorePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 

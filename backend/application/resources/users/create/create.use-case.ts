@@ -2,18 +2,18 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import {
-  E_USER_STATUS,
-  type IUser as Entity,
-} from '@application/core/entity.core';
+import { E_USER_STATUS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
+import type { UserResponse } from '@application/services/user-mapper/user-mapper-contract.service';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
 
-import type { UserCreatePayload } from './create.validator';
+import type { UserCreatePayload } from '../_shared.validator';
 
-type Response = Either<HTTPException, Entity>;
+type Response = Either<HTTPException, UserResponse>;
 type Payload = UserCreatePayload;
 
 @Service()
@@ -22,6 +22,8 @@ export default class UserCreateUseCase {
     private readonly userRepository: UserContractRepository,
     private readonly passwordService: PasswordContractService,
     private readonly emailQueue: EmailQueueContractService,
+    private readonly groupRepository: UserGroupContractRepository,
+    private readonly userMapper: UserMapperContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -33,6 +35,15 @@ export default class UserCreateUseCase {
             'GROUP_NOT_INFORMED',
             { group: 'Grupo não informado' },
           ),
+        );
+
+      const group = await this.groupRepository.findById(payload.group);
+
+      if (!group)
+        return left(
+          HTTPException.NotFound('Grupo não encontrado', 'GROUP_NOT_FOUND', {
+            group: 'Grupo não encontrado',
+          }),
         );
 
       const user = await this.userRepository.findByEmail(payload.email);
@@ -63,7 +74,7 @@ export default class UserCreateUseCase {
         subject: 'Sua conta no LowCodeJS foi criada',
       });
 
-      return right(created);
+      return right(this.userMapper.toResponse(created));
     } catch (error) {
       console.error('[users > create][error]:', error);
       return left(

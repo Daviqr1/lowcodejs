@@ -5,15 +5,11 @@ import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
-import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
-import UserMapperService from '@application/services/user-mapper/user-mapper.service';
+
+import { UserIdentifierParamsValidator } from '../_shared.validator';
 
 import { UserShowSchema } from './show.schema';
 import UserShowUseCase from './show.use-case';
-import { UserShowParamValidator } from './show.validator';
-
-const userMapper =
-  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller({
   route: '/users',
@@ -40,12 +36,12 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserShowParamValidator.parse(request.params);
+    const params = UserIdentifierParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    return response.status(200).send(userMapper.toResponse(result.value));
+    return response.status(200).send(result.value);
   }
 }

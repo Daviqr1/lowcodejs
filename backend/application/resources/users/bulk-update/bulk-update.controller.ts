@@ -7,9 +7,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserBulkUpdateBodyValidator } from '../_shared.validator';
+
 import { UserBulkUpdateSchema } from './bulk-update.schema';
 import UserBulkUpdateUseCase from './bulk-update.use-case';
-import { UserBulkUpdateBodyValidator } from './bulk-update.validator';
 
 @Controller({
   route: '/users',

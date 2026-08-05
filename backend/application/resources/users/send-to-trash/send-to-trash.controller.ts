@@ -7,9 +7,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserIdentifierParamsValidator } from '../_shared.validator';
+
 import { UserSendToTrashSchema } from './send-to-trash.schema';
 import UserSendToTrashUseCase from './send-to-trash.use-case';
-import { UserSendToTrashParamValidator } from './send-to-trash.validator';
 
 @Controller({
   route: '/users',
@@ -34,7 +35,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserSendToTrashParamValidator.parse(request.params);
+    const params = UserIdentifierParamsValidator.parse(request.params);
 
     if (!request.user) {
       return this.http.sendError(

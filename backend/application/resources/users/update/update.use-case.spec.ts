@@ -6,6 +6,7 @@ import UserGroupInMemoryRepository from '@application/repositories/user-group/us
 import InMemoryEmailQueueService from '@application/services/email-queue/in-memory-email-queue.service';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 import InMemoryPasswordService from '@application/services/password/in-memory-password.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import UserUpdateUseCase from './update.use-case';
 
@@ -14,9 +15,11 @@ let groupInMemoryRepository: UserGroupInMemoryRepository;
 let passwordService: InMemoryPasswordService;
 let emailQueue: InMemoryEmailQueueService;
 let sut: UserUpdateUseCase;
+let groupId: string;
+let otherGroupId: string;
 
 describe('User Update Use Case', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     userInMemoryRepository = new UserInMemoryRepository();
     groupInMemoryRepository = new UserGroupInMemoryRepository();
     passwordService = new InMemoryPasswordService();
@@ -27,7 +30,23 @@ describe('User Update Use Case', () => {
       emailQueue,
       groupInMemoryRepository,
       new GroupResolverService(groupInMemoryRepository),
+      new UserMapperService(),
     );
+
+    // O use-case exige que o grupo alvo exista antes de gravar.
+    const group = await groupInMemoryRepository.create({
+      name: 'Registrados',
+      slug: 'REGISTERED',
+      permissions: [],
+    });
+    groupId = group._id;
+
+    const other = await groupInMemoryRepository.create({
+      name: 'Gerentes',
+      slug: 'MANAGER',
+      permissions: [],
+    });
+    otherGroupId = other._id;
   });
 
   it('deve atualizar usuario com sucesso (sem password)', async () => {
@@ -35,14 +54,14 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     const result = await sut.execute({
       _id: created._id,
       name: 'John Updated',
       email: 'john.updated@example.com',
-      group: 'new-group-id',
+      group: otherGroupId,
       status: E_USER_STATUS.ACTIVE,
     });
 
@@ -50,7 +69,27 @@ describe('User Update Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value.name).toBe('John Updated');
     expect(result.value.email).toBe('john.updated@example.com');
-    expect(result.value.password).toBe('password123');
+    const untouched = await userInMemoryRepository.findById(result.value._id);
+    expect(untouched?.password).toBe('password123');
+  });
+
+  it('deve retornar GROUP_NOT_FOUND quando o grupo alvo nao existir', async () => {
+    const created = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password123',
+      group: groupId,
+    });
+
+    const result = await sut.execute({
+      _id: created._id,
+      group: 'grupo-que-nao-existe',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(404);
+    expect(result.value.cause).toBe('GROUP_NOT_FOUND');
   });
 
   it('deve atualizar usuario com nova senha (hasheada)', async () => {
@@ -58,23 +97,23 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'oldpassword',
-      group: 'group-id',
+      group: groupId,
     });
 
     const result = await sut.execute({
       _id: created._id,
       name: 'John Doe',
       email: 'john@example.com',
-      group: 'group-id',
+      group: groupId,
       status: E_USER_STATUS.ACTIVE,
       password: 'newpassword',
     });
 
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
-    expect(result.value.password).not.toBe('newpassword');
-    expect(result.value.password).not.toBe('oldpassword');
-    expect(result.value.password).toBe('hashed_newpassword');
+    // A resposta nao carrega mais o hash; confere na fonte.
+    const stored = await userInMemoryRepository.findById(result.value._id);
+    expect(stored?.password).toBe('hashed_newpassword');
   });
 
   it('deve permitir alterar status do usuario', async () => {
@@ -82,14 +121,14 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     const result = await sut.execute({
       _id: created._id,
       name: 'John Doe',
       email: 'john@example.com',
-      group: 'group-id',
+      group: groupId,
       status: E_USER_STATUS.INACTIVE,
     });
 
@@ -103,7 +142,7 @@ describe('User Update Use Case', () => {
       _id: 'non-existent-id',
       name: 'John Doe',
       email: 'john@example.com',
-      group: 'group-id',
+      group: groupId,
       status: E_USER_STATUS.ACTIVE,
     });
 
@@ -119,7 +158,7 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'oldpassword',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
@@ -141,7 +180,7 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
@@ -160,7 +199,7 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'old@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
@@ -189,7 +228,7 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
@@ -205,12 +244,12 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
       _id: created._id,
-      group: 'new-group-id',
+      group: otherGroupId,
     });
 
     expect(emailQueue.getJobs()).toHaveLength(0);
@@ -221,7 +260,7 @@ describe('User Update Use Case', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      group: 'group-id',
+      group: groupId,
     });
 
     await sut.execute({
@@ -242,7 +281,7 @@ describe('User Update Use Case', () => {
       _id: 'any-id',
       name: 'John Doe',
       email: 'john@example.com',
-      group: 'group-id',
+      group: groupId,
       status: E_USER_STATUS.ACTIVE,
     });
 

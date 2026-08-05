@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserIdentifierParamsValidator } from '../_shared.validator';
+
 import { UserRemoveFromTrashSchema } from './remove-from-trash.schema';
 import UserRemoveFromTrashUseCase from './remove-from-trash.use-case';
-import { UserRemoveFromTrashParamValidator } from './remove-from-trash.validator';
 
 @Controller({
   route: '/users',
@@ -33,7 +34,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserRemoveFromTrashParamValidator.parse(request.params);
+    const params = UserIdentifierParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 

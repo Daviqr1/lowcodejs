@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserBulkIdsBodyValidator } from '../_shared.validator';
+
 import { UserBulkRestoreSchema } from './bulk-restore.schema';
 import UserBulkRestoreUseCase from './bulk-restore.use-case';
-import { UserBulkRestoreBodyValidator } from './bulk-restore.validator';
 
 @Controller({
   route: '/users',
@@ -33,7 +34,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const body = UserBulkRestoreBodyValidator.parse(request.body);
+    const body = UserBulkIdsBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute(body);
 

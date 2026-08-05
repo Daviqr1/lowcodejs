@@ -5,7 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 
-import type { UserBulkUpdatePayload } from './bulk-update.validator';
+import type { UserBulkUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 

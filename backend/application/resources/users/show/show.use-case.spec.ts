@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import UserShowUseCase from './show.use-case';
 
@@ -10,7 +11,7 @@ let sut: UserShowUseCase;
 describe('User Show Use Case', () => {
   beforeEach(() => {
     userInMemoryRepository = new UserInMemoryRepository();
-    sut = new UserShowUseCase(userInMemoryRepository);
+    sut = new UserShowUseCase(userInMemoryRepository, new UserMapperService());
   });
 
   it('deve retornar usuario quando encontrado', async () => {

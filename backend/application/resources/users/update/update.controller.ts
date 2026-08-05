@@ -5,18 +5,14 @@ import { E_AREA_CAPABILITY } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
-import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
-import UserMapperService from '@application/services/user-mapper/user-mapper.service';
+
+import {
+  UserUpdateBodyValidator,
+  UserIdentifierParamsValidator,
+} from '../_shared.validator';
 
 import { UserUpdateSchema } from './update.schema';
 import UserUpdateUseCase from './update.use-case';
-import {
-  UserUpdateBodyValidator,
-  UserUpdateParamsValidator,
-} from './update.validator';
-
-const userMapper =
-  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller({
   route: '/users',
@@ -43,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserUpdateParamsValidator.parse(request.params);
+    const params = UserIdentifierParamsValidator.parse(request.params);
     const payload = UserUpdateBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({
@@ -54,6 +50,6 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    return response.status(200).send(userMapper.toResponse(result.value));
+    return response.status(200).send(result.value);
   }
 }

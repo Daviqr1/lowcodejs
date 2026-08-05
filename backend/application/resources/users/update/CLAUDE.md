@@ -38,6 +38,7 @@ Atualiza um usuario existente com novos dados, incluindo troca de senha opcional
 | 400 | INVALID_PAYLOAD_FORMAT | Falha na validacao Zod |
 | 401 | AUTHENTICATION_REQUIRED | Token JWT ausente ou invalido |
 | 404 | USER_NOT_FOUND | Usuario com _id informado nao existe |
+| 404 | GROUP_NOT_FOUND | Algum grupo informado nao existe |
 | 500 | UPDATE_USER_ERROR | Erro interno (banco, etc) |
 
 ## Testes

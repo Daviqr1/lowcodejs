@@ -7,7 +7,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
-import type { UserBulkDeletePayload } from './bulk-delete.validator';
+import type { UserBulkDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
 

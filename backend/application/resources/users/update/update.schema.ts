@@ -1,6 +1,21 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import { E_ERROR_CODE } from '@application/core/error-code.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  InvalidPayloadResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+  UserDetailResponse,
+} from '../_shared.response';
+import {
+  UserIdentifierParamsValidator,
+  UserUpdateBodyValidator,
+} from '../_shared.validator';
 
 export const UserUpdateSchema: FastifySchema = {
   tags: ['Usuários'],
@@ -8,127 +23,26 @@ export const UserUpdateSchema: FastifySchema = {
   description:
     'Atualiza um usuário existente com novos dados, incluindo troca de senha opcional',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['_id'],
-    properties: {
-      _id: {
-        type: 'string',
-        description: 'ID do usuário',
-        errorMessage: {
-          type: 'O ID deve ser um texto',
-        },
-      },
-    },
-    errorMessage: {
-      required: {
-        _id: 'O ID é obrigatório',
-      },
-    },
-  },
-  body: {
-    type: 'object',
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        description: 'Nome completo do usuário atualizado',
-        errorMessage: {
-          type: 'O nome deve ser um texto',
-          minLength: 'O nome é obrigatório',
-        },
-      },
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'Endereço de email do usuário atualizado',
-        errorMessage: {
-          type: 'O email deve ser um texto',
-          format: 'Digite um email válido',
-        },
-      },
-      group: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID do grupo do usuário atualizado',
-        errorMessage: {
-          type: 'O grupo deve ser um texto',
-          minLength: 'O grupo é obrigatório',
-        },
-      },
-      groups: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'IDs dos grupos adicionais do usuário',
-        errorMessage: {
-          type: 'Grupos deve ser uma lista',
-        },
-      },
-      password: {
-        type: 'string',
-        minLength: 6,
-        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
-        description: 'Nova senha (opcional)',
-        errorMessage: {
-          type: 'A senha deve ser um texto',
-          minLength: 'A senha deve ter no mínimo 6 caracteres',
-          pattern:
-            'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
-        },
-      },
-      status: {
-        type: 'string',
-        enum: ['ACTIVE', 'INACTIVE'],
-        description: 'Status do usuário',
-        errorMessage: {
-          type: 'O status deve ser um texto',
-          enum: 'O status deve ser ACTIVE ou INACTIVE',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  params: zodToRouteSchema(UserIdentifierParamsValidator),
+  body: zodToRouteSchema(UserUpdateBodyValidator),
   response: {
     200: {
+      ...UserDetailResponse,
       description: 'Usuário atualizado com sucesso',
-      type: 'object',
-      properties: {
-        _id: { type: 'string' },
-        name: { type: 'string' },
-        email: { type: 'string' },
-        group: {
-          type: 'object',
-          properties: {
-            _id: { type: 'string' },
-            name: { type: 'string' },
-            slug: { type: 'string' },
-          },
-        },
-        status: { type: 'string' },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-      },
     },
-    400: buildErrorResponse(
-      400,
-      ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
-      {
-        description: 'Requisição inválida - Falha na validação',
-        messageDescription: 'Mensagem de erro de validação',
-        errorsDescription: 'Erros de validação por campo',
-      },
+    400: InvalidPayloadResponse,
+    401: UnauthorizedResponse,
+    403: buildErrorResponse(403, 'CANNOT_ASSIGN_PRIVILEGED_GROUP', {
+      description: 'Apenas MASTER pode atribuir grupos privilegiados',
+    }),
+    404: buildErrorResponse(
+      404,
+      [E_ERROR_CODE.USER_NOT_FOUND, E_ERROR_CODE.GROUP_NOT_FOUND],
+      { description: 'Usuário ou grupo informado não existe' },
     ),
-    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
-      description: 'Não autorizado - Autenticação necessária',
+    409: buildErrorResponse(409, 'EMAIL_ALREADY_EXISTS', {
+      description: 'Conflito - E-mail já cadastrado em outro usuário',
     }),
-    404: buildErrorResponse(404, 'USER_NOT_FOUND', {
-      description: 'Usuário não encontrado',
-    }),
-    500: buildErrorResponse(500, 'UPDATE_USER_ERROR', {
-      description: 'Erro interno do servidor',
-    }),
+    500: serverErrorResponse('UPDATE_USER_ERROR'),
   },
 };

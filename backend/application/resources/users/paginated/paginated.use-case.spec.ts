@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { E_ROLE, type IUser } from '@application/core/entity.core';
+import { E_ROLE } from '@application/core/entity.core';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import HttpResponseService from '@application/services/http-response/http-response.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import UserPaginatedUseCase from './paginated.use-case';
 
@@ -15,6 +16,7 @@ describe('User Paginated Use Case', () => {
     sut = new UserPaginatedUseCase(
       userInMemoryRepository,
       new HttpResponseService(),
+      new UserMapperService(),
     );
   });
 
@@ -134,7 +136,7 @@ describe('User Paginated Use Case', () => {
     expect(result.value.meta.total).toBe(4);
 
     const hasLoggedUser = result.value.data.some(
-      (u: IUser) => u._id === loggedUser._id,
+      (u) => u._id === loggedUser._id,
     );
     expect(hasLoggedUser).toBe(true);
   });

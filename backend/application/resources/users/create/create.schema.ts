@@ -1,6 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import { E_ERROR_CODE } from '@application/core/error-code.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  InvalidPayloadResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+  UserDetailResponse,
+} from '../_shared.response';
+import { UserCreateBodyValidator } from '../_shared.validator';
 
 export const UserCreateSchema: FastifySchema = {
   tags: ['Usuários'],
@@ -8,133 +20,17 @@ export const UserCreateSchema: FastifySchema = {
   description:
     'Cria uma nova conta de usuário com nome, email, senha e atribui a um grupo',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['name', 'email', 'password', 'group'],
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        description: 'Nome completo do usuário',
-        errorMessage: {
-          type: 'O nome deve ser um texto',
-          minLength: 'O nome é obrigatório',
-        },
-      },
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'Endereço de email do usuário',
-        errorMessage: {
-          type: 'O email deve ser um texto',
-          format: 'Digite um email válido',
-        },
-      },
-      password: {
-        type: 'string',
-        minLength: 6,
-        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
-        description: 'Senha do usuário',
-        errorMessage: {
-          type: 'A senha deve ser um texto',
-          minLength: 'A senha deve ter no mínimo 6 caracteres',
-          pattern:
-            'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
-        },
-      },
-      group: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID do grupo do usuário',
-        errorMessage: {
-          type: 'O grupo deve ser um texto',
-          minLength: 'O grupo é obrigatório',
-        },
-      },
-      groups: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'IDs dos grupos adicionais do usuário',
-        errorMessage: {
-          type: 'Grupos deve ser uma lista',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        name: 'O nome é obrigatório',
-        email: 'O email é obrigatório',
-        password: 'A senha é obrigatória',
-        group: 'O grupo é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(UserCreateBodyValidator),
   response: {
-    201: {
-      description: 'Usuário criado com sucesso (grupo populado)',
-      type: 'object',
-      properties: {
-        _id: { type: 'string', description: 'ID do usuário' },
-        name: { type: 'string', description: 'Nome completo do usuário' },
-        email: {
-          type: 'string',
-          format: 'email',
-          description: 'Email do usuário',
-        },
-        group: {
-          type: 'object',
-          description: 'Detalhes do grupo do usuário (populado)',
-          properties: {
-            _id: { type: 'string', description: 'ID do grupo' },
-            name: { type: 'string', description: 'Nome do grupo' },
-            slug: { type: 'string', description: 'Slug do grupo' },
-            description: {
-              type: 'string',
-              description: 'Descrição do grupo',
-            },
-            permissions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  _id: { type: 'string' },
-                  name: { type: 'string' },
-                  slug: { type: 'string' },
-                  description: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-        status: {
-          type: 'string',
-          enum: ['ACTIVE', 'INACTIVE'],
-          description: 'Status do usuário',
-        },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-      },
-    },
-    400: buildErrorResponse(
-      400,
-      ['GROUP_NOT_INFORMED', 'INVALID_PAYLOAD_FORMAT'],
-      {
-        description:
-          'Requisição inválida - Grupo não informado ou falha na validação',
-        messageDescription: 'Mensagem de erro de validação',
-        errorsDescription: 'Erros de validação por campo',
-      },
-    ),
-    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
-      description: 'Não autorizado - Autenticação necessária',
+    201: { ...UserDetailResponse, description: 'Usuário criado com sucesso' },
+    400: InvalidPayloadResponse,
+    401: UnauthorizedResponse,
+    404: buildErrorResponse(404, E_ERROR_CODE.GROUP_NOT_FOUND, {
+      description: 'Grupo informado não existe',
     }),
-    409: buildErrorResponse(409, 'USER_ALREADY_EXISTS', {
+    409: buildErrorResponse(409, E_ERROR_CODE.USER_ALREADY_EXISTS, {
       description: 'Conflito - Já existe usuário com este email',
     }),
-    500: buildErrorResponse(500, 'CREATE_USER_ERROR', {
-      description: 'Erro interno do servidor',
-    }),
+    500: serverErrorResponse('CREATE_USER_ERROR'),
   },
 };

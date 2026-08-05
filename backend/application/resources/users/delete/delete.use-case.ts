@@ -6,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 
-import type { UserDeletePayload } from './delete.validator';
+import type { UserDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 

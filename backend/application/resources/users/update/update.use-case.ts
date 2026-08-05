@@ -5,7 +5,6 @@ import { left, right } from '@application/core/either.core';
 import {
   E_ROLE,
   E_USER_STATUS,
-  type IUser as Entity,
   type Merge,
   type ValueOf,
 } from '@application/core/entity.core';
@@ -15,10 +14,12 @@ import { UserGroupContractRepository } from '@application/repositories/user-grou
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
+import type { UserResponse } from '@application/services/user-mapper/user-mapper-contract.service';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
 
-import type { UserUpdatePayload } from './update.validator';
+import type { UserUpdatePayload } from '../_shared.validator';
 
-type Response = Either<HTTPException, Entity>;
+type Response = Either<HTTPException, UserResponse>;
 type Payload = Merge<UserUpdatePayload, { actorId?: string }>;
 type RecipientType = 'current' | 'old' | 'new';
 
@@ -35,6 +36,7 @@ export default class UserUpdateUseCase {
     private readonly emailQueue: EmailQueueContractService,
     private readonly groupRepository: UserGroupContractRepository,
     private readonly groupResolver: GroupResolverContractService,
+    private readonly userMapper: UserMapperContractService,
   ) {}
 
   /**
@@ -64,6 +66,32 @@ export default class UserUpdateUseCase {
     return this.groupResolver.isMaster(actor);
   }
 
+  /**
+   * Antes so a existencia era assumida: `canAssignGroup` buscava os grupos, mas
+   * grupo inexistente virava `undefined` e passava direto, gravando uma FK
+   * fantasma. Guarda a existencia antes de qualquer escrita.
+   */
+  private async assertGroupsExist(
+    payload: Payload,
+  ): Promise<HTTPException | null> {
+    const targetIds = [payload.group, ...(payload.groups ?? [])].filter(
+      (id): id is string => Boolean(id),
+    );
+    if (targetIds.length === 0) return null;
+
+    const groups = await Promise.all(
+      targetIds.map((id) => this.groupRepository.findById(id)),
+    );
+
+    if (groups.some((group) => !group)) {
+      return HTTPException.NotFound('Grupo não encontrado', 'GROUP_NOT_FOUND', {
+        group: 'Grupo não encontrado',
+      });
+    }
+
+    return null;
+  }
+
   async execute(payload: Payload): Promise<Response> {
     try {
       const user = await this.userRepository.findById(payload._id);
@@ -72,6 +100,9 @@ export default class UserUpdateUseCase {
         return left(
           HTTPException.NotFound('Usuário não encontrado', 'USER_NOT_FOUND'),
         );
+
+      const missingGroup = await this.assertGroupsExist(payload);
+      if (missingGroup) return left(missingGroup);
 
       if (!(await this.canAssignGroup(payload, payload.actorId))) {
         return left(
@@ -146,7 +177,7 @@ export default class UserUpdateUseCase {
         }
       }
 
-      return right(updated);
+      return right(this.userMapper.toResponse(updated));
     } catch (error) {
       console.error('[users > update][error]:', error);
       return left(
