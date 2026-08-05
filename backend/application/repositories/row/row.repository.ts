@@ -149,7 +149,11 @@ export default class RowMongooseRepository implements RowContractRepository {
 
   async findOne(payload: RowFindOnePayload): Promise<IRow | null> {
     const model = await this.getModel(payload.table);
-    const row = await model.findOne(payload.query);
+
+    let query = payload.query;
+    if (!payload.includeTrashed) query = { ...query, trashedAt: null };
+
+    const row = await model.findOne(query);
 
     if (!row) return null;
 

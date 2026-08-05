@@ -41,7 +41,9 @@ export default class TableRowRemoveFromTrashUseCase {
         );
       }
 
+      // A row alvo esta, por definicao, na lixeira.
       const row = await this.rowRepository.findOne({
+        includeTrashed: true,
         table,
         query: { _id: payload._id },
         populate: false,

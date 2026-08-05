@@ -41,7 +41,9 @@ export default class TableRowSendToTrashUseCase {
         );
       }
 
+      // Precisa ver a lixeira para responder ALREADY_TRASHED em vez de 404.
       const row = await this.rowRepository.findOne({
+        includeTrashed: true,
         table,
         query: { _id: payload._id },
         populate: false,

@@ -195,6 +195,7 @@ export default class RowInMemoryRepository
     const collection = this.getCollection(payload.table.slug);
 
     const row = collection.find((item) => {
+      if (!payload.includeTrashed && item['trashedAt'] != null) return false;
       for (const [key, value] of Object.entries(payload.query)) {
         if (item[key] !== value) return false;
       }

@@ -47,6 +47,7 @@ export default class TableRowDeleteUseCase {
         const current = await this.rowRepository.findOne({
           table,
           query: { _id: payload._id },
+          includeTrashed: true,
         });
 
         if (!current) {
@@ -67,9 +68,11 @@ export default class TableRowDeleteUseCase {
       }
 
       // Carrega a row para o guard (necessário para canWrite delete).
+      // Exclusao definitiva age tambem sobre o que ja esta na lixeira.
       const row = await this.rowRepository.findOne({
         table,
         query: { _id: payload._id },
+        includeTrashed: true,
       });
 
       if (!row) {

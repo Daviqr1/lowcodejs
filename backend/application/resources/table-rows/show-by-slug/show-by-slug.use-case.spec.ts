@@ -120,6 +120,34 @@ describe('Table Row Show By Slug Use Case', () => {
     }
   });
 
+  it('nao deve servir registro que esta na lixeira', async () => {
+    const table = await tableInMemoryRepository.create({
+      ...baseTable,
+      name: 'Tarefas',
+      slug: 'tarefas',
+      rowSlugFieldId: 'field-nome',
+    });
+
+    const row = await rowRepository.create({
+      table,
+      data: { nome: 'Nome Tarefa XYZ', sharedRowSlug: 'nome-tarefa-xyz' },
+    });
+
+    await rowRepository.bulkTrash({ table, ids: [row._id] });
+
+    const result = await sut.execute({
+      slug: 'tarefas',
+      rowSlug: 'nome-tarefa-xyz',
+      user: 'user-123',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(404);
+      expect(result.value.cause).toBe('ROW_NOT_FOUND');
+    }
+  });
+
   it('deve retornar GET_ROW_BY_SLUG_ERROR quando houver falha interna', async () => {
     tableInMemoryRepository.simulateError(
       'findBySlug',

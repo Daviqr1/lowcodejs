@@ -26,6 +26,13 @@ export type RowFindOnePayload = {
   table: RowTableContext;
   query: Record<string, unknown>;
   populate?: boolean;
+  /**
+   * Por padrao `findOne` enxerga apenas rows ativas (`trashedAt: null`) — igual
+   * a `findMany`/`count`, que ja filtram pelo QueryBuilder. Só quem opera sobre
+   * a lixeira (enviar/remover da lixeira, exclusao definitiva, guarda das
+   * operacoes em massa) passa `true`.
+   */
+  includeTrashed?: boolean;
 };
 
 export type RowFindManyPayload = {

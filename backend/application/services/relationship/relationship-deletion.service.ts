@@ -208,6 +208,8 @@ export default class RelationshipDeletionService implements RelationshipDeletion
           table,
           query: { _id: recordId },
           populate: false,
+          // A row alvo pode ja estar na lixeira quando a exclusao e definitiva.
+          includeTrashed: true,
         });
         if (this.fkIsSet(row, self.field.slug)) return true;
       }

@@ -63,9 +63,12 @@ export default class RowAccessGuardService extends RowAccessGuardContractService
 
     const checked = await Promise.all(
       input.ids.map(async (_id) => {
+        // As operacoes em massa incluem restaurar e excluir da lixeira, entao a
+        // guarda precisa enxergar rows ja descartadas.
         const row = await this.rowRepository.findOne({
           table: input.table,
           query: { _id },
+          includeTrashed: true,
         });
         if (!row) return null;
 
