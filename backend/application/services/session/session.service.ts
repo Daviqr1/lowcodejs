@@ -6,6 +6,7 @@ import {
   E_ROLE,
   type IJWTPayload,
   type IUser,
+  type Merge,
 } from '@application/core/entity.core';
 import { Env } from '@start/env';
 
@@ -44,7 +45,10 @@ export default class SessionService implements SessionContractService {
   }
 
   async createTokens(
-    user: Pick<IUser, '_id' | 'email' | 'group'>,
+    user: Merge<
+      Pick<IUser, '_id' | 'email' | 'group'>,
+      { sessionVersion?: number }
+    >,
     response: FastifyReply,
   ): Promise<TokenPair> {
     const slug = user?.group?.slug?.toUpperCase();
@@ -58,11 +62,18 @@ export default class SessionService implements SessionContractService {
       email: user.email,
       role,
       type: E_JWT_TYPE.ACCESS,
+      sessionVersion: user.sessionVersion ?? 0,
     };
 
     const accessToken = await response.jwtSign(jwt, { sub, expiresIn: '24h' });
     const refreshToken = await response.jwtSign(
-      { sub, type: E_JWT_TYPE.REFRESH },
+      {
+        sub,
+        type: E_JWT_TYPE.REFRESH,
+        // Sem a geracao aqui, um refresh antigo trocaria por um access novo e
+        // contornaria a revogacao.
+        sessionVersion: user.sessionVersion ?? 0,
+      },
       { sub, expiresIn: '7d' },
     );
 

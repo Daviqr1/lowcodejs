@@ -32,6 +32,7 @@ export default class UserInMemoryRepository
       notificationsEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),
+      sessionVersion: 0,
       trashedAt: null,
       trashed: false,
     };
@@ -109,6 +110,12 @@ export default class UserInMemoryRepository
   async update({ _id, ...payload }: UserUpdatePayload): Promise<IUser> {
     this.checkError('update');
     return this.patchById(_id, payload, 'User');
+  }
+
+  async revokeSessions(_id: string): Promise<void> {
+    this.checkError('revokeSessions');
+    const user = this.items.find((u) => u._id === _id);
+    if (user) user.sessionVersion = (user.sessionVersion ?? 0) + 1;
   }
 
   async updateMany({

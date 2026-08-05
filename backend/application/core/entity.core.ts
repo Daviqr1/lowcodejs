@@ -278,6 +278,12 @@ export type IJWTPayload = {
   email: string;
   role: ValueOf<typeof E_ROLE>;
   type: ValueOf<typeof E_JWT_TYPE>;
+  /**
+   * Geracao da sessao. O middleware compara com `user.sessionVersion`: trocar
+   * senha ou desativar/remover o usuario incrementa o contador e derruba os
+   * tokens ja emitidos. Ausente nos tokens anteriores a este campo — vale 0.
+   */
+  sessionVersion?: number;
 };
 
 export type Base = {
@@ -369,6 +375,8 @@ export type IUser = Merge<
     // o fecho de `{group} ∪ groups` seguindo `encompasses`.
     groups: IGroup[];
     notificationsEnabled: boolean;
+    /** Ver `IJWTPayload.sessionVersion`. */
+    sessionVersion: number;
   }
 >;
 

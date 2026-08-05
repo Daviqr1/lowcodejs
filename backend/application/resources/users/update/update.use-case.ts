@@ -114,6 +114,10 @@ export default class UserUpdateUseCase {
         }),
       });
 
+      // Trocar a credencial derruba as sessoes ja abertas com a antiga.
+      if (payload.password)
+        await this.userRepository.revokeSessions(updated._id);
+
       if (changes.length > 0) {
         const emailChanged = Boolean(
           payload.email && payload.email !== oldEmail,

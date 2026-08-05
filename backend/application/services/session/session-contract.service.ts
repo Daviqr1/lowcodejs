@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import type { IJWTPayload, IUser } from '@application/core/entity.core';
+import type { IJWTPayload, IUser, Merge } from '@application/core/entity.core';
 
 export type TokenPair = {
   accessToken: string;
@@ -37,7 +37,10 @@ export abstract class SessionContractService {
 
   /** Emite o par access (24h) + refresh (7d). */
   abstract createTokens(
-    user: Pick<IUser, '_id' | 'email' | 'group'>,
+    user: Merge<
+      Pick<IUser, '_id' | 'email' | 'group'>,
+      { sessionVersion?: number }
+    >,
     response: FastifyReply,
   ): Promise<TokenPair>;
 

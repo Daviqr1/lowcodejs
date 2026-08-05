@@ -191,6 +191,10 @@ export default class UserMongooseRepository
     return this.transform(populated);
   }
 
+  async revokeSessions(_id: string): Promise<void> {
+    await Model.updateOne({ _id }, { $inc: { sessionVersion: 1 } });
+  }
+
   async updateMany({
     _ids,
     filterTrashed,

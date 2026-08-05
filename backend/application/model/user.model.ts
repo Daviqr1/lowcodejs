@@ -27,6 +27,9 @@ export const Schema = new mongoose.Schema(
 
     notificationsEnabled: { type: Boolean, default: true },
 
+    // Geracao da sessao: incrementar invalida os JWT ja emitidos.
+    sessionVersion: { type: Number, default: 0 },
+
     trashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },
   },

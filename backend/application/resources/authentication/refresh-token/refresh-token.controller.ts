@@ -74,6 +74,7 @@ export default class {
 
       const result = await this.useCase.execute({
         _id: refreshTokenDecoded.sub,
+        sessionVersion: refreshTokenDecoded.sessionVersion,
       });
 
       if (result.isLeft()) return this.http.sendError(response, result.value);

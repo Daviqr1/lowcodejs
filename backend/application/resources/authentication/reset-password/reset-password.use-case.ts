@@ -35,6 +35,9 @@ export default class UpdatePasswordRecoveryUseCase {
         password: hashedPassword,
       });
 
+      // Trocar a credencial derruba as sessoes ja abertas com a antiga.
+      await this.userRepository.revokeSessions(user._id);
+
       await this.emailQueue.enqueue({
         template: 'reset-password-confirmation',
         data: { name: user.name },

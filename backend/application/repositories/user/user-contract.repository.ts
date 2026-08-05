@@ -66,6 +66,12 @@ export abstract class UserContractRepository {
   abstract findMany(payload?: UserQueryPayload): Promise<IUser[]>;
   abstract findManyTrashed(): Promise<IUser[]>;
   abstract update(payload: UserUpdatePayload): Promise<IUser>;
+  /**
+   * Incrementa `sessionVersion`, derrubando os JWT ja emitidos do usuario.
+   * Chamado ao trocar a senha; remover ou desativar ja e barrado pelo proprio
+   * middleware, que nao encontra o usuario ou o ve inativo.
+   */
+  abstract revokeSessions(_id: string): Promise<void>;
   abstract updateMany(payload: UserUpdateManyPayload): Promise<number>;
   abstract delete(_id: string): Promise<void>;
   abstract deleteMany(_ids: string[]): Promise<number>;

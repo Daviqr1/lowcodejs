@@ -71,6 +71,10 @@ export default class ProfileUpdateUseCase {
         }),
       });
 
+      // Trocar a credencial derruba as sessoes abertas com a antiga — inclusive
+      // a de quem fez a troca, que precisa entrar de novo.
+      await this.userRepository.revokeSessions(user._id);
+
       return right(updated);
     } catch (error) {
       console.error('[profile > update][error]:', error);

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { E_USER_STATUS } from '@application/core/entity.core';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 
 import RefreshTokenUseCase from './refresh-token.use-case';
@@ -28,6 +29,45 @@ describe('Refresh Token Use Case', () => {
     expect(result.value._id).toBe(user._id);
     expect(result.value.email).toBe('john@example.com');
     expect(result.value.name).toBe('John Doe');
+  });
+
+  it('deve recusar refresh emitido antes da troca de senha', async () => {
+    const user = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password',
+      group: 'group-id',
+    });
+
+    await userInMemoryRepository.revokeSessions(user._id);
+
+    const result = await sut.execute({ _id: user._id, sessionVersion: 0 });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(401);
+    expect(result.value.cause).toBe('SESSION_REVOKED');
+  });
+
+  it('deve recusar usuario desativado', async () => {
+    const user = await userInMemoryRepository.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password',
+      group: 'group-id',
+    });
+
+    await userInMemoryRepository.update({
+      _id: user._id,
+      status: E_USER_STATUS.INACTIVE,
+    });
+
+    const result = await sut.execute({ _id: user._id });
+
+    expect(result.isLeft()).toBe(true);
+    if (!result.isLeft()) throw new Error('Expected left');
+    expect(result.value.code).toBe(401);
+    expect(result.value.cause).toBe('USER_INACTIVE');
   });
 
   it('deve retornar erro USER_NOT_FOUND quando usuario nao existir', async () => {

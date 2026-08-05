@@ -78,6 +78,7 @@ export class EntityFixtures {
       status: E_USER_STATUS.INACTIVE,
       group: this.makeGroup(id),
       groups: [],
+      sessionVersion: 0,
       notificationsEnabled: true,
     };
   }
