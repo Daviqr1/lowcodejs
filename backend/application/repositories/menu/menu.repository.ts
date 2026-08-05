@@ -95,7 +95,7 @@ export default class MenuMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IMenu | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const menu = await Model.findOne(where).populate(this.populateOptions);
     if (!menu) return null;
@@ -104,7 +104,7 @@ export default class MenuMongooseRepository
   }
 
   async findBySlug(slug: string, options?: FindOptions): Promise<IMenu | null> {
-    const where = this.trashedClause({ slug }, options);
+    const where = this.trashedClause({ slug }, options, false);
 
     const menu = await Model.findOne(where).populate(this.populateOptions);
     if (!menu) return null;
