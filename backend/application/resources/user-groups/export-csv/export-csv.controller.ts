@@ -8,9 +8,10 @@ import { CsvExportContractService } from '@application/services/csv-export/csv-e
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserGroupExportCsvQueryValidator } from '../_shared.validator';
+
 import { UserGroupExportCsvSchema } from './export-csv.schema';
 import UserGroupExportCsvUseCase from './export-csv.use-case';
-import { UserGroupExportCsvQueryValidator } from './export-csv.validator';
 
 @Controller({
   route: 'user-group',

@@ -6,7 +6,7 @@ import type { IGroup as Entity } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 
-import type { UserGroupShowPayload } from './show.validator';
+import type { UserGroupShowPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = UserGroupShowPayload;

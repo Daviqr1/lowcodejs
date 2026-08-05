@@ -8,7 +8,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
-import type { UserGroupUpdatePayload } from './update.validator';
+import type { UserGroupUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = UserGroupUpdatePayload;

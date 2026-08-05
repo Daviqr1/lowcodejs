@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserGroupCreateBodyValidator } from '../_shared.validator';
+
 import { UserGroupCreateSchema } from './create.schema';
 import UserGroupCreateUseCase from './create.use-case';
-import { UserGroupCreateBodyValidator } from './create.validator';
 
 @Controller()
 export default class {

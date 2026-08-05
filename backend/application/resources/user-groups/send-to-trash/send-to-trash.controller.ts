@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserGroupIdentifierParamsValidator } from '../_shared.validator';
+
 import { UserGroupSendToTrashSchema } from './send-to-trash.schema';
 import UserGroupSendToTrashUseCase from './send-to-trash.use-case';
-import { UserGroupSendToTrashParamValidator } from './send-to-trash.validator';
 
 @Controller({
   route: '/user-group',
@@ -33,7 +34,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserGroupSendToTrashParamValidator.parse(request.params);
+    const params = UserGroupIdentifierParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 

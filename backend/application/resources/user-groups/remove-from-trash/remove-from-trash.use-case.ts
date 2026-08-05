@@ -6,7 +6,7 @@ import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 
-import type { UserGroupRemoveFromTrashPayload } from './remove-from-trash.validator';
+import type { UserGroupRemoveFromTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 

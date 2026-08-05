@@ -13,7 +13,7 @@ import { UserGroupContractRepository } from '@application/repositories/user-grou
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
-import type { UserGroupPaginatedPayload } from './paginated.validator';
+import type { UserGroupPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = UserGroupPaginatedPayload;

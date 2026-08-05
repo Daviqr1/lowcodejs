@@ -1,64 +1,33 @@
 import type { FastifySchema } from 'fastify';
 
+import { E_ERROR_CODE } from '@application/core/error-code.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  emptyResponse,
+  ForbiddenResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+  UserGroupNotFoundResponse,
+} from '../_shared.response';
+import { UserGroupIdentifierParamsValidator } from '../_shared.validator';
+
 export const UserGroupRemoveFromTrashSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
   summary: 'Restaurar grupo da lixeira',
-  description: 'Restaura um grupo que esteja na lixeira. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['_id'],
-    properties: { _id: { type: 'string', minLength: 1 } },
-  },
+  params: zodToRouteSchema(UserGroupIdentifierParamsValidator),
   response: {
-    200: {
-      description: 'Grupo restaurado da lixeira com sucesso',
-      type: 'null',
-    },
-    401: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    403: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: { type: 'string', enum: ['FORBIDDEN'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    404: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_GROUP_NOT_FOUND'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    409: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['NOT_TRASHED'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    500: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['REMOVE_GROUP_FROM_TRASH_ERROR'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
+    200: emptyResponse('Grupo restaurado da lixeira com sucesso'),
+    401: UnauthorizedResponse,
+    403: ForbiddenResponse,
+    404: UserGroupNotFoundResponse,
+    409: buildErrorResponse(409, E_ERROR_CODE.NOT_TRASHED, {
+      description: 'Conflito - Grupo não está na lixeira',
+    }),
+    500: serverErrorResponse('REMOVE_GROUP_FROM_TRASH_ERROR'),
   },
 };

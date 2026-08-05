@@ -8,7 +8,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
-import type { UserGroupBulkDeletePayload } from './bulk-delete.validator';
+import type { UserGroupBulkDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
 

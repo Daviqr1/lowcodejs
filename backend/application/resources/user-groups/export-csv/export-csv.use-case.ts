@@ -14,7 +14,7 @@ import {
 import { DateContractService } from '@application/services/date/date-contract.service';
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 
-import type { UserGroupExportCsvPayload } from './export-csv.validator';
+import type { UserGroupExportCsvPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Readable>;
 

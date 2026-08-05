@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { UserGroupUpdateSchema } from './update.schema';
-import UserGroupUpdateUseCase from './update.use-case';
 import {
   UserGroupUpdateBodyValidator,
-  UserGroupUpdateParamsValidator,
-} from './update.validator';
+  UserGroupIdentifierParamsValidator,
+} from '../_shared.validator';
+
+import { UserGroupUpdateSchema } from './update.schema';
+import UserGroupUpdateUseCase from './update.use-case';
 
 @Controller({
   route: '/user-group',
@@ -38,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserGroupUpdateParamsValidator.parse(request.params);
+    const params = UserGroupIdentifierParamsValidator.parse(request.params);
     const payload = UserGroupUpdateBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({

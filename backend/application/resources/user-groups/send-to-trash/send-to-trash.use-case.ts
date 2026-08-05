@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 
-import type { UserGroupSendToTrashPayload } from './send-to-trash.validator';
+import type { UserGroupSendToTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 

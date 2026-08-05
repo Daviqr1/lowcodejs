@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserGroupIdentifierParamsValidator } from '../_shared.validator';
+
 import { UserGroupShowSchema } from './show.schema';
 import UserGroupShowUseCase from './show.use-case';
-import { UserGroupShowParamValidator } from './show.validator';
 
 @Controller({
   route: '/user-group',
@@ -35,7 +36,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = UserGroupShowParamValidator.parse(request.params);
+    const params = UserGroupIdentifierParamsValidator.parse(request.params);
     const result = await this.useCase.execute(params);
 
     if (result.isLeft()) return this.http.sendError(response, result.value);

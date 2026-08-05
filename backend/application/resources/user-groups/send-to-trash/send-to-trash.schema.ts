@@ -1,71 +1,39 @@
 import type { FastifySchema } from 'fastify';
 
+import { E_ERROR_CODE } from '@application/core/error-code.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  emptyResponse,
+  ForbiddenResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+  UserGroupNotFoundResponse,
+} from '../_shared.response';
+import { UserGroupIdentifierParamsValidator } from '../_shared.validator';
+
 export const UserGroupSendToTrashSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
-  summary: 'Enviar grupo para a lixeira (soft delete)',
-  description:
-    'Envia um grupo para a lixeira (soft delete). Bloqueia grupos do sistema e grupos com usuários atribuídos. Restrito ao MASTER.',
+  summary: 'Enviar grupo para a lixeira',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['_id'],
-    properties: { _id: { type: 'string', minLength: 1 } },
-  },
+  params: zodToRouteSchema(UserGroupIdentifierParamsValidator),
   response: {
-    200: {
-      description: 'Grupo enviado para a lixeira com sucesso',
-      type: 'null',
-    },
-    401: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    403: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: ['FORBIDDEN', 'SYSTEM_GROUP_PROTECTED'],
-        },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    404: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_GROUP_NOT_FOUND'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    409: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: ['ALREADY_TRASHED', 'GROUP_HAS_USERS'],
-        },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
-    500: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SEND_GROUP_TO_TRASH_ERROR'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
-      },
-    },
+    200: emptyResponse('Grupo enviado para a lixeira com sucesso'),
+    401: UnauthorizedResponse,
+    403: ForbiddenResponse,
+    404: UserGroupNotFoundResponse,
+    409: buildErrorResponse(
+      409,
+      [
+        E_ERROR_CODE.ALREADY_TRASHED,
+        'GROUP_HAS_USERS',
+        'SYSTEM_GROUP_PROTECTED',
+      ],
+      { description: 'Conflito - Envio para lixeira não permitido' },
+    ),
+    500: serverErrorResponse('SEND_GROUP_TO_TRASH_ERROR'),
   },
 };

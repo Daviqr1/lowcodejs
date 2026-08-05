@@ -6,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
-import type { UserGroupBulkRestorePayload } from './bulk-restore.validator';
+import type { UserGroupBulkRestorePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 

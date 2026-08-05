@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UserGroupPaginatedQueryValidator } from '../_shared.validator';
+
 import { UserGroupPaginatedSchema } from './paginated.schema';
 import UserGroupPaginatedUseCase from './paginated.use-case';
-import { UserGroupPaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: 'user-group',

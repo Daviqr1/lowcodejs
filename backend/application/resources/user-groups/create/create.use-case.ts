@@ -10,7 +10,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
-import type { UserGroupCreatePayload } from './create.validator';
+import type { UserGroupCreatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = UserGroupCreatePayload;
