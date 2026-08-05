@@ -2,8 +2,11 @@ import supertest from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  buildDefaultTablePermissions,
   buildFieldPermissions,
   E_FIELD_TYPE,
+  E_PERMISSION_TARGET,
+  E_TABLE_PERMISSION,
   E_TABLE_STYLE,
   E_TABLE_TYPE,
 } from '@application/core/entity.core';
@@ -96,6 +99,76 @@ describe('E2E Table Row Create Controller', () => {
       expect(response.statusCode).toBe(201);
       expect(response.body.name).toBe('Product 1');
       expect(response.body._id).toBeDefined();
+    });
+
+    it('nao deve aceitar creator do body em requisicao sem autenticacao', async () => {
+      // O `creator` alimenta o RowAccessGuard: um visitante que enviasse o id de
+      // um MASTER no body ganhava `isPrivileged` e escrevia com privilegio total.
+      const { user: master } = await createAuthenticatedUser();
+
+      const fieldPayload: FieldCreatePayload = {
+        category: [],
+        dropdown: [],
+        defaultValue: null,
+        showInFilter: false,
+        permissions: buildFieldPermissions(true, true, true),
+        format: null,
+        group: null,
+        multiple: false,
+        required: false,
+        relationship: null,
+        name: 'Name',
+        slug: 'name',
+        type: E_FIELD_TYPE.TEXT_SHORT,
+        widthInForm: null,
+        widthInList: null,
+        widthInDetail: null,
+      };
+
+      const field = await Field.create(fieldPayload);
+
+      const tablePayload: TableCreatePayload = {
+        owner: master._id,
+        fieldOrderForm: [],
+        fieldOrderList: [],
+        style: E_TABLE_STYLE.LIST,
+        name: 'Public Form',
+        slug: 'public-form',
+        fields: [field._id.toString()],
+        _schema: schemaBuilder.build([
+          {
+            ...field.toJSON(),
+            _id: field._id.toString(),
+          },
+        ]),
+        description: 'Formulario publico',
+        logo: null,
+        permissions: {
+          ...buildDefaultTablePermissions(null),
+          [E_TABLE_PERMISSION.CREATE_ROW]: {
+            kind: E_PERMISSION_TARGET.PUBLIC,
+            group: null,
+          },
+        },
+        methods: {
+          beforeSave: { code: null },
+          afterSave: { code: null },
+          onLoad: { code: null },
+        },
+        type: E_TABLE_TYPE.TABLE,
+      };
+
+      await Table.create(tablePayload);
+
+      const response = await supertest(kernel.server)
+        .post('/tables/public-form/rows')
+        .send({
+          name: 'Enviado por visitante',
+          creator: master._id,
+        });
+
+      expect(response.statusCode).toBe(201);
+      expect(response.body.creator ?? null).toBeNull();
     });
   });
 });

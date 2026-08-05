@@ -35,8 +35,8 @@ export default class {
     const params = PageShowParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
       ...params,
-      ...(request.user?.sub && { actorUserId: request.user.sub }),
-      ...(request.user?.role && { role: request.user.role }),
+      actorUserId: request.user?.sub,
+      role: request.user?.role,
     });
 
     if (result.isLeft()) return this.http.sendError(response, result.value);

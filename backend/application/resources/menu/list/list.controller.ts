@@ -32,8 +32,8 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const result = await this.useCase.execute({
-      ...(request.user?.sub && { actorUserId: request.user.sub }),
-      ...(request.user?.role && { role: request.user.role }),
+      actorUserId: request.user?.sub,
+      role: request.user?.role,
     });
 
     if (result.isLeft()) return this.http.sendError(response, result.value);

@@ -48,7 +48,7 @@ export default class {
       ...payload,
       ...params,
       ...query,
-      ...(request?.user?.sub && { creator: request.user.sub }),
+      creator: request.user?.sub ?? null,
       __actorUserId: request.user?.sub,
       __ownOnly: request.ownership?.ownOnly,
     });

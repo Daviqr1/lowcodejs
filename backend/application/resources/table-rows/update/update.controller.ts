@@ -45,8 +45,8 @@ export default class {
     const result = await this.useCase.execute({
       ...request.body,
       ...params,
-      ...(request?.user?.sub && { __actorUserId: request.user.sub }),
-      ...(request.ownership?.ownOnly && { __ownOnly: true }),
+      __actorUserId: request.user?.sub,
+      __ownOnly: request.ownership?.ownOnly === true,
       __isOwner: request.ownership?.isOwner,
       __isAdministrator: request.ownership?.isAdministrator,
     });

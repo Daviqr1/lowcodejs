@@ -45,7 +45,7 @@ export default class {
     const result = await this.useCase.execute({
       ...request.body,
       ...params,
-      ...(request?.user?.sub && { creator: request.user.sub }),
+      creator: request.user?.sub ?? null,
       __actorUserId: request.user?.sub,
       __ownOnly: request.ownership?.ownOnly,
     });

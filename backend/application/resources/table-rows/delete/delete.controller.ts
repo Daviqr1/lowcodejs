@@ -40,8 +40,8 @@ export default class {
     const params = TableRowDeleteParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
       ...params,
-      ...(request?.user?.sub && { __actorUserId: request.user.sub }),
-      ...(request.ownership?.ownOnly && { __ownOnly: true }),
+      __actorUserId: request.user?.sub,
+      __ownOnly: request.ownership?.ownOnly === true,
     });
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
