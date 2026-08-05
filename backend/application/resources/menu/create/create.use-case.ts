@@ -14,7 +14,7 @@ import { MenuContractRepository } from '@application/repositories/menu/menu-cont
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
-import type { MenuCreatePayload } from './create.validator';
+import type { MenuCreatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = Merge<MenuCreatePayload, { owner: string }>;

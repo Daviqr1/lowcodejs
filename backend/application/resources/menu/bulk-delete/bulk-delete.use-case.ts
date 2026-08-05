@@ -6,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
-import type { MenuBulkDeletePayload } from './bulk-delete.validator';
+import type { MenuBulkDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
 

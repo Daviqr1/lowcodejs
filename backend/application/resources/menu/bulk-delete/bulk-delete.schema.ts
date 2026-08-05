@@ -1,55 +1,29 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  affectedCountResponse,
+  ForbiddenResponse,
+  InvalidPayloadResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+} from '../_shared.response';
+import { MenuBulkIdsBodyValidator } from '../_shared.validator';
 
 export const MenuBulkDeleteSchema: FastifySchema = {
   tags: ['Menu'],
-  summary: 'Excluir permanentemente múltiplos menus',
-  description:
-    'Remove permanentemente múltiplos menus que já estejam na lixeira.',
+  summary: 'Itens de menu excluídos permanentemente',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['ids'],
-    properties: {
-      ids: {
-        type: 'array',
-        items: { type: 'string' },
-        minItems: 1,
-        description: 'IDs dos menus a excluir permanentemente',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(MenuBulkIdsBodyValidator),
   response: {
-    200: {
-      description: 'Menus excluídos permanentemente com sucesso',
-      type: 'object',
-      properties: {
-        deleted: {
-          type: 'number',
-          description: 'Quantidade de menus excluídos permanentemente',
-        },
-      },
-    },
-    400: buildErrorResponse(
-      400,
-      ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
-      {
-        description: 'Requisição inválida - Falha na validação',
-        messageDescription: 'Mensagem de erro',
-        errorsDescription: 'Erros de validação por campo',
-      },
+    200: affectedCountResponse(
+      'deleted',
+      'Itens de menu excluídos permanentemente',
     ),
-    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
-      description: 'Não autorizado - Autenticação necessária',
-      message: 'Autenticação necessária',
-    }),
-    403: buildErrorResponse(403, 'FORBIDDEN', {
-      description: 'Proibido - Permissão insuficiente',
-    }),
-    500: buildErrorResponse(500, 'BULK_DELETE_MENUS_ERROR', {
-      description: 'Erro interno do servidor',
-    }),
+    400: InvalidPayloadResponse,
+    401: UnauthorizedResponse,
+    403: ForbiddenResponse,
+    500: serverErrorResponse('BULK_DELETE_MENUS_ERROR'),
   },
 };

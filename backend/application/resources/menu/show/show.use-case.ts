@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { MenuShowPayload } from './show.validator';
+import type { MenuShowPayload } from '../_shared.validator';
 
 // O repositorio normaliza `parent`/`table` para id (string), mas a response
 // declara objetos — o serializador entregava `{}` e o form de edicao recarregava

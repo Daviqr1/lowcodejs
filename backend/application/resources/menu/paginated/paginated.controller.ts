@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuPaginatedQueryValidator } from '../_shared.validator';
+
 import { MenuPaginatedSchema } from './paginated.schema';
 import MenuPaginatedUseCase from './paginated.use-case';
-import { MenuPaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: '/menu',

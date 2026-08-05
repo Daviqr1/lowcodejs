@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuBulkIdsBodyValidator } from '../_shared.validator';
+
 import { MenuBulkRestoreSchema } from './bulk-restore.schema';
 import MenuBulkRestoreUseCase from './bulk-restore.use-case';
-import { MenuBulkRestoreBodyValidator } from './bulk-restore.validator';
 
 @Controller({
   route: '/menu',
@@ -33,7 +34,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const body = MenuBulkRestoreBodyValidator.parse(request.body);
+    const body = MenuBulkIdsBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute(body);
 

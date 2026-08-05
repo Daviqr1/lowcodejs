@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { MenuUpdateSchema } from './update.schema';
-import MenuUpdateUseCase from './update.use-case';
 import {
   MenuUpdateBodyValidator,
-  MenuUpdateParamsValidator,
-} from './update.validator';
+  MenuIdentifierParamsValidator,
+} from '../_shared.validator';
+
+import { MenuUpdateSchema } from './update.schema';
+import MenuUpdateUseCase from './update.use-case';
 
 @Controller()
 export default class {
@@ -36,7 +37,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = MenuUpdateParamsValidator.parse(request.params);
+    const params = MenuIdentifierParamsValidator.parse(request.params);
     const body = MenuUpdateBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({

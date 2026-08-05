@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuIdentifierParamsValidator } from '../_shared.validator';
+
 import { MenuRemoveFromTrashSchema } from './remove-from-trash.schema';
 import MenuRemoveFromTrashUseCase from './remove-from-trash.use-case';
-import { MenuRemoveFromTrashParamValidator } from './remove-from-trash.validator';
 
 @Controller({
   route: '/menu',
@@ -35,7 +36,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = MenuRemoveFromTrashParamValidator.parse(request.params);
+    const params = MenuIdentifierParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 

@@ -1,58 +1,35 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import { E_ERROR_CODE } from '@application/core/error-code.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  emptyResponse,
+  InvalidPayloadResponse,
+  MenuNotFoundResponse,
+  serverErrorResponse,
+  UnauthorizedResponse,
+} from '../_shared.response';
+import { MenuIdentifierParamsValidator } from '../_shared.validator';
 
 export const MenuSendToTrashSchema: FastifySchema = {
   tags: ['Menu'],
-  summary: 'Enviar menu para a lixeira (soft delete)',
-  description:
-    'Move um item de menu para a lixeira. Impede exclusão de menus com filhos ativos.',
+  summary: 'Enviar item de menu para a lixeira',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['_id'],
-    properties: {
-      _id: {
-        type: 'string',
-        minLength: 1,
-        description: 'ID do menu',
-        errorMessage: {
-          type: 'O ID deve ser um texto',
-          minLength: 'O ID é obrigatório',
-        },
-      },
-    },
-    errorMessage: {
-      required: {
-        _id: 'O ID é obrigatório',
-      },
-    },
-  },
+  params: zodToRouteSchema(MenuIdentifierParamsValidator),
   response: {
-    200: {
-      description: 'Menu movido para lixeira com sucesso',
-      type: 'null',
-    },
-    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
-      description: 'Requisição inválida - Falha na validação',
-      messageDescription: 'Mensagem de erro',
-      errorsDescription: 'Erros de validação por campo',
-    }),
-    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
-      description: 'Não autorizado - Autenticação necessária',
-      message: 'Autenticação necessária',
-    }),
-    404: buildErrorResponse(404, 'MENU_NOT_FOUND', {
-      description: 'Menu não encontrado',
-      message: 'Menu não encontrado',
-    }),
-    409: buildErrorResponse(409, 'MENU_HAS_CHILDREN', {
-      description: 'Menu possui filhos ativos',
-      message: 'Menu possui filhos ativos',
-    }),
-    500: buildErrorResponse(500, 'SEND_TO_TRASH_MENU_ERROR', {
-      description: 'Erro interno do servidor',
-      message: 'Erro interno do servidor',
-    }),
+    200: emptyResponse('Item de menu enviado para a lixeira'),
+    400: InvalidPayloadResponse,
+    401: UnauthorizedResponse,
+    404: MenuNotFoundResponse,
+    409: buildErrorResponse(
+      409,
+      [E_ERROR_CODE.ALREADY_TRASHED, 'MENU_HAS_CHILDREN'],
+      { description: 'Conflito - Envio para lixeira não permitido' },
+    ),
+    500: serverErrorResponse('SEND_TO_TRASH_MENU_ERROR'),
   },
 };

@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuReorderBodyValidator } from '../_shared.validator';
+
 import { MenuReorderSchema } from './reorder.schema';
 import MenuReorderUseCase from './reorder.use-case';
-import { MenuReorderBodyValidator } from './reorder.validator';
 
 @Controller()
 export default class {

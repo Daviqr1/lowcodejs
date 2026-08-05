@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
-import type { MenuPaginatedPayload } from './paginated.validator';
+import type { MenuPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = MenuPaginatedPayload;

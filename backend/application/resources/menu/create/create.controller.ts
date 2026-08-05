@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuCreateBodyValidator } from '../_shared.validator';
+
 import { MenuCreateSchema } from './create.schema';
 import MenuCreateUseCase from './create.use-case';
-import { MenuCreateBodyValidator } from './create.validator';
 
 @Controller()
 export default class {

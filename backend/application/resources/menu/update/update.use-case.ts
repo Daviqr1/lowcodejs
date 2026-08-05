@@ -16,7 +16,7 @@ import {
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
-import type { MenuUpdatePayload } from './update.validator';
+import type { MenuUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = MenuUpdatePayload;

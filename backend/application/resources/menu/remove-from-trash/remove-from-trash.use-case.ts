@@ -5,7 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
 
-import type { MenuRemoveFromTrashPayload } from './remove-from-trash.validator';
+import type { MenuRemoveFromTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = MenuRemoveFromTrashPayload;

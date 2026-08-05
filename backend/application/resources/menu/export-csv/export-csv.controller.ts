@@ -8,9 +8,10 @@ import { CsvExportContractService } from '@application/services/csv-export/csv-e
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { MenuExportCsvQueryValidator } from '../_shared.validator';
+
 import { MenuExportCsvSchema } from './export-csv.schema';
 import MenuExportCsvUseCase from './export-csv.use-case';
-import { MenuExportCsvQueryValidator } from './export-csv.validator';
 
 @Controller({
   route: '/menu',

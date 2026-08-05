@@ -87,6 +87,11 @@ export const UnauthorizedResponse = buildErrorResponse(
  * `.transform()` e `.preprocess()` passam: em `io: 'input'` o que importa e a
  * forma que CHEGA, e a transformacao acontece depois. (Em modo de saida o
  * proprio Zod recusa: "Transforms cannot be represented in JSON Schema".)
+ *
+ * **`.refine()` e descartado sem aviso.** Regra que cruza campos ("url e
+ * obrigatoria quando type=EXTERNAL") nao tem representacao em JSON Schema, e o
+ * Zod simplesmente a omite. O schema da rota descreve a **forma**; quem garante
+ * a regra cruzada e o `.parse()` do controller. Por isso ele nao sai.
  */
 
 /** Nome do check no Zod → palavra-chave equivalente no JSON Schema/AJV. */
