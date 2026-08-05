@@ -1,23 +1,23 @@
 import z from 'zod';
 
-import {
-  E_FIELD_TYPE,
-  type IFieldValidation,
-  type Merge,
-} from '@application/core/entity.core';
+import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
 import {
   NAME_MAX_LENGTH,
   SLUG_MAX_LENGTH,
 } from '@application/core/field-rules.core';
-import { TableFieldBaseSchema } from '@application/features/table-fields/_shared.validator';
+import {
+  type FieldPayloadOverrides,
+  type OverriddenKeys,
+  TableFieldBaseSchema,
+} from '@application/features/_shared.field.validator';
 
 /**
  * Entrada da fatia `table-group-fields`. Fonte unica — os `*.schema.ts` derivam
  * daqui o JSON Schema da rota com `zodToRouteSchema`.
  *
- * Os blocos de configuracao do campo vem de `table-fields`: um campo de grupo e
- * um campo, com o mesmo formulario. O antigo `group-field-base.schema.ts` era
- * so um reexport desse arquivo e sai.
+ * Os blocos de configuracao do campo vem do `_shared.field.validator.ts`
+ * global: um campo de grupo e um campo, com o mesmo formulario. Antes vinham
+ * do `_shared` de `table-fields` — uma feature importando da irma.
  */
 
 /** `:slug` + `:groupSlug` — aponta o grupo dentro da tabela. */
@@ -40,29 +40,11 @@ export type GroupFieldRemoveFromTrashPayload = z.infer<
   typeof GroupFieldParamsValidator
 >;
 
-/** Campos que o use-case recebe com outra forma do que o Zod devolve. */
-type GroupFieldPayloadOverrides = {
-  slug?: string;
-  tableSlug?: string;
-  groupSlug: string;
-  allowCustomDropdownOptions?: boolean;
-  fillWithCurrentUserWhenEmpty?: boolean;
-  tip?: string | null;
-  htmlContent?: string | null;
-  // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.
-  validations?: IFieldValidation[];
-  // Opcional no tipo (specs/clients podem omitir); runtime sempre null via zod.
-  visibleChipsLimit?: number | null;
-};
-
-type OverriddenKeys =
-  | 'allowCustomDropdownOptions'
-  | 'fillWithCurrentUserWhenEmpty'
-  | 'tip'
-  | 'htmlContent'
-  | 'slug'
-  | 'validations'
-  | 'visibleChipsLimit';
+/** O mesmo do campo comum, mais o grupo que o contem. */
+type GroupFieldPayloadOverrides = Merge<
+  FieldPayloadOverrides,
+  { groupSlug: string }
+>;
 
 export const GroupFieldCreateBodyValidator = z
   .object({
