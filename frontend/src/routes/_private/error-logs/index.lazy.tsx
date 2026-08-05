@@ -23,7 +23,6 @@ import { TableErrors } from './-table-errors';
 
 import { CsvDropdown } from '@/components/common/csv-dropdown';
 import { FilterSidebar, FilterTrigger } from '@/components/common/filters';
-import { InputSearch } from '@/components/common/input-search';
 import { PageHeader, PageShell } from '@/components/common/page-shell';
 import { Pagination } from '@/components/common/pagination';
 import { Badge } from '@/components/ui/badge';
@@ -182,10 +181,6 @@ function RouteComponent(): React.JSX.Element {
         </div>
 
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end lg:gap-3">
-          <div className="lg:w-96">
-            <InputSearch />
-          </div>
-
           <div className="flex flex-wrap items-center justify-end gap-2">
             <div ref={setToolbarNode} />
             <Button
