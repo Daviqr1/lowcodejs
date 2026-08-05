@@ -47,7 +47,7 @@ export default class PermissionMongooseRepository
     options?: FindOptions,
   ): Promise<IPermission | null> {
     const permission = await Model.findOne(
-      this.trashedClause({ _id }, options),
+      this.trashedClause({ _id }, options, false),
     );
     if (!permission) return null;
 
@@ -59,7 +59,7 @@ export default class PermissionMongooseRepository
     options?: FindOptions,
   ): Promise<IPermission | null> {
     const permission = await Model.findOne(
-      this.trashedClause({ slug }, options),
+      this.trashedClause({ slug }, options, false),
     );
     if (!permission) return null;
 
