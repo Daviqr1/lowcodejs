@@ -1,7 +1,7 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
-import { pagination } from '@application/features/_shared.validator';
+import { pagination, search } from '@application/features/_shared.validator';
 
 /**
  * Entrada da fatia `table-group-rows`. Fonte unica — os `*.schema.ts` derivam
@@ -79,7 +79,7 @@ export type GroupRowAutoSavePayload = Merge<
 
 export const GroupRowPaginatedQueryValidator = pagination()
   .extend({
-    search: z.string().trim().optional(),
+    search: search(),
   })
   .loose();
 
