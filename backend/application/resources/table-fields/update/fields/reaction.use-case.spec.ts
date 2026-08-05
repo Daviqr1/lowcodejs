@@ -17,9 +17,13 @@ import InMemoryModelBuilder from '@application/services/table/in-memory-model-bu
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
-import { makeFieldWithTable } from '@test/helpers/table-factory.helper';
+import {
+  makeFieldUpdatePayload,
+  makeFieldWithTable,
+} from '@test/helpers/table-factory.helper';
 
 import TableFieldUpdateUseCase from '../update.use-case';
+import type { TableFieldUpdatePayload } from '../update.validator';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;
@@ -43,36 +47,10 @@ const createFieldAndTable = (
     table: { name: 'Posts', slug: 'posts' },
   });
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function buildUpdatePayload(
+const buildUpdatePayload = (
   field: IField,
-  overrides: Record<string, unknown> = {},
-) {
-  return {
-    slug: 'posts',
-    _id: field._id,
-    name: field.name,
-    type: field.type,
-    format: field.format,
-    required: field.required,
-    multiple: field.multiple,
-    defaultValue: field.defaultValue,
-    relationship: field.relationship,
-    dropdown: field.dropdown,
-    category: field.category,
-    group: field.group,
-    trashed: false,
-    trashedAt: null,
-    locked: false,
-    allowCreateRelationshipRecords: false,
-    permissions: field.permissions,
-    showInFilter: field.showInFilter,
-    widthInForm: field.widthInForm,
-    widthInList: field.widthInList,
-    widthInDetail: field.widthInDetail,
-    ...overrides,
-  };
-}
+  overrides: Partial<TableFieldUpdatePayload> = {},
+): TableFieldUpdatePayload => makeFieldUpdatePayload('posts', field, overrides);
 
 describe('Table Field Update - REACTION', () => {
   beforeEach(() => {

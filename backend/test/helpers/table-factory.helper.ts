@@ -8,6 +8,7 @@ import {
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
+import type { TableFieldUpdatePayload } from '@application/resources/table-fields/update/update.validator';
 
 import { makeFieldGroupField } from './field-factory.helper';
 
@@ -132,4 +133,40 @@ export async function makeFieldWithTable(
   table.fields = [field];
 
   return { field, table };
+}
+
+/**
+ * Payload completo de `TableFieldUpdateUseCase` a partir de um campo ja criado.
+ * Os dez specs de `table-fields/update/fields/` montavam este mesmo objeto,
+ * mudando so o slug da tabela.
+ */
+export function makeFieldUpdatePayload(
+  tableSlug: string,
+  field: IField,
+  overrides: Partial<TableFieldUpdatePayload> = {},
+): TableFieldUpdatePayload {
+  return {
+    slug: tableSlug,
+    _id: field._id,
+    name: field.name,
+    type: field.type,
+    format: field.format,
+    required: field.required,
+    multiple: field.multiple,
+    defaultValue: field.defaultValue,
+    relationship: field.relationship,
+    dropdown: field.dropdown,
+    category: field.category,
+    group: field.group,
+    trashed: false,
+    trashedAt: null,
+    locked: false,
+    allowCreateRelationshipRecords: false,
+    permissions: field.permissions,
+    showInFilter: field.showInFilter,
+    widthInForm: field.widthInForm,
+    widthInList: field.widthInList,
+    widthInDetail: field.widthInDetail,
+    ...overrides,
+  };
 }
