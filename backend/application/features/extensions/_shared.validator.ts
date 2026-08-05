@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
+import { identifier } from '@application/features/_shared.validator';
+
 /**
  * Entrada da fatia `extensions`. Fonte unica — os `*.schema.ts` derivam daqui
  * o JSON Schema da rota com `zodToRouteSchema`.
  */
 
 /** `:_id` da extensao. Antes declarado identico em 3 operacoes. */
-export const ExtensionIdentifierParamsValidator = z
-  .object({ _id: z.string().min(1) })
-  .strict();
+export const ExtensionIdentifierParamsValidator = identifier().strict();
 
 export type ExtensionIdentifierParams = z.infer<
   typeof ExtensionIdentifierParamsValidator
