@@ -4,7 +4,7 @@ Tipo, valor e bootstrap. **Nada de comportamento** — o que *faz* algo (I/O,
 transformacao, decisao) vive em `application/services/<contexto>/` como service
 injetavel. O que *e* algo (tipo, enum, regex, classe de dado) fica aqui.
 
-Sao 7 arquivos. Antes eram 42: os outros 35 viraram (ou foram absorvidos por)
+Sao 9 arquivos. Antes eram 42: os outros 35 viraram (ou foram absorvidos por)
 services — ver a tabela de "para onde foi" no fim.
 
 ## Arquivos
@@ -49,6 +49,21 @@ existe.
 `CPF_REGEX`, `ALPHA_NUMERIC_REGEX`, `INTEGER_REGEX`, `DECIMAL_REGEX`,
 `NUMERIC_REGEX`, `OBJECT_ID_REGEX`, `NAME_MAX_LENGTH`, `SLUG_MAX_LENGTH`,
 `SLUG_MIN_LENGTH`, `SLUG_REGEX`.
+
+### `validator.core.ts`
+
+Blocos Zod repetidos pelos validators dos recursos: `PageValidator`,
+`PerPageValidator`, `PaginationQueryValidator` (page + perPage, estendido por
+`.extend()`), `SlugIdParamsValidator` (`:slug` + `:_id` das rotas de row e de
+campo), `BulkIdsValidator` (cap por chamador com `.max(n)`) e
+`TrashedFlagValidator`.
+
+### `schema.core.ts`
+
+`buildErrorResponse(code, cause, { description, message, ... })` — bloco de erro
+dos `*.schema.ts` da documentacao OpenAPI, mais a constante
+`UnauthorizedResponse`. `errors` sempre declarado: o Fastify remove da resposta
+o que nao esta no schema.
 
 ### `row-access-guard.contract.ts`
 
