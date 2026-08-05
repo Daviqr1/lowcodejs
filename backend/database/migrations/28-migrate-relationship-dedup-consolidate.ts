@@ -44,22 +44,16 @@
  *   DB_DATABASE      - System database name (fields, tables, relationship-*)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE =
   'Consolidacao de RelationshipDefinitions duplicadas por campo source';
-
-type SettingMarkerDoc = {
-  MIGRATION_RELATIONSHIP_DEDUP_AT?: Date | null;
-};
 
 type ObjectId = mongoose.Types.ObjectId;
 
@@ -268,39 +262,11 @@ async function resyncMirrors(
   );
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-  const systemDb = systemConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_RELATIONSHIP_DEDUP_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarkerRelationshipDedup',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_RELATIONSHIP_DEDUP_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_RELATIONSHIP_DEDUP_AT',
+  async run({ db, logger }): Promise<string> {
+    const systemDb = db;
 
     const defsCol = systemDb.collection<DefDoc>('relationship-definitions');
     const linksCol = systemDb.collection<LinkDoc>('relationship-links');
@@ -368,22 +334,9 @@ async function migrate(): Promise<void> {
       },
     );
 
-    logger.done(
+    return (
       `${groupsFixed} grupos consolidados (${consolidated} defs duplicadas trashadas), ` +
-        `${survivors.length} definitions ativas, ${nnZeroLinks} N:N sem links reportadas`,
+      `${survivors.length} definitions ativas, ${nnZeroLinks} N:N sem links reportadas`
     );
-
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_RELATIONSHIP_DEDUP_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await systemConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

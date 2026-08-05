@@ -34,7 +34,6 @@
  *   DB_DATA_DATABASE - Data database name (dynamic row collections)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import {
@@ -42,19 +41,14 @@ import {
   E_RELATIONSHIP_ON_DELETE,
   E_SCHEMA_TYPE,
 } from '../../application/core/entity.core';
-import { TaskLogger } from '../shared/task-logger';
+import type { MigrationOutcome } from '../shared/migration-runner';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE || 'lowcodejs_data';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Relacionamentos embedded → links';
-
-type SettingMarkerDoc = {
-  MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT?: Date | null;
-};
 
 type ObjectId = mongoose.Types.ObjectId;
 
@@ -425,50 +419,13 @@ async function migrateField(
   return 'migrated';
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-  const dataConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATA_DATABASE,
-  });
-  await dataConn.asPromise();
-
-  const systemDb = systemConn.db!;
-  const dataDb = dataConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT: {
-        type: Date,
-        default: null,
-      },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarkerRelEmbeddedLinks',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT',
+  withDataConnection: true,
+  async run({ db, dataDb: rawDataDb, logger }): Promise<MigrationOutcome> {
+    const systemDb = db;
+    const dataDb = rawDataDb!;
 
     const fieldsCol = systemDb.collection<FieldDoc>('fields');
     // Top-level (group null/ausente) e ainda não migrado (sem relationshipId).
@@ -497,25 +454,10 @@ async function migrate(): Promise<void> {
       if (result === 'failed') failed++;
     }
 
-    logger.done(
-      `${migrated} migrados, ${skipped} pulados, ${failed} com divergência`,
-    );
-
-    // Marker só quando nenhum campo divergiu — pendentes reprocessam no boot.
-    if (failed === 0) {
-      await SettingMarker.findOneAndUpdate(
-        {},
-        { $set: { MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT: new Date() } },
-        { upsert: true, setDefaultsOnInsert: true },
-      );
-    }
-  } finally {
-    await systemConn.close();
-    await dataConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return {
+      summary: `${migrated} migrados, ${skipped} pulados, ${failed} com divergência`,
+      // Marker só quando nenhum campo divergiu — pendentes reprocessam no boot.
+      keepPending: failed > 0,
+    };
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

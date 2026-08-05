@@ -26,20 +26,18 @@
  *   DB_DATABASE  - System database name
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import {
   FIELD_GROUP_NATIVE_LIST,
   FIELD_NATIVE_LIST,
 } from '../../application/core/entity.core';
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Campos nativos (tabela + grupos)';
 
 const ORDER_KEYS = [
@@ -48,10 +46,6 @@ const ORDER_KEYS = [
   'fieldOrderFilter',
   'fieldOrderDetail',
 ] as const;
-
-type SettingMarkerDoc = {
-  MIGRATION_NATIVE_FIELDS_AT?: Date | null;
-};
 
 async function backfillNativeFields(
   db: mongoose.mongo.Db,
@@ -196,58 +190,12 @@ async function backfillNativeFields(
   };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_NATIVE_FIELDS_AT: { type: Date, default: null },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarker',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_NATIVE_FIELDS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_NATIVE_FIELDS_AT',
+  async run({ db, logger }): Promise<string> {
     const result = await backfillNativeFields(db, logger);
-    logger.done(
-      `${result.tablesProcessed} tabelas, ${result.tablesUpdated} atualizadas, ${result.groupsUpdated} grupos, ${result.fieldsCreated} campos criados`,
-    );
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_NATIVE_FIELDS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.tablesProcessed} tabelas, ${result.tablesUpdated} atualizadas, ${result.groupsUpdated} grupos, ${result.fieldsCreated} campos criados`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

@@ -18,21 +18,14 @@
  *   DB_DATABASE  - System database name
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Criação de registros em relacionamentos';
-
-type SettingMarkerDoc = {
-  MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT?: Date | null;
-};
 
 async function backfillRelationshipCreateRecords(
   db: mongoose.mongo.Db,
@@ -62,59 +55,12 @@ async function backfillRelationshipCreateRecords(
   return { updated: result.modifiedCount, missing, total };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT: {
-        type: Date,
-        default: null,
-      },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerRelationshipCreateRecords',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT',
+  async run({ db }): Promise<string> {
     const result = await backfillRelationshipCreateRecords(db);
-    logger.done(`${result.updated} de ${result.total} campos atualizados`);
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_RELATIONSHIP_CREATE_RECORDS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.updated} de ${result.total} campos atualizados`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

@@ -18,21 +18,14 @@
  *   (no boot Docker roda via scripts/migrations/05-migrate-extension-slots.sh)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Renomear slot → slots (extensões)';
-
-type SettingMarkerDoc = {
-  MIGRATION_EXTENSION_SLOTS_AT?: Date | null;
-};
 
 async function renameSlotField(
   db: mongoose.mongo.Db,
@@ -80,58 +73,12 @@ async function renameSlotField(
   };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_EXTENSION_SLOTS_AT: { type: Date, default: null },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerExtensionSlots',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_EXTENSION_SLOTS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_EXTENSION_SLOTS_AT',
+  async run({ db }): Promise<string> {
     const result = await renameSlotField(db);
-    logger.done(
-      `${result.total} extensões — ${result.withSlot} com slot, ${result.withoutSlot} sem`,
-    );
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_EXTENSION_SLOTS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.total} extensões — ${result.withSlot} com slot, ${result.withoutSlot} sem`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

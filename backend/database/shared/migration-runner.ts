@@ -39,8 +39,12 @@ export type MigrationOutcome =
 
 export async function runMigration(options: {
   title: string;
-  /** Campo do Setting singleton, ex.: `MIGRATION_MENU_VISIBILITY_AT`. */
-  marker: string;
+  /**
+   * Campo do Setting singleton, ex.: `MIGRATION_MENU_VISIBILITY_AT`. Quando a
+   * migration tem mais de um marker (re-rodadas com escopo diferente), passe a
+   * lista: o skip so acontece com todos presentes e a gravacao seta todos.
+   */
+  marker: string | string[];
   withDataConnection?: boolean;
   run: (context: MigrationContext) => Promise<MigrationOutcome>;
 }): Promise<void> {
@@ -69,8 +73,11 @@ export async function runMigration(options: {
     await dataConnection.asPromise();
   }
 
+  const markers = [options.marker].flat();
   const MarkerSchema = new mongoose.Schema(
-    { [options.marker]: { type: Date, default: null } },
+    Object.fromEntries(
+      markers.map((marker) => [marker, { type: Date, default: null }]),
+    ),
     { strict: false, collection: 'settings' },
   );
   const Marker = connection.model<Record<string, Date | null | undefined>>(
@@ -80,10 +87,11 @@ export async function runMigration(options: {
 
   try {
     const setting = await Marker.findOne({}).lean();
-    const appliedAt = setting?.[options.marker];
+    const appliedAt = setting?.[markers[0]];
+    const alreadyDone = markers.every((marker) => setting?.[marker]);
 
-    if (appliedAt && !force) {
-      logger.skipped(appliedAt);
+    if (alreadyDone && !force) {
+      logger.skipped(appliedAt ?? undefined);
       return;
     }
 
@@ -109,9 +117,10 @@ export async function runMigration(options: {
 
     if (keepPending) return;
 
+    const now = new Date();
     await Marker.findOneAndUpdate(
       {},
-      { $set: { [options.marker]: new Date() } },
+      { $set: Object.fromEntries(markers.map((marker) => [marker, now])) },
       { upsert: true, setDefaultsOnInsert: true },
     );
   } finally {

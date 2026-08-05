@@ -148,7 +148,11 @@ async function backfillCollection(
 
 runMigration({
   title: TITLE,
-  marker: 'MIGRATION_ROW_SLUG_BACKFILL_AT',
+  marker: [
+    'MIGRATION_ROW_SLUG_BACKFILL_AT',
+    'MIGRATION_ROW_SLUG_BACKFILL_FALLBACK_AT',
+    'MIGRATION_ROW_SLUG_BACKFILL_UNIVERSAL_AT',
+  ],
   withDataConnection: true,
   async run({ db, dataDb: rawDataDb, logger }): Promise<string> {
     const systemDb = db;
