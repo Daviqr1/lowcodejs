@@ -4,6 +4,7 @@ import {
   E_RELATIONSHIP_ON_DELETE,
   type Merge,
 } from '@application/core/entity.core';
+import { pagination, perPage } from '@application/features/_shared.validator';
 
 /**
  * Entrada da fatia `relationships`. Fonte unica — os `*.schema.ts` derivam
@@ -104,8 +105,8 @@ export type RelationshipUnlinkPayload = z.infer<
 export const RelationshipListBySideQueryValidator = z.object({
   side: z.enum(['source', 'target']),
   recordId: z.string().trim().min(1),
-  page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(10),
+  ...pagination().shape,
+  perPage: perPage().default(10),
 });
 
 export type RelationshipListBySidePayload = Merge<

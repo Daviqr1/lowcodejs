@@ -1,5 +1,11 @@
 import z from 'zod';
 
+import {
+  pagination,
+  perPage,
+  search,
+} from '@application/features/_shared.validator';
+
 const FilterOperatorValidator = z.enum([
   'equals',
   'not_equals',
@@ -34,13 +40,13 @@ export const CascadeDropdownOptionsParamsValidator = z.object({
 
 export const CascadeDropdownChildOptionsQueryValidator = z.object({
   parentValue: z.string().trim().min(1),
-  search: z.string().trim().optional(),
-  page: z.coerce.number().default(1),
-  perPage: z.coerce.number().default(20),
+  search: search(),
+  ...pagination().shape,
+  perPage: perPage().default(20),
 });
 
 export const CascadeDropdownParentOptionsQueryValidator = z.object({
-  search: z.string().trim().optional(),
+  search: search(),
 });
 
 export const CascadeDropdownConfigBodyValidator = z.object({

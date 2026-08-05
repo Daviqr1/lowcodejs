@@ -29,6 +29,7 @@ import {
 export function page(): z.ZodDefault<z.ZodCoercedNumber<unknown>> {
   return z.coerce
     .number({ message: 'A página deve ser um número' })
+    .int('A página deve ser um número inteiro')
     .min(1, 'A página deve ser maior que zero')
     .default(1);
 }
@@ -37,6 +38,7 @@ export function page(): z.ZodDefault<z.ZodCoercedNumber<unknown>> {
 export function perPage(): z.ZodCoercedNumber<unknown> {
   return z.coerce
     .number({ message: 'O limite por página deve ser um número' })
+    .int('O limite por página deve ser um número inteiro')
     .min(1, 'O limite por página deve ser maior que zero')
     .max(100, 'O limite por página deve ser no máximo 100');
 }
