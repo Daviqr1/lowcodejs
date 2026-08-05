@@ -10,7 +10,7 @@ import HTTPException from '@application/core/exception.core';
 import { LoggerContractRepository } from '@application/repositories/logger/logger-contract.repository';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
-import type { LoggerPaginatedPayload } from './paginated.validator';
+import type { LoggerPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = LoggerPaginatedPayload;

@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { PageShowParamsValidator } from './show.validator';
+import { PageShowParamsValidator } from '../_shared.validator';
 
 export const PageShowSchema: FastifySchema = {
   tags: ['Páginas'],

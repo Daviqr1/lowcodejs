@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SettingUpdateBodyValidator } from './update.validator';
+import { SettingUpdateBodyValidator } from '../_shared.validator';
 
 export const SettingUpdateSchema: FastifySchema = {
   tags: ['Configurações'],

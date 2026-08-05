@@ -9,7 +9,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { MenuVisibilityContractService } from '@application/services/menu-visibility/menu-visibility-contract.service';
 
-import type { PageShowPayload } from './show.validator';
+import type { PageShowPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, IMenu>;
 type Payload = Merge<

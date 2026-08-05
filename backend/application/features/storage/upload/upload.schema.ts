@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { StorageUploadQueryValidator } from './upload.validator';
+import { StorageUploadQueryValidator } from '../_shared.validator';
 
 export const StorageUploadSchema: FastifySchema = {
   tags: ['Armazenamento'],

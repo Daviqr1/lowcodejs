@@ -2,7 +2,7 @@ import type { FastifySchema } from 'fastify';
 
 import { zodToRouteSchema } from '@application/core/schema.core';
 
-import { StorageMigrationStartValidator } from './start.validator';
+import { StorageMigrationStartValidator } from '../_shared.validator';
 
 const badRequestBlock = {
   description: 'Requisição inválida',

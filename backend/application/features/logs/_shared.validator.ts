@@ -1,9 +1,13 @@
 import z from 'zod';
 
-import { pagination, boolFlag } from '@application/features/_shared.validator';
+import {
+  boolFlag,
+  pagination,
+  search,
+} from '@application/features/_shared.validator';
 
 export const LoggerPaginatedQueryValidator = pagination().extend({
-  search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
+  search: search(),
 
   // Filtra logs por estado de lixeira (default: ativos).
   trashed: boolFlag(),

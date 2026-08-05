@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { StorageDeleteParamsValidator } from './delete.validator';
+import { StorageDeleteParamsValidator } from '../_shared.validator';
 
 export const StorageDeleteSchema: FastifySchema = {
   tags: ['Armazenamento'],

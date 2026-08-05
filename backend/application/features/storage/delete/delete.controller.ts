@@ -4,9 +4,10 @@ import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { StorageDeleteParamsValidator } from '../_shared.validator';
+
 import { StorageDeleteSchema } from './delete.schema';
 import StorageDeleteUseCase from './delete.use-case';
-import { StorageDeleteParamsValidator } from './delete.validator';
 
 @Controller({
   route: '/storage',

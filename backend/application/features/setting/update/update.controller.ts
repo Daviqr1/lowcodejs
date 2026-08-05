@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { SettingUpdateBodyValidator } from '../_shared.validator';
+
 import { SettingUpdateSchema } from './update.schema';
 import SettingUpdateUseCase from './update.use-case';
-import { SettingUpdateBodyValidator } from './update.validator';
 
 @Controller({
   route: '/setting',

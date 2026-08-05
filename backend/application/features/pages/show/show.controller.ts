@@ -4,9 +4,10 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { PageShowParamsValidator } from '../_shared.validator';
+
 import { PageShowSchema } from './show.schema';
 import PageShowUseCase from './show.use-case';
-import { PageShowParamsValidator } from './show.validator';
 
 @Controller({
   route: '/pages',

@@ -9,7 +9,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { LoggerPaginatedQueryValidator } from './paginated.validator';
+import { LoggerPaginatedQueryValidator } from '../_shared.validator';
 
 export const LoggerPaginatedSchema: FastifySchema = {
   tags: ['Logs'],

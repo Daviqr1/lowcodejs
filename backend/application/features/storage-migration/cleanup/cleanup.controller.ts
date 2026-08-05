@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { StorageMigrationCleanupValidator } from '../_shared.validator';
+
 import { StorageMigrationCleanupSchema } from './cleanup.schema';
 import StorageMigrationCleanupUseCase from './cleanup.use-case';
-import { StorageMigrationCleanupValidator } from './cleanup.validator';
 
 @Controller({
   route: '/storage/migration',

@@ -12,7 +12,7 @@ import { SettingContractRepository } from '@application/repositories/setting/set
 import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import { StorageMigrationQueueContractService } from '@application/services/storage-migration/storage-migration-queue-contract.service';
 
-import type { StorageMigrationCleanupInput } from './cleanup.validator';
+import type { StorageMigrationCleanupInput } from '../_shared.validator';
 
 export type StorageMigrationCleanupResponse = {
   job_id: string;

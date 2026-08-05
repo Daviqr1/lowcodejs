@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { LoggerPaginatedQueryValidator } from '../_shared.validator';
+
 import { LoggerPaginatedSchema } from './paginated.schema';
 import LoggerPaginatedUseCase from './paginated.use-case';
-import { LoggerPaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: '/logs',
