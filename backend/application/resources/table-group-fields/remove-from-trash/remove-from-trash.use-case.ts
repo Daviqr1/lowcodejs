@@ -41,7 +41,9 @@ export default class GroupFieldRemoveFromTrashUseCase {
         );
       }
 
-      const field = await this.fieldRepository.findById(payload.fieldId);
+      const field = await this.fieldRepository.findById(payload.fieldId, {
+        includeTrashed: true,
+      });
 
       if (!field)
         return left(

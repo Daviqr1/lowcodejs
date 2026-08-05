@@ -47,7 +47,9 @@ export default class TableFieldDeleteUseCase {
         return this.deleteFieldInGroup(payload, table, targetGroup);
       }
 
-      const field = await this.fieldRepository.findById(payload._id);
+      const field = await this.fieldRepository.findById(payload._id, {
+        includeTrashed: true,
+      });
 
       if (!field)
         return left(
@@ -116,7 +118,9 @@ export default class TableFieldDeleteUseCase {
     parentTable: ITable,
     targetGroup: IGroupConfiguration,
   ): Promise<Response> {
-    const field = await this.fieldRepository.findById(payload._id);
+    const field = await this.fieldRepository.findById(payload._id, {
+      includeTrashed: true,
+    });
 
     if (!field)
       return left(

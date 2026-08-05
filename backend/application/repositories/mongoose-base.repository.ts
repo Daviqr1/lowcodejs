@@ -43,12 +43,14 @@ export abstract class MongooseRepository<TEntity> {
    * Aplica o filtro de lixeira no `where` quando ele foi pedido. Sem opcao
    * explicita cai no `fallback` — alguns repositorios escondem o que esta na
    * lixeira por padrao (`false`, `{ $ne: true }`); sem `fallback`, nao filtra.
+   * `includeTrashed` ignora tudo e devolve ativos e descartados juntos.
    */
   protected trashedClause(
     where: Record<string, unknown>,
     options?: FindOptions,
     fallback?: unknown,
   ): Record<string, unknown> {
+    if (options?.includeTrashed) return where;
     if (options?.trashed !== undefined) where.trashed = options.trashed;
     else if (fallback !== undefined) where.trashed = fallback;
     return where;

@@ -23,7 +23,13 @@ export type Optional<T, K extends keyof T> = Merge<
 
 export type ValueOf<T> = T[keyof T];
 
-export type FindOptions = { trashed?: boolean };
+/**
+ * `trashed` escolhe **um** dos dois lados (so ativos ou so lixeira).
+ * `includeTrashed` desliga o filtro e devolve os dois — o que quem precisa
+ * distinguir "nao existe" de "esta na lixeira" usa (ex.: exclusao definitiva,
+ * que responde 404 num caso e 409 no outro).
+ */
+export type FindOptions = { trashed?: boolean; includeTrashed?: boolean };
 
 export const E_TOKEN_STATUS = {
   REQUESTED: 'REQUESTED',

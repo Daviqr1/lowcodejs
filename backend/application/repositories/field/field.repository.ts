@@ -54,7 +54,7 @@ export default class FieldMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IField | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const field = await Model.findOne(where);
     if (!field) return null;
@@ -66,7 +66,7 @@ export default class FieldMongooseRepository
     slug: string,
     options?: FindOptions,
   ): Promise<IField | null> {
-    const where = this.trashedClause({ slug }, options);
+    const where = this.trashedClause({ slug }, options, false);
 
     const field = await Model.findOne(where);
     if (!field) return null;
