@@ -41,6 +41,6 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    return response.status(200).send(null);
+    return response.status(200).send(result.value);
   }
 }

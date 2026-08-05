@@ -1,7 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
-import { E_EXTENSION_TYPE } from '@application/core/entity.core';
+import {
+  E_EXTENSION_TYPE,
+  E_TABLE_PERMISSION,
+} from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
@@ -46,7 +49,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'UPDATE_ROW',
+          requiredPermission: E_TABLE_PERMISSION.UPDATE_ROW,
         }),
         ExtensionActiveMiddleware({
           pkg: 'apps',

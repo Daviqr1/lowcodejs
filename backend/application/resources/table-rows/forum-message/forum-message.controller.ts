@@ -7,6 +7,7 @@ import {
   PUT,
 } from 'fastify-decorators';
 
+import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
@@ -45,7 +46,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'VIEW_ROW',
+          requiredPermission: E_TABLE_PERMISSION.VIEW_ROW,
         }),
       ],
       schema: ForumMessageCreateSchema,
@@ -74,7 +75,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'VIEW_ROW',
+          requiredPermission: E_TABLE_PERMISSION.VIEW_ROW,
         }),
       ],
       schema: ForumMessageUpdateSchema,
@@ -103,7 +104,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'VIEW_ROW',
+          requiredPermission: E_TABLE_PERMISSION.VIEW_ROW,
         }),
       ],
       schema: ForumMessageDeleteSchema,
@@ -130,7 +131,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'VIEW_ROW',
+          requiredPermission: E_TABLE_PERMISSION.VIEW_ROW,
         }),
       ],
       schema: ForumMessageMentionReadSchema,

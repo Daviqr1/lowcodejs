@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
+import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
@@ -32,7 +33,7 @@ export default class {
           optional: false,
         }),
         TableAccessMiddleware({
-          requiredPermission: 'REMOVE_ROW',
+          requiredPermission: E_TABLE_PERMISSION.REMOVE_ROW,
         }),
       ],
       schema: BulkDeleteSchema,

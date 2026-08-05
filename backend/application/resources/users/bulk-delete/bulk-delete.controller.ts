@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
 
 import { E_AREA_CAPABILITY } from '@application/core/entity.core';
+import HTTPException from '@application/core/exception.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
@@ -36,11 +37,10 @@ export default class {
     const body = UserBulkDeleteBodyValidator.parse(request.body);
 
     if (!request.user) {
-      return response.status(401).send({
-        message: 'Autenticação necessária',
-        code: 401,
-        cause: 'AUTHENTICATION_REQUIRED',
-      });
+      return this.http.sendError(
+        response,
+        HTTPException.Unauthorized('Autenticação necessária'),
+      );
     }
 
     const result = await this.useCase.execute({
