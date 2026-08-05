@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableSlugParamsValidator } from '../_shared.validator';
 
 export const TableDeleteSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,18 +13,7 @@ export const TableDeleteSchema: FastifySchema = {
   description:
     'Exclui permanentemente uma tabela, seus campos e a coleção dinâmica de registros. Esta ação não pode ser desfeita.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Identificador slug da tabela',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
   response: {
     200: {
       description: 'Tabela excluída permanentemente com sucesso',

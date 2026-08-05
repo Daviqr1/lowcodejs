@@ -1,7 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableSlugParamsValidator } from '../_shared.validator';
 
 export const TableShowSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -9,18 +14,7 @@ export const TableShowSchema: FastifySchema = {
   description:
     'Retorna uma tabela pelo slug com campos e administradores populados. Autenticação opcional: tabelas públicas podem ser acessadas por visitantes.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Identificador slug da tabela',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
   response: {
     200: {
       description: 'Tabela retornada com sucesso com dados populados',

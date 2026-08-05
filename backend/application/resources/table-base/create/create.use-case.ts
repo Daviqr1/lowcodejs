@@ -20,7 +20,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type { TableCreatePayload } from './create.validator';
+import type { TableCreatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = TableCreatePayload;

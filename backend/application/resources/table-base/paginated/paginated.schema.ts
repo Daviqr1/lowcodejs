@@ -1,7 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TablePaginatedQueryValidator } from '../_shared.validator';
 
 export const TablePaginatedSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -9,75 +14,7 @@ export const TablePaginatedSchema: FastifySchema = {
   description:
     'Retorna uma lista paginada de tabelas com busca, filtros e ordenação opcionais. Apenas tabelas do tipo TABLE são retornadas.',
   security: [{ cookieAuth: [] }],
-  querystring: {
-    type: 'object',
-    properties: {
-      page: {
-        type: 'number',
-        minimum: 1,
-        default: 1,
-        description: 'Número da página (começa em 1)',
-        examples: [1, 2, 5],
-      },
-      perPage: {
-        type: 'number',
-        minimum: 1,
-        maximum: 100,
-        default: 50,
-        description: 'Quantidade de itens por página (máx. 100)',
-        examples: [10, 25, 50, 100],
-      },
-      search: {
-        type: 'string',
-        minLength: 1,
-        description:
-          'Termo de busca para filtrar tabelas por nome ou slug (opcional)',
-        examples: ['user', 'product', 'blog'],
-      },
-      'order-name': {
-        type: 'string',
-        enum: ['asc', 'desc'],
-        description: 'Ordenar por nome (opcional)',
-        examples: ['asc', 'desc'],
-      },
-      'order-link': {
-        type: 'string',
-        enum: ['asc', 'desc'],
-        description: 'Ordenar por link (opcional)',
-        examples: ['asc', 'desc'],
-      },
-      'order-created-at': {
-        type: 'string',
-        enum: ['asc', 'desc'],
-        description: 'Ordenar por data de criação (opcional)',
-        examples: ['asc', 'desc'],
-      },
-      'order-owner': {
-        type: 'string',
-        enum: ['asc', 'desc'],
-        description: 'Ordenar por nome do proprietário (opcional)',
-        examples: ['asc', 'desc'],
-      },
-      trashed: {
-        type: 'string',
-        enum: ['true', 'false'],
-        default: 'false',
-        description: 'Incluir itens na lixeira (opcional)',
-        examples: ['true', 'false'],
-      },
-      name: {
-        type: 'string',
-        description: 'Filtrar por nome exato da tabela (opcional)',
-        examples: ['Users', 'Products'],
-      },
-      owner: {
-        type: 'string',
-        description: 'Filtrar por nome do proprietário (opcional)',
-        examples: ['John'],
-      },
-    },
-    additionalProperties: false,
-  },
+  querystring: zodToRouteSchema(TablePaginatedQueryValidator),
   response: {
     200: {
       description: 'Lista paginada de tabelas',

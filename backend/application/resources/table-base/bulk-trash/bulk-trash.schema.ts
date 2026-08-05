@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { BulkIdsBodyValidator } from '../_shared.validator';
 
 export const BulkTrashSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,19 +13,7 @@ export const BulkTrashSchema: FastifySchema = {
   description:
     'Move múltiplas tabelas para a lixeira (trashed=true, trashedAt=timestamp atual). Retorna a quantidade de tabelas afetadas.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['ids'],
-    properties: {
-      ids: {
-        type: 'array',
-        items: { type: 'string' },
-        minItems: 1,
-        description: 'Lista de IDs das tabelas a mover para a lixeira',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(BulkIdsBodyValidator),
   response: {
     200: {
       description: 'Tabelas movidas para a lixeira com sucesso',

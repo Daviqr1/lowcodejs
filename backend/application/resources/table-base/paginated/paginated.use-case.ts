@@ -11,7 +11,7 @@ import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
-import type { TablePaginatedPayload } from './paginated.validator';
+import type { TablePaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<Entity>>;
 type Payload = TablePaginatedPayload;

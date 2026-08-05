@@ -16,7 +16,7 @@ import {
 } from '@application/services/csv-export/csv-export-contract.service';
 import { DateContractService } from '@application/services/date/date-contract.service';
 
-import type { TableExportCsvPayload } from './export-csv.validator';
+import type { TableExportCsvPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Readable>;
 

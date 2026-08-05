@@ -4,9 +4,10 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TablePaginatedQueryValidator } from '../_shared.validator';
+
 import { TablePaginatedSchema } from './paginated.schema';
 import TablePaginatedUseCase from './paginated.use-case';
-import { TablePaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: 'tables',

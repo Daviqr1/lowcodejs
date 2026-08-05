@@ -5,7 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { BulkTrashPayload } from './bulk-trash.validator';
+import type { BulkTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 

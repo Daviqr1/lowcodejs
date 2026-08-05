@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableCreateBodyValidator } from '../_shared.validator';
 
 export const TableCreateSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,41 +13,7 @@ export const TableCreateSchema: FastifySchema = {
   description:
     'Cria uma nova tabela com campos, configuração e definições de permissões',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['name'],
-    properties: {
-      name: {
-        type: 'string',
-        description: 'Nome da tabela',
-      },
-      slug: {
-        type: 'string',
-        description:
-          'Slug da tabela (opcional; gerado a partir do nome quando ausente)',
-      },
-      logo: {
-        type: 'string',
-        nullable: true,
-        description: 'ID de armazenamento do logo da tabela',
-      },
-      style: {
-        type: 'string',
-        enum: [
-          'GALLERY',
-          'LIST',
-          'DOCUMENT',
-          'CARD',
-          'MOSAIC',
-          'KANBAN',
-          'FORUM',
-        ],
-        default: 'LIST',
-        description: 'Estilo de exibição da tabela',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(TableCreateBodyValidator),
   response: {
     201: {
       description: 'Tabela criada com sucesso',

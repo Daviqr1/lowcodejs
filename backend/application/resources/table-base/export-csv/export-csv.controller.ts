@@ -8,9 +8,10 @@ import { CsvExportContractService } from '@application/services/csv-export/csv-e
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableExportCsvQueryValidator } from '../_shared.validator';
+
 import { TableExportCsvSchema } from './export-csv.schema';
 import TableExportCsvUseCase from './export-csv.use-case';
-import { TableExportCsvQueryValidator } from './export-csv.validator';
 
 @Controller({
   route: 'tables',

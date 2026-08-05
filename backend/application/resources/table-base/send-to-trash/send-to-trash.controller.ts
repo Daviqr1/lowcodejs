@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableSlugParamsValidator } from '../_shared.validator';
+
 import { TableSendToTrashSchema } from './send-to-trash.schema';
 import TableSendToTrashUseCase from './send-to-trash.use-case';
-import { TableSendToTrashParamsValidator } from './send-to-trash.validator';
 
 @Controller({
   route: 'tables',
@@ -37,7 +38,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = TableSendToTrashParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 

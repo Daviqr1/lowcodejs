@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SchemaImportBodyValidator } from './schema-import.validator';
 
 export const SchemaImportSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,18 +13,7 @@ export const SchemaImportSchema: FastifySchema = {
   description:
     'Cria múltiplas tabelas em uma única requisição a partir de um YAML declarativo. Cada tabela e seus campos são criados em sequência; erros são reportados individualmente sem abortar as demais. Relacionamentos cross-table dentro do mesmo schema são resolvidos em um segundo passe.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['yaml'],
-    properties: {
-      yaml: {
-        type: 'string',
-        description:
-          'Conteúdo YAML descrevendo as tabelas (até 5 MB). Veja a documentação para o formato suportado.',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SchemaImportBodyValidator),
   response: {
     201: {
       description: 'Schema processado com sucesso (pode conter erros parciais)',

@@ -7,7 +7,7 @@ import { FieldContractRepository } from '@application/repositories/field/field-c
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RelationshipDeletionContractService } from '@application/services/relationship/relationship-deletion-contract.service';
 
-import type { TableDeletePayload } from './delete.validator';
+import type { TableDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = TableDeletePayload;

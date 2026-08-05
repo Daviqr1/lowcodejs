@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableSlugParamsValidator } from '../_shared.validator';
+
 import { TableShowSchema } from './show.schema';
 import TableShowUseCase from './show.use-case';
-import { TableShowParamsValidator } from './show.validator';
 
 @Controller({
   route: 'tables',
@@ -37,7 +38,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = TableShowParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute({
       ...params,

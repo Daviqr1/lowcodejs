@@ -1,7 +1,15 @@
 import { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableSlugParamsValidator,
+  TableUpdateBodyValidator,
+} from '../_shared.validator';
 
 export const TableUpdateSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -9,153 +17,8 @@ export const TableUpdateSchema: FastifySchema = {
   description:
     'Atualiza uma tabela existente: nome, estilo, permissões (binding por ação), convidados, dono, ordenação de campos e layout. Renomear o slug propaga para a coleção dinâmica e campos de relacionamento.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Identificador slug da tabela',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['name', 'description', 'logo', 'methods'],
-    properties: {
-      name: {
-        type: 'string',
-        description: 'Nome da tabela',
-      },
-      slug: {
-        type: 'string',
-        description:
-          'Slug da tabela (opcional; gerado a partir do nome quando ausente)',
-      },
-      description: {
-        type: 'string',
-        nullable: true,
-        description: 'Descrição da tabela',
-      },
-      logo: {
-        type: 'string',
-        nullable: true,
-        description: 'URL do logo ou ID de armazenamento da tabela',
-      },
-      style: {
-        type: 'string',
-        enum: [
-          'GALLERY',
-          'LIST',
-          'DOCUMENT',
-          'CARD',
-          'MOSAIC',
-          'KANBAN',
-          'FORUM',
-          'CALENDAR',
-          'GANTT',
-        ],
-        default: 'LIST',
-        description: 'Estilo de exibição',
-      },
-      fieldOrderList: {
-        type: 'array',
-        items: { type: 'string' },
-        default: [],
-        description: 'Ordem dos campos na visualização em lista',
-      },
-      fieldOrderForm: {
-        type: 'array',
-        items: { type: 'string' },
-        default: [],
-        description: 'Ordem dos campos na visualização em formulário',
-      },
-      fieldOrderFilter: {
-        type: 'array',
-        items: { type: 'string' },
-        default: [],
-      },
-      fieldOrderDetail: {
-        type: 'array',
-        items: { type: 'string' },
-        default: [],
-      },
-      order: {
-        anyOf: [
-          { type: 'null' },
-          {
-            type: 'object',
-            required: ['field', 'direction'],
-            properties: {
-              field: {
-                type: 'string',
-                description: 'Slug do campo para ordenação',
-              },
-              direction: {
-                type: 'string',
-                enum: ['asc', 'desc'],
-                description: 'Direção da ordenação',
-              },
-            },
-          },
-        ],
-        default: null,
-        description: 'Ordenação padrão dos registros da tabela',
-      },
-      methods: {
-        type: 'object',
-        description: 'Configuração de métodos da tabela',
-      },
-      layoutFields: {
-        type: 'object',
-        description: 'Configuração de campos de layout',
-      },
-      groups: {
-        type: 'array',
-        items: { type: 'object', additionalProperties: true },
-        description: 'Configuração de grupos de campos',
-      },
-      rowSlugFieldId: {
-        type: 'string',
-        nullable: true,
-        description: 'ID do campo usado para gerar slugs amigáveis de registro',
-      },
-      permissions: {
-        type: 'object',
-        description:
-          'Mapa de cada ação da tabela para um binding (Grupo|Public|Nobody)',
-        additionalProperties: {
-          type: 'object',
-          properties: {
-            kind: { type: 'string', enum: ['PUBLIC', 'NOBODY', 'GROUP'] },
-            group: { type: 'string', nullable: true },
-          },
-        },
-      },
-      members: {
-        type: 'array',
-        description: 'Convidados da tabela e seus perfis',
-        items: {
-          type: 'object',
-          required: ['user', 'profile'],
-          properties: {
-            user: { type: 'string' },
-            profile: {
-              type: 'string',
-              enum: ['OWNER', 'ADMIN', 'EDITOR', 'CONTRIBUTOR', 'VIEWER'],
-            },
-          },
-        },
-      },
-      owner: {
-        type: 'string',
-        description: 'ID do novo dono da tabela (troca de dono)',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  body: zodToRouteSchema(TableUpdateBodyValidator),
   response: {
     200: {
       description: 'Tabela atualizada com sucesso',

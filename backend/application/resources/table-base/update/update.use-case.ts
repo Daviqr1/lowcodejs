@@ -13,7 +13,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { GroupResolverContractService } from '@application/services/group-resolver/group-resolver-contract.service';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 
-import type { TableUpdatePayload } from './update.validator';
+import type { TableUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 

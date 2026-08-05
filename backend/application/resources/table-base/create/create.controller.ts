@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableCreateBodyValidator } from '../_shared.validator';
+
 import { TableCreateSchema } from './create.schema';
 import TableCreateUseCase from './create.use-case';
-import { TableCreateBodyValidator } from './create.validator';
 
 @Controller({
   route: 'tables',

@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { BulkIdsBodyValidator } from '../_shared.validator';
 
 export const BulkRestoreSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,19 +13,7 @@ export const BulkRestoreSchema: FastifySchema = {
   description:
     'Restaura múltiplas tabelas da lixeira (trashed=false, trashedAt=null). Tabelas cujo slug já está em uso por uma tabela ativa são puladas e retornadas em "skipped".',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['ids'],
-    properties: {
-      ids: {
-        type: 'array',
-        items: { type: 'string' },
-        minItems: 1,
-        description: 'Lista de IDs das tabelas a restaurar da lixeira',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(BulkIdsBodyValidator),
   response: {
     200: {
       description: 'Tabelas restauradas da lixeira com sucesso',

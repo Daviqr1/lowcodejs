@@ -6,7 +6,7 @@ import type { ITable as Entity } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { TableRemoveFromTrashPayload } from './remove-from-trash.validator';
+import type { TableRemoveFromTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = TableRemoveFromTrashPayload;

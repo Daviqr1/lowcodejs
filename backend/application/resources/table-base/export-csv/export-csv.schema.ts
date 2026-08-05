@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableExportCsvQueryValidator } from '../_shared.validator';
 
 export const TableExportCsvSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -8,20 +13,7 @@ export const TableExportCsvSchema: FastifySchema = {
   description:
     'Gera um arquivo CSV com a metadata de todas as tabelas que casam com os filtros aplicados. Restrito a quem tem acesso privilegiado às tabelas. Cap de 500.000 linhas por export.',
   security: [{ cookieAuth: [] }],
-  querystring: {
-    type: 'object',
-    properties: {
-      search: { type: 'string', minLength: 1 },
-      name: { type: 'string', minLength: 1 },
-      trashed: { type: 'string' },
-      owner: { type: 'string' },
-      'order-name': { type: 'string', enum: ['asc', 'desc'] },
-      'order-link': { type: 'string', enum: ['asc', 'desc'] },
-      'order-created-at': { type: 'string', enum: ['asc', 'desc'] },
-      'order-owner': { type: 'string', enum: ['asc', 'desc'] },
-    },
-    additionalProperties: false,
-  },
+  querystring: zodToRouteSchema(TableExportCsvQueryValidator),
   response: {
     200: { description: 'Arquivo CSV', type: 'string', format: 'binary' },
     400: buildErrorResponse(400, 'TABLE_REQUIRED', {
