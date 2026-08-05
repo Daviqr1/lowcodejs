@@ -58,11 +58,8 @@ class NodeHttpTransport implements Transport {
   async send(message: JSONRPCMessage): Promise<void> {
     const isNotification = !('id' in message);
     if (isNotification) {
-      this.post(message).catch((err: unknown) => {
-        let error = new Error(String(err));
-        if (err instanceof Error) error = err;
-        this.onerror?.(error);
-      });
+      // Notificacao nao tem resposta: dispara e segue, sem segurar o `send`.
+      void this.postNotification(message);
       return;
     }
     const response = await this.post(message);
@@ -73,6 +70,16 @@ class NodeHttpTransport implements Transport {
 
   async close(): Promise<void> {
     this.onclose?.();
+  }
+
+  private async postNotification(message: JSONRPCMessage): Promise<void> {
+    try {
+      await this.post(message);
+    } catch (err) {
+      let error = new Error(String(err));
+      if (err instanceof Error) error = err;
+      this.onerror?.(error);
+    }
   }
 
   private post(

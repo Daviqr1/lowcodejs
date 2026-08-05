@@ -82,6 +82,25 @@ export default class LlmChatService implements LlmChatContractService {
   private readonly GEMINI_OPENAI_BASE =
     'https://generativelanguage.googleapis.com/v1beta/openai';
 
+  /**
+   * Log de auditoria do MCP em background — o chat nao espera nem falha por
+   * causa dele. Chamado com `void`; o erro morre aqui no console.
+   */
+  private async logMcp(payload: {
+    url: string;
+    user: string;
+    action: (typeof E_LOGGER_ACTION_TYPE)[keyof typeof E_LOGGER_ACTION_TYPE];
+    object: (typeof E_LOGGER_OBJECT_TYPE)[keyof typeof E_LOGGER_OBJECT_TYPE];
+    object_id: string;
+    content: Record<string, unknown>;
+  }): Promise<void> {
+    try {
+      await Logger.create(payload);
+    } catch (err) {
+      console.error('[MCP Log] create error:', err);
+    }
+  }
+
   private async executeMcpTool(params: {
     mcpClient: Client;
     toolName: string;
@@ -94,14 +113,14 @@ export default class LlmChatService implements LlmChatContractService {
     socket.emit(E_CHAT_EVENT.TOOL_CALL, { name: toolName, args: toolArgs });
 
     console.log('[MCP Log] tool_call:', toolName, toolArgs);
-    Logger.create({
+    void this.logMcp({
       url: `mcp://${toolName}`,
       user: userId,
       action: E_LOGGER_ACTION_TYPE.AI_CALL,
       object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
       object_id: toolName,
       content: toolArgs,
-    }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
+    });
 
     try {
       const result = await mcpClient.callTool({
@@ -128,14 +147,14 @@ export default class LlmChatService implements LlmChatContractService {
       socket.emit(E_CHAT_EVENT.TOOL_RESULT, { name: toolName, preview });
 
       console.log('[MCP Log] tool_result:', toolName, '|', preview);
-      Logger.create({
+      void this.logMcp({
         url: `mcp://${toolName}/result`,
         user: userId,
         action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
         object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
         object_id: toolName,
         content: { preview, length: contentStr.length },
-      }).catch((err: unknown) => console.error('[MCP Log] create error:', err));
+      });
 
       return contentStr;
     } catch (err) {
@@ -148,16 +167,14 @@ export default class LlmChatService implements LlmChatContractService {
       });
 
       console.error('[MCP Log] tool_error:', toolName, errorMsg);
-      Logger.create({
+      void this.logMcp({
         url: `mcp://${toolName}/error`,
         user: userId,
         action: E_LOGGER_ACTION_TYPE.AI_RESPONSE,
         object: E_LOGGER_OBJECT_TYPE.AI_TOOL,
         object_id: toolName,
         content: { error: errorMsg },
-      }).catch((logErr: unknown) =>
-        console.error('[MCP Log] create error:', logErr),
-      );
+      });
 
       return errorMsg;
     }

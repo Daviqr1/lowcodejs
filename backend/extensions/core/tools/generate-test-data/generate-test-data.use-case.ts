@@ -83,17 +83,10 @@ export default class GenerateTestDataUseCase {
       });
 
       // Roda em background para não bloquear a request.
-      this.runGeneration(jobId, payload.tableId, payload.quantity).catch(
-        (err) => {
-          console.error(
-            `[generate-test-data][job ${jobId}] background error:`,
-            err,
-          );
-          this.registry.failJob(
-            jobId,
-            err?.message || 'Erro interno na geração de dados',
-          );
-        },
+      void this.runGenerationInBackground(
+        jobId,
+        payload.tableId,
+        payload.quantity,
       );
 
       return right({
@@ -108,6 +101,25 @@ export default class GenerateTestDataUseCase {
           'GENERATE_TEST_DATA_ERROR',
         ),
       );
+    }
+  }
+
+  /** Ninguem espera esse job: a falha para no registry, nao propaga. */
+  private async runGenerationInBackground(
+    jobId: string,
+    tableId: string,
+    quantity: number,
+  ): Promise<void> {
+    try {
+      await this.runGeneration(jobId, tableId, quantity);
+    } catch (err) {
+      console.error(
+        `[generate-test-data][job ${jobId}] background error:`,
+        err,
+      );
+      let message = 'Erro interno na geração de dados';
+      if (err instanceof Error && err.message) message = err.message;
+      this.registry.failJob(jobId, message);
     }
   }
 
