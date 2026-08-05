@@ -1,7 +1,12 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
-import { pagination, perPage } from '@application/features/_shared.validator';
+import {
+  boolFlag,
+  identifier,
+  pagination,
+  perPage,
+} from '@application/features/_shared.validator';
 
 /**
  * Entrada da fatia `notifications`. Fonte unica — os `*.schema.ts` derivam
@@ -9,24 +14,11 @@ import { pagination, perPage } from '@application/features/_shared.validator';
  */
 
 /** `:_id` de `delete` e `mark-as-read`, antes declarado solto em cada controller. */
-export const NotificationIdentifierParamsValidator = z.object({
-  _id: z
-    .string({ message: 'O ID deve ser um texto' })
-    .trim()
-    .min(1, 'O ID é obrigatório'),
-});
+export const NotificationIdentifierParamsValidator = identifier();
 
 export const NotificationPaginatedQueryValidator = pagination().extend({
   perPage: perPage().default(20),
-  unreadOnly: z
-    .preprocess(
-      (value) => {
-        if (typeof value === 'boolean') return String(value);
-        return value;
-      },
-      z.enum(['true', 'false']).transform((value) => value === 'true'),
-    )
-    .optional(),
+  unreadOnly: boolFlag(),
 });
 
 /** Escopo do dono, injetado pelo controller a partir da sessao. */
