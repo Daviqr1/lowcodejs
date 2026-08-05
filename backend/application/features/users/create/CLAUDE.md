@@ -7,7 +7,7 @@ Cria um novo usuario com nome, email, senha e grupo.
 
 ## Fluxo
 1. Middleware: `AuthenticationMiddleware({ optional: false })` seguido de `PermissionMiddleware(E_AREA_CAPABILITY.MANAGE_USERS)`
-2. Validator: `UserCreateBodyValidator` (em `_shared.validator.ts`) - campos: name (string, required, trim, min 1), email (string, email, trim), group (string, required, min 1), password (string, trim, min 6, regex PASSWORD_REGEX)
+2. Validator: `UserCreateBodyValidator` (em `_shared.validator.ts`) - campos: name (string, required, trim, min 1), email (`email()` global), group (string, required, min 1), password (`strongPassword()` global)
 3. UseCase: `UserCreateUseCase`
    - Valida que `group` foi informado (400) **e que existe** (404)
    - Busca usuario por email exato no repositorio

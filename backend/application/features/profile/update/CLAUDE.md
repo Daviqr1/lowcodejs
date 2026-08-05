@@ -7,7 +7,7 @@ Atualiza o perfil do usuario autenticado, com troca de senha opcional.
 
 ## Fluxo
 1. Middleware: `AuthenticationMiddleware({ optional: false })`
-2. Validator: `ProfileUpdateBodyValidator` - campos: name (string, required, min 1, trim), email (string, required, email, trim), currentPassword (string, trim, optional), newPassword (string, min 6, regex PASSWORD_REGEX, trim, optional), allowPasswordChange (boolean, default false)
+2. Validator: `ProfileUpdateBodyValidator` - campos: name (string, required, min 1, trim), email (`email()` global), currentPassword (string, trim, optional), newPassword (`strongPassword('A nova senha')` global, optional), allowPasswordChange (boolean, default false)
 3. UseCase: `ProfileUpdateUseCase`
    - Busca usuario por _id exato (vindo do token JWT)
    - Se nao encontrado, retorna 404
