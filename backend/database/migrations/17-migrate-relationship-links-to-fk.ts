@@ -37,10 +37,7 @@ import mongoose from 'mongoose';
 
 import { E_SCHEMA_TYPE } from '../../application/core/entity.core';
 import type { MigrationOutcome } from '../shared/migration-runner';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Relacionamentos links → FK (1:1/1:N)';
@@ -177,7 +174,7 @@ async function migrateDefinition(
   return 'migrated';
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_LINKS_TO_FK_AT',
   withDataConnection: true,
@@ -204,4 +201,4 @@ runMigration({
       keepPending: failed > 0,
     };
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

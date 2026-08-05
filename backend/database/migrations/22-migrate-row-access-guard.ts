@@ -16,17 +16,14 @@
  *   Prod: node database/migrations/migrate-row-access-guard.js
  */
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Guard de acesso por linha';
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_ROW_ACCESS_GUARD_AT',
   async run(): Promise<string> {
     return 'nada a migrar — enforcement em runtime + bind-time';
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

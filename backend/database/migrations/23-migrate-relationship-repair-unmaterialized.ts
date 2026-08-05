@@ -41,10 +41,7 @@ import {
   E_SCHEMA_TYPE,
 } from '../../application/core/entity.core';
 import type { MigrationOutcome } from '../shared/migration-runner';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Reparo de relacionamentos (links + não-materializados)';
@@ -608,7 +605,7 @@ async function backfillExistingDefinitions(
   return { rebuilt, failed };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_REPAIR_AT',
   withDataConnection: true,
@@ -676,4 +673,4 @@ runMigration({
       keepPending: failed > 0,
     };
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

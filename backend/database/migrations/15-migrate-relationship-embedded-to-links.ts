@@ -42,10 +42,7 @@ import {
   E_SCHEMA_TYPE,
 } from '../../application/core/entity.core';
 import type { MigrationOutcome } from '../shared/migration-runner';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Relacionamentos embedded → links';
@@ -419,7 +416,7 @@ async function migrateField(
   return 'migrated';
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_EMBEDDED_TO_LINKS_AT',
   withDataConnection: true,
@@ -460,4 +457,4 @@ runMigration({
       keepPending: failed > 0,
     };
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

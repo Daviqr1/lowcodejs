@@ -14,10 +14,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Backfill formMode=manage em campos espelho N:N';
 
@@ -42,7 +39,7 @@ async function backfillFormMode(
   return { updated: result.modifiedCount };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_FORM_MODE_AT',
   async run({ db }): Promise<string> {
@@ -50,4 +47,4 @@ runMigration({
 
     return `${result.updated} campo(s) espelho N:N atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

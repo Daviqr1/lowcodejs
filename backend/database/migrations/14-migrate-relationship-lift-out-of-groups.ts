@@ -33,10 +33,7 @@
 import mongoose from 'mongoose';
 
 import type { MigrationOutcome } from '../shared/migration-runner';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Relacionamentos: lift para fora de grupos';
@@ -155,7 +152,7 @@ async function liftField(
   return 'lifted';
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_LIFT_OUT_AT',
   withDataConnection: true,
@@ -186,4 +183,4 @@ runMigration({
       keepPending: skipped > 0,
     };
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

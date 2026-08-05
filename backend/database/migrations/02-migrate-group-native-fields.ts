@@ -32,10 +32,7 @@ import {
   FIELD_GROUP_NATIVE_LIST,
   FIELD_NATIVE_LIST,
 } from '../../application/core/entity.core';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Campos nativos (tabela + grupos)';
@@ -190,7 +187,7 @@ async function backfillNativeFields(
   };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_NATIVE_FIELDS_AT',
   async run({ db, logger }): Promise<string> {
@@ -198,4 +195,4 @@ runMigration({
 
     return `${result.tablesProcessed} tabelas, ${result.tablesUpdated} atualizadas, ${result.groupsUpdated} grupos, ${result.fieldsCreated} campos criados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

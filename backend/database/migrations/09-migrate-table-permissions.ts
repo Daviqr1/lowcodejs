@@ -23,10 +23,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Permissões de tabela';
@@ -141,7 +138,7 @@ async function backfillTablePermissions(
   return { updated, total };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_TABLE_PERMISSIONS_AT',
   async run({ db, logger }): Promise<string> {
@@ -149,4 +146,4 @@ runMigration({
 
     return `${result.updated} de ${result.total} tabelas atualizadas`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

@@ -2,7 +2,8 @@
  * Esqueleto das migrations de boot, identico nas 29: carregar o `.env`, abrir a
  * conexao (a do sistema e, quando a migration mexe em collection dinamica, a de
  * dados), ler o marker no Setting singleton, pular se ja aplicado, rodar,
- * gravar o marker e fechar a conexao no `finally`.
+ * gravar o marker, fechar a conexao no `finally` e reportar a falha (o
+ * `.catch()` de topo que cada migration repetia).
  *
  * Roda como script standalone, fora do kernel — mesmo escape documentado de
  * funcao solta das migrations e do `TaskLogger`.
@@ -85,6 +86,8 @@ export async function runMigration(options: {
     MarkerSchema,
   );
 
+  let failure: unknown = null;
+
   try {
     const setting = await Marker.findOne({}).lean();
     const appliedAt = setting?.[markers[0]];
@@ -123,10 +126,16 @@ export async function runMigration(options: {
       { $set: Object.fromEntries(markers.map((marker) => [marker, now])) },
       { upsert: true, setDefaultsOnInsert: true },
     );
+  } catch (error) {
+    failure = error;
   } finally {
     await connection.close();
     await dataConnection?.close();
   }
+
+  // Reporta depois do `finally` para as conexoes fecharem antes do
+  // `process.exit(1)` — o mesmo que o `.catch()` de topo fazia nas migrations.
+  if (failure) reportMigrationFailure(options.title, failure);
 }
 
 /** Encerra o processo com o log de falha padrao das migrations. */

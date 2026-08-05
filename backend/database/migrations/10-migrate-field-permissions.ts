@@ -15,10 +15,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Permissões de campo';
 
@@ -54,7 +51,7 @@ async function backfillFieldPermissions(
   return { updated, total };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_FIELD_PERMISSIONS_AT',
   async run({ db }): Promise<string> {
@@ -62,4 +59,4 @@ runMigration({
 
     return `${result.updated} de ${result.total} campos atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

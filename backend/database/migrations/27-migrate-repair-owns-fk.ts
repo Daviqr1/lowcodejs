@@ -34,10 +34,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Reparo de FKs inline (OWNS_FK) apagadas pela migration 23';
@@ -130,7 +127,7 @@ async function repairDefinition(
   return 'repaired';
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_REPAIR_OWNS_FK_AT',
   withDataConnection: true,
@@ -154,4 +151,4 @@ runMigration({
 
     return `${repaired} definitions reparadas, ${skipped} N:N mantidas, ${noop} sem links (já ok)`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

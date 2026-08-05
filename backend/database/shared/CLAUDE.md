@@ -31,21 +31,28 @@ Ver o "Pattern de Migration" em `database/migrations/CLAUDE.md` (passo 5/8).
 Esqueleto dos oito passos que toda migration de boot repetia: `.env`, checagem
 de `DATABASE_URL`, conexão do sistema (e a de dados quando
 `withDataConnection: true`), leitura do marker no Setting singleton, skip
-idempotente, execução, gravação do marker e `close()` no `finally`.
+idempotente, execução, gravação do marker, `close()` no `finally` e o report da
+falha.
 
 ```ts
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_MENU_VISIBILITY_AT',
   async run({ db, logger }): Promise<string> {
     const result = await backfill(db);
     return `${result.updated} de ${result.total} menus atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});
 ```
 
 O `run` devolve o resumo do `logger.done()`. Para reter o marker e reprocessar
 no próximo boot, devolva `{ summary, keepPending: true }`.
 
+O tratamento de erro é **do runner**: ele captura, fecha as conexões no
+`finally` e só então chama `reportMigrationFailure(title, error)`
+(`TaskLogger.failed` + `process.exit(1)`). A migration usa top-level `await` e
+não escreve `try/catch` nem `.catch()` — code-pattern regra 7.
+
 As migrations que não usam o runner têm esqueleto próprio (retenção de marker
-por pendência, `--drop-source`, `--dry-run`).
+por pendência, `--drop-source`, `--dry-run`) e chamam `reportMigrationFailure`
+no `catch` do seu próprio top-level `await`.

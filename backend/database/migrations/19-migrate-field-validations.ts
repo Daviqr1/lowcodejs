@@ -18,10 +18,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Validações de campo';
 
@@ -41,7 +38,7 @@ async function backfillFieldValidations(
   return { updated: result.modifiedCount, total };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_FIELD_VALIDATIONS_AT',
   async run({ db }): Promise<string> {
@@ -49,4 +46,4 @@ runMigration({
 
     return `${result.updated} de ${result.total} campos atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

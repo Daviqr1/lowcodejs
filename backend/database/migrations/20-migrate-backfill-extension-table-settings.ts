@@ -16,10 +16,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'tableSettings das extensões';
 
@@ -39,7 +36,7 @@ async function backfillExtensionTableSettings(
   return { updated: result.modifiedCount, total };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_EXTENSION_TABLE_SETTINGS_AT',
   async run({ db }): Promise<string> {
@@ -47,4 +44,4 @@ runMigration({
 
     return `${result.updated} de ${result.total} extensões atualizadas`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

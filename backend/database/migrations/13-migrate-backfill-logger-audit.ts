@@ -28,10 +28,7 @@
 import mongoose from 'mongoose';
 
 import LoggerAuditService from '../../application/services/logger-audit/logger-audit.service';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 // Migration roda fora do container de DI. As conexoes chegam por parametro
 // de metodo, entao o service nao precisa de nada no constructor.
@@ -102,7 +99,7 @@ async function backfillLoggerAudit(
   return { scanned, updated };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_LOGGER_AUDIT_AT',
   withDataConnection: true,
@@ -114,4 +111,4 @@ runMigration({
 
     return `${result.scanned} logs de ROW lidos, ${result.updated} atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

@@ -30,10 +30,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Status/lixeira das rows';
 
@@ -118,7 +115,7 @@ async function backfillCollection(
   };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_ROW_STATUS_TRASHED_AT',
   withDataConnection: true,
@@ -167,4 +164,4 @@ runMigration({
 
     return `${stats.collectionsProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.groupFieldsBackfilled} grupos`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

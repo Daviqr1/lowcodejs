@@ -39,10 +39,7 @@ import mongoose from 'mongoose';
 
 import { E_FIELD_TYPE } from '../../application/core/entity.core';
 import SlugService from '../../application/services/slug/slug.service';
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Slugs amigáveis das rows';
 
@@ -146,7 +143,7 @@ async function backfillCollection(
   return rowsUpdated;
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: [
     'MIGRATION_ROW_SLUG_BACKFILL_AT',
@@ -204,4 +201,4 @@ runMigration({
 
     return `${stats.tablesProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.fieldsAssigned} campos atribuídos`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

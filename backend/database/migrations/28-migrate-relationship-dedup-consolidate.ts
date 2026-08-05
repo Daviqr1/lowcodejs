@@ -46,10 +46,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE =
@@ -262,7 +259,7 @@ async function resyncMirrors(
   );
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_DEDUP_AT',
   async run({ db, logger }): Promise<string> {
@@ -339,4 +336,4 @@ runMigration({
       `${survivors.length} definitions ativas, ${nnZeroLinks} N:N sem links reportadas`
     );
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

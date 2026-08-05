@@ -20,10 +20,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Renomear slot → slots (extensões)';
 
@@ -73,7 +70,7 @@ async function renameSlotField(
   };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_EXTENSION_SLOTS_AT',
   async run({ db }): Promise<string> {
@@ -81,4 +78,4 @@ runMigration({
 
     return `${result.total} extensões — ${result.withSlot} com slot, ${result.withoutSlot} sem`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

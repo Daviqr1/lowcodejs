@@ -23,10 +23,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Limpeza de campos legados de permissão';
 
@@ -58,7 +55,7 @@ async function dropLegacyFields(
   };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT',
   async run({ db }): Promise<string> {
@@ -66,4 +63,4 @@ runMigration({
 
     return `${result.tables} tabelas e ${result.fields} campos limpos`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

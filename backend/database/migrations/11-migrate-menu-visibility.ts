@@ -14,10 +14,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Visibilidade dos menus';
 
@@ -37,7 +34,7 @@ async function backfillMenuVisibility(
   return { updated: result.modifiedCount, total };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_MENU_VISIBILITY_AT',
   async run({ db }): Promise<string> {
@@ -45,4 +42,4 @@ runMigration({
 
     return `${result.updated} de ${result.total} menus atualizados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

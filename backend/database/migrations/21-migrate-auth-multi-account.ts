@@ -16,17 +16,14 @@
  *   Prod: node database/migrations/migrate-auth-multi-account.js
  */
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Sessões multi-conta';
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_AUTH_MULTI_ACCOUNT_AT',
   async run(): Promise<string> {
     return 'nada a migrar — multi-conta é cookie-only';
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

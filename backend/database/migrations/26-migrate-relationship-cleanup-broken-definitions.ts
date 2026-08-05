@@ -29,10 +29,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 import type { TaskLogger } from '../shared/task-logger';
 
 const TITLE = 'Limpeza de definitions de relacionamento quebradas';
@@ -177,7 +174,7 @@ async function cleanupBrokenDefinitions(
   return { definitions: cleanedDefinitions, fields: cleanedFields };
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT',
   async run({ db, logger }): Promise<string> {
@@ -185,4 +182,4 @@ runMigration({
 
     return `${result.definitions} definitions quebradas removidas, ${result.fields} campos quarentenados`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});

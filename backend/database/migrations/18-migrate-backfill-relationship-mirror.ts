@@ -32,10 +32,7 @@
 
 import mongoose from 'mongoose';
 
-import {
-  reportMigrationFailure,
-  runMigration,
-} from '../shared/migration-runner';
+import { runMigration } from '../shared/migration-runner';
 
 const TITLE = 'Backfill do espelho denormalizado (relationship.mirror)';
 
@@ -117,7 +114,7 @@ async function backfillMirror(systemDb: mongoose.mongo.Db): Promise<number> {
   return updated;
 }
 
-runMigration({
+await runMigration({
   title: TITLE,
   marker: 'MIGRATION_RELATIONSHIP_MIRROR_AT',
   async run({ db }): Promise<string> {
@@ -127,4 +124,4 @@ runMigration({
 
     return `${updated} campo(s) com relationship.mirror preenchido`;
   },
-}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
+});
