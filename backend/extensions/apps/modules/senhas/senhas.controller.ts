@@ -13,6 +13,12 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import {
+  CreateChannelValidator,
+  CreateEntryValidator,
+  UpdateChannelValidator,
+  UpdateEntryValidator,
+} from './_shared.validator';
 import SenhasChannelUseCase from './senhas-channel.use-case';
 import SenhasEntryUseCase from './senhas-entry.use-case';
 import {
@@ -25,12 +31,6 @@ import {
   UpdateChannelSchema,
   UpdateEntrySchema,
 } from './senhas.schema';
-import {
-  CreateChannelValidator,
-  CreateEntryValidator,
-  UpdateChannelValidator,
-  UpdateEntryValidator,
-} from './senhas.validator';
 
 const EXTENSION_GUARD = ExtensionActiveMiddleware({
   pkg: 'apps',

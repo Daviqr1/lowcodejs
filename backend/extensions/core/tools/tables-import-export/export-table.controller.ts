@@ -6,9 +6,9 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { ExportTableValidator } from './_shared.validator';
 import { ExportTableSchema } from './export-table.schema';
 import ExportTableUseCase from './export-table.use-case';
-import { ExportTableValidator } from './export-table.validator';
 
 @Controller({
   route: '/tools',

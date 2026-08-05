@@ -10,9 +10,9 @@ import { ExtensionActiveMiddleware } from '@application/middlewares/extension-ac
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { RegisterIpParamsValidator } from './_shared.validator';
 import { RegisterIpSchema } from './register-ip.schema';
 import RegisterIpUseCase from './register-ip.use-case';
-import { RegisterIpParamsValidator } from './register-ip.validator';
 
 // IP real do cliente atrás de proxy: prioriza o 1º IP de `x-forwarded-for`,
 // com fallback para `request.ip` (escopado a esta rota — sem mexer no kernel).

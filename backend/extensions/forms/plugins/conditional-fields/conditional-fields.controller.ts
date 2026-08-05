@@ -10,12 +10,12 @@ import { ExtensionActiveMiddleware } from '@application/middlewares/extension-ac
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { UpdateConditionalFieldsConfigValidator } from './_shared.validator';
 import {
   GetConditionalFieldsConfigSchema,
   GetConditionalFieldsRuntimeConfigSchema,
   UpdateConditionalFieldsConfigSchema,
 } from './conditional-fields.schema';
-import { UpdateConditionalFieldsConfigValidator } from './conditional-fields.validator';
 import GetConditionalFieldsConfigUseCase from './get-config.use-case';
 import UpdateConditionalFieldsConfigUseCase from './update-config.use-case';
 

@@ -3,7 +3,7 @@ import type { FastifySchema } from 'fastify';
 import { zodToRouteSchema } from '@application/core/schema.core';
 import { buildErrorResponse } from '@application/core/schema.core';
 
-import { CloneTableValidator } from './clone-table.validator';
+import { CloneTableValidator } from './_shared.validator';
 
 export const CloneTableSchema: FastifySchema = {
   tags: ['Tools'],

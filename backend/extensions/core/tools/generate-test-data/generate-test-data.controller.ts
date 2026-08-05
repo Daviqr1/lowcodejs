@@ -6,13 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { GenerateTestDataValidator } from './_shared.validator';
 import {
   GenerateTestDataEstimateSchema,
   GenerateTestDataSchema,
   GetTestDataStatusSchema,
 } from './generate-test-data.schema';
 import GenerateTestDataUseCase from './generate-test-data.use-case';
-import { GenerateTestDataValidator } from './generate-test-data.validator';
 import { GenerationJobRegistryContractService } from './generation-job-registry-contract.service';
 import GenerationJobRegistryService from './generation-job-registry.service';
 

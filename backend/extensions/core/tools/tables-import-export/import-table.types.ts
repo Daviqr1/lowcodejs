@@ -2,7 +2,7 @@ import type { Either } from '@application/core/either.core';
 import type { Merge } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
-import type { ImportTablePayload } from './import-table.validator';
+import type { ImportTablePayload } from './_shared.validator';
 
 export type ImportTableUseCasePayload = Merge<
   ImportTablePayload,

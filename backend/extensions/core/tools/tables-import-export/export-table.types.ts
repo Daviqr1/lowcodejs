@@ -7,7 +7,7 @@ import type {
 } from '@application/core/entity.core';
 import type HTTPException from '@application/core/exception.core';
 
-import type { ExportTablePayload } from './export-table.validator';
+import type { ExportTablePayload } from './_shared.validator';
 
 export type ExportTableUseCasePayload = Merge<
   ExportTablePayload,

@@ -5,7 +5,7 @@ import { zodToRouteSchema } from '@application/core/schema.core';
 import {
   GenerateTestDataStatusParamsValidator,
   GenerateTestDataValidator,
-} from './generate-test-data.validator';
+} from './_shared.validator';
 
 export const GenerateTestDataSchema: FastifySchema = {
   tags: ['Tools'],

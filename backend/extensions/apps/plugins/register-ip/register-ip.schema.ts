@@ -6,7 +6,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { RegisterIpParamsValidator } from './register-ip.validator';
+import { RegisterIpParamsValidator } from './_shared.validator';
 
 /**
  * A rota nao tinha schema: ficava fora do OpenAPI e sem validacao na borda.

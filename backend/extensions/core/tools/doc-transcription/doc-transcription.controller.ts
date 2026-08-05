@@ -14,14 +14,14 @@ import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
+  TranscribeValidator,
+  UpdateConfigValidator,
+} from './_shared.validator';
+import {
   GetConfigSchema,
   TranscribeSchema,
   UpdateConfigSchema,
 } from './doc-transcription.schema';
-import {
-  TranscribeValidator,
-  UpdateConfigValidator,
-} from './doc-transcription.validator';
 import GetDocTranscriptionConfigUseCase from './get-config.use-case';
 import TranscribeDocumentUseCase from './transcribe.use-case';
 import UpdateDocTranscriptionConfigUseCase from './update-config.use-case';

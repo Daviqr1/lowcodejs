@@ -1,6 +1,6 @@
 import { zodToRouteSchema } from '@application/core/schema.core';
 
-import { UpdateConfigValidator } from './doc-transcription.validator';
+import { UpdateConfigValidator } from './_shared.validator';
 
 const errorBlock = {
   type: 'object',

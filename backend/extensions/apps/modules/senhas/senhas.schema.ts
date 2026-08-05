@@ -9,7 +9,7 @@ import {
   EntryParamsValidator,
   UpdateChannelValidator,
   UpdateEntryValidator,
-} from './senhas.validator';
+} from './_shared.validator';
 
 const errorBlock = {
   type: 'object',

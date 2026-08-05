@@ -26,8 +26,8 @@ import { SchemaBuilderContractService } from '@application/services/table/schema
 import type {
   SchemaImportField,
   SchemaImportTable,
-} from './schema-import.validator';
-import { SchemaImportPayloadValidator } from './schema-import.validator';
+} from '../_shared.validator';
+import { SchemaImportPayloadValidator } from '../_shared.validator';
 
 type Payload = {
   yaml: string;

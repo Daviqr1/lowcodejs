@@ -7,7 +7,7 @@ import type { TableContractRepository } from '@application/repositories/table/ta
 import type { SlugContractService } from '@application/services/slug/slug-contract.service';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type { CloneTablePayload } from './clone-table.validator';
+import type { CloneTablePayload } from './_shared.validator';
 
 export type CloneTableUseCasePayload = Merge<
   Omit<CloneTablePayload, 'copyDataTableIds'>,

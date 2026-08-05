@@ -2,7 +2,7 @@ import type { FastifySchema } from 'fastify';
 
 import { zodToRouteSchema } from '@application/core/schema.core';
 
-import { ExportTableValidator } from './export-table.validator';
+import { ExportTableValidator } from './_shared.validator';
 
 export const ExportTableSchema: FastifySchema = {
   tags: ['Tools'],

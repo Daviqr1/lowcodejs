@@ -6,9 +6,9 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { ExtensionActiveMiddleware } from '@application/middlewares/extension-active.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { CloneTableValidator } from './_shared.validator';
 import { CloneTableSchema } from './clone-table.schema';
 import CloneTableUseCase from './clone-table.use-case';
-import { CloneTableValidator } from './clone-table.validator';
 
 @Controller({
   route: '/tools',

@@ -1,6 +1,6 @@
 import { zodToRouteSchema } from '@application/core/schema.core';
 
-import { UpdateConditionalFieldsConfigValidator } from './conditional-fields.validator';
+import { UpdateConditionalFieldsConfigValidator } from './_shared.validator';
 
 const Rule = {
   type: 'object',

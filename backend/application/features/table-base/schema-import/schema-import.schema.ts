@@ -5,7 +5,7 @@ import {
   zodToRouteSchema,
 } from '@application/core/schema.core';
 
-import { SchemaImportBodyValidator } from './schema-import.validator';
+import { SchemaImportBodyValidator } from '../_shared.validator';
 
 export const SchemaImportSchema: FastifySchema = {
   tags: ['Tabelas'],

@@ -4,9 +4,9 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 
+import type { UpdateConfigInput } from './_shared.validator';
 import { DocTranscriptionConfigContractRepository } from './doc-transcription-config-contract.repository';
 import type { IDocTranscriptionConfig } from './doc-transcription.types';
-import type { UpdateConfigInput } from './doc-transcription.validator';
 
 type Response = Either<HTTPException, IDocTranscriptionConfig>;
 

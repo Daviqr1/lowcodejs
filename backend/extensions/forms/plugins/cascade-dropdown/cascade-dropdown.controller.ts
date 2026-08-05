@@ -11,18 +11,18 @@ import { TableAccessMiddleware } from '@application/middlewares/table-access.mid
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
-  CascadeDropdownChildOptionsSchema,
-  CascadeDropdownGetConfigSchema,
-  CascadeDropdownParentOptionsSchema,
-  CascadeDropdownSaveConfigSchema,
-} from './cascade-dropdown.schema';
-import {
   CascadeDropdownChildOptionsQueryValidator,
   CascadeDropdownConfigBodyValidator,
   CascadeDropdownOptionsParamsValidator,
   CascadeDropdownParamsValidator,
   CascadeDropdownParentOptionsQueryValidator,
-} from './cascade-dropdown.validator';
+} from './_shared.validator';
+import {
+  CascadeDropdownChildOptionsSchema,
+  CascadeDropdownGetConfigSchema,
+  CascadeDropdownParentOptionsSchema,
+  CascadeDropdownSaveConfigSchema,
+} from './cascade-dropdown.schema';
 import CascadeDropdownChildOptionsUseCase from './child-options.use-case';
 import GetCascadeDropdownConfigUseCase from './get-config.use-case';
 import CascadeDropdownParentOptionsUseCase from './parent-options.use-case';

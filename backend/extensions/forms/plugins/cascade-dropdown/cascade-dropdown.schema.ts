@@ -6,7 +6,7 @@ import {
   CascadeDropdownOptionsParamsValidator,
   CascadeDropdownParamsValidator,
   CascadeDropdownParentOptionsQueryValidator,
-} from './cascade-dropdown.validator';
+} from './_shared.validator';
 
 const ErrorResponse = {
   type: 'object',
