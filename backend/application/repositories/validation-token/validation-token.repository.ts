@@ -47,7 +47,7 @@ export default class ValidationTokenMongooseRepository
     _id: string,
     options?: FindOptions,
   ): Promise<IValidationToken | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const token = await Model.findOne(where).populate(this.populateOptions);
     if (!token) return null;
@@ -59,7 +59,7 @@ export default class ValidationTokenMongooseRepository
     code: string,
     options?: FindOptions,
   ): Promise<IValidationToken | null> {
-    const where = this.trashedClause({ code }, options);
+    const where = this.trashedClause({ code }, options, false);
 
     const token = await Model.findOne(where).populate(this.populateOptions);
     if (!token) return null;
