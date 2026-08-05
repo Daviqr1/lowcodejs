@@ -62,21 +62,45 @@ type RequesterSignals = {
  * low-code, entao o formato so pode ser descrito por tipo de valor. A validacao
  * por campo roda no use-case, contra a definicao da tabela.
  */
-const TableRowValueValidator = z.union([
-  z.string().trim(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-  z.array(z.string().trim()),
-  z.array(z.number()),
-  z.array(z.object({ _id: z.string().trim().optional() }).loose()),
-  z.object({}).loose(),
-]);
+function tableRowValue(): z.ZodUnion<
+  readonly [
+    z.ZodString,
+    z.ZodNumber,
+    z.ZodBoolean,
+    z.ZodNull,
+    z.ZodArray<z.ZodString>,
+    z.ZodArray<z.ZodNumber>,
+    z.ZodArray<
+      z.ZodObject<
+        {
+          _id: z.ZodOptional<z.ZodString>;
+        },
+        z.core.$loose
+      >
+    >,
+    z.ZodObject<{}, z.core.$loose>,
+  ]
+> {
+  return z.union([
+    z.string().trim(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.string().trim()),
+    z.array(z.number()),
+    z.array(z.object({ _id: z.string().trim().optional() }).loose()),
+    z.object({}).loose(),
+  ]);
+}
 
-export const TableRowBodyValidator = z.record(
-  z.string(),
-  TableRowValueValidator,
-);
+function tableRowBody(): z.ZodRecord<
+  z.ZodString,
+  ReturnType<typeof tableRowValue>
+> {
+  return z.record(z.string(), tableRowValue());
+}
+
+export const TableRowBodyValidator = tableRowBody();
 
 export type TableRowCreatePayload = Merge<
   z.infer<typeof TableSlugParamsValidator>,
@@ -94,7 +118,7 @@ export const TableRowAutoSaveQueryValidator = z.object({
   _id: z.string().trim().optional(),
 });
 
-export const TableRowAutoSaveBodyValidator = TableRowBodyValidator;
+export const TableRowAutoSaveBodyValidator = tableRowBody();
 
 export type TableRowAutoSavePayload = Merge<
   z.infer<typeof TableSlugParamsValidator>,
@@ -147,7 +171,7 @@ export type BulkDeletePayload = BulkTrashPayload;
 
 export const BulkUpdateBodyValidator = z.object({
   ids: bulkIds().max(200),
-  data: TableRowBodyValidator.refine((value) => Object.keys(value).length > 0, {
+  data: tableRowBody().refine((value) => Object.keys(value).length > 0, {
     message: 'Informe ao menos um campo para atualizar',
   }),
 });

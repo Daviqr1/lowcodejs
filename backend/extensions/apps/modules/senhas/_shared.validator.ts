@@ -1,22 +1,17 @@
 import { z } from 'zod';
 
-import { OBJECT_ID_REGEX } from '@application/core/field-rules.core';
+import { objectId } from '@application/features/_shared.validator';
 
 /** Validadores Zod do módulo Senhas. Mensagens em PT-BR. */
 
-const objectId = z
-  .string()
-  .trim()
-  .regex(OBJECT_ID_REGEX, 'Identificador inválido');
-
 /** `:channelId` — repetido em 6 rotas, antes so como JSON Schema a mao. */
 export const ChannelParamsValidator = z.object({
-  channelId: objectId,
+  channelId: objectId(),
 });
 
 /** Mais `:entryId` — aponta uma senha dentro do canal. */
 export const EntryParamsValidator = ChannelParamsValidator.extend({
-  entryId: objectId,
+  entryId: objectId(),
 });
 
 export const CreateChannelValidator = z.object({
@@ -24,14 +19,14 @@ export const CreateChannelValidator = z.object({
   description: z.string().trim().max(2000).nullish(),
   // Privado por padrão.
   private: z.boolean().default(true),
-  members: z.array(objectId).default([]),
+  members: z.array(objectId()).default([]),
 });
 
 export const UpdateChannelValidator = z.object({
   name: z.string().trim().min(1, 'Nome é obrigatório').max(120).optional(),
   description: z.string().trim().max(2000).nullish(),
   private: z.boolean().optional(),
-  members: z.array(objectId).optional(),
+  members: z.array(objectId()).optional(),
 });
 
 export const CreateEntryValidator = z.object({

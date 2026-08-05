@@ -44,26 +44,71 @@ export type TableRemoveFromTrashPayload = z.infer<
 >;
 
 /** Nome de tabela: mesmo formato em create e update. */
-const TableNameValidator = z
-  .string()
-  .trim()
-  .min(1, 'Nome é obrigatório')
-  .max(40, 'Nome deve ter no máximo 40 caracteres')
-  .regex(
-    /^[a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\-_]+$/,
-    'Nome pode conter apenas letras, números, espaços, hífen, underscore e ç',
-  );
+function tableName(): z.ZodString {
+  return z
+    .string()
+    .trim()
+    .min(1, 'Nome é obrigatório')
+    .max(40, 'Nome deve ter no máximo 40 caracteres')
+    .regex(
+      /^[a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\-_]+$/,
+      'Nome pode conter apenas letras, números, espaços, hífen, underscore e ç',
+    );
+}
 
 /** Busca e ordenacao comuns a listar e exportar. */
-const TableFilterQueryValidator = z.object({
-  search: search(),
-  name: z.string().trim().optional(),
-  trashed: boolFlag(),
-  'order-name': sortDirection(),
-  'order-link': sortDirection(),
-  'order-created-at': sortDirection(),
-  'order-owner': sortDirection(),
-});
+function tableFilterQuery(): z.ZodObject<
+  {
+    search: z.ZodOptional<z.ZodString>;
+    name: z.ZodOptional<z.ZodString>;
+    trashed: z.ZodOptional<
+      z.ZodPreprocess<
+        z.ZodPipe<
+          z.ZodEnum<{
+            true: 'true';
+            false: 'false';
+          }>,
+          z.ZodTransform<boolean, 'true' | 'false'>
+        >
+      >
+    >;
+    'order-name': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+    'order-link': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+    'order-created-at': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+    'order-owner': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    search: search(),
+    name: z.string().trim().optional(),
+    trashed: boolFlag(),
+    'order-name': sortDirection(),
+    'order-link': sortDirection(),
+    'order-created-at': sortDirection(),
+    'order-owner': sortDirection(),
+  });
+}
 
 // Mapa das 10 acoes -> binding. Todas opcionais.
 export const TablePermissionsSchema = z
@@ -104,9 +149,23 @@ export const GroupConfigurationSchema = z.object({
   _schema: z.any().default({}),
 });
 
-export const TableStyleSchema = z
-  .enum(E_TABLE_STYLE)
-  .default(E_TABLE_STYLE.LIST);
+function tableStyle(): z.ZodDefault<
+  z.ZodEnum<{
+    readonly LIST: 'LIST';
+    readonly GALLERY: 'GALLERY';
+    readonly DOCUMENT: 'DOCUMENT';
+    readonly CARD: 'CARD';
+    readonly MOSAIC: 'MOSAIC';
+    readonly KANBAN: 'KANBAN';
+    readonly FORUM: 'FORUM';
+    readonly CALENDAR: 'CALENDAR';
+    readonly GANTT: 'GANTT';
+  }>
+> {
+  return z.enum(E_TABLE_STYLE).default(E_TABLE_STYLE.LIST);
+}
+
+export const TableStyleSchema = tableStyle();
 
 export const TableFieldOrderListSchema = z.array(z.string().trim()).default([]);
 
@@ -168,10 +227,10 @@ function withNormalizedSlug<T extends { name: string; slug?: string }>(
 
 export const TableCreateBodyValidator = z
   .object({
-    name: TableNameValidator,
+    name: tableName(),
     slug: z.string().trim().min(1).optional(),
     logo: z.string().trim().nullable().optional(),
-    style: TableStyleSchema.optional(),
+    style: tableStyle().optional(),
   })
   .transform(withNormalizedSlug);
 
@@ -183,11 +242,11 @@ export type TableCreatePayload = Merge<
 
 export const TableUpdateBodyValidator = z
   .object({
-    name: TableNameValidator,
+    name: tableName(),
     slug: z.string().trim().min(1).optional(),
     description: z.string().trim().nullable(),
     logo: z.string().trim().nullable(),
-    style: TableStyleSchema,
+    style: tableStyle(),
     fieldOrderList: TableFieldOrderListSchema,
     fieldOrderForm: TableFieldOrderFormSchema,
     fieldOrderFilter: TableFieldOrderFilterSchema,
@@ -212,7 +271,7 @@ export type TableUpdatePayload = Merge<
 
 // ── Leitura ───────────────────────────────────────────────────────────
 
-export const TablePaginatedQueryValidator = TableFilterQueryValidator.extend({
+export const TablePaginatedQueryValidator = tableFilterQuery().extend({
   ...pagination().shape,
   owner: z
     .string()
@@ -234,7 +293,7 @@ export type TablePaginatedPayload = z.infer<
   typeof TablePaginatedQueryValidator
 >;
 
-export const TableExportCsvQueryValidator = TableFilterQueryValidator.extend({
+export const TableExportCsvQueryValidator = tableFilterQuery().extend({
   owner: z.string().trim().optional(),
 });
 

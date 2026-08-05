@@ -19,27 +19,67 @@ import {
 /** `:_id` das rotas por grupo. Antes copiado em 5 operacoes. */
 export const UserGroupIdentifierParamsValidator = identifier();
 
-const UserGroupDescriptionValidator = z
-  .string({ message: 'A descrição deve ser um texto' })
-  .trim()
-  .nullable();
+function userGroupDescription(): z.ZodNullable<z.ZodString> {
+  return z
+    .string({ message: 'A descrição deve ser um texto' })
+    .trim()
+    .nullable();
+}
 
-const UserGroupPermissionsValidator = z.array(
-  z.string({ message: 'Cada permissão deve ser um texto' }),
-);
+function userGroupPermissions(): z.ZodArray<z.ZodString> {
+  return z.array(z.string({ message: 'Cada permissão deve ser um texto' }));
+}
 
-const UserGroupEncompassesValidator = z
-  .array(z.string({ message: 'Cada grupo deve ser um texto' }))
-  .optional();
+function userGroupEncompasses(): z.ZodOptional<z.ZodArray<z.ZodString>> {
+  return z
+    .array(z.string({ message: 'Cada grupo deve ser um texto' }))
+    .optional();
+}
 
 /** Busca e ordenacao comuns a listar e exportar. */
-const UserGroupFilterQueryValidator = z.object({
-  search: search(),
-  trashed: boolFlag(),
-  'order-name': sortDirection(),
-  'order-description': sortDirection(),
-  'order-created-at': sortDirection(),
-});
+function userGroupFilterQuery(): z.ZodObject<
+  {
+    search: z.ZodOptional<z.ZodString>;
+    trashed: z.ZodOptional<
+      z.ZodPreprocess<
+        z.ZodPipe<
+          z.ZodEnum<{
+            true: 'true';
+            false: 'false';
+          }>,
+          z.ZodTransform<boolean, 'true' | 'false'>
+        >
+      >
+    >;
+    'order-name': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+    'order-description': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+    'order-created-at': z.ZodOptional<
+      z.ZodEnum<{
+        readonly ASC: 'asc';
+        readonly DESC: 'desc';
+      }>
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    search: search(),
+    trashed: boolFlag(),
+    'order-name': sortDirection(),
+    'order-description': sortDirection(),
+    'order-created-at': sortDirection(),
+  });
+}
 
 // ── Create e update ───────────────────────────────────────────────────
 
@@ -48,12 +88,12 @@ export const UserGroupCreateBodyValidator = z.object({
     .string({ message: 'O nome é obrigatório' })
     .trim()
     .min(1, 'O nome é obrigatório'),
-  description: UserGroupDescriptionValidator,
-  permissions: UserGroupPermissionsValidator.min(
+  description: userGroupDescription(),
+  permissions: userGroupPermissions().min(
     1,
     'Pelo menos uma permissão é obrigatória',
   ),
-  encompasses: UserGroupEncompassesValidator,
+  encompasses: userGroupEncompasses(),
 });
 
 export type UserGroupCreatePayload = z.infer<
@@ -66,9 +106,9 @@ export const UserGroupUpdateBodyValidator = z.object({
     .trim()
     .min(1, 'O nome é obrigatório')
     .optional(),
-  description: UserGroupDescriptionValidator.optional(),
-  permissions: UserGroupPermissionsValidator.optional(),
-  encompasses: UserGroupEncompassesValidator,
+  description: userGroupDescription().optional(),
+  permissions: userGroupPermissions().optional(),
+  encompasses: userGroupEncompasses(),
 });
 
 export type UserGroupUpdatePayload = Merge<
@@ -78,15 +118,16 @@ export type UserGroupUpdatePayload = Merge<
 
 // ── Leitura ───────────────────────────────────────────────────────────
 
-export const UserGroupPaginatedQueryValidator =
-  UserGroupFilterQueryValidator.extend(pagination().shape);
+export const UserGroupPaginatedQueryValidator = userGroupFilterQuery().extend(
+  pagination().shape,
+);
 
 export type UserGroupPaginatedPayload = Merge<
   z.infer<typeof UserGroupPaginatedQueryValidator>,
   RequesterScope
 >;
 
-export const UserGroupExportCsvQueryValidator = UserGroupFilterQueryValidator;
+export const UserGroupExportCsvQueryValidator = userGroupFilterQuery();
 
 export type UserGroupExportCsvPayload = Merge<
   z.infer<typeof UserGroupExportCsvQueryValidator>,

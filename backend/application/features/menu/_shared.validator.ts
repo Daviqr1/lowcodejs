@@ -54,9 +54,25 @@ function menuFilterQuery(): z.ZodObject<
 }
 
 // Visibilidade da opção de menu (Grupo|Public|Nobody).
-export const MenuVisibilityValidator = permissionBinding()
-  .nullable()
-  .optional();
+function menuVisibility(): z.ZodOptional<
+  z.ZodNullable<
+    z.ZodObject<
+      {
+        kind: z.ZodEnum<{
+          PUBLIC: 'PUBLIC';
+          NOBODY: 'NOBODY';
+          GROUP: 'GROUP';
+        }>;
+        group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+      },
+      z.core.$strip
+    >
+  >
+> {
+  return permissionBinding().nullable().optional();
+}
+
+export const MenuVisibilityValidator = menuVisibility();
 
 export const MenuCreateBodyValidator = z
   .object({
@@ -91,7 +107,7 @@ export const MenuCreateBodyValidator = z
       })
       .nullable()
       .optional(),
-    visibility: MenuVisibilityValidator,
+    visibility: menuVisibility(),
   })
   .transform((payload) => {
     return {
@@ -173,7 +189,7 @@ export const MenuUpdateBodyValidator = z
       })
       .nullable()
       .optional(),
-    visibility: MenuVisibilityValidator,
+    visibility: menuVisibility(),
   })
   .transform((payload) => {
     // `parent` NAO pode virar `null` por default: o use-case trata

@@ -7,12 +7,14 @@ import z from 'zod';
 
 // ── Exportar ──────────────────────────────────────────────────────────
 
-const slugSchema = z.string().trim().min(1, 'Slug inválido');
+function slugSchema(): z.ZodString {
+  return z.string().trim().min(1, 'Slug inválido');
+}
 
 export const ExportTableValidator = z
   .object({
-    slug: slugSchema.optional(),
-    slugs: z.array(slugSchema).min(1).optional(),
+    slug: slugSchema().optional(),
+    slugs: z.array(slugSchema()).min(1).optional(),
     exportType: z.enum(['structure', 'data', 'full'], {
       message: 'Tipo de exportacao deve ser: structure, data ou full',
     }),

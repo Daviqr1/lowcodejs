@@ -15,20 +15,48 @@ import { pagination, perPage } from '@application/features/_shared.validator';
  */
 
 /** Um lado do relacionamento: tabela + campo RELATIONSHIP + controles. */
-const RelationshipEndpointValidator = z.object({
-  table: z.object({
-    _id: z.string().trim().min(1),
-    slug: z.string().trim().min(1),
-  }),
-  field: z.object({
-    _id: z.string().trim().min(1),
-    slug: z.string().trim().min(1),
-  }),
-  visible: z.boolean(),
-  label: z.string().trim(),
-});
+function relationshipEndpoint(): z.ZodObject<
+  {
+    table: z.ZodObject<
+      {
+        _id: z.ZodString;
+        slug: z.ZodString;
+      },
+      z.core.$strip
+    >;
+    field: z.ZodObject<
+      {
+        _id: z.ZodString;
+        slug: z.ZodString;
+      },
+      z.core.$strip
+    >;
+    visible: z.ZodBoolean;
+    label: z.ZodString;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    table: z.object({
+      _id: z.string().trim().min(1),
+      slug: z.string().trim().min(1),
+    }),
+    field: z.object({
+      _id: z.string().trim().min(1),
+      slug: z.string().trim().min(1),
+    }),
+    visible: z.boolean(),
+    label: z.string().trim(),
+  });
+}
 
-const RelationshipOnDeleteValidator = z.enum(E_RELATIONSHIP_ON_DELETE);
+function relationshipOnDelete(): z.ZodEnum<{
+  readonly CASCADE: 'CASCADE';
+  readonly SET_NULL: 'SET_NULL';
+  readonly RESTRICT: 'RESTRICT';
+}> {
+  return z.enum(E_RELATIONSHIP_ON_DELETE);
+}
 
 /** `:slug` da tabela — as rotas da fatia penduram em `/tables/:slug`. */
 export const RelationshipSlugParamsValidator = z.object({
@@ -36,18 +64,28 @@ export const RelationshipSlugParamsValidator = z.object({
 });
 
 /** `:slug` + `:id` da definicao de relacionamento. */
-export const RelationshipIdParamsValidator = z.object({
-  slug: z.string().trim().min(1),
-  id: z.string().trim().min(1),
-});
+function relationshipIdParams(): z.ZodObject<
+  {
+    slug: z.ZodString;
+    id: z.ZodString;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    slug: z.string().trim().min(1),
+    id: z.string().trim().min(1),
+  });
+}
+
+export const RelationshipIdParamsValidator = relationshipIdParams();
 
 // ── Create e update ───────────────────────────────────────────────────
 
 export const RelationshipCreateBodyValidator = z.object({
   name: z.string().trim().min(1).optional(),
-  source: RelationshipEndpointValidator,
-  target: RelationshipEndpointValidator,
-  onDelete: RelationshipOnDeleteValidator,
+  source: relationshipEndpoint(),
+  target: relationshipEndpoint(),
+  onDelete: relationshipOnDelete(),
 });
 
 export type RelationshipCreatePayload = Merge<
@@ -58,9 +96,9 @@ export type RelationshipCreatePayload = Merge<
 export const RelationshipUpdateBodyValidator = z
   .object({
     name: z.string().trim().min(1).optional(),
-    source: RelationshipEndpointValidator.optional(),
-    target: RelationshipEndpointValidator.optional(),
-    onDelete: RelationshipOnDeleteValidator.optional(),
+    source: relationshipEndpoint().optional(),
+    target: relationshipEndpoint().optional(),
+    onDelete: relationshipOnDelete().optional(),
   })
   // Regra cruzada: `.refine()` nao vai para o JSON Schema.
   .refine((value) => Object.keys(value).length > 0, {
@@ -93,10 +131,9 @@ export type RelationshipLinkRequestPayload = Merge<
   z.infer<typeof RelationshipLinkBodyValidator>
 >;
 
-export const RelationshipUnlinkParamsValidator =
-  RelationshipIdParamsValidator.extend({
-    linkId: z.string().trim().min(1),
-  });
+export const RelationshipUnlinkParamsValidator = relationshipIdParams().extend({
+  linkId: z.string().trim().min(1),
+});
 
 export type RelationshipUnlinkPayload = z.infer<
   typeof RelationshipUnlinkParamsValidator

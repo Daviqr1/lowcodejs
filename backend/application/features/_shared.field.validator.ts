@@ -152,23 +152,28 @@ export const FieldLockedSchema = z.boolean().default(false);
 // Rotulo customizado por contexto. SEM default no objeto: ausente permanece
 // `undefined` para que callers que omitem `label` (ex.: toggle de visibilidade)
 // nunca apaguem os rotulos existentes. Contexto vazio → null (usa o name).
-const FieldLabelContextSchema = z
-  .string()
-  .trim()
-  .max(120)
-  .nullable()
-  .optional()
-  .transform((v) => {
-    if (v && v.length > 0) return v;
-    return null;
-  });
+function fieldLabelContext(): z.ZodPipe<
+  z.ZodOptional<z.ZodNullable<z.ZodString>>,
+  z.ZodTransform<string | null, string | null | undefined>
+> {
+  return z
+    .string()
+    .trim()
+    .max(120)
+    .nullable()
+    .optional()
+    .transform((v) => {
+      if (v && v.length > 0) return v;
+      return null;
+    });
+}
 
 export const FieldLabelSchema = z
   .object({
-    list: FieldLabelContextSchema,
-    filter: FieldLabelContextSchema,
-    form: FieldLabelContextSchema,
-    detail: FieldLabelContextSchema,
+    list: fieldLabelContext(),
+    filter: fieldLabelContext(),
+    form: fieldLabelContext(),
+    detail: fieldLabelContext(),
   })
   .nullable()
   .optional();

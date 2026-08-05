@@ -30,20 +30,29 @@ export type GroupRowDeletePayload = z.infer<typeof GroupRowItemParamsValidator>;
  * configurados no low-code, entao o formato so pode ser descrito por tipo de
  * valor. A validacao por campo roda no use-case, contra a definicao da tabela.
  */
-const GroupRowValueValidator = z.union([
-  z.string().trim(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-  z.array(z.string().trim()),
-  z.array(z.number()),
-  z.object({}).loose(),
-]);
+function groupRowValue(): z.ZodUnion<
+  readonly [
+    z.ZodString,
+    z.ZodNumber,
+    z.ZodBoolean,
+    z.ZodNull,
+    z.ZodArray<z.ZodString>,
+    z.ZodArray<z.ZodNumber>,
+    z.ZodObject<{}, z.core.$loose>,
+  ]
+> {
+  return z.union([
+    z.string().trim(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.string().trim()),
+    z.array(z.number()),
+    z.object({}).loose(),
+  ]);
+}
 
-export const GroupRowBodyValidator = z.record(
-  z.string(),
-  GroupRowValueValidator,
-);
+export const GroupRowBodyValidator = z.record(z.string(), groupRowValue());
 
 export type GroupRowCreatePayload = Merge<
   z.infer<typeof GroupRowParamsValidator>,
@@ -61,7 +70,7 @@ export type GroupRowUpdatePayload = Merge<
 export const GroupRowAutoSaveBodyValidator = z.record(
   z.string(),
   z.union([
-    GroupRowValueValidator,
+    groupRowValue(),
     z.array(z.object({ _id: z.string().trim().optional() }).loose()),
   ]),
 );
