@@ -8,7 +8,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { ValidationTokenContractRepository } from '@application/repositories/validation-token/validation-token-contract.repository';
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 
-import type { RequestCodePayload } from './request-code.validator';
+import type { RequestCodePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = RequestCodePayload;

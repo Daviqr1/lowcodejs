@@ -9,9 +9,10 @@ import {
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
 
+import { SignInBodyValidator } from '../_shared.validator';
+
 import { SignInSchema } from './sign-in.schema';
 import SignInUseCase from './sign-in.use-case';
-import { SignInBodyValidator } from './sign-in.validator';
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.

@@ -3,9 +3,10 @@ import { Controller, getInstanceByToken, POST } from 'fastify-decorators';
 
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { SignUpBodyValidator } from '../_shared.validator';
+
 import { SignUpSchema } from './sign-up.schema';
 import SignUpUseCase from './sign-up.use-case';
-import { SignUpBodyValidator } from './sign-up.validator';
 
 @Controller({
   route: 'authentication',

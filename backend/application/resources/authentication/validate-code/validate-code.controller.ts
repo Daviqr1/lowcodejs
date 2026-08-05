@@ -5,9 +5,10 @@ import HttpResponseService from '@application/services/http-response/http-respon
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
 
+import { ValidateCodeBodyValidator } from '../_shared.validator';
+
 import { ValidateCodeSchema } from './validate-code.schema';
 import ValidateCodeUseCase from './validate-code.use-case';
-import { ValidateCodeBodyValidator } from './validate-code.validator';
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.

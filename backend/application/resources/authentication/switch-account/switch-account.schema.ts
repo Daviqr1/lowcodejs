@@ -1,18 +1,15 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { SwitchAccountBodyValidator } from '../_shared.validator';
+
 export const SwitchAccountSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Trocar conta ativa',
   description:
     'Define qual conta autenticada deve ser usada nas próximas requisições.',
-  body: {
-    type: 'object',
-    required: ['accountId'],
-    properties: {
-      accountId: { type: 'string', minLength: 1 },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SwitchAccountBodyValidator),
   response: {
     200: {
       description: 'Conta ativa atualizada com sucesso',

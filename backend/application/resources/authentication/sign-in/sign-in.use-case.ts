@@ -10,7 +10,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
 
-import type { SignInBodyValidator } from './sign-in.validator';
+import type { SignInBodyValidator } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = z.infer<typeof SignInBodyValidator>;

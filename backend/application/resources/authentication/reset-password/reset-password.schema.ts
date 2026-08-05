@@ -1,38 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { ResetPasswordBodyValidator } from '../_shared.validator';
 
 export const ResetPasswordSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Atualizar senha após recuperação',
   description:
     'Atualiza a senha do usuário identificado pelo token de sessão (definido após a validação do código) e enfileira um email de confirmação (efeito colateral). Retorna 200 sem corpo',
-  body: {
-    type: 'object',
-    required: ['password'],
-    properties: {
-      password: {
-        type: 'string',
-        minLength: 6,
-        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])',
-        description:
-          'Nova senha (mínimo 6 caracteres, deve conter maiúscula, minúscula, número e caractere especial)',
-        errorMessage: {
-          type: 'A senha deve ser um texto',
-          minLength: 'A senha deve ter no mínimo 6 caracteres',
-          pattern:
-            'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        password: 'A senha é obrigatória',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(ResetPasswordBodyValidator),
   response: {
     200: {
       description: 'Senha atualizada com sucesso',

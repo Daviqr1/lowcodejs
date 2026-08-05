@@ -1,44 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SignInBodyValidator } from '../_shared.validator';
 
 export const SignInSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Autenticar usuário (login)',
   description:
     'Autentica um usuário com email e senha. Em caso de sucesso, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e retorna 200 sem corpo. Rota pública',
-  body: {
-    type: 'object',
-    required: ['email', 'password'],
-    properties: {
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'Email do usuário',
-        errorMessage: {
-          type: 'O email deve ser um texto',
-          format: 'Digite um email válido',
-        },
-      },
-      password: {
-        type: 'string',
-        minLength: 1,
-        description: 'Senha do usuário',
-        errorMessage: {
-          type: 'A senha deve ser um texto',
-          minLength: 'A senha é obrigatória',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        email: 'O email é obrigatório',
-        password: 'A senha é obrigatória',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(SignInBodyValidator),
   response: {
     200: {
       description:

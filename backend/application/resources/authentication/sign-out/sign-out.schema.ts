@@ -1,18 +1,16 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { SignOutBodyValidator } from '../_shared.validator';
+
 export const SignOutSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Logout do usuário',
   description:
     'Realiza o logout da conta atual ou de todas as contas autenticadas. Requer token de acesso válido',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    properties: {
-      all: { type: 'boolean' },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SignOutBodyValidator),
   response: {
     200: {
       description: 'Logout realizado com sucesso',

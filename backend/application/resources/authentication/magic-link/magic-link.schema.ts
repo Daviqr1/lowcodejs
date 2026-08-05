@@ -1,34 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { MagicLinkQueryValidator } from '../_shared.validator';
 
 export const MagicLinkSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Autenticação via magic link',
   description:
     'Autentica o usuário via código (magic link) na query string. Em caso de sucesso, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e redireciona (302) para o dashboard. Rota pública',
-  querystring: {
-    type: 'object',
-    required: ['code'],
-    properties: {
-      code: {
-        type: 'string',
-        minLength: 1,
-        description: 'Código de autenticação do magic link',
-        errorMessage: {
-          type: 'O código deve ser um texto',
-          minLength: 'O código é obrigatório',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        code: 'O código é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  querystring: zodToRouteSchema(MagicLinkQueryValidator),
   response: {
     302: {
       description:

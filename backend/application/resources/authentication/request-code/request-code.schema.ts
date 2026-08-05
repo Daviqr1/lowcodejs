@@ -1,34 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { RequestCodeBodyValidator } from '../_shared.validator';
 
 export const RequestCodeSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Solicitar código de recuperação de senha',
   description:
     'Gera um código de recuperação de senha e o enfileira para envio por email ao endereço informado (efeito colateral). Retorna 200 sem corpo. Rota pública',
-  body: {
-    type: 'object',
-    required: ['email'],
-    properties: {
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'Endereço de email para enviar o código de recuperação',
-        errorMessage: {
-          type: 'O email deve ser um texto',
-          format: 'Digite um email válido',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        email: 'O email é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(RequestCodeBodyValidator),
   response: {
     200: {
       description: 'Código de recuperação enfileirado com sucesso',

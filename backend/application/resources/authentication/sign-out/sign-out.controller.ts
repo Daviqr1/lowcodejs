@@ -7,8 +7,9 @@ import ProfileShowUseCase from '@application/resources/profile/show/show.use-cas
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
 
+import { SignOutBodyValidator } from '../_shared.validator';
+
 import { SignOutSchema } from './sign-out.schema';
-import { SignOutBodyValidator } from './sign-out.validator';
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.

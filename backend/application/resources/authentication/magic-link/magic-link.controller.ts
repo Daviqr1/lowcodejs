@@ -6,9 +6,10 @@ import { SessionContractService } from '@application/services/session/session-co
 import SessionService from '@application/services/session/session.service';
 import { Env } from '@start/env';
 
+import { MagicLinkQueryValidator } from '../_shared.validator';
+
 import { MagicLinkSchema } from './magic-link.schema';
 import MagicLinkUseCase from './magic-link.use-case';
-import { MagicLinkQueryValidator } from './magic-link.validator';
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.

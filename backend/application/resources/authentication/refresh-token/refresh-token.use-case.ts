@@ -8,7 +8,7 @@ import {
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 
-import type { RefreshTokenPayload } from './refresh-token.validator';
+import type { RefreshTokenPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = RefreshTokenPayload;

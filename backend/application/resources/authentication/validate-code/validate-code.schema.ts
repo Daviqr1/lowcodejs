@@ -1,44 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { ValidateCodeBodyValidator } from '../_shared.validator';
 
 export const ValidateCodeSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Validar código de recuperação de senha',
   description:
     'Valida um código de recuperação de senha. Em caso de sucesso, marca o token como utilizado, define os cookies httpOnly accessToken e refreshToken (efeito colateral) e retorna o usuário associado. Rota pública',
-  body: {
-    type: 'object',
-    required: ['code', 'email'],
-    properties: {
-      code: {
-        type: 'string',
-        minLength: 1,
-        description: 'Código de recuperação recebido via email',
-        errorMessage: {
-          type: 'O código deve ser um texto',
-          minLength: 'O código é obrigatório',
-        },
-      },
-      email: {
-        type: 'string',
-        minLength: 1,
-        description: 'E-mail que solicitou o código',
-        errorMessage: {
-          type: 'O e-mail deve ser um texto',
-          minLength: 'O e-mail é obrigatório',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        code: 'O código é obrigatório',
-        email: 'O e-mail é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  body: zodToRouteSchema(ValidateCodeBodyValidator),
   response: {
     200: {
       description:

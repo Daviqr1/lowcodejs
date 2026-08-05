@@ -9,8 +9,9 @@ import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-cont
 import { SessionContractService } from '@application/services/session/session-contract.service';
 import SessionService from '@application/services/session/session.service';
 
+import { SwitchAccountBodyValidator } from '../_shared.validator';
+
 import { SwitchAccountSchema } from './switch-account.schema';
-import { SwitchAccountBodyValidator } from './switch-account.validator';
 
 // Resolvido no import do modulo — `loadControllers()` roda depois de
 // `registerDependencies()`, entao o container ja esta populado.

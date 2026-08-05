@@ -11,7 +11,7 @@ import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { ValidationTokenContractRepository } from '@application/repositories/validation-token/validation-token-contract.repository';
 
-import type { MagicLinkPayload } from './magic-link.validator';
+import type { MagicLinkPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = MagicLinkPayload;

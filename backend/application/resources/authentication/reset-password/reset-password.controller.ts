@@ -4,9 +4,10 @@ import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { ResetPasswordBodyValidator } from '../_shared.validator';
+
 import { ResetPasswordSchema } from './reset-password.schema';
 import UpdatePasswordRecoveryUseCase from './reset-password.use-case';
-import { ResetPasswordBodyValidator } from './reset-password.validator';
 
 @Controller({
   route: 'authentication',

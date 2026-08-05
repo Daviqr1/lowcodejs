@@ -6,7 +6,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
 
-import type { ResetPasswordPayload } from './reset-password.validator';
+import type { ResetPasswordPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = ResetPasswordPayload;

@@ -13,7 +13,7 @@ import { UserGroupContractRepository } from '@application/repositories/user-grou
 import { EmailQueueContractService } from '@application/services/email-queue/email-queue-contract.service';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
 
-import type { SignUpBodyValidator } from './sign-up.validator';
+import type { SignUpBodyValidator } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = z.infer<typeof SignUpBodyValidator>;
