@@ -1,11 +1,14 @@
 import z from 'zod';
 
+import { E_MENU_ITEM_TYPE, type Merge } from '@application/core/entity.core';
 import {
-  E_MENU_ITEM_TYPE,
-  E_PERMISSION_TARGET,
-  type Merge,
-} from '@application/core/entity.core';
-import { bulkIds, pagination } from '@application/features/_shared.validator';
+  bulkIds,
+  identifier,
+  pagination,
+  permissionBinding,
+  search,
+  sortDirection,
+} from '@application/features/_shared.validator';
 import SlugService from '@application/services/slug/slug.service';
 
 /**
@@ -23,37 +26,44 @@ import SlugService from '@application/services/slug/slug.service';
 const slugService = new SlugService();
 
 /** `:_id` das rotas por item. Antes copiado em 4 operacoes. */
-export const MenuIdentifierParamsValidator = z.object({
-  _id: z
-    .string({ message: 'O ID é obrigatório' })
-    .trim()
-    .min(1, 'O ID é obrigatório'),
-});
+export const MenuIdentifierParamsValidator = identifier();
 
 /** Busca e ordenacao comuns a listar e exportar. */
-const MenuFilterQueryValidator = z.object({
-  search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
-  trashed: z
-    .enum(['true', 'false'])
-    .transform((value) => value === 'true')
-    .optional(),
-  'order-name': z.enum(['asc', 'desc']).optional(),
-  'order-position': z.enum(['asc', 'desc']).optional(),
-  'order-slug': z.enum(['asc', 'desc']).optional(),
-  'order-type': z.enum(['asc', 'desc']).optional(),
-  'order-created-at': z.enum(['asc', 'desc']).optional(),
-});
+function menuFilterQuery(): z.ZodObject<
+  {
+    search: z.ZodOptional<z.ZodString>;
+    trashed: z.ZodOptional<
+      z.ZodPipe<
+        z.ZodEnum<{ true: 'true'; false: 'false' }>,
+        z.ZodTransform<boolean, 'true' | 'false'>
+      >
+    >;
+    'order-name': ReturnType<typeof sortDirection>;
+    'order-position': ReturnType<typeof sortDirection>;
+    'order-slug': ReturnType<typeof sortDirection>;
+    'order-type': ReturnType<typeof sortDirection>;
+    'order-created-at': ReturnType<typeof sortDirection>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    search: search(),
+    // Sem o `preprocess` do `boolFlag()` global: trocar muda o tipo que chega
+    // no use-case, entao vai no commit de correcao das flags.
+    trashed: z
+      .enum(['true', 'false'])
+      .transform((value) => value === 'true')
+      .optional(),
+    'order-name': sortDirection(),
+    'order-position': sortDirection(),
+    'order-slug': sortDirection(),
+    'order-type': sortDirection(),
+    'order-created-at': sortDirection(),
+  });
+}
 
 // Visibilidade da opção de menu (Grupo|Public|Nobody).
-export const MenuVisibilityValidator = z
-  .object({
-    kind: z.enum([
-      E_PERMISSION_TARGET.PUBLIC,
-      E_PERMISSION_TARGET.NOBODY,
-      E_PERMISSION_TARGET.GROUP,
-    ]),
-    group: z.string().trim().nullable().default(null),
-  })
+export const MenuVisibilityValidator = permissionBinding()
   .nullable()
   .optional();
 
@@ -215,14 +225,14 @@ export type MenuUpdatePayload = Merge<
   z.infer<typeof MenuUpdateBodyValidator>
 >;
 
-export const MenuPaginatedQueryValidator = MenuFilterQueryValidator.extend({
+export const MenuPaginatedQueryValidator = menuFilterQuery().extend({
   ...pagination().shape,
-  'order-owner': z.enum(['asc', 'desc']).optional(),
+  'order-owner': sortDirection(),
 });
 
 export type MenuPaginatedPayload = z.infer<typeof MenuPaginatedQueryValidator>;
 
-export const MenuExportCsvQueryValidator = MenuFilterQueryValidator;
+export const MenuExportCsvQueryValidator = menuFilterQuery();
 
 export type MenuExportCsvPayload = z.infer<typeof MenuExportCsvQueryValidator>;
 
