@@ -1,14 +1,11 @@
 import z from 'zod';
 
 import { Merge } from '@application/core/entity.core';
+import { PaginationQueryValidator } from '@application/core/validator.core';
 
-export const GroupRowPaginatedQueryValidator = z
-  .object({
-    page: z.coerce.number().default(1),
-    perPage: z.coerce.number().default(50),
-    search: z.string().trim().optional(),
-  })
-  .loose();
+export const GroupRowPaginatedQueryValidator = PaginationQueryValidator.extend({
+  search: z.string().trim().optional(),
+}).loose();
 
 export const GroupRowPaginatedParamsValidator = z.object({
   slug: z.string().trim(),

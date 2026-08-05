@@ -1,27 +1,15 @@
 import z from 'zod';
 
-export const LoggerPaginatedQueryValidator = z.object({
-  page: z.coerce
-    .number({ message: 'A página deve ser um número' })
-    .min(1, 'A página deve ser maior que zero')
-    .default(1),
-  perPage: z.coerce
-    .number({ message: 'O limite por página deve ser um número' })
-    .min(1, 'O limite por página deve ser maior que zero')
-    .max(100, 'O limite por página deve ser no máximo 100')
-    .default(50),
+import {
+  PaginationQueryValidator,
+  TrashedFlagValidator,
+} from '@application/core/validator.core';
+
+export const LoggerPaginatedQueryValidator = PaginationQueryValidator.extend({
   search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
 
   // Filtra logs por estado de lixeira (default: ativos).
-  trashed: z
-    .preprocess(
-      (v) => {
-        if (typeof v === 'boolean') return String(v);
-        return v;
-      },
-      z.enum(['true', 'false']).transform((v) => v === 'true'),
-    )
-    .optional(),
+  trashed: TrashedFlagValidator,
 });
 
 export type LoggerPaginatedPayload = z.infer<

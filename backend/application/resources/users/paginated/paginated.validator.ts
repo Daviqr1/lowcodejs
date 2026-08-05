@@ -7,29 +7,16 @@ import {
   Merge,
   ValueOf,
 } from '@application/core/entity.core';
+import {
+  PaginationQueryValidator,
+  TrashedFlagValidator,
+} from '@application/core/validator.core';
 
-export const UserPaginatedQueryValidator = z.object({
-  page: z.coerce
-    .number({ message: 'A página deve ser um número' })
-    .min(1, 'A página deve ser maior que zero')
-    .default(1),
-  perPage: z.coerce
-    .number({ message: 'O limite por página deve ser um número' })
-    .min(1, 'O limite por página deve ser maior que zero')
-    .max(100, 'O limite por página deve ser no máximo 100')
-    .default(50),
+export const UserPaginatedQueryValidator = PaginationQueryValidator.extend({
   search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
 
   // Filtra usuários por estado de lixeira (default: ativos).
-  trashed: z
-    .preprocess(
-      (v) => {
-        if (typeof v === 'boolean') return String(v);
-        return v;
-      },
-      z.enum(['true', 'false']).transform((v) => v === 'true'),
-    )
-    .optional(),
+  trashed: TrashedFlagValidator,
 
   // Filtra usuários retornados por status.
   status: z.enum(E_USER_STATUS, { message: 'Status inválido' }).optional(),

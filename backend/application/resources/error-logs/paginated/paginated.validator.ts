@@ -1,8 +1,8 @@
 import z from 'zod';
 
-export const ErrorLogPaginatedQueryValidator = z.object({
-  page: z.coerce.number().min(1).default(1),
-  perPage: z.coerce.number().min(1).max(100).default(50),
+import { PaginationQueryValidator } from '@application/core/validator.core';
+
+export const ErrorLogPaginatedQueryValidator = PaginationQueryValidator.extend({
   search: z.string().trim().optional(),
   // CSV de status HTTP (ex.: "404,500") — filtra por vários de uma vez.
   statuses: z.string().optional(),

@@ -1,8 +1,8 @@
 import z from 'zod';
 
-export const TablePaginatedQueryValidator = z.object({
-  page: z.coerce.number().default(1),
-  perPage: z.coerce.number().default(50),
+import { PaginationQueryValidator } from '@application/core/validator.core';
+
+export const TablePaginatedQueryValidator = PaginationQueryValidator.extend({
   search: z.string().trim().optional(),
   //
   name: z.string().trim().optional(),
