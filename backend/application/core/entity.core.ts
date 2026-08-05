@@ -612,6 +612,10 @@ export type IField = Merge<
     widthInForm: number | null;
     widthInList: number | null;
     widthInDetail: number | null;
+    // Limite de chips exibidos antes de resumir o restante em "+N" — aplicavel
+    // aos campos DROPDOWN, RELATIONSHIP e USER quando multiple. null = sem
+    // limite, exibe todos os selecionados.
+    visibleChipsLimit?: number | null;
     tip?: string | null;
     htmlContent?: string | null;
     defaultValue: string | string[] | null;
@@ -716,6 +720,7 @@ export type FieldCreatePayload = Pick<
   | 'widthInForm'
   | 'widthInList'
   | 'widthInDetail'
+  | 'visibleChipsLimit'
   | 'tip'
   | 'locked'
   | 'native'

@@ -156,6 +156,15 @@ export const FieldWidthInDetailSchema = z
   .min(0)
   .nullable()
   .default(50);
+// Limite de chips exibidos antes de resumir o restante em "+N" — aplicavel aos
+// campos DROPDOWN, RELATIONSHIP e USER quando multiple. null = sem limite,
+// exibe todos os selecionados.
+export const FieldVisibleChipsLimitSchema = z
+  .number()
+  .int()
+  .positive()
+  .nullable()
+  .default(null);
 export const FieldTipSchema = z
   .string()
   .trim()
@@ -248,6 +257,7 @@ export const TableFieldBaseSchema = z.object({
   widthInForm: FieldWidthInFormSchema,
   widthInList: FieldWidthInListSchema,
   widthInDetail: FieldWidthInDetailSchema,
+  visibleChipsLimit: FieldVisibleChipsLimitSchema,
   tip: FieldTipSchema,
   htmlContent: FieldHtmlContentSchema,
   locked: FieldLockedSchema,
@@ -282,6 +292,8 @@ type FieldPayloadOverrides = {
   htmlContent?: string | null;
   // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.
   validations?: IFieldValidation[];
+  // Opcional no tipo (specs/clients podem omitir); runtime sempre null via zod.
+  visibleChipsLimit?: number | null;
 };
 
 type OverriddenKeys =
@@ -290,7 +302,8 @@ type OverriddenKeys =
   | 'tip'
   | 'htmlContent'
   | 'slug'
-  | 'validations';
+  | 'validations'
+  | 'visibleChipsLimit';
 
 export type TableFieldCreatePayload = Merge<
   Omit<z.infer<typeof TableFieldCreateBodyValidator>, OverriddenKeys>,

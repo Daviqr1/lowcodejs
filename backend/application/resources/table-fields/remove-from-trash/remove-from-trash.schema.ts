@@ -73,6 +73,7 @@ export const TableFieldRemoveFromTrashSchema: FastifySchema = {
         widthInForm: { type: 'number', nullable: true },
         widthInList: { type: 'number', nullable: true },
         widthInDetail: { type: 'number', nullable: true },
+        visibleChipsLimit: { type: 'number', nullable: true },
         locked: { type: 'boolean', description: 'Campo bloqueado' },
         native: { type: 'boolean', description: 'Campo nativo' },
         defaultValue: {

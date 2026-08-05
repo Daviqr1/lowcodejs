@@ -298,6 +298,13 @@ export const Schema = new mongoose.Schema(
       type: Number,
       default: 50,
     },
+    // Limite de chips exibidos antes de resumir o restante em "+N" — aplicavel
+    // aos campos DROPDOWN, RELATIONSHIP e USER quando multiple. null = sem
+    // limite, exibe todos os selecionados.
+    visibleChipsLimit: {
+      type: Number,
+      default: null,
+    },
     locked: {
       type: Boolean,
       default: false,

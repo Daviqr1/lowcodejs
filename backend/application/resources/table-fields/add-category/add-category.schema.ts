@@ -85,6 +85,7 @@ export const TableFieldAddCategorySchema: FastifySchema = {
             widthInForm: { type: 'number', nullable: true },
             widthInList: { type: 'number', nullable: true },
             widthInDetail: { type: 'number', nullable: true },
+            visibleChipsLimit: { type: 'number', nullable: true },
             locked: { type: 'boolean' },
             native: { type: 'boolean' },
             defaultValue: {

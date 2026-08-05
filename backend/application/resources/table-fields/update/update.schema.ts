@@ -60,6 +60,12 @@ export const TableFieldUpdateSchema: FastifySchema = {
           description:
             'Largura do campo nas visualizações de detalhe, inteiro 0-100 (%)',
         },
+        visibleChipsLimit: {
+          type: 'number',
+          nullable: true,
+          description:
+            'Limite de chips exibidos antes de resumir o restante em "+N" — aplicável aos campos DROPDOWN, RELATIONSHIP e USER quando multiple. null = sem limite, exibe todos os selecionados',
+        },
         tip: {
           type: 'string',
           nullable: true,

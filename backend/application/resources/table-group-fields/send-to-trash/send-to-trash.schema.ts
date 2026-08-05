@@ -58,6 +58,7 @@ export const GroupFieldSendToTrashSchema: FastifySchema = {
         widthInForm: { type: 'number', nullable: true },
         widthInList: { type: 'number', nullable: true },
         widthInDetail: { type: 'number', nullable: true },
+        visibleChipsLimit: { type: 'number', nullable: true },
         tip: { type: 'string', nullable: true },
         locked: { type: 'boolean' },
         native: { type: 'boolean' },

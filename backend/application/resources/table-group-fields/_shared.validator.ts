@@ -51,6 +51,8 @@ type GroupFieldPayloadOverrides = {
   htmlContent?: string | null;
   // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.
   validations?: IFieldValidation[];
+  // Opcional no tipo (specs/clients podem omitir); runtime sempre null via zod.
+  visibleChipsLimit?: number | null;
 };
 
 type OverriddenKeys =
@@ -59,7 +61,8 @@ type OverriddenKeys =
   | 'tip'
   | 'htmlContent'
   | 'slug'
-  | 'validations';
+  | 'validations'
+  | 'visibleChipsLimit';
 
 export const GroupFieldCreateBodyValidator = z
   .object({
