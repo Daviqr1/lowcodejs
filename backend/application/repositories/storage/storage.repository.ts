@@ -59,7 +59,7 @@ export default class StorageMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IStorage | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const storage = await Model.findOne(where);
     if (!storage) return null;
@@ -71,7 +71,7 @@ export default class StorageMongooseRepository
     filename: string,
     options?: FindOptions,
   ): Promise<IStorage | null> {
-    const where = this.trashedClause({ filename }, options);
+    const where = this.trashedClause({ filename }, options, false);
 
     const storage = await Model.findOne(where);
     if (!storage) return null;
