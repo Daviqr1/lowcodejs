@@ -1,11 +1,15 @@
 import z from 'zod';
 
-import { pagination } from '@application/features/_shared.validator';
+import {
+  pagination,
+  search,
+  sortDirection,
+} from '@application/features/_shared.validator';
 
 /** Entrada da fatia `error-logs`. Fonte unica dos `*.schema.ts`. */
 
 export const ErrorLogPaginatedQueryValidator = pagination().extend({
-  search: z.string().trim().optional(),
+  search: search(),
   // CSV de status HTTP (ex.: "404,500") — filtra por vários de uma vez.
   statuses: z.string().optional(),
   // Intervalo de datas (ISO) aplicado sobre createdAt.
@@ -14,10 +18,10 @@ export const ErrorLogPaginatedQueryValidator = pagination().extend({
   // Visão da lista: 'true' = resolvidos; ausente/'false' = em aberto.
   resolved: z.enum(['true', 'false']).optional(),
   // Ordenação por coluna (espelha os DataTableColumnHeader da tela).
-  'order-created-at': z.enum(['asc', 'desc']).optional(),
-  'order-status': z.enum(['asc', 'desc']).optional(),
-  'order-method': z.enum(['asc', 'desc']).optional(),
-  'order-url': z.enum(['asc', 'desc']).optional(),
+  'order-created-at': sortDirection(),
+  'order-status': sortDirection(),
+  'order-method': sortDirection(),
+  'order-url': sortDirection(),
 });
 
 export type ErrorLogPaginatedPayload = z.infer<
