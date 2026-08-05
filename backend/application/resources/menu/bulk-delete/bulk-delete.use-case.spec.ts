@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import MenuBulkDeleteUseCase from './bulk-delete.use-case';
 
@@ -10,7 +11,7 @@ let sut: MenuBulkDeleteUseCase;
 describe('Menu Bulk Delete Use Case', () => {
   beforeEach(() => {
     menuInMemoryRepository = new MenuInMemoryRepository();
-    sut = new MenuBulkDeleteUseCase(menuInMemoryRepository);
+    sut = new MenuBulkDeleteUseCase(menuInMemoryRepository, new TrashService());
   });
 
   it('deve excluir permanentemente menus na lixeira', async () => {

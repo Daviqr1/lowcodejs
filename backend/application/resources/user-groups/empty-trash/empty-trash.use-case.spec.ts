@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserGroupEmptyTrashUseCase from './empty-trash.use-case';
 
@@ -13,7 +14,11 @@ describe('UserGroup Empty Trash Use Case', () => {
   beforeEach(() => {
     groupRepo = new UserGroupInMemoryRepository();
     userRepo = new UserInMemoryRepository();
-    sut = new UserGroupEmptyTrashUseCase(groupRepo, userRepo);
+    sut = new UserGroupEmptyTrashUseCase(
+      groupRepo,
+      userRepo,
+      new TrashService(),
+    );
   });
 
   it('deve esvaziar a lixeira', async () => {

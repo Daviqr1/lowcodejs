@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserGroupBulkRestoreUseCase from './bulk-restore.use-case';
 
@@ -10,7 +11,7 @@ let sut: UserGroupBulkRestoreUseCase;
 describe('UserGroup Bulk Restore Use Case', () => {
   beforeEach(() => {
     groupRepo = new UserGroupInMemoryRepository();
-    sut = new UserGroupBulkRestoreUseCase(groupRepo);
+    sut = new UserGroupBulkRestoreUseCase(groupRepo, new TrashService());
   });
 
   it('deve restaurar varios grupos', async () => {

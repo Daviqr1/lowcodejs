@@ -6,6 +6,7 @@ import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 type Response = Either<HTTPException, { deleted: number }>;
 
@@ -14,25 +15,24 @@ export default class UserGroupEmptyTrashUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly userRepository: UserContractRepository,
+    private readonly trash: TrashContractService,
   ) {}
 
   async execute(): Promise<Response> {
     try {
-      const trashed = await this.userGroupRepository.findManyTrashed();
+      const deleted = await this.trash.emptyTrash(
+        this.userGroupRepository,
+        async (group) => {
+          if (SYSTEM_GROUP_SLUGS.has(group.slug)) return false;
 
-      const eligibleIds: string[] = [];
-      for (const group of trashed) {
-        if (SYSTEM_GROUP_SLUGS.has(group.slug)) continue;
-        const usersInGroup = await this.userRepository.count({
-          group: group._id,
-        });
-        if (usersInGroup > 0) continue;
-        eligibleIds.push(group._id);
-      }
+          const usersInGroup = await this.userRepository.count({
+            group: group._id,
+          });
 
-      if (eligibleIds.length === 0) return right({ deleted: 0 });
+          return usersInGroup === 0;
+        },
+      );
 
-      const deleted = await this.userGroupRepository.deleteMany(eligibleIds);
       return right({ deleted });
     } catch (error) {
       console.error('[user-groups > empty-trash][error]:', error);

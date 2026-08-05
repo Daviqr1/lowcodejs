@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { E_ROLE } from '@application/core/entity.core';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import UserGroupInMemoryRepository from '@application/repositories/user-group/user-group-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserGroupBulkDeleteUseCase from './bulk-delete.use-case';
 
@@ -14,7 +15,11 @@ describe('UserGroup Bulk Delete Use Case', () => {
   beforeEach(() => {
     groupRepo = new UserGroupInMemoryRepository();
     userRepo = new UserInMemoryRepository();
-    sut = new UserGroupBulkDeleteUseCase(groupRepo, userRepo);
+    sut = new UserGroupBulkDeleteUseCase(
+      groupRepo,
+      userRepo,
+      new TrashService(),
+    );
   });
 
   it('deve excluir grupos na lixeira sem usuarios', async () => {

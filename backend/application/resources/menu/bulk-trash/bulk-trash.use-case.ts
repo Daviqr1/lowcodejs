@@ -4,6 +4,7 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { MenuContractRepository } from '@application/repositories/menu/menu-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 import type { MenuBulkTrashPayload } from './bulk-trash.validator';
 
@@ -11,7 +12,10 @@ type Response = Either<HTTPException, { modified: number }>;
 
 @Service()
 export default class MenuBulkTrashUseCase {
-  constructor(private readonly menuRepository: MenuContractRepository) {}
+  constructor(
+    private readonly menuRepository: MenuContractRepository,
+    private readonly trash: TrashContractService,
+  ) {}
 
   async execute(payload: MenuBulkTrashPayload): Promise<Response> {
     try {
@@ -24,14 +28,10 @@ export default class MenuBulkTrashUseCase {
         }
       }
 
-      const modified = await this.menuRepository.updateMany({
-        _ids: Array.from(allIds),
-        filterTrashed: false,
-        data: {
-          trashed: true,
-          trashedAt: new Date(),
-        },
-      });
+      const modified = await this.trash.bulkTrash(
+        this.menuRepository,
+        Array.from(allIds),
+      );
 
       return right({ modified });
     } catch (error) {

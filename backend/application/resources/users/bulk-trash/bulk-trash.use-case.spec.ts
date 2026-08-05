@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserBulkTrashUseCase from './bulk-trash.use-case';
 
@@ -10,7 +11,7 @@ let sut: UserBulkTrashUseCase;
 describe('User Bulk Trash Use Case', () => {
   beforeEach(() => {
     userRepo = new UserInMemoryRepository();
-    sut = new UserBulkTrashUseCase(userRepo);
+    sut = new UserBulkTrashUseCase(userRepo, new TrashService());
   });
 
   it('deve enviar multiplos usuarios para a lixeira', async () => {

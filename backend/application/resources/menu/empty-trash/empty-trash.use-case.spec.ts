@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import MenuInMemoryRepository from '@application/repositories/menu/menu-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import MenuEmptyTrashUseCase from './empty-trash.use-case';
 
@@ -10,7 +11,7 @@ let sut: MenuEmptyTrashUseCase;
 describe('Menu Empty Trash Use Case', () => {
   beforeEach(() => {
     menuInMemoryRepository = new MenuInMemoryRepository();
-    sut = new MenuEmptyTrashUseCase(menuInMemoryRepository);
+    sut = new MenuEmptyTrashUseCase(menuInMemoryRepository, new TrashService());
   });
 
   it('deve esvaziar a lixeira removendo todos os menus trashed', async () => {

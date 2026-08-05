@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserEmptyTrashUseCase from './empty-trash.use-case';
 
@@ -13,7 +14,7 @@ describe('User Empty Trash Use Case', () => {
   beforeEach(() => {
     userRepo = new UserInMemoryRepository();
     tableRepo = new TableInMemoryRepository();
-    sut = new UserEmptyTrashUseCase(userRepo, tableRepo);
+    sut = new UserEmptyTrashUseCase(userRepo, tableRepo, new TrashService());
   });
 
   it('deve esvaziar a lixeira removendo usuarios trashed sem tabelas', async () => {

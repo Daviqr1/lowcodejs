@@ -5,6 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 import type { UserBulkDeletePayload } from './bulk-delete.validator';
 
@@ -15,6 +16,7 @@ export default class UserBulkDeleteUseCase {
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly tableRepository: TableContractRepository,
+    private readonly trash: TrashContractService,
   ) {}
 
   async execute(payload: UserBulkDeletePayload): Promise<Response> {
@@ -28,21 +30,18 @@ export default class UserBulkDeleteUseCase {
         );
       }
 
-      const eligibleIds: string[] = [];
-      for (const id of payload.ids) {
-        const user = await this.userRepository.findById(id, { trashed: true });
-        if (!user) continue;
-        if (!user.trashed) continue;
+      const deleted = await this.trash.bulkDelete(
+        this.userRepository,
+        payload.ids,
+        async (user) => {
+          const owned = await this.tableRepository.count({
+            owner: [user._id],
+          });
 
-        const owned = await this.tableRepository.count({ owner: [user._id] });
-        if (owned > 0) continue;
+          return owned === 0;
+        },
+      );
 
-        eligibleIds.push(user._id);
-      }
-
-      if (eligibleIds.length === 0) return right({ deleted: 0 });
-
-      const deleted = await this.userRepository.deleteMany(eligibleIds);
       return right({ deleted });
     } catch (error) {
       console.error('[users > bulk-delete][error]:', error);

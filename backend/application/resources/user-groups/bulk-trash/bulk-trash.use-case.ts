@@ -6,6 +6,7 @@ import { SYSTEM_GROUP_SLUGS } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 import type { UserGroupBulkTrashPayload } from './bulk-trash.validator';
 
@@ -16,6 +17,7 @@ export default class UserGroupBulkTrashUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
     private readonly userRepository: UserContractRepository,
+    private readonly trash: TrashContractService,
   ) {}
 
   async execute(payload: UserGroupBulkTrashPayload): Promise<Response> {
@@ -37,14 +39,10 @@ export default class UserGroupBulkTrashUseCase {
 
       if (eligibleIds.length === 0) return right({ modified: 0 });
 
-      const modified = await this.userGroupRepository.updateMany({
-        _ids: eligibleIds,
-        filterTrashed: false,
-        data: {
-          trashed: true,
-          trashedAt: new Date(),
-        },
-      });
+      const modified = await this.trash.bulkTrash(
+        this.userGroupRepository,
+        eligibleIds,
+      );
 
       return right({ modified });
     } catch (error) {

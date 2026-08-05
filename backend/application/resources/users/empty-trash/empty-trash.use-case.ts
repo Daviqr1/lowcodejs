@@ -5,6 +5,7 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 type Response = Either<HTTPException, { deleted: number }>;
 
@@ -13,22 +14,22 @@ export default class UserEmptyTrashUseCase {
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly tableRepository: TableContractRepository,
+    private readonly trash: TrashContractService,
   ) {}
 
   async execute(): Promise<Response> {
     try {
-      const trashed = await this.userRepository.findManyTrashed();
+      const deleted = await this.trash.emptyTrash(
+        this.userRepository,
+        async (user) => {
+          const owned = await this.tableRepository.count({
+            owner: [user._id],
+          });
 
-      const eligibleIds: string[] = [];
-      for (const user of trashed) {
-        const owned = await this.tableRepository.count({ owner: [user._id] });
-        if (owned > 0) continue;
-        eligibleIds.push(user._id);
-      }
+          return owned === 0;
+        },
+      );
 
-      if (eligibleIds.length === 0) return right({ deleted: 0 });
-
-      const deleted = await this.userRepository.deleteMany(eligibleIds);
       return right({ deleted });
     } catch (error) {
       console.error('[users > empty-trash][error]:', error);

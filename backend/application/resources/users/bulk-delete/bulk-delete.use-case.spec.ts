@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
+import TrashService from '@application/services/trash/trash.service';
 
 import UserBulkDeleteUseCase from './bulk-delete.use-case';
 
@@ -13,7 +14,7 @@ describe('User Bulk Delete Use Case', () => {
   beforeEach(() => {
     userRepo = new UserInMemoryRepository();
     tableRepo = new TableInMemoryRepository();
-    sut = new UserBulkDeleteUseCase(userRepo, tableRepo);
+    sut = new UserBulkDeleteUseCase(userRepo, tableRepo, new TrashService());
   });
 
   it('deve excluir permanentemente usuarios na lixeira', async () => {

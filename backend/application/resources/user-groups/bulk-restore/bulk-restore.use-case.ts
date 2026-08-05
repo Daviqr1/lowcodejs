@@ -4,6 +4,7 @@ import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { UserGroupContractRepository } from '@application/repositories/user-group/user-group-contract.repository';
+import { TrashContractService } from '@application/services/trash/trash-contract.service';
 
 import type { UserGroupBulkRestorePayload } from './bulk-restore.validator';
 
@@ -13,18 +14,15 @@ type Response = Either<HTTPException, { modified: number }>;
 export default class UserGroupBulkRestoreUseCase {
   constructor(
     private readonly userGroupRepository: UserGroupContractRepository,
+    private readonly trash: TrashContractService,
   ) {}
 
   async execute(payload: UserGroupBulkRestorePayload): Promise<Response> {
     try {
-      const modified = await this.userGroupRepository.updateMany({
-        _ids: payload.ids,
-        filterTrashed: true,
-        data: {
-          trashed: false,
-          trashedAt: null,
-        },
-      });
+      const modified = await this.trash.bulkRestore(
+        this.userGroupRepository,
+        payload.ids,
+      );
 
       return right({ modified });
     } catch (error) {
