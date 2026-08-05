@@ -41,7 +41,7 @@ export default class ReactionMongooseRepository
     user: string,
     options?: FindOptions,
   ): Promise<IReaction | null> {
-    const where = this.trashedClause({ _id, user }, options);
+    const where = this.trashedClause({ _id, user }, options, false);
 
     const reaction = await Model.findOne(where).populate(this.populateOptions);
     if (!reaction) return null;
