@@ -1,18 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  buildFieldPermissions,
-  E_FIELD_FORMAT,
-  E_FIELD_TYPE,
-  E_TABLE_STYLE,
-} from '@application/core/entity.core';
 import type { ITable } from '@application/core/entity.core';
 import RowInMemoryRepository from '@application/repositories/row/row-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
 import { InMemoryRowAccessGuardService } from '@application/services/row-access-guard/in-memory-row-access-guard.service';
 import RowOwnershipService from '@application/services/row-ownership/row-ownership.service';
 import TableGroupService from '@application/services/table-group/table-group.service';
+import { makeTextShortField } from '@test/helpers/field-factory.helper';
 import { groupItems } from '@test/helpers/row-data.helper';
+import {
+  makeTable,
+  makeTableWithGroup,
+} from '@test/helpers/table-factory.helper';
 
 import GroupRowDeleteUseCase from './delete.use-case';
 
@@ -20,84 +19,14 @@ let tableRepository: TableInMemoryRepository;
 let rowRepository: RowInMemoryRepository;
 let sut: GroupRowDeleteUseCase;
 
-const TABLE_DEFAULTS = {
-  _schema: {},
-  owner: 'owner-id',
-  style: E_TABLE_STYLE.LIST,
-  fieldOrderList: [],
-  fieldOrderForm: [],
-};
-
-const GROUP_FIELD = {
-  _id: 'field-group-1',
-  name: 'Items',
-  slug: 'items',
-  type: E_FIELD_TYPE.FIELD_GROUP,
-  required: false,
-  multiple: false,
-  format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-  showInFilter: false,
-  permissions: buildFieldPermissions(false, true, true),
-  widthInForm: 100,
-  widthInList: null,
-  widthInDetail: null,
-  defaultValue: null,
-  locked: false,
-  native: false,
-  relationship: null,
-  dropdown: [],
-  category: [],
-  group: { slug: 'items' },
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  trashed: false,
-  trashedAt: null,
-};
-
-const GROUP_CONFIG = {
-  slug: 'items',
-  name: 'Items',
-  fields: [
-    {
-      _id: 'gf-1',
-      name: 'Descricao',
-      slug: 'descricao',
-      type: E_FIELD_TYPE.TEXT_SHORT,
-      required: false,
-      multiple: false,
-      format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-      showInFilter: false,
-      permissions: buildFieldPermissions(true, true, true),
-      widthInForm: 50,
-      widthInList: 10,
-      widthInDetail: null,
-      defaultValue: null,
-      locked: false,
-      native: false,
-      relationship: null,
-      dropdown: [],
-      category: [],
-      group: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      trashed: false,
-      trashedAt: null,
-    },
-  ],
-  _schema: {},
-};
-
-async function createTableWithGroup(): Promise<ITable> {
-  const table = await tableRepository.create({
-    ...TABLE_DEFAULTS,
-    name: 'Pedidos',
-    slug: 'pedidos',
-    fields: [GROUP_FIELD._id],
-    groups: [GROUP_CONFIG],
-  });
-  table.fields = [GROUP_FIELD];
-  return table;
-}
+const createTableWithGroup = (): Promise<ITable> =>
+  makeTableWithGroup(
+    tableRepository,
+    'items',
+    [makeTextShortField({ _id: 'gf-1', name: 'Descricao', slug: 'descricao' })],
+    [],
+    { name: 'Pedidos', slug: 'pedidos' },
+  );
 
 async function createRowWithItems(table: ITable): Promise<{
   rowId: string;
@@ -167,12 +96,9 @@ describe('Group Row Delete Use Case', () => {
   });
 
   it('deve retornar GROUP_NOT_FOUND quando grupo nao existe', async () => {
-    await tableRepository.create({
-      ...TABLE_DEFAULTS,
+    await makeTable(tableRepository, [], {
       name: 'Pedidos',
       slug: 'pedidos',
-      fields: [],
-      groups: [],
     });
 
     const result = await sut.execute({
