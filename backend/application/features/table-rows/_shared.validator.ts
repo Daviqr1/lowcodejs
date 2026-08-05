@@ -2,12 +2,14 @@ import z from 'zod';
 
 import { E_REACTION_TYPE, type Merge } from '@application/core/entity.core';
 import {
+  autoSaveQuery,
   boolFlag,
   bulkIds,
   pagination,
   search,
   slugIdParams,
   slugParams,
+  subdocumentRefs,
 } from '@application/features/_shared.validator';
 
 /**
@@ -87,7 +89,7 @@ function tableRowValue(): z.ZodUnion<
     z.null(),
     z.array(z.string().trim()),
     z.array(z.number()),
-    z.array(z.object({ _id: z.string().trim().optional() }).loose()),
+    subdocumentRefs(),
     z.object({}).loose(),
   ]);
 }
@@ -113,9 +115,7 @@ export type TableRowUpdatePayload = Merge<
 
 // ── Auto-save ─────────────────────────────────────────────────────────
 
-export const TableRowAutoSaveQueryValidator = z.object({
-  _id: z.string().trim().optional(),
-});
+export const TableRowAutoSaveQueryValidator = autoSaveQuery();
 
 export const TableRowAutoSaveBodyValidator = tableRowBody();
 

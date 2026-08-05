@@ -1,7 +1,12 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
-import { pagination, search } from '@application/features/_shared.validator';
+import {
+  autoSaveQuery,
+  pagination,
+  search,
+  subdocumentRefs,
+} from '@application/features/_shared.validator';
 
 /**
  * Entrada da fatia `table-group-rows`. Fonte unica — os `*.schema.ts` derivam
@@ -80,15 +85,10 @@ export type GroupRowUpdatePayload = Merge<
 /** O rascunho tambem aceita array de objetos parciais (item ainda sem `_id`). */
 export const GroupRowAutoSaveBodyValidator = z.record(
   z.string(),
-  z.union([
-    groupRowValue(),
-    z.array(z.object({ _id: z.string().trim().optional() }).loose()),
-  ]),
+  z.union([groupRowValue(), subdocumentRefs()]),
 );
 
-export const GroupRowAutoSaveQueryValidator = z.object({
-  _id: z.string().trim().optional(),
-});
+export const GroupRowAutoSaveQueryValidator = autoSaveQuery();
 
 export type GroupRowAutoSavePayload = Merge<
   z.infer<typeof GroupRowParamsValidator>,

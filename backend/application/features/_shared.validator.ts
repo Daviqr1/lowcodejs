@@ -116,6 +116,28 @@ export function identifier(): z.ZodObject<{ _id: z.ZodString }, z.core.$strip> {
   });
 }
 
+/**
+ * Referencias a subdocumento num valor de row: o cliente manda `[{ _id }]` com
+ * o resto do documento junto, e o `.loose()` deixa passar. Repetido em
+ * `table-rows` e `table-group-rows`.
+ */
+export function subdocumentRefs(): z.ZodArray<
+  z.ZodObject<{ _id: z.ZodOptional<z.ZodString> }, z.core.$loose>
+> {
+  return z.array(z.object({ _id: z.string().trim().optional() }).loose());
+}
+
+/**
+ * `?_id=` do auto-save: ausente na primeira gravacao, presente nas seguintes.
+ * Repetido em `table-rows` e `table-group-rows`.
+ */
+export function autoSaveQuery(): z.ZodObject<
+  { _id: z.ZodOptional<z.ZodString> },
+  z.core.$strip
+> {
+  return z.object({ _id: z.string().trim().optional() });
+}
+
 /** `?search=` das listagens. Estava reescrito em 11 pontos. */
 export function search(): z.ZodOptional<z.ZodString> {
   return z.string({ message: 'A busca deve ser um texto' }).trim().optional();
