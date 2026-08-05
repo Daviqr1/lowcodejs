@@ -9,6 +9,7 @@ import {
   type Merge,
 } from '@application/core/entity.core';
 import {
+  boolFlag,
   bulkIds,
   pagination,
   permissionBinding,
@@ -56,7 +57,7 @@ const TableNameValidator = z
 const TableFilterQueryValidator = z.object({
   search: search(),
   name: z.string().trim().optional(),
-  trashed: z.string().trim().optional(),
+  trashed: boolFlag(),
   'order-name': sortDirection(),
   'order-link': sortDirection(),
   'order-created-at': sortDirection(),

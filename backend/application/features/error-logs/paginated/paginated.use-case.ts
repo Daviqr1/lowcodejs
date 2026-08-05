@@ -74,7 +74,7 @@ export default class ErrorLogPaginatedUseCase {
       statuses: this.parseStatuses(payload.statuses),
       dateFrom: this.parseDate(payload['date-from']),
       dateTo: this.parseDate(payload['date-to']),
-      resolved: payload.resolved === 'true',
+      resolved: payload.resolved === true,
       sort: this.buildSort(payload),
     };
   }

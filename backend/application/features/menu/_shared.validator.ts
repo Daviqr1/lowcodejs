@@ -2,6 +2,7 @@ import z from 'zod';
 
 import { E_MENU_ITEM_TYPE, type Merge } from '@application/core/entity.core';
 import {
+  boolFlag,
   bulkIds,
   identifier,
   pagination,
@@ -32,12 +33,7 @@ export const MenuIdentifierParamsValidator = identifier();
 function menuFilterQuery(): z.ZodObject<
   {
     search: z.ZodOptional<z.ZodString>;
-    trashed: z.ZodOptional<
-      z.ZodPipe<
-        z.ZodEnum<{ true: 'true'; false: 'false' }>,
-        z.ZodTransform<boolean, 'true' | 'false'>
-      >
-    >;
+    trashed: ReturnType<typeof boolFlag>;
     'order-name': ReturnType<typeof sortDirection>;
     'order-position': ReturnType<typeof sortDirection>;
     'order-slug': ReturnType<typeof sortDirection>;
@@ -48,12 +44,7 @@ function menuFilterQuery(): z.ZodObject<
 > {
   return z.object({
     search: search(),
-    // Sem o `preprocess` do `boolFlag()` global: trocar muda o tipo que chega
-    // no use-case, entao vai no commit de correcao das flags.
-    trashed: z
-      .enum(['true', 'false'])
-      .transform((value) => value === 'true')
-      .optional(),
+    trashed: boolFlag(),
     'order-name': sortDirection(),
     'order-position': sortDirection(),
     'order-slug': sortDirection(),

@@ -65,7 +65,7 @@ export default class TableExportCsvUseCase {
 
   async execute(payload: TableExportCsvPayload): Promise<Response> {
     try {
-      const trashed = payload.trashed === 'true';
+      const trashed = payload.trashed === true;
 
       const sort: Record<string, 'asc' | 'desc'> = {};
       if (payload['order-name']) sort.name = payload['order-name'];

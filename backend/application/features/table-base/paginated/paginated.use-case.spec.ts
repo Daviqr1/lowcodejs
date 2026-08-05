@@ -22,7 +22,7 @@ describe('Table Paginated Use Case', () => {
     const result = await sut.execute({
       page: 1,
       perPage: 20,
-      trashed: 'false',
+      trashed: false,
       'order-created-at': 'asc',
       'order-link': 'asc',
       'order-name': 'asc',
@@ -63,7 +63,7 @@ describe('Table Paginated Use Case', () => {
     const result = await sut.execute({
       page: 1,
       perPage: 20,
-      trashed: 'false',
+      trashed: false,
       'order-created-at': 'asc',
       'order-link': 'asc',
       'order-name': 'asc',
@@ -94,7 +94,7 @@ describe('Table Paginated Use Case', () => {
     const result = await sut.execute({
       page: 1,
       perPage: 10,
-      trashed: 'false',
+      trashed: false,
       'order-created-at': 'asc',
       'order-link': 'asc',
       'order-name': 'asc',
@@ -137,7 +137,7 @@ describe('Table Paginated Use Case', () => {
     const result = await sut.execute({
       page: 1,
       perPage: 20,
-      trashed: 'false',
+      trashed: false,
       search: 'Clientes',
       'order-created-at': 'asc',
       'order-link': 'asc',
@@ -160,7 +160,7 @@ describe('Table Paginated Use Case', () => {
     const result = await sut.execute({
       page: 1,
       perPage: 20,
-      trashed: 'false',
+      trashed: false,
       'order-created-at': 'asc',
       'order-link': 'asc',
       'order-name': 'asc',

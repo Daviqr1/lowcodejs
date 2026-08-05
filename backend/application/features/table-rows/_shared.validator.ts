@@ -2,6 +2,7 @@ import z from 'zod';
 
 import { E_REACTION_TYPE, type Merge } from '@application/core/entity.core';
 import {
+  boolFlag,
   bulkIds,
   pagination,
   search,
@@ -106,10 +107,7 @@ export const TableRowPaginatedQueryValidator = pagination()
   .extend({
     search: search(),
     // Filtro excludeLinked: oculta registros ja vinculados (autocomplete 1:1/N:N).
-    excludeLinked: z
-      .enum(['true', 'false'])
-      .transform((value) => value === 'true')
-      .optional(),
+    excludeLinked: boolFlag(),
     relationshipId: z.string().trim().optional(),
     excludeSide: z.enum(['source', 'target']).optional(),
     excludeForRecordId: z.string().trim().optional(),

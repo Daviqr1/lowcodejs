@@ -25,7 +25,7 @@ export default class TablePaginatedUseCase {
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const trashed = payload.trashed === 'true';
+      const trashed = payload.trashed === true;
 
       const sort: Record<string, 'asc' | 'desc'> = {};
       if (payload['order-name']) sort.name = payload['order-name'];

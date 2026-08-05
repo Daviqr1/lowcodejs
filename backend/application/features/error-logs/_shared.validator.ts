@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import {
+  boolFlag,
   pagination,
   search,
   sortDirection,
@@ -16,7 +17,7 @@ export const ErrorLogPaginatedQueryValidator = pagination().extend({
   'date-from': z.string().optional(),
   'date-to': z.string().optional(),
   // Visão da lista: 'true' = resolvidos; ausente/'false' = em aberto.
-  resolved: z.enum(['true', 'false']).optional(),
+  resolved: boolFlag(),
   // Ordenação por coluna (espelha os DataTableColumnHeader da tela).
   'order-created-at': sortDirection(),
   'order-status': sortDirection(),
