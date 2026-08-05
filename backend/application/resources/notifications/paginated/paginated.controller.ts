@@ -4,9 +4,10 @@ import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { NotificationPaginatedQueryValidator } from '../_shared.validator';
+
 import { NotificationPaginatedSchema } from './paginated.schema';
 import NotificationPaginatedUseCase from './paginated.use-case';
-import { NotificationPaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: '/notifications',

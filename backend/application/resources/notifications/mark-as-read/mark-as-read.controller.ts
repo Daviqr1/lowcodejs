@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, getInstanceByToken, PATCH } from 'fastify-decorators';
-import z from 'zod';
 
 import { E_NOTIFICATION_EVENT } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
@@ -9,9 +8,9 @@ import NotificationMongooseRepository from '@application/repositories/notificati
 import { NotificationSocketContractService } from '@application/services/notification-socket/notification-socket-contract.service';
 import NotificationSocketService from '@application/services/notification-socket/notification-socket.service';
 
-import { NotificationMarkAsReadSchema } from './mark-as-read.schema';
+import { NotificationIdentifierParamsValidator } from '../_shared.validator';
 
-const ParamsValidator = z.object({ _id: z.string().trim().min(1) });
+import { NotificationMarkAsReadSchema } from './mark-as-read.schema';
 
 @Controller({
   route: '/notifications',
@@ -32,7 +31,9 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     try {
-      const params = ParamsValidator.parse(request.params);
+      const params = NotificationIdentifierParamsValidator.parse(
+        request.params,
+      );
       const result = await this.repository.markAsRead(
         params._id,
         request.user.sub,

@@ -6,7 +6,7 @@ import type { INotification, Paginated } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
 
-import type { NotificationPaginatedPayload } from './paginated.validator';
+import type { NotificationPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<INotification>>;
 

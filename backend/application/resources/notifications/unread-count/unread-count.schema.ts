@@ -1,6 +1,6 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import { serverErrorResponse, UnauthorizedResponse } from '../_shared.response';
 
 export const NotificationUnreadCountSchema: FastifySchema = {
   tags: ['Notificações'],
@@ -19,13 +19,7 @@ export const NotificationUnreadCountSchema: FastifySchema = {
         },
       },
     },
-    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
-      description: 'Não autorizado - Autenticação necessária',
-      message: 'Não autorizado',
-    }),
-    500: buildErrorResponse(500, 'UNREAD_COUNT_ERROR', {
-      description: 'Erro interno do servidor',
-      message: 'Erro interno do servidor',
-    }),
+    401: UnauthorizedResponse,
+    500: serverErrorResponse('UNREAD_COUNT_ERROR'),
   },
 };

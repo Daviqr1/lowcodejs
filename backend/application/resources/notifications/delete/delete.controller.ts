@@ -1,14 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, DELETE, getInstanceByToken } from 'fastify-decorators';
-import z from 'zod';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import { NotificationContractRepository } from '@application/repositories/notification/notification-contract.repository';
 import NotificationMongooseRepository from '@application/repositories/notification/notification.repository';
 
-import { NotificationDeleteSchema } from './delete.schema';
+import { NotificationIdentifierParamsValidator } from '../_shared.validator';
 
-const ParamsValidator = z.object({ _id: z.string().trim().min(1) });
+import { NotificationDeleteSchema } from './delete.schema';
 
 @Controller({
   route: '/notifications',
@@ -29,7 +28,9 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     try {
-      const params = ParamsValidator.parse(request.params);
+      const params = NotificationIdentifierParamsValidator.parse(
+        request.params,
+      );
       const ok = await this.repository.delete(params._id, request.user.sub);
       if (!ok) {
         return response.status(404).send({
