@@ -138,15 +138,20 @@ export function email(): z.ZodString {
  *
  * Nao serve para conferir senha existente (login): ali a forca e verificada
  * contra o hash, e o schema so precisa exigir presenca.
+ *
+ * O `label` existe porque `profile` valida o campo `newPassword` ao lado de um
+ * `currentPassword` — ali a mensagem precisa dizer "A nova senha" para o
+ * usuario saber de qual das duas o erro fala. E so o sujeito da frase; a regra
+ * conferida e a mesma em todos os chamadores.
  */
-export function strongPassword(): z.ZodString {
+export function strongPassword(label = 'A senha'): z.ZodString {
   return z
-    .string({ message: 'A senha é obrigatória' })
+    .string({ message: `${label} é obrigatória` })
     .trim()
-    .min(6, 'A senha deve ter no mínimo 6 caracteres')
+    .min(6, `${label} deve ter no mínimo 6 caracteres`)
     .regex(
       PASSWORD_REGEX,
-      'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
+      `${label} deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial`,
     );
 }
 
