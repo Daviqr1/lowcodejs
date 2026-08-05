@@ -10,7 +10,7 @@ import { FieldTrashContractService } from '@application/services/field-trash/fie
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 import { CascadeDropdownConfigContractRepository } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config-contract.repository';
 
-import type { TableFieldSendToTrashPayload } from './send-to-trash.validator';
+import type { TableFieldSendToTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = TableFieldSendToTrashPayload;

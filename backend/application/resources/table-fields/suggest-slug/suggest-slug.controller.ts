@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { TableFieldSuggestSlugSchema } from './suggest-slug.schema';
-import TableFieldSuggestSlugUseCase from './suggest-slug.use-case';
 import {
   TableFieldSuggestSlugBodyValidator,
-  TableFieldSuggestSlugParamsValidator,
-} from './suggest-slug.validator';
+  TableSlugParamsValidator,
+} from '../_shared.validator';
+
+import { TableFieldSuggestSlugSchema } from './suggest-slug.schema';
+import TableFieldSuggestSlugUseCase from './suggest-slug.use-case';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const payload = TableFieldSuggestSlugBodyValidator.parse(request.body);
-    const params = TableFieldSuggestSlugParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute({
       name: payload.name,

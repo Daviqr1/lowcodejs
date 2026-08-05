@@ -6,7 +6,7 @@ import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 
-import type { TableFieldSuggestSlugPayload } from './suggest-slug.validator';
+import type { TableFieldSuggestSlugPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { slug: string }>;
 

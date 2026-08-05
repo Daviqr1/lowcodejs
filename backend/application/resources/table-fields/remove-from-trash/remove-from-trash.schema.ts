@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableFieldParamsValidator } from '../_shared.validator';
 
 export const TableFieldRemoveFromTrashSchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,21 +13,7 @@ export const TableFieldRemoveFromTrashSchema: FastifySchema = {
   description:
     'Restaura um campo da lixeira definindo trashed=false e reabilitando as propriedades de exibição, formulário, detalhe e filtro. Reconstrói o schema da tabela.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo a ser restaurado da lixeira',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldParamsValidator),
   response: {
     200: {
       description: 'Campo restaurado da lixeira com sucesso',

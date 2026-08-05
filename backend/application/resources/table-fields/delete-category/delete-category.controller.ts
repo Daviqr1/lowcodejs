@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableFieldDeleteCategoryParamsValidator } from '../_shared.validator';
+
 import { TableFieldDeleteCategorySchema } from './delete-category.schema';
 import TableFieldDeleteCategoryUseCase from './delete-category.use-case';
-import { TableFieldDeleteCategoryParamsValidator } from './delete-category.validator';
 
 @Controller({
   route: 'tables',

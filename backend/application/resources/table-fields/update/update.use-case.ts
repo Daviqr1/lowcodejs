@@ -22,9 +22,9 @@ import { ModelBuilderContractService } from '@application/services/table/model-b
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 import { CascadeDropdownConfigContractRepository } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config-contract.repository';
 
-import {} from '../table-field-base.schema';
+import {} from '../_shared.validator';
 
-import type { TableFieldUpdatePayload } from './update.validator';
+import type { TableFieldUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = TableFieldUpdatePayload;

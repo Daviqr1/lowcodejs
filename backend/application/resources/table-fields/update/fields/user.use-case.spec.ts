@@ -21,8 +21,8 @@ import {
   makeFieldWithTable,
 } from '@test/helpers/table-factory.helper';
 
+import type { TableFieldUpdatePayload } from '../../_shared.validator';
 import TableFieldUpdateUseCase from '../update.use-case';
-import type { TableFieldUpdatePayload } from '../update.validator';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;

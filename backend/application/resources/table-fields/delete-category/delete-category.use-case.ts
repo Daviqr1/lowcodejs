@@ -12,7 +12,7 @@ import { FieldContractRepository } from '@application/repositories/field/field-c
 import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { TableFieldDeleteCategoryPayload } from './delete-category.validator';
+import type { TableFieldDeleteCategoryPayload } from '../_shared.validator';
 
 type Response = Either<
   HTTPException,

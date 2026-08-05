@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableFieldDeleteQueryValidator,
+  TableFieldParamsValidator,
+} from '../_shared.validator';
 
 export const TableFieldDeleteSchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,31 +16,8 @@ export const TableFieldDeleteSchema: FastifySchema = {
   description:
     'Exclui permanentemente um campo que está na lixeira. O campo deve estar na lixeira antes da exclusão permanente. Suporta exclusão de campos dentro de grupos via query param group.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo a ser excluído permanentemente',
-      },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      group: {
-        type: 'string',
-        description: 'Slug do grupo (ao excluir um campo dentro de um grupo)',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldParamsValidator),
+  querystring: zodToRouteSchema(TableFieldDeleteQueryValidator),
   response: {
     200: {
       description: 'Campo excluído permanentemente com sucesso',

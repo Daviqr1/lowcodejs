@@ -2,11 +2,46 @@ import z from 'zod';
 
 import {
   E_FIELD_FORMAT,
+  E_FIELD_TYPE,
   E_FIELD_VALIDATION,
   E_PERMISSION_TARGET,
   E_RELATIONSHIP_ON_DELETE,
   type ICategory,
+  type IFieldValidation,
+  type Merge,
 } from '@application/core/entity.core';
+import {
+  NAME_MAX_LENGTH,
+  SLUG_MAX_LENGTH,
+} from '@application/core/field-rules.core';
+import { SlugIdParamsValidator } from '@application/core/validator.core';
+
+/**
+ * Entrada da fatia `table-fields`. Fonte unica — os `*.schema.ts` derivam daqui
+ * o JSON Schema da rota com `zodToRouteSchema`.
+ *
+ * Absorve o antigo `table-field-base.schema.ts`, que ja era este arquivo com
+ * nome enganoso: guardava blocos Zod de entrada, nao schema de resposta.
+ *
+ * Cinco operacoes so apelidavam o `SlugIdParamsValidator` do core; o apelido
+ * some e elas passam a usar o bloco direto.
+ */
+
+/** `:slug` da tabela — rotas que ainda nao apontam um campo. */
+export const TableSlugParamsValidator = z.object({
+  slug: z.string().trim(),
+});
+
+/** `:slug` + `:_id`: tabela + campo. Vem do core, reexportado pela fatia. */
+export const TableFieldParamsValidator = SlugIdParamsValidator;
+
+export type TableFieldShowPayload = z.infer<typeof TableFieldParamsValidator>;
+export type TableFieldSendToTrashPayload = z.infer<
+  typeof TableFieldParamsValidator
+>;
+export type TableFieldRemoveFromTrashPayload = z.infer<
+  typeof TableFieldParamsValidator
+>;
 
 // Binding de visibilidade do campo num contexto (Grupo|Public|Nobody).
 const FieldPermissionBindingSchema = z.object({
@@ -226,3 +261,106 @@ export const TableFieldBaseSchema = z.object({
   category: FieldCategorySchema,
   group: FieldGroupSchema,
 });
+
+// ── Create e update ───────────────────────────────────────────────────
+
+export const TableFieldCreateBodyValidator = z
+  .object({
+    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
+    type: z.enum(E_FIELD_TYPE),
+  })
+  .merge(TableFieldBaseSchema);
+
+/** Campos que o use-case recebe com outra forma do que o Zod devolve. */
+type FieldPayloadOverrides = {
+  slug?: string;
+  tableSlug?: string;
+  allowCustomDropdownOptions?: boolean;
+  fillWithCurrentUserWhenEmpty?: boolean;
+  tip?: string | null;
+  htmlContent?: string | null;
+  // Opcional no tipo (specs/clients podem omitir); runtime sempre [] via zod.
+  validations?: IFieldValidation[];
+};
+
+type OverriddenKeys =
+  | 'allowCustomDropdownOptions'
+  | 'fillWithCurrentUserWhenEmpty'
+  | 'tip'
+  | 'htmlContent'
+  | 'slug'
+  | 'validations';
+
+export type TableFieldCreatePayload = Merge<
+  Omit<z.infer<typeof TableFieldCreateBodyValidator>, OverriddenKeys>,
+  FieldPayloadOverrides
+>;
+
+// slug e opcional: campos nao-nativos podem editar a "url"/chave tecnica do
+// campo (honrado no use-case). Campos nativos nao enviam slug (slug camelCase
+// fixo) e o use-case os ignora.
+export const TableFieldUpdateBodyValidator = z
+  .object({
+    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
+    type: z.enum(E_FIELD_TYPE),
+    trashed: z.boolean().default(false),
+    trashedAt: z
+      .string()
+      .nullable()
+      .default(null)
+      .transform((value) => {
+        if (value) return new Date(value);
+        return null;
+      }),
+  })
+  .merge(TableFieldBaseSchema);
+
+export type TableFieldUpdatePayload = Merge<
+  Omit<z.infer<typeof TableFieldUpdateBodyValidator>, OverriddenKeys>,
+  Merge<FieldPayloadOverrides, { _id: string }>
+>;
+
+// ── Exclusao ──────────────────────────────────────────────────────────
+
+export const TableFieldDeleteQueryValidator = z.object({
+  group: z.string().trim().optional(),
+});
+
+export type TableFieldDeletePayload = Merge<
+  z.infer<typeof TableFieldParamsValidator>,
+  z.infer<typeof TableFieldDeleteQueryValidator>
+>;
+
+// ── Categorias ────────────────────────────────────────────────────────
+
+export const TableFieldAddCategoryBodyValidator = z.object({
+  label: z.string().trim().min(1),
+  parentId: z.string().trim().nullable().optional(),
+});
+
+export type TableFieldAddCategoryPayload = Merge<
+  z.infer<typeof TableFieldParamsValidator>,
+  z.infer<typeof TableFieldAddCategoryBodyValidator>
+>;
+
+export const TableFieldDeleteCategoryParamsValidator =
+  SlugIdParamsValidator.extend({
+    categoryId: z.string().trim().min(1),
+  });
+
+export type TableFieldDeleteCategoryPayload = z.infer<
+  typeof TableFieldDeleteCategoryParamsValidator
+>;
+
+// ── Sugestao de slug ──────────────────────────────────────────────────
+
+export const TableFieldSuggestSlugBodyValidator = z.object({
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+});
+
+export type TableFieldSuggestSlugPayload = {
+  tableSlug: string;
+  name: string;
+};

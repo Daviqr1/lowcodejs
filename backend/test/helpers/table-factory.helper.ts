@@ -8,7 +8,7 @@ import {
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import type { TableFieldUpdatePayload } from '@application/resources/table-fields/update/update.validator';
+import type { TableFieldUpdatePayload } from '@application/resources/table-fields/_shared.validator';
 
 import { makeFieldGroupField } from './field-factory.helper';
 

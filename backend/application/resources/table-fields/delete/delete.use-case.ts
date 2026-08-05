@@ -12,7 +12,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 import { CascadeDropdownConfigContractRepository } from '@extensions/forms/plugins/cascade-dropdown/cascade-dropdown-config-contract.repository';
 
-import type { TableFieldDeletePayload } from './delete.validator';
+import type { TableFieldDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = TableFieldDeletePayload;

@@ -12,7 +12,7 @@ import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { TableFieldAddCategoryPayload } from './add-category.validator';
+import type { TableFieldAddCategoryPayload } from '../_shared.validator';
 
 type Response = Either<
   HTTPException,

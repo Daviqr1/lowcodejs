@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import {
+  TableFieldParamsValidator,
+  TableFieldDeleteQueryValidator,
+} from '../_shared.validator';
+
 import { TableFieldDeleteSchema } from './delete.schema';
 import TableFieldDeleteUseCase from './delete.use-case';
-import {
-  TableFieldDeleteParamsValidator,
-  TableFieldDeleteQueryValidator,
-} from './delete.validator';
 
 @Controller({
   route: 'tables',
@@ -40,7 +41,7 @@ export default class TableFieldDeleteController {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = TableFieldDeleteParamsValidator.parse(request.params);
+    const params = TableFieldParamsValidator.parse(request.params);
     const query = TableFieldDeleteQueryValidator.parse(request.query);
     const result = await this.useCase.execute({ ...params, ...query });
 

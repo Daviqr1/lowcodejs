@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { TableFieldShowPayload } from './show.validator';
+import type { TableFieldShowPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = TableFieldShowPayload;

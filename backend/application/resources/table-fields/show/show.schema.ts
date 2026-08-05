@@ -1,7 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableFieldParamsValidator } from '../_shared.validator';
 
 export const TableFieldShowSchema: FastifySchema = {
   tags: ['Campos'],
@@ -9,23 +14,7 @@ export const TableFieldShowSchema: FastifySchema = {
   description:
     'Recupera um campo específico de uma tabela pelo seu ID. Retorna a configuração completa e os metadados do campo.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo a ser recuperado',
-        examples: ['507f1f77bcf86cd799439011'],
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldParamsValidator),
   response: {
     200: {
       description: 'Campo recuperado com sucesso, com a configuração completa',

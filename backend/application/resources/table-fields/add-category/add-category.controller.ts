@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { TableFieldAddCategorySchema } from './add-category.schema';
-import TableFieldAddCategoryUseCase from './add-category.use-case';
 import {
   TableFieldAddCategoryBodyValidator,
-  TableFieldAddCategoryParamsValidator,
-} from './add-category.validator';
+  TableFieldParamsValidator,
+} from '../_shared.validator';
+
+import { TableFieldAddCategorySchema } from './add-category.schema';
+import TableFieldAddCategoryUseCase from './add-category.use-case';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const payload = TableFieldAddCategoryBodyValidator.parse(request.body);
-    const params = TableFieldAddCategoryParamsValidator.parse(request.params);
+    const params = TableFieldParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute({
       ...payload,

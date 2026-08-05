@@ -9,7 +9,7 @@ import {
 import HTTPException from '@application/core/exception.core';
 import { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
-import {} from '@application/resources/table-fields/table-field-base.schema';
+import {} from '@application/resources/table-fields/_shared.validator';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';

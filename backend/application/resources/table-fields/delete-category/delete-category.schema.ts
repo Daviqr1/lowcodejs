@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableFieldDeleteCategoryParamsValidator } from '../_shared.validator';
 
 export const TableFieldDeleteCategorySchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,25 +13,7 @@ export const TableFieldDeleteCategorySchema: FastifySchema = {
   description:
     'Remove uma opção de categoria (e seus descendentes) da árvore de um campo do tipo CATEGORY e desvincula a referência de todos os registros que a utilizam.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id', 'categoryId'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo que contém a categoria',
-      },
-      categoryId: {
-        type: 'string',
-        description: 'ID do nó de categoria a ser removido',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldDeleteCategoryParamsValidator),
   response: {
     200: {
       description: 'Opção de categoria removida com sucesso',

@@ -20,8 +20,8 @@ import TypeGuardService from '@application/services/type-guard/type-guard.servic
 import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
 import { makeFieldUpdatePayload } from '@test/helpers/table-factory.helper';
 
+import type { TableFieldUpdatePayload } from '../../_shared.validator';
 import TableFieldUpdateUseCase from '../update.use-case';
-import type { TableFieldUpdatePayload } from '../update.validator';
 
 let tableInMemoryRepository: TableInMemoryRepository;
 let fieldInMemoryRepository: FieldInMemoryRepository;

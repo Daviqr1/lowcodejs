@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableFieldSuggestSlugBodyValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const TableFieldSuggestSlugSchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,31 +16,8 @@ export const TableFieldSuggestSlugSchema: FastifySchema = {
   description:
     'Sugere um slug de campo seguro, curto e único para uma tabela com base no título de exibição.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela onde o campo será criado',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['name'],
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 500,
-        description:
-          'Título de exibição usado como base para a sugestão do slug',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  body: zodToRouteSchema(TableFieldSuggestSlugBodyValidator),
   response: {
     200: {
       description: 'Slug sugerido',

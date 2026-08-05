@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableFieldParamsValidator } from '../_shared.validator';
 
 export const TableFieldSendToTrashSchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,21 +13,7 @@ export const TableFieldSendToTrashSchema: FastifySchema = {
   description:
     'Envia um campo para a lixeira definindo trashed=true e desabilitando as propriedades de exibição, formulário, detalhe, filtro e obrigatoriedade. Reconstrói o schema da tabela.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo a ser enviado para a lixeira',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldParamsValidator),
   response: {
     200: {
       description: 'Campo enviado para a lixeira com sucesso',

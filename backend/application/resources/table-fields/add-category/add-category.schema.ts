@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableFieldAddCategoryBodyValidator,
+  TableFieldParamsValidator,
+} from '../_shared.validator';
 
 export const TableFieldAddCategorySchema: FastifySchema = {
   tags: ['Campos'],
@@ -8,37 +16,8 @@ export const TableFieldAddCategorySchema: FastifySchema = {
   description:
     'Adiciona uma nova opção de categoria a um campo do tipo CATEGORY, na raiz ou como filha de uma categoria existente.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o campo',
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do campo para adicionar a opção de categoria',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['label'],
-    properties: {
-      label: {
-        type: 'string',
-        description: 'Rótulo da categoria',
-      },
-      parentId: {
-        type: 'string',
-        nullable: true,
-        description: 'ID da categoria pai (null ou omitido para a raiz)',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableFieldParamsValidator),
+  body: zodToRouteSchema(TableFieldAddCategoryBodyValidator),
   response: {
     200: {
       description: 'Opção de categoria criada com sucesso',
