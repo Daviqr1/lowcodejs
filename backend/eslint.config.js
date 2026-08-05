@@ -101,6 +101,8 @@ export default [
       'lowcodejs/no-type-intersection': 'error',
       // regra 6: lookup object no lugar de cadeia if/else-if 3+.
       'lowcodejs/prefer-lookup-object': 'error',
+      // regra 7: async/await com try/catch, nunca cadeia .then/.catch/.finally.
+      'lowcodejs/no-promise-chain': 'error',
     },
   },
   {
