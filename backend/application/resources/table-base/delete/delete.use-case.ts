@@ -22,7 +22,10 @@ export default class TableDeleteUseCase {
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const table = await this.tableRepository.findBySlug(payload.slug);
+      const table = await this.tableRepository.findBySlug(payload.slug, {
+        // Exclusao definitiva age sobre a tabela na lixeira.
+        includeTrashed: true,
+      });
 
       if (!table)
         return left(

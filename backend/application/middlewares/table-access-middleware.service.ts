@@ -49,7 +49,11 @@ export default class TableAccessMiddlewareService implements TableAccessMiddlewa
         requiredPermission !== E_TABLE_PERMISSION.CREATE_TABLE &&
         !table
       ) {
-        const found = await this.tableRepository.findBySlug(slug);
+        const found = await this.tableRepository.findBySlug(slug, {
+          // A guarda decide autorizacao, nao existencia: restaurar e excluir uma
+          // tabela na lixeira passam por aqui. Quem responde 404 e o use-case.
+          includeTrashed: true,
+        });
 
         if (!found) {
           throw HTTPException.NotFound(

@@ -75,7 +75,7 @@ export default class TableMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<ITable | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const table = await Model.findOne(where).populate(this.populateOptions);
     if (!table) return null;
@@ -87,7 +87,7 @@ export default class TableMongooseRepository
     slug: string,
     options?: FindOptions,
   ): Promise<ITable | null> {
-    const where = this.trashedClause({ slug }, options);
+    const where = this.trashedClause({ slug }, options, false);
 
     const table = await Model.findOne(where).populate(this.populateOptions);
     if (!table) return null;
