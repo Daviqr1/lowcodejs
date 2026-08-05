@@ -31,8 +31,11 @@ nao ha mais fallback.
 
 ## Schema Base
 
-Definido em `table-base.schema.ts`: TablePermissionBindingSchema,
-TablePermissionsSchema (mapa acao→binding), TableMembersSchema
-(`{ user, profile }`), TableStyleSchema, TableFieldOrderListSchema,
-TableFieldOrderFormSchema, TableOrderSchema, TableLayoutFieldsSchema,
-TableMethodSchema. (`owner` e validado direto nos validators de create/update.)
+Definido em `_shared.validator.ts`: TablePermissionsSchema (mapa acao→binding),
+TableMembersSchema (`{ user, profile }`), TableStyleSchema,
+TableFieldOrderListSchema, TableFieldOrderFormSchema, TableOrderSchema,
+TableLayoutFieldsSchema, TableMethodSchema. (`owner` e validado direto nos
+validators de create/update.)
+
+O binding `{ kind, group }` de cada acao vem do `permissionBinding()` global —
+a mesma regra e usada por `table-fields` e `menu`.

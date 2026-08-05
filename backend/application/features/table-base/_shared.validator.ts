@@ -1,13 +1,18 @@
 import z from 'zod';
 
 import {
-  E_PERMISSION_TARGET,
   E_TABLE_PERMISSION,
   E_TABLE_PROFILE,
   E_TABLE_STYLE,
   type Merge,
 } from '@application/core/entity.core';
-import { bulkIds, pagination } from '@application/features/_shared.validator';
+import {
+  bulkIds,
+  pagination,
+  permissionBinding,
+  search,
+  sortDirection,
+} from '@application/features/_shared.validator';
 import SlugService from '@application/services/slug/slug.service';
 
 /**
@@ -47,52 +52,28 @@ const TableNameValidator = z
 
 /** Busca e ordenacao comuns a listar e exportar. */
 const TableFilterQueryValidator = z.object({
-  search: z.string().trim().optional(),
+  search: search(),
   name: z.string().trim().optional(),
   trashed: z.string().trim().optional(),
-  'order-name': z.enum(['asc', 'desc']).optional(),
-  'order-link': z.enum(['asc', 'desc']).optional(),
-  'order-created-at': z.enum(['asc', 'desc']).optional(),
-  'order-owner': z.enum(['asc', 'desc']).optional(),
-});
-
-// Binding de uma acao: a quem ela esta liberada (Grupo|Public|Nobody).
-export const TablePermissionBindingSchema = z.object({
-  kind: z
-    .enum([
-      E_PERMISSION_TARGET.PUBLIC,
-      E_PERMISSION_TARGET.NOBODY,
-      E_PERMISSION_TARGET.GROUP,
-    ])
-    .describe(
-      'Alvo da acao: PUBLIC (qualquer pessoa, inclusive sem login), NOBODY ' +
-        '(ninguem) ou GROUP (apenas o grupo informado em `group`). Para GROUP ' +
-        'vale a regra de intersecao: o usuario tambem precisa da permissao ' +
-        'global correspondente no seu grupo.',
-    ),
-  group: z
-    .string()
-    .trim()
-    .nullable()
-    .default(null)
-    .describe(
-      'Id do grupo liberado quando `kind` = GROUP; null caso contrario.',
-    ),
+  'order-name': sortDirection(),
+  'order-link': sortDirection(),
+  'order-created-at': sortDirection(),
+  'order-owner': sortDirection(),
 });
 
 // Mapa das 10 acoes -> binding. Todas opcionais.
 export const TablePermissionsSchema = z
   .object({
-    [E_TABLE_PERMISSION.VIEW_TABLE]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.UPDATE_TABLE]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.CREATE_FIELD]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.UPDATE_FIELD]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.REMOVE_FIELD]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.VIEW_FIELD]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.CREATE_ROW]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.UPDATE_ROW]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.REMOVE_ROW]: TablePermissionBindingSchema,
-    [E_TABLE_PERMISSION.VIEW_ROW]: TablePermissionBindingSchema,
+    [E_TABLE_PERMISSION.VIEW_TABLE]: permissionBinding(),
+    [E_TABLE_PERMISSION.UPDATE_TABLE]: permissionBinding(),
+    [E_TABLE_PERMISSION.CREATE_FIELD]: permissionBinding(),
+    [E_TABLE_PERMISSION.UPDATE_FIELD]: permissionBinding(),
+    [E_TABLE_PERMISSION.REMOVE_FIELD]: permissionBinding(),
+    [E_TABLE_PERMISSION.VIEW_FIELD]: permissionBinding(),
+    [E_TABLE_PERMISSION.CREATE_ROW]: permissionBinding(),
+    [E_TABLE_PERMISSION.UPDATE_ROW]: permissionBinding(),
+    [E_TABLE_PERMISSION.REMOVE_ROW]: permissionBinding(),
+    [E_TABLE_PERMISSION.VIEW_ROW]: permissionBinding(),
   })
   .partial()
   .describe(
@@ -185,6 +166,18 @@ export const TableMethodSchema = z.object({
 
 // ── Create e update ───────────────────────────────────────────────────
 
+/**
+ * Normaliza o slug ANTES das regras: o body pode mandar `slug` explicito e,
+ * na ausencia dele, ele sai do nome. Estava copiado em create e update.
+ */
+function withNormalizedSlug<T extends { name: string; slug?: string }>(
+  data: T,
+): Merge<T, { slug: string }> {
+  let slug = slugService.normalize(data.name);
+  if (data.slug) slug = slugService.normalize(data.slug);
+  return { ...data, slug };
+}
+
 export const TableCreateBodyValidator = z
   .object({
     name: TableNameValidator,
@@ -192,11 +185,7 @@ export const TableCreateBodyValidator = z
     logo: z.string().trim().nullable().optional(),
     style: TableStyleSchema.optional(),
   })
-  .transform((data) => {
-    let slug = slugService.normalize(data.name);
-    if (data.slug) slug = slugService.normalize(data.slug);
-    return { ...data, slug };
-  });
+  .transform(withNormalizedSlug);
 
 /** `owner` vem da sessao, nunca do body. */
 export type TableCreatePayload = Merge<
@@ -225,11 +214,7 @@ export const TableUpdateBodyValidator = z
     members: TableMembersSchema.optional(),
     owner: z.string().trim().min(1).optional(),
   })
-  .transform((data) => {
-    let slug = slugService.normalize(data.name);
-    if (data.slug) slug = slugService.normalize(data.slug);
-    return { ...data, slug };
-  });
+  .transform(withNormalizedSlug);
 
 /** `routeSlug` e o `:slug` da rota; o `slug` do body e o novo valor. */
 export type TableUpdatePayload = Merge<
