@@ -1,32 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { PageShowParamsValidator } from './show.validator';
 
 export const PageShowSchema: FastifySchema = {
   tags: ['Páginas'],
   summary: 'Buscar página por slug',
   description: 'Retorna uma página específica pelo slug para renderização',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da página',
-        errorMessage: {
-          type: 'O slug deve ser um texto',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        slug: 'O slug é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  params: zodToRouteSchema(PageShowParamsValidator),
   response: {
     200: {
       description: 'Página encontrada com sucesso',

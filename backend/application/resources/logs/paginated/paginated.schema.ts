@@ -4,7 +4,12 @@ import {
   E_LOGGER_ACTION_TYPE,
   E_LOGGER_OBJECT_TYPE,
 } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { LoggerPaginatedQueryValidator } from './paginated.validator';
 
 export const LoggerPaginatedSchema: FastifySchema = {
   tags: ['Logs'],
@@ -12,39 +17,7 @@ export const LoggerPaginatedSchema: FastifySchema = {
   description:
     'Retorna uma lista paginada de registros de log com busca e filtro de lixeira opcionais',
   security: [{ cookieAuth: [] }],
-  querystring: {
-    type: 'object',
-    properties: {
-      page: {
-        type: 'number',
-        minimum: 1,
-        default: 1,
-        description: 'Número da página (começa em 1)',
-        examples: [1, 2, 5],
-      },
-      perPage: {
-        type: 'number',
-        minimum: 1,
-        maximum: 100,
-        default: 50,
-        description: 'Quantidade de itens por página (máx 100)',
-        examples: [10, 25, 50, 100],
-      },
-      search: {
-        type: 'string',
-        minLength: 1,
-        description:
-          'Termo de busca para filtrar logs por URL ou ID de objeto (opcional)',
-        examples: ['/api/users', 'CREATE', '507f1f77bcf86cd799439011'],
-      },
-      trashed: {
-        type: 'string',
-        enum: ['true', 'false'],
-        description: 'Filtrar logs na lixeira (opcional, default: ativos)',
-        examples: ['true', 'false'],
-      },
-    },
-  },
+  querystring: zodToRouteSchema(LoggerPaginatedQueryValidator),
   response: {
     200: {
       description: 'Lista paginada de registros de log',
