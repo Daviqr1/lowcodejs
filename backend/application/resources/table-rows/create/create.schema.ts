@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableRowBodyValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const TableRowCreateSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,38 +16,8 @@ export const TableRowCreateSchema: FastifySchema = {
   description:
     'Cria um novo registro em uma tabela com schema dinâmico baseado nos campos da tabela. Autenticação é obrigatória apenas quando a colaboração da tabela é "restrita". Tabelas com colaboração "aberta" ou visibilidade "FORM" permitem acesso público.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela onde o registro será criado',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description:
-      'Dados dinâmicos do registro baseados nos campos da tabela. As chaves correspondem aos slugs dos campos e os valores dependem dos tipos dos campos.',
-    additionalProperties: true,
-    examples: [
-      {
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 30,
-        active: true,
-        tags: ['developer', 'javascript'],
-        profile_picture: ['507f1f77bcf86cd799439011'],
-        related_products: [
-          '507f1f77bcf86cd799439012',
-          '507f1f77bcf86cd799439013',
-        ],
-      },
-    ],
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  body: zodToRouteSchema(TableRowBodyValidator),
   response: {
     201: {
       description: 'Registro criado com sucesso com relacionamentos populados',

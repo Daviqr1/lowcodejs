@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableRowShowBySlugParamsValidator } from '../_shared.validator';
 
 export const TableRowShowBySlugSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,23 +13,7 @@ export const TableRowShowBySlugSchema: FastifySchema = {
   description:
     'Resolve um registro pelo slug amigável (sharedRowSlug) e retorna o JSON do registro. A navegação (abrir /tables/:slug/row?_id=...) fica a cargo do frontend.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowSlug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela (ex: tarefas)',
-        examples: ['tarefas', 'produtos', 'blog-posts'],
-      },
-      rowSlug: {
-        type: 'string',
-        description: 'Slug amigável do registro (ex: nome-tarefa-xyz)',
-        examples: ['nome-tarefa-xyz'],
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableRowShowBySlugParamsValidator),
   response: {
     200: {
       description: 'Registro encontrado',

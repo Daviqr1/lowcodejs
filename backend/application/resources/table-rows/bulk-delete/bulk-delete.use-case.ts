@@ -8,7 +8,7 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
-import type { BulkDeletePayload } from './bulk-delete.validator';
+import type { BulkDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { deleted: number }>;
 

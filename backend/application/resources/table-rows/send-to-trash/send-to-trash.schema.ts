@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableRowParamsValidator } from '../_shared.validator';
 
 export const TableRowSendToTrashSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,23 +13,7 @@ export const TableRowSendToTrashSchema: FastifySchema = {
   description:
     'Move um registro para a lixeira definindo o timestamp trashedAt. O registro pode ser restaurado posteriormente ou excluído permanentemente.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o registro',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do registro a enviar para a lixeira',
-        examples: ['507f1f77bcf86cd799439011'],
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableRowParamsValidator),
   response: {
     200: {
       description: 'Registro enviado para a lixeira com sucesso',

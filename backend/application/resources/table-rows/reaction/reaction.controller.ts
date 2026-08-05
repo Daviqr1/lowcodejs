@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { TableRowReactionSchema } from './reaction.schema';
-import TableRowReactionUseCase from './reaction.use-case';
 import {
   TableRowReactionBodyValidator,
-  TableRowReactionParamsValidator,
-} from './reaction.validator';
+  TableRowParamsValidator,
+} from '../_shared.validator';
+
+import { TableRowReactionSchema } from './reaction.schema';
+import TableRowReactionUseCase from './reaction.use-case';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const payload = TableRowReactionBodyValidator.parse(request.body);
-    const params = TableRowReactionParamsValidator.parse(request.params);
+    const params = TableRowParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
       ...payload,
       ...params,

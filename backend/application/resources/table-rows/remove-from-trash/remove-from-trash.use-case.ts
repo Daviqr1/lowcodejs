@@ -9,7 +9,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 
-import type { TableRowRemoveFromTrashPayload } from './remove-from-trash.validator';
+import type { TableRowRemoveFromTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, IRow>;
 

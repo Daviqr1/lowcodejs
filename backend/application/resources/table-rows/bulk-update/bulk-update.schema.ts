@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  BulkUpdateBodyValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const BulkUpdateSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,37 +16,8 @@ export const BulkUpdateSchema: FastifySchema = {
   description:
     'Aplica o mesmo payload parcial `data` a múltiplos registros em uma requisição. Cada registro passa pelo fluxo de atualização individual (validação, hash de senha, script beforeSave e notificação de menções). Best-effort: registros que falham são reportados em `errors` (id -> cause) e não abortam o lote.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém os registros',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['ids', 'data'],
-    properties: {
-      ids: {
-        type: 'array',
-        items: { type: 'string' },
-        minItems: 1,
-        maxItems: 200,
-        description: 'IDs dos registros a atualizar',
-      },
-      data: {
-        type: 'object',
-        minProperties: 1,
-        additionalProperties: true,
-        description: 'Mapa parcial de campos aplicado a cada registro',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  body: zodToRouteSchema(BulkUpdateBodyValidator),
   response: {
     200: {
       description: 'Registros atualizados (best-effort)',

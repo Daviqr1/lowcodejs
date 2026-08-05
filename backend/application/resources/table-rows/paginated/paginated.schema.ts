@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableRowPaginatedQueryValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const TableRowPaginatedSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,65 +16,8 @@ export const TableRowPaginatedSchema: FastifySchema = {
   description:
     'Retorna uma lista paginada de registros de uma tabela com busca opcional e filtragem dinâmica',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela cujos registros serão listados',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      page: {
-        type: 'number',
-        minimum: 1,
-        default: 1,
-        description: 'Número da página (inicia em 1)',
-        examples: [1, 2, 5],
-      },
-      perPage: {
-        type: 'number',
-        minimum: -1,
-        maximum: 100,
-        default: 50,
-        description:
-          'Quantidade de itens por página (máx. 100). Use -1 para buscar todos os registros (sem paginação).',
-        examples: [10, 25, 50, 100, -1],
-      },
-      search: {
-        type: 'string',
-        minLength: 1,
-        description: 'Termo de busca para filtrar registros (opcional)',
-        examples: ['john', 'product', 'category'],
-      },
-      trashed: {
-        type: 'string',
-        enum: ['true', 'false'],
-        default: 'false',
-        description: 'Incluir registros na lixeira (opcional)',
-        examples: ['true', 'false'],
-      },
-      public: {
-        type: 'string',
-        enum: ['true', 'false'],
-        default: 'false',
-        description: 'Filtrar apenas por visibilidade pública (opcional)',
-        examples: ['true', 'false'],
-      },
-      excludeSelfId: {
-        type: 'string',
-        description:
-          'Auto-relacionamento: oculta o próprio registro editado da lista de candidatos (opcional). Sem efeito quando a tabela-alvo é outra.',
-      },
-    },
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  querystring: zodToRouteSchema(TableRowPaginatedQueryValidator),
   response: {
     200: {
       description: 'Lista paginada de registros da tabela',

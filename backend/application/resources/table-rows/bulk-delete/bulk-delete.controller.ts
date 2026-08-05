@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import {
+  BulkIdsBodyValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
+
 import { BulkDeleteSchema } from './bulk-delete.schema';
 import BulkDeleteUseCase from './bulk-delete.use-case';
-import {
-  BulkDeleteBodyValidator,
-  BulkDeleteParamsValidator,
-} from './bulk-delete.validator';
 
 @Controller({
   route: 'tables',
@@ -40,8 +41,8 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = BulkDeleteParamsValidator.parse(request.params);
-    const body = BulkDeleteBodyValidator.parse(request.body);
+    const params = TableSlugParamsValidator.parse(request.params);
+    const body = BulkIdsBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({
       ...params,

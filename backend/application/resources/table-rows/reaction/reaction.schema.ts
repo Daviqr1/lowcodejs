@@ -1,39 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  TableRowParamsValidator,
+  TableRowReactionBodyValidator,
+} from '../_shared.validator';
+
 export const TableRowReactionSchema: FastifySchema = {
   tags: ['Registros'],
   summary: 'Adiciona reação a um registro',
   description:
     'Adiciona ou atualiza uma reação (like/unlike) do usuário em um campo de reação de um registro. Cada usuário tem uma única reação por campo (upsert). Retorna o registro atualizado.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o registro',
-      },
-      _id: { type: 'string', description: 'ID do registro a reagir' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['type', 'field'],
-    properties: {
-      type: {
-        type: 'string',
-        enum: ['LIKE', 'UNLIKE'],
-        description: 'Tipo da reação',
-      },
-      field: {
-        type: 'string',
-        description: 'Slug do campo de reação (tipo REACTION)',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableRowParamsValidator),
+  body: zodToRouteSchema(TableRowReactionBodyValidator),
   response: {
     200: {
       description: 'Reação registrada - Retorna o registro atualizado',

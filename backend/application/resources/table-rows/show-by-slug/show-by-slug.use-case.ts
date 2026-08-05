@@ -11,7 +11,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowContextBuilderContractService } from '@application/services/table/row-context-builder-contract.service';
 
-import type { TableRowShowBySlugPayload } from './show-by-slug.validator';
+import type { TableRowShowBySlugPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, IRow>;
 

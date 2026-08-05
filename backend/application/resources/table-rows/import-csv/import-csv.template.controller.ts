@@ -12,8 +12,9 @@ import {
 } from '@application/services/csv-export/csv-export-contract.service';
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 
+import { TableSlugParamsValidator } from '../_shared.validator';
+
 import { TableRowImportCsvTemplateSchema } from './import-csv.schema';
-import { ImportCsvParamsValidator } from './import-csv.validator';
 
 @Controller({
   route: 'tables',
@@ -32,7 +33,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = ImportCsvParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const tableRepo = getInstanceByToken<TableContractRepository>(
       TableMongooseRepository,

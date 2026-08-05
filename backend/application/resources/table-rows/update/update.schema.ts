@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableRowBodyValidator,
+  TableRowParamsValidator,
+} from '../_shared.validator';
 
 export const TableRowUpdateSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,40 +16,8 @@ export const TableRowUpdateSchema: FastifySchema = {
   description:
     'Atualiza um registro existente em uma tabela com schema dinâmico baseado nos campos da tabela. Permite atualização parcial (campos não enviados mantêm o valor atual).',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o registro',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-      _id: {
-        type: 'string',
-        description: 'ID do registro a ser atualizado',
-        examples: ['507f1f77bcf86cd799439011'],
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description:
-      'Dados dinâmicos do registro baseados nos campos da tabela. As chaves correspondem aos slugs dos campos e os valores dependem dos tipos dos campos.',
-    additionalProperties: true,
-    examples: [
-      {
-        name: 'John Doe Updated',
-        email: 'john.updated@example.com',
-        age: 31,
-        active: false,
-        tags: ['senior-developer', 'typescript'],
-        profile_picture: ['507f1f77bcf86cd799439014'],
-        related_products: ['507f1f77bcf86cd799439015'],
-      },
-    ],
-  },
+  params: zodToRouteSchema(TableRowParamsValidator),
+  body: zodToRouteSchema(TableRowBodyValidator),
   response: {
     200: {
       description:

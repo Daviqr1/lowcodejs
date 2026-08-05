@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { TableSlugParamsValidator } from '../_shared.validator';
 
 export const EmptyTrashSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,17 +13,7 @@ export const EmptyTrashSchema: FastifySchema = {
   description:
     'Exclui permanentemente todos os registros que estão na lixeira de uma tabela. Operação irreversível.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
   response: {
     200: {
       description: 'Lixeira esvaziada com sucesso',

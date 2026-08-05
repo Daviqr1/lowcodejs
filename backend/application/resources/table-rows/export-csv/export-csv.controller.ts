@@ -8,12 +8,13 @@ import { CsvExportContractService } from '@application/services/csv-export/csv-e
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import {
+  TableSlugParamsValidator,
+  TableRowExportCsvQueryValidator,
+} from '../_shared.validator';
+
 import { TableRowExportCsvSchema } from './export-csv.schema';
 import TableRowExportCsvUseCase from './export-csv.use-case';
-import {
-  TableRowExportCsvParamsValidator,
-  TableRowExportCsvQueryValidator,
-} from './export-csv.validator';
 
 @Controller({
   route: 'tables',
@@ -40,7 +41,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = TableRowExportCsvParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
     const query = TableRowExportCsvQueryValidator.parse(request.query);
 
     const result = await this.useCase.execute({

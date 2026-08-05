@@ -6,13 +6,14 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { TableRowAutoSaveSchema } from './auto-save.schema';
-import TableRowAutoSaveUseCase from './auto-save.use-case';
 import {
   TableRowAutoSaveBodyValidator,
-  TableRowAutoSaveParamsValidator,
+  TableSlugParamsValidator,
   TableRowAutoSaveQueryValidator,
-} from './auto-save.validator';
+} from '../_shared.validator';
+
+import { TableRowAutoSaveSchema } from './auto-save.schema';
+import TableRowAutoSaveUseCase from './auto-save.use-case';
 @Controller({
   route: 'tables',
 })
@@ -40,7 +41,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = TableRowAutoSaveParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
     const payload = TableRowAutoSaveBodyValidator.parse(request.body);
     const query = TableRowAutoSaveQueryValidator.parse(request.query);
 

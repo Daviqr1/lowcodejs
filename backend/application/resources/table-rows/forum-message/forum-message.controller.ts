@@ -13,18 +13,19 @@ import { TableAccessMiddleware } from '@application/middlewares/table-access.mid
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
 import {
+  ForumMessageCreateBodyValidator,
+  ForumMessageParamsValidator,
+  TableRowParamsValidator,
+  ForumMessageUpdateBodyValidator,
+} from '../_shared.validator';
+
+import {
   ForumMessageCreateSchema,
   ForumMessageDeleteSchema,
   ForumMessageMentionReadSchema,
   ForumMessageUpdateSchema,
 } from './forum-message.schema';
 import ForumMessageUseCase from './forum-message.use-case';
-import {
-  ForumMessageCreateBodyValidator,
-  ForumMessageParamsValidator,
-  ForumMessageRowParamsValidator,
-  ForumMessageUpdateBodyValidator,
-} from './forum-message.validator';
 
 @Controller({
   route: 'tables',
@@ -54,7 +55,7 @@ export default class {
   })
   async create(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const body = ForumMessageCreateBodyValidator.parse(request.body);
-    const params = ForumMessageRowParamsValidator.parse(request.params);
+    const params = TableRowParamsValidator.parse(request.params);
 
     const result = await this.useCase.create({
       ...body,

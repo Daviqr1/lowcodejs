@@ -7,9 +7,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableRowParamsValidator } from '../_shared.validator';
+
 import { TableRowUpdateSchema } from './update.schema';
 import TableRowUpdateUseCase from './update.use-case';
-import { TableRowUpdateParamsValidator } from './update.validator';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
     request: FastifyRequest<{ Body: RowPayload }>,
     response: FastifyReply,
   ): Promise<void> {
-    const params = TableRowUpdateParamsValidator.parse(request.params);
+    const params = TableRowParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
       ...request.body,
       ...params,

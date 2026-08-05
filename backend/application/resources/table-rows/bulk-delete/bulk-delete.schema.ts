@@ -1,6 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  BulkIdsBodyValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const BulkDeleteSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,30 +16,8 @@ export const BulkDeleteSchema: FastifySchema = {
   description:
     'Exclui permanentemente múltiplos registros de uma tabela. Operação irreversível (hard delete).',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém os registros',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['ids'],
-    properties: {
-      ids: {
-        type: 'array',
-        items: { type: 'string' },
-        minItems: 1,
-        description: 'IDs dos registros a excluir permanentemente',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  body: zodToRouteSchema(BulkIdsBodyValidator),
   response: {
     200: {
       description: 'Registros excluídos permanentemente',

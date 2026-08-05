@@ -8,7 +8,7 @@ import { RowContractRepository } from '@application/repositories/row/row-contrac
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 
-import type { BulkRestorePayload } from './bulk-restore.validator';
+import type { BulkRestorePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, { modified: number }>;
 

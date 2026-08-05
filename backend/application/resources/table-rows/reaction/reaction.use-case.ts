@@ -10,7 +10,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowContextBuilderContractService } from '@application/services/table/row-context-builder-contract.service';
 
-import type { TableRowReactionPayload } from './reaction.validator';
+import type { TableRowReactionPayload } from '../_shared.validator';
 
 type Response = Either<
   HTTPException,

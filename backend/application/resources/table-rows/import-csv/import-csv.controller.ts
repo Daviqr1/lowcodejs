@@ -9,8 +9,9 @@ import TableMongooseRepository from '@application/repositories/table/table.repos
 import { CsvImportQueueContractService } from '@application/services/csv-import/csv-import-queue-contract.service';
 import BullMQCsvImportQueueService from '@application/services/csv-import/csv-import-queue.service';
 
+import { TableSlugParamsValidator } from '../_shared.validator';
+
 import { TableRowImportCsvSchema } from './import-csv.schema';
-import { ImportCsvParamsValidator } from './import-csv.validator';
 
 @Controller({
   route: 'tables',
@@ -38,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = ImportCsvParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const file = await request.file();
 

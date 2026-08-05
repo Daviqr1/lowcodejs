@@ -5,9 +5,8 @@ import { left, right } from '@application/core/either.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
+import type { BulkUpdatePayload } from '../_shared.validator';
 import TableRowUpdateUseCase from '../update/update.use-case';
-
-import type { BulkUpdatePayload } from './bulk-update.validator';
 
 type Result = { modified: number; errors?: Record<string, string> };
 

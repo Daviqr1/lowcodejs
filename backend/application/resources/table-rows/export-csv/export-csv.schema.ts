@@ -1,5 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  TableRowExportCsvQueryValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
+
 const ERROR_SHAPE = {
   type: 'object',
   properties: {
@@ -16,23 +23,8 @@ export const TableRowExportCsvSchema: FastifySchema = {
   description:
     'Gera um arquivo CSV (download attachment) com os registros que casam com os filtros aplicados. Restrito a MASTER e ADMINISTRATOR. Cap de 500.000 linhas por export. Colunas dinâmicas baseadas nos campos não-nativos da tabela.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-    },
-    required: ['slug'],
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      search: {
-        type: 'string',
-        description: 'Termo de busca para filtrar registros',
-      },
-    },
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  querystring: zodToRouteSchema(TableRowExportCsvQueryValidator),
   response: {
     200: {
       description: 'Arquivo CSV (download attachment)',

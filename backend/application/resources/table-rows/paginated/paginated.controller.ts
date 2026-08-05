@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import {
+  TableSlugParamsValidator,
+  TableRowPaginatedQueryValidator,
+} from '../_shared.validator';
+
 import { TableRowPaginatedSchema } from './paginated.schema';
 import TableRowPaginatedUseCase from './paginated.use-case';
-import {
-  TableRowPaginatedParamsValidator,
-  TableRowPaginatedQueryValidator,
-} from './paginated.validator';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const query = TableRowPaginatedQueryValidator.parse(request.query);
-    const params = TableRowPaginatedParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute({
       ...query,

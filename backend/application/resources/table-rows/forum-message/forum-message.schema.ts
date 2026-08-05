@@ -1,25 +1,13 @@
 import type { FastifySchema } from 'fastify';
 
-const ForumMessageBodyProperties = {
-  text: {
-    type: 'string',
-    description: 'Conteúdo HTML/texto da mensagem',
-  },
-  attachments: {
-    type: 'array',
-    items: { type: 'string' },
-    description: 'IDs de storage dos anexos',
-  },
-  mentions: {
-    type: 'array',
-    items: { type: 'string' },
-    description: 'IDs dos usuários mencionados',
-  },
-  replyTo: {
-    type: ['string', 'null'],
-    description: 'ID da mensagem respondida',
-  },
-} as const;
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  ForumMessageCreateBodyValidator,
+  ForumMessageParamsValidator,
+  ForumMessageUpdateBodyValidator,
+  TableRowParamsValidator,
+} from '../_shared.validator';
 
 const SUCCESS_RESPONSE = {
   description: 'Operação realizada - Retorna o registro atualizado',
@@ -58,20 +46,8 @@ export const ForumMessageCreateSchema: FastifySchema = {
   description:
     'Adiciona uma mensagem ao registro de uma tabela com estilo FORUM. Apenas o criador ou membros podem postar em canais privados. A mensagem deve ter texto ou pelo menos um anexo. Menções geram notificação por email.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela (canal)' },
-      _id: { type: 'string', description: 'ID do registro (canal)' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    properties: ForumMessageBodyProperties,
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableRowParamsValidator),
+  body: zodToRouteSchema(ForumMessageCreateBodyValidator),
   response: {
     200: SUCCESS_RESPONSE,
     400: {
@@ -138,21 +114,8 @@ export const ForumMessageUpdateSchema: FastifySchema = {
   description:
     'Edita uma mensagem existente do registro de uma tabela com estilo FORUM. Apenas o autor da mensagem pode editá-la. Apenas novos mencionados são notificados.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id', 'messageId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela (canal)' },
-      _id: { type: 'string', description: 'ID do registro (canal)' },
-      messageId: { type: 'string', description: 'ID da mensagem' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    properties: ForumMessageBodyProperties,
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ForumMessageParamsValidator),
+  body: zodToRouteSchema(ForumMessageUpdateBodyValidator),
   response: {
     200: SUCCESS_RESPONSE,
     400: {
@@ -223,16 +186,7 @@ export const ForumMessageDeleteSchema: FastifySchema = {
   description:
     'Remove uma mensagem do registro de uma tabela com estilo FORUM. Apenas o autor da mensagem pode excluí-la.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id', 'messageId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela (canal)' },
-      _id: { type: 'string', description: 'ID do registro (canal)' },
-      messageId: { type: 'string', description: 'ID da mensagem' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ForumMessageParamsValidator),
   response: {
     200: SUCCESS_RESPONSE,
     400: {
@@ -299,16 +253,7 @@ export const ForumMessageMentionReadSchema: FastifySchema = {
   description:
     'Marca a menção do usuário em uma mensagem de fórum como lida. O usuário deve ter sido mencionado na mensagem.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id', 'messageId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela (canal)' },
-      _id: { type: 'string', description: 'ID do registro (canal)' },
-      messageId: { type: 'string', description: 'ID da mensagem' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ForumMessageParamsValidator),
   response: {
     200: SUCCESS_RESPONSE,
     400: {

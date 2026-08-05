@@ -1,5 +1,9 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { TableSlugParamsValidator } from '../_shared.validator';
+
 const ERROR_SHAPE = {
   type: 'object',
   properties: {
@@ -26,13 +30,7 @@ export const TableRowImportCsvTemplateSchema: FastifySchema = {
   description:
     'Retorna arquivo CSV com apenas o cabeçalho (nomes dos campos importáveis). Use para preparar o arquivo de importação. Restrito a MASTER e ADMINISTRATOR.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-    },
-    required: ['slug'],
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
   response: {
     200: {
       description: 'Arquivo CSV template (download attachment)',
@@ -68,13 +66,7 @@ export const TableRowImportCsvSchema: FastifySchema = {
   description:
     'Enfileira um job de importação CSV em background. Progresso via Socket.IO namespace /csv-import, room job:{jobId}. Restrito a MASTER e ADMINISTRATOR.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: {
-      slug: { type: 'string' },
-    },
-    required: ['slug'],
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
   consumes: ['multipart/form-data'],
   response: {
     202: {

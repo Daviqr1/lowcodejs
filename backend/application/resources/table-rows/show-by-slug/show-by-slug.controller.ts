@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { TableRowShowBySlugParamsValidator } from '../_shared.validator';
+
 import { TableRowShowBySlugSchema } from './show-by-slug.schema';
 import TableRowShowBySlugUseCase from './show-by-slug.use-case';
-import { TableRowShowBySlugParamsValidator } from './show-by-slug.validator';
 
 @Controller({
   route: 'tables',

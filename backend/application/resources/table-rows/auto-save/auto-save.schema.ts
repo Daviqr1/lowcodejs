@@ -1,6 +1,15 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  TableRowAutoSaveBodyValidator,
+  TableRowAutoSaveQueryValidator,
+  TableSlugParamsValidator,
+} from '../_shared.validator';
 
 export const TableRowAutoSaveSchema: FastifySchema = {
   tags: ['Registros'],
@@ -8,35 +17,9 @@ export const TableRowAutoSaveSchema: FastifySchema = {
   description:
     'Persiste um registro parcial como rascunho (status="draft") sem disparar validações de obrigatoriedade. Quando "_id" é informado na query, atualiza o rascunho existente; caso contrário, cria um novo. Apenas o formato/tipo dos campos preenchidos é validado.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela onde o rascunho será salvo',
-        examples: ['users', 'products', 'blog-posts'],
-      },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      _id: {
-        type: 'string',
-        description:
-          'ID do rascunho existente a ser atualizado. Quando ausente, um novo rascunho é criado.',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description:
-      'Dados parciais do registro baseados nos campos da tabela. As chaves correspondem aos slugs dos campos e os valores dependem dos tipos de campo.',
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(TableSlugParamsValidator),
+  querystring: zodToRouteSchema(TableRowAutoSaveQueryValidator),
+  body: zodToRouteSchema(TableRowAutoSaveBodyValidator),
   response: {
     201: {
       description: 'Rascunho salvo com sucesso',

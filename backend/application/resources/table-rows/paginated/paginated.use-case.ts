@@ -14,7 +14,7 @@ import { RowPasswordContractService } from '@application/services/row-password/r
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 import { RowContextBuilderContractService } from '@application/services/table/row-context-builder-contract.service';
 
-import type { TableRowPaginatedPayload } from './paginated.validator';
+import type { TableRowPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<IRow>>;
 

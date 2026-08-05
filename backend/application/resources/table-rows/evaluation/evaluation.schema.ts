@@ -1,38 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  TableRowEvaluationBodyValidator,
+  TableRowParamsValidator,
+} from '../_shared.validator';
+
 export const TableRowEvaluationSchema: FastifySchema = {
   tags: ['Registros'],
   summary: 'Adiciona avaliação a um registro',
   description:
     'Adiciona ou atualiza uma avaliação numérica do usuário em um campo de avaliação de um registro. Cada usuário tem uma única avaliação por campo (upsert). Retorna o registro atualizado.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', '_id'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela que contém o registro',
-      },
-      _id: { type: 'string', description: 'ID do registro a avaliar' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['value', 'field'],
-    properties: {
-      value: {
-        type: 'number',
-        description: 'Valor numérico da avaliação',
-      },
-      field: {
-        type: 'string',
-        description: 'Slug do campo de avaliação (tipo EVALUATION)',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(TableRowParamsValidator),
+  body: zodToRouteSchema(TableRowEvaluationBodyValidator),
   response: {
     200: {
       description: 'Avaliação registrada - Retorna o registro atualizado',

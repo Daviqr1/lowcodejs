@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { BulkUpdateSchema } from './bulk-update.schema';
-import BulkUpdateUseCase from './bulk-update.use-case';
 import {
   BulkUpdateBodyValidator,
-  BulkUpdateParamsValidator,
-} from './bulk-update.validator';
+  TableSlugParamsValidator,
+} from '../_shared.validator';
+
+import { BulkUpdateSchema } from './bulk-update.schema';
+import BulkUpdateUseCase from './bulk-update.use-case';
 
 @Controller({
   route: 'tables',
@@ -40,7 +41,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = BulkUpdateParamsValidator.parse(request.params);
+    const params = TableSlugParamsValidator.parse(request.params);
     const body = BulkUpdateBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({

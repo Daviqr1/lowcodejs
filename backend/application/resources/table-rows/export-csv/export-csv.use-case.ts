@@ -16,7 +16,7 @@ import { FieldVisibilityContractService } from '@application/services/field-visi
 import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 
-import type { TableRowExportCsvPayload } from './export-csv.validator';
+import type { TableRowExportCsvPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Readable>;
 

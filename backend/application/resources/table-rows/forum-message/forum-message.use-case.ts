@@ -27,7 +27,7 @@ import type {
   ForumMessageDeletePayload,
   ForumMessageMentionReadPayload,
   ForumMessageUpdatePayload,
-} from './forum-message.validator';
+} from '../_shared.validator';
 
 type Response = Either<
   HTTPException,
