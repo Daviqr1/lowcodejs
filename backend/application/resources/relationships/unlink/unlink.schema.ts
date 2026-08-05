@@ -1,20 +1,15 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { RelationshipUnlinkParamsValidator } from '../_shared.validator';
+
 export const RelationshipUnlinkSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Desvincular registros',
   description: 'Remove um vínculo (RelationshipLink) pelo seu id.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id', 'linkId'],
-    properties: {
-      slug: { type: 'string' },
-      id: { type: 'string' },
-      linkId: { type: 'string' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipUnlinkParamsValidator),
   response: {
     204: { type: 'null', description: 'Vínculo removido' },
     400: {

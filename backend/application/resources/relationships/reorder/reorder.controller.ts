@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { RelationshipReorderSchema } from './reorder.schema';
-import RelationshipReorderUseCase from './reorder.use-case';
 import {
   RelationshipReorderBodyValidator,
-  RelationshipReorderParamsValidator,
-} from './reorder.validator';
+  RelationshipIdParamsValidator,
+} from '../_shared.validator';
+
+import { RelationshipReorderSchema } from './reorder.schema';
+import RelationshipReorderUseCase from './reorder.use-case';
 
 @Controller({
   route: 'tables',
@@ -38,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = RelationshipReorderParamsValidator.parse(request.params);
+    const params = RelationshipIdParamsValidator.parse(request.params);
     const body = RelationshipReorderBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({ ...params, ...body });

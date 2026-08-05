@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { RelationshipUnlinkParamsValidator } from '../_shared.validator';
+
 import { RelationshipUnlinkSchema } from './unlink.schema';
 import RelationshipUnlinkUseCase from './unlink.use-case';
-import { RelationshipUnlinkParamsValidator } from './unlink.validator';
 
 @Controller({
   route: 'tables',

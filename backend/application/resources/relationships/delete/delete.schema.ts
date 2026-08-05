@@ -1,20 +1,16 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { RelationshipIdParamsValidator } from '../_shared.validator';
+
 export const RelationshipDeleteSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Excluir definição de relacionamento',
   description:
     'Faz soft-delete da RelationshipDefinition e remove todos os seus vínculos.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id'],
-    properties: {
-      slug: { type: 'string' },
-      id: { type: 'string' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipIdParamsValidator),
   response: {
     204: { type: 'null', description: 'Definição excluída' },
     404: {

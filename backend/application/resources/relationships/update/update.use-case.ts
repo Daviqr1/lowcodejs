@@ -7,7 +7,7 @@ import HTTPException from '@application/core/exception.core';
 import { RelationshipDefinitionContractRepository } from '@application/repositories/relationship-definition/relationship-definition-contract.repository';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 
-import type { RelationshipUpdatePayload } from './update.validator';
+import type { RelationshipUpdatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, IRelationshipDefinition>;
 

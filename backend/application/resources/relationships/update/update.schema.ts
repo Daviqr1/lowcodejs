@@ -1,45 +1,19 @@
 import type { FastifySchema } from 'fastify';
 
-const endpoint = {
-  type: 'object',
-  properties: {
-    table: {
-      type: 'object',
-      properties: { _id: { type: 'string' }, slug: { type: 'string' } },
-    },
-    field: {
-      type: 'object',
-      properties: { _id: { type: 'string' }, slug: { type: 'string' } },
-    },
-    visible: { type: 'boolean' },
-    label: { type: 'string' },
-  },
-};
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  RelationshipIdParamsValidator,
+  RelationshipUpdateBodyValidator,
+} from '../_shared.validator';
 
 export const RelationshipUpdateSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Atualizar definição de relacionamento',
   description: 'Atualiza name, endpoints (source/target) ou onDelete.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id'],
-    properties: {
-      slug: { type: 'string' },
-      id: { type: 'string' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-      source: endpoint,
-      target: endpoint,
-      onDelete: { type: 'string', enum: ['CASCADE', 'SET_NULL', 'RESTRICT'] },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipIdParamsValidator),
+  body: zodToRouteSchema(RelationshipUpdateBodyValidator),
   response: {
     200: { type: 'object', additionalProperties: true },
     404: {

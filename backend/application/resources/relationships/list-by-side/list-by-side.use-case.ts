@@ -10,7 +10,7 @@ import { HttpResponseContractService } from '@application/services/http-response
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 
-import type { RelationshipListBySidePayload } from './list-by-side.validator';
+import type { RelationshipListBySidePayload } from '../_shared.validator';
 
 type ListResult = { data: IRelationshipLink[]; meta: IMeta };
 type Response = Either<HTTPException, ListResult>;

@@ -1,38 +1,19 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  RelationshipIdParamsValidator,
+  RelationshipReorderBodyValidator,
+} from '../_shared.validator';
+
 export const RelationshipReorderSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Reordenar vínculos',
   description: 'Atualiza o `order` dos vínculos no lado múltiplo.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id'],
-    properties: {
-      slug: { type: 'string' },
-      id: { type: 'string' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['items'],
-    properties: {
-      items: {
-        type: 'array',
-        minItems: 1,
-        items: {
-          type: 'object',
-          required: ['linkId', 'order'],
-          properties: {
-            linkId: { type: 'string' },
-            order: { type: 'number', minimum: 0 },
-          },
-        },
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipIdParamsValidator),
+  body: zodToRouteSchema(RelationshipReorderBodyValidator),
   response: {
     204: { type: 'null', description: 'Reordenado' },
     400: {

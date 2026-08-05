@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { RelationshipIdParamsValidator } from '../_shared.validator';
+
 import { RelationshipDeleteSchema } from './delete.schema';
 import RelationshipDeleteUseCase from './delete.use-case';
-import { RelationshipDeleteParamsValidator } from './delete.validator';
 
 @Controller({
   route: 'tables',
@@ -35,7 +36,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = RelationshipDeleteParamsValidator.parse(request.params);
+    const params = RelationshipIdParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute(params);
 

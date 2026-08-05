@@ -7,7 +7,7 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 import { RelationshipBuilderContractService } from '@application/services/table/relationship-builder-contract.service';
 
-import type { RelationshipUnlinkPayload } from './unlink.validator';
+import type { RelationshipUnlinkPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 

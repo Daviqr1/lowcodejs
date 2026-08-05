@@ -1,31 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  RelationshipIdParamsValidator,
+  RelationshipLinkBodyValidator,
+} from '../_shared.validator';
+
 export const RelationshipLinkSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Vincular registros',
   description:
     'Cria um vínculo (RelationshipLink) entre dois registros, pelos dois lados. `side` indica qual lado é a tabela do `:slug`; `recordId` é o registro deste lado e `otherId` o do outro. Aplica as regras de cardinalidade (canLink).',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela do lado atual' },
-      id: { type: 'string', description: 'ID da RelationshipDefinition' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['side', 'recordId', 'otherId'],
-    properties: {
-      side: { type: 'string', enum: ['source', 'target'] },
-      recordId: { type: 'string' },
-      otherId: { type: 'string' },
-      metadata: { type: 'object', nullable: true, additionalProperties: true },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipIdParamsValidator),
+  body: zodToRouteSchema(RelationshipLinkBodyValidator),
   response: {
     201: {
       description: 'Vínculo criado',

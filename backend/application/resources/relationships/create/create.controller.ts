@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { RelationshipCreateSchema } from './create.schema';
-import RelationshipCreateUseCase from './create.use-case';
 import {
   RelationshipCreateBodyValidator,
-  RelationshipCreateParamsValidator,
-} from './create.validator';
+  RelationshipSlugParamsValidator,
+} from '../_shared.validator';
+
+import { RelationshipCreateSchema } from './create.schema';
+import RelationshipCreateUseCase from './create.use-case';
 
 @Controller({
   route: 'tables',
@@ -38,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = RelationshipCreateParamsValidator.parse(request.params);
+    const params = RelationshipSlugParamsValidator.parse(request.params);
     const body = RelationshipCreateBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({ ...params, ...body });

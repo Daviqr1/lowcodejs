@@ -1,29 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-const endpoint = {
-  type: 'object',
-  required: ['table', 'field', 'visible', 'label'],
-  properties: {
-    table: {
-      type: 'object',
-      required: ['_id', 'slug'],
-      properties: {
-        _id: { type: 'string' },
-        slug: { type: 'string' },
-      },
-    },
-    field: {
-      type: 'object',
-      required: ['_id', 'slug'],
-      properties: {
-        _id: { type: 'string' },
-        slug: { type: 'string' },
-      },
-    },
-    visible: { type: 'boolean' },
-    label: { type: 'string' },
-  },
-};
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  RelationshipCreateBodyValidator,
+  RelationshipSlugParamsValidator,
+} from '../_shared.validator';
 
 export const RelationshipCreateSchema: FastifySchema = {
   tags: ['Relacionamentos'],
@@ -31,28 +13,8 @@ export const RelationshipCreateSchema: FastifySchema = {
   description:
     'Cria uma RelationshipDefinition (fonte de verdade do vínculo) entre dois lados (source/target). A cardinalidade é derivada do field.multiple de cada lado.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela de origem (lado de onde se configura)',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['source', 'target', 'onDelete'],
-    properties: {
-      name: { type: 'string' },
-      source: endpoint,
-      target: endpoint,
-      onDelete: { type: 'string', enum: ['CASCADE', 'SET_NULL', 'RESTRICT'] },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipSlugParamsValidator),
+  body: zodToRouteSchema(RelationshipCreateBodyValidator),
   response: {
     201: {
       description: 'Definição criada',

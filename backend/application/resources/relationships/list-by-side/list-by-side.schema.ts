@@ -1,31 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  RelationshipIdParamsValidator,
+  RelationshipListBySideQueryValidator,
+} from '../_shared.validator';
+
 export const RelationshipListBySideSchema: FastifySchema = {
   tags: ['Relacionamentos'],
   summary: 'Listar vínculos por lado',
   description:
     'Lista paginada dos vínculos de um registro num lado (source/target). Alimenta a tabela interna de gestão do detalhe.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'id'],
-    properties: {
-      slug: { type: 'string' },
-      id: { type: 'string' },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    required: ['side', 'recordId'],
-    properties: {
-      side: { type: 'string', enum: ['source', 'target'] },
-      recordId: { type: 'string' },
-      page: { type: 'number', minimum: 1 },
-      perPage: { type: 'number', minimum: 1, maximum: 100 },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(RelationshipIdParamsValidator),
+  querystring: zodToRouteSchema(RelationshipListBySideQueryValidator),
   response: {
     200: {
       type: 'object',

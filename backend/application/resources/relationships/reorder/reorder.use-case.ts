@@ -7,7 +7,7 @@ import { RelationshipDefinitionContractRepository } from '@application/repositor
 import { RelationshipLinkContractRepository } from '@application/repositories/relationship-link/relationship-link-contract.repository';
 import { RelationshipContractService } from '@application/services/relationship/relationship-contract.service';
 
-import type { RelationshipReorderPayload } from './reorder.validator';
+import type { RelationshipReorderPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 

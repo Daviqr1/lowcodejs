@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { RelationshipLinkSchema } from './link.schema';
-import RelationshipLinkUseCase from './link.use-case';
 import {
   RelationshipLinkBodyValidator,
-  RelationshipLinkParamsValidator,
-} from './link.validator';
+  RelationshipIdParamsValidator,
+} from '../_shared.validator';
+
+import { RelationshipLinkSchema } from './link.schema';
+import RelationshipLinkUseCase from './link.use-case';
 
 @Controller({
   route: 'tables',
@@ -38,7 +39,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = RelationshipLinkParamsValidator.parse(request.params);
+    const params = RelationshipIdParamsValidator.parse(request.params);
     const body = RelationshipLinkBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({ ...params, ...body });
