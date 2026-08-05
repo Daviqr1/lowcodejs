@@ -61,9 +61,9 @@ const SYSTEM_ITEMS: Array<CapabilityMenuItem> = [
   },
 ];
 
-const LOG_ITEMS: Array<MenuItem> = [
-  { title: 'Histórico de ações', url: '/logs', icon: HistoryIcon },
-  { title: 'Histórico de erros', url: '/error-logs', icon: TriangleAlertIcon },
+const HISTORY_ITEMS: Array<MenuItem> = [
+  { title: 'Ações dos usuários', url: '/logs', icon: HistoryIcon },
+  { title: 'Erros do sistema', url: '/error-logs', icon: TriangleAlertIcon },
 ];
 
 // Monta os menus estaticos a partir das capacidades resolvidas do usuario, nao
@@ -84,7 +84,7 @@ export const getStaticMenusByCapabilities = (
     before: [],
     after: [
       { title: 'Sistema', items },
-      { title: 'Logs', items: LOG_ITEMS },
+      { title: 'Histórico', items: HISTORY_ITEMS },
       {
         title: 'Conta',
         items: [{ title: 'Perfil', url: '/profile', icon: UserIcon }],
