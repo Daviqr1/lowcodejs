@@ -40,7 +40,7 @@ export default class EvaluationMongooseRepository
     user: string,
     options?: FindOptions,
   ): Promise<IEvaluation | null> {
-    const where = this.trashedClause({ _id, user }, options);
+    const where = this.trashedClause({ _id, user }, options, false);
 
     const evaluation = await Model.findOne(where).populate(
       this.populateOptions,
