@@ -6,8 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { ErrorLogPaginatedQueryValidator } from '../_shared.validator';
+
+import { ErrorLogPaginatedSchema } from './paginated.schema';
 import ErrorLogPaginatedUseCase from './paginated.use-case';
-import { ErrorLogPaginatedQueryValidator } from './paginated.validator';
 
 @Controller({
   route: '/error-logs',
@@ -28,6 +30,7 @@ export default class {
         AuthenticationMiddleware({ optional: false }),
         RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
       ],
+      schema: ErrorLogPaginatedSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

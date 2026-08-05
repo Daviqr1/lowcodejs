@@ -10,7 +10,7 @@ import {
 } from '@application/repositories/error-log/error-log-contract.repository';
 import { HttpResponseContractService } from '@application/services/http-response/http-response-contract.service';
 
-import type { ErrorLogPaginatedPayload } from './paginated.validator';
+import type { ErrorLogPaginatedPayload } from '../_shared.validator';
 
 type Meta = {
   total: number;

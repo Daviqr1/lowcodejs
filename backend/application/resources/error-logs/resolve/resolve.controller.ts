@@ -6,11 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { RoleMiddleware } from '@application/middlewares/role.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import ErrorLogResolveUseCase from './resolve.use-case';
 import {
   ErrorLogResolveBodyValidator,
   ErrorLogResolveParamsValidator,
-} from './resolve.validator';
+} from '../_shared.validator';
+
+import { ErrorLogResolveSchema } from './resolve.schema';
+import ErrorLogResolveUseCase from './resolve.use-case';
 
 @Controller({
   route: '/error-logs',
@@ -31,6 +33,7 @@ export default class {
         AuthenticationMiddleware({ optional: false }),
         RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
       ],
+      schema: ErrorLogResolveSchema,
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {

@@ -2,6 +2,8 @@ import z from 'zod';
 
 import { PaginationQueryValidator } from '@application/core/validator.core';
 
+/** Entrada da fatia `error-logs`. Fonte unica dos `*.schema.ts`. */
+
 export const ErrorLogPaginatedQueryValidator = PaginationQueryValidator.extend({
   search: z.string().trim().optional(),
   // CSV de status HTTP (ex.: "404,500") — filtra por vários de uma vez.
@@ -21,3 +23,16 @@ export const ErrorLogPaginatedQueryValidator = PaginationQueryValidator.extend({
 export type ErrorLogPaginatedPayload = z.infer<
   typeof ErrorLogPaginatedQueryValidator
 >;
+
+export const ErrorLogResolveParamsValidator = z.object({
+  id: z.string({ message: 'O ID é obrigatório' }).min(1, 'O ID é obrigatório'),
+});
+
+export const ErrorLogResolveBodyValidator = z.object({
+  resolved: z.boolean({ message: 'O campo resolved é obrigatório' }),
+});
+
+export type ErrorLogResolveParams = z.infer<
+  typeof ErrorLogResolveParamsValidator
+>;
+export type ErrorLogResolveBody = z.infer<typeof ErrorLogResolveBodyValidator>;
