@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import AjvCompiler, { type BuildCompilerFromPool } from '@fastify/ajv-compiler';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
@@ -46,13 +47,60 @@ function registerAjvErrors(
   return ajv(instance);
 }
 
+const AJV_OPTIONS = {
+  customOptions: {
+    allErrors: true, // Retorna todos os erros, não só o primeiro
+  },
+  plugins: [registerAjvErrors],
+};
+
+/**
+ * O Fastify entrega ao compilador a definicao da rota, nao o schema cru — e o
+ * `httpPart` dela e o que separa o que chega tipado do que chega como texto.
+ * O tipo publico do `@fastify/ajv-compiler` declara so `AnySchema`, entao a
+ * checagem e feita na mao.
+ */
+function isBodyPart(definition: object | boolean): boolean {
+  if (typeof definition !== 'object') return false;
+  if (!('httpPart' in definition)) return false;
+  return definition.httpPart === 'body';
+}
+
+/**
+ * Dois compiladores, um por natureza da entrada.
+ *
+ * `querystring`, `params` e `headers` chegam sempre como texto: sem coercao,
+ * `?page=2` nunca casaria com `z.number()`. Ja o **body e JSON** — o tipo vem no
+ * proprio dado, e coagir ali so destroi informacao. Como os schemas de rota
+ * passaram a ser derivados do Zod (`zodToRouteSchema`), `.nullable()` virou
+ * `anyOf: [{type:'X'},{type:'null'}]`: o AJV casa o primeiro ramo coagindo
+ * `null` para `""`/`0`, e `coerceTypes: 'array'` ainda desembrulha `["a"]` em
+ * `"a"` para casar uniao com ramo escalar. O `null` de um campo que e ObjectId
+ * no Mongoose chegava como `""` e estourava CastError -> 500.
+ *
+ * O `.parse()` Zod do controller ja recusaria o valor nao coagido, entao
+ * desligar a coercao no body alinha as duas camadas em vez de afrouxar alguma.
+ */
+const buildValidatorCompiler: BuildCompilerFromPool = (externalSchemas) => {
+  const compilerFromPool = AjvCompiler();
+
+  const compileRest = compilerFromPool(externalSchemas, AJV_OPTIONS);
+  const compileBody = compilerFromPool(externalSchemas, {
+    ...AJV_OPTIONS,
+    customOptions: { ...AJV_OPTIONS.customOptions, coerceTypes: false },
+  });
+
+  return (definition, meta) => {
+    if (isBodyPart(definition)) return compileBody(definition, meta);
+    return compileRest(definition, meta);
+  };
+};
+
 const kernel = fastify<Server>({
   logger: false,
-  ajv: {
-    customOptions: {
-      allErrors: true, // Retorna todos os erros, não só o primeiro
-    },
-    plugins: [registerAjvErrors],
+  ajv: AJV_OPTIONS,
+  schemaController: {
+    compilersFactory: { buildValidator: buildValidatorCompiler },
   },
 });
 

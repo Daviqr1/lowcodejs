@@ -97,15 +97,20 @@ describe('E2E Table Field Delete Category Controller', () => {
       const { cookies, user } = await createAuthenticatedUser();
       const { field, table } = await makeDocumentTableWithCategory(user._id);
 
-      await supertest(kernel.server)
+      // O status das duas criacoes precisa ser afirmado: sem isso, um 400 aqui
+      // deixa a tabela vazia e a falha so aparece la embaixo, no `untouched`.
+      const linked = await supertest(kernel.server)
         .post(`/tables/${table.slug}/rows`)
         .set('Cookie', cookies)
         .send({ categorias: ['a1'] });
 
-      await supertest(kernel.server)
+      const kept = await supertest(kernel.server)
         .post(`/tables/${table.slug}/rows`)
         .set('Cookie', cookies)
         .send({ categorias: ['b'] });
+
+      expect(linked.statusCode).toBe(201);
+      expect(kept.statusCode).toBe(201);
 
       const response = await supertest(kernel.server)
         .delete(
