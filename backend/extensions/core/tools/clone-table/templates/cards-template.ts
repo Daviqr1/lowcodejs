@@ -1,4 +1,4 @@
-import { E_TABLE_STYLE, type IField } from '@application/core/entity.core';
+import { E_TABLE_STYLE } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 
 import type { CloneTableDeps } from '../clone-table.types';
@@ -20,13 +20,7 @@ export const CARDS_TEMPLATE: TableTemplateDescriptor = {
 
 export async function buildCardsFields(
   fieldRepository: FieldContractRepository,
-): Promise<{
-  fields: IField[];
-  orderList: string[];
-  orderForm: string[];
-  orderFilter: string[];
-  orderDetail: string[];
-}> {
+): Promise<TemplateFieldSet> {
   const base = await buildSimpleMediaFields(fieldRepository);
   return {
     fields: [...base.fields],

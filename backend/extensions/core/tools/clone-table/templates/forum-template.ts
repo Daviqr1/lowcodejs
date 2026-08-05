@@ -4,7 +4,6 @@ import {
   E_FIELD_TYPE,
   E_TABLE_STYLE,
   type IField,
-  type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
@@ -18,6 +17,7 @@ import type {
   TemplateFieldSet,
   TemplateSeedContext,
 } from './table-template-contract.service';
+import { createTemplateField } from './template-field-helper';
 
 export const FORUM_TEMPLATE: TableTemplateDescriptor = {
   description: 'Forum com canais e mensagens',
@@ -105,80 +105,29 @@ export const FORUM_TEMPLATE: TableTemplateDescriptor = {
 export async function buildForumFields(
   fieldRepository: FieldContractRepository,
   schemaBuilder: SchemaBuilderContractService,
-): Promise<{
-  fields: IField[];
-  groups: IGroupConfiguration[];
-  orderList: string[];
-  orderForm: string[];
-  orderFilter: string[];
-  orderDetail: string[];
-}> {
+): Promise<TemplateFieldSet> {
   const createdFields: IField[] = [];
 
-  const createField = async (payload: {
-    name: string;
-    slug: string;
-    type: IField['type'];
-    required: boolean;
-    multiple: boolean;
-    format: IField['format'];
-    permissions: IFieldPermissions;
-    showInFilter: boolean;
-    defaultValue: IField['defaultValue'];
-    locked: boolean;
-    relationship: IField['relationship'];
-    dropdown: IField['dropdown'];
-    category: IField['category'];
-    group: IField['group'];
-    widthInForm: IField['widthInForm'];
-    widthInList: IField['widthInList'];
-    widthInDetail: IField['widthInDetail'];
-  }): Promise<IField> => {
-    const field = await fieldRepository.create({
-      ...payload,
-    });
-    createdFields.push(field);
-    return field;
-  };
+  const createField = createTemplateField(fieldRepository, createdFields);
 
   const channelField = await createField({
     name: 'Canal',
     slug: 'canal',
     type: E_FIELD_TYPE.TEXT_SHORT,
     required: true,
-    multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const channelDescriptionField = await createField({
     name: 'Descrição',
     slug: 'descricao',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    widthInForm: 100,
-    widthInList: 100,
-    widthInDetail: null,
   });
 
   const channelPrivacyField = await createField({
@@ -186,62 +135,33 @@ export async function buildForumFields(
     slug: 'privacidade',
     type: E_FIELD_TYPE.DROPDOWN,
     required: true,
-    multiple: false,
-    format: null,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
     dropdown: [
       { id: 'publico', label: 'Público', color: '#22c55e' },
       { id: 'privado', label: 'Privado', color: '#ef4444' },
     ],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const channelMembersField = await createField({
     name: 'Membros',
     slug: 'membros',
     type: E_FIELD_TYPE.USER,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    widthInForm: 100,
-    widthInList: 100,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Membros notificados',
     slug: 'membros-notificados',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const messagesGroupSlug = 'mensagens';
@@ -497,20 +417,9 @@ export async function buildForumFields(
     name: 'Mensagens',
     slug: messagesGroupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, false, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
     group: { slug: messagesGroupSlug },
-    widthInForm: 100,
-    widthInList: 100,
-    widthInDetail: null,
   });
 
   const groups = [messagesGroup];

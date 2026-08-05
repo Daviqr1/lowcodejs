@@ -4,7 +4,6 @@ import {
   E_FIELD_TYPE,
   E_TABLE_STYLE,
   type IField,
-  type IFieldPermissions,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
@@ -17,6 +16,7 @@ import type {
   TableTemplateDescriptor,
   TemplateFieldSet,
 } from './table-template-contract.service';
+import { createTemplateField } from './template-field-helper';
 
 export const KANBAN_TEMPLATE: TableTemplateDescriptor = {
   description: 'Kanban de tarefas',
@@ -137,220 +137,104 @@ export const KANBAN_TEMPLATE: TableTemplateDescriptor = {
 export async function buildKanbanFields(
   fieldRepository: FieldContractRepository,
   schemaBuilder: SchemaBuilderContractService,
-): Promise<{
-  fields: IField[];
-  groups: IGroupConfiguration[];
-  orderList: string[];
-  orderForm: string[];
-  orderFilter: string[];
-  orderDetail: string[];
-}> {
+): Promise<TemplateFieldSet> {
   const createdFields: IField[] = [];
 
-  const createField = async (payload: {
-    name: string;
-    slug: string;
-    type: IField['type'];
-    required: boolean;
-    multiple: boolean;
-    format: IField['format'];
-    permissions: IFieldPermissions;
-    showInFilter: boolean;
-    defaultValue: IField['defaultValue'];
-    locked: boolean;
-    relationship: IField['relationship'];
-    dropdown: IField['dropdown'];
-    category: IField['category'];
-    group: IField['group'];
-    widthInForm: IField['widthInForm'];
-    widthInList: IField['widthInList'];
-    widthInDetail: IField['widthInDetail'];
-  }): Promise<IField> => {
-    const field = await fieldRepository.create({
-      ...payload,
-    });
-    createdFields.push(field);
-    return field;
-  };
+  const createField = createTemplateField(fieldRepository, createdFields);
 
   const titleField = await createField({
     name: 'Título',
     slug: 'titulo',
     type: E_FIELD_TYPE.TEXT_SHORT,
     required: true,
-    multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const descriptionField = await createField({
     name: 'Descrição',
     slug: 'descricao',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.RICH_TEXT,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const membersField = await createField({
     name: 'Membros',
     slug: 'membros',
     type: E_FIELD_TYPE.USER,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Membros notificados',
     slug: 'membros-notificados',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Conclusão notificada',
     slug: 'concluido-notificado',
     type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Status anterior',
     slug: 'status-anterior',
     type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const dueDateField = await createField({
     name: 'Data de vencimento',
     slug: 'data-de-vencimento',
     type: E_FIELD_TYPE.DATE,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.DD_MM_YYYY,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const startDateField = await createField({
     name: 'Data de início',
     slug: 'data-de-inicio',
     type: E_FIELD_TYPE.DATE,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.DD_MM_YYYY,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const progressField = await createField({
     name: 'Porcentagem concluída',
     slug: 'porcentagem-concluida',
     type: E_FIELD_TYPE.TEXT_SHORT,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.DECIMAL,
     permissions: buildFieldPermissions(true, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const listField = await createField({
@@ -358,23 +242,15 @@ export async function buildKanbanFields(
     slug: 'lista',
     type: E_FIELD_TYPE.DROPDOWN,
     required: true,
-    multiple: false,
-    format: null,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
     dropdown: [
       { id: 'todo', label: 'A Fazer', color: '#ef4444' },
       { id: 'doing', label: 'Fazendo', color: '#f59e0b' },
       { id: 'done', label: 'Feito', color: '#22c55e' },
     ],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const attachmentsGroupSlug = 'anexos';
@@ -638,60 +514,33 @@ export async function buildKanbanFields(
     name: 'Anexos',
     slug: attachmentsGroupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
     group: { slug: attachmentsGroupSlug },
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const tasksGroupField = await createField({
     name: 'Tarefas',
     slug: tasksGroupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
     group: { slug: tasksGroupSlug },
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const commentsGroupField = await createField({
     name: 'Comentários',
     slug: commentsGroupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
     group: { slug: commentsGroupSlug },
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   const groups = [attachmentsGroup, tasksGroup, commentsGroup];

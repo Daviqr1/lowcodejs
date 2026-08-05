@@ -4,8 +4,6 @@ import {
   E_FIELD_TYPE,
   E_TABLE_STYLE,
   type IField,
-  type IFieldPermissions,
-  type IGroupConfiguration,
 } from '@application/core/entity.core';
 import type { FieldContractRepository } from '@application/repositories/field/field-contract.repository';
 import type { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
@@ -17,6 +15,7 @@ import type {
   TableTemplateDescriptor,
   TemplateFieldSet,
 } from './table-template-contract.service';
+import { createTemplateField } from './template-field-helper';
 
 export const CALENDAR_TEMPLATE: TableTemplateDescriptor = {
   description: 'Calendário de agendamentos',
@@ -115,80 +114,31 @@ export const CALENDAR_TEMPLATE: TableTemplateDescriptor = {
 export async function buildCalendarFields(
   fieldRepository: FieldContractRepository,
   schemaBuilder: SchemaBuilderContractService,
-): Promise<{
-  fields: IField[];
-  groups: IGroupConfiguration[];
-  orderList: string[];
-  orderForm: string[];
-  orderFilter: string[];
-  orderDetail: string[];
-}> {
+): Promise<TemplateFieldSet> {
   const createdFields: IField[] = [];
 
-  const createField = async (payload: {
-    name: string;
-    slug: string;
-    type: IField['type'];
-    required: boolean;
-    multiple: boolean;
-    format: IField['format'];
-    permissions: IFieldPermissions;
-    showInFilter: boolean;
-    defaultValue: IField['defaultValue'];
-    locked: boolean;
-    relationship: IField['relationship'];
-    dropdown: IField['dropdown'];
-    category: IField['category'];
-    group: IField['group'];
-    widthInForm: IField['widthInForm'];
-    widthInList: IField['widthInList'];
-    widthInDetail: IField['widthInDetail'];
-  }): Promise<IField> => {
-    const field = await fieldRepository.create({
-      ...payload,
-    });
-    createdFields.push(field);
-    return field;
-  };
+  const createField = createTemplateField(fieldRepository, createdFields);
 
   const titleField = await createField({
     name: 'Título',
     slug: 'titulo',
     type: E_FIELD_TYPE.TEXT_SHORT,
     required: true,
-    multiple: false,
     format: E_FIELD_FORMAT.ALPHA_NUMERIC,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const descriptionField = await createField({
     name: 'Descrição',
     slug: 'descricao',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    widthInForm: 100,
-    widthInList: 100,
-    widthInDetail: null,
   });
 
   const startField = await createField({
@@ -196,19 +146,12 @@ export async function buildCalendarFields(
     slug: 'data-inicio',
     type: E_FIELD_TYPE.DATE,
     required: true,
-    multiple: false,
     format: E_FIELD_FORMAT.YYYY_MM_DD_HH_MM_SS_DASH,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const endField = await createField({
@@ -216,33 +159,21 @@ export async function buildCalendarFields(
     slug: 'data-termino',
     type: E_FIELD_TYPE.DATE,
     required: true,
-    multiple: false,
     format: E_FIELD_FORMAT.YYYY_MM_DD_HH_MM_SS_DASH,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const colorField = await createField({
     name: 'Cor',
     slug: 'cor',
     type: E_FIELD_TYPE.DROPDOWN,
-    required: false,
-    multiple: false,
-    format: null,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
     locked: false,
-    relationship: null,
     dropdown: [
       { id: 'azul', label: 'Azul', color: '#2563eb' },
       { id: 'verde', label: 'Verde', color: '#16a34a' },
@@ -251,71 +182,39 @@ export async function buildCalendarFields(
       { id: 'roxo', label: 'Roxo', color: '#7c3aed' },
       { id: 'cinza', label: 'Cinza', color: '#6b7280' },
     ],
-    category: [],
-    group: null,
     widthInForm: 50,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   const participantsField = await createField({
     name: 'Participantes',
     slug: 'participantes',
     type: E_FIELD_TYPE.USER,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(true, true, true),
     showInFilter: true,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
-    widthInForm: 100,
     widthInList: 50,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Participantes notificados',
     slug: 'participantes-notificados',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   await createField({
     name: 'Datas anteriores',
     slug: 'datas-anteriores',
     type: E_FIELD_TYPE.TEXT_LONG,
-    required: false,
-    multiple: false,
     format: E_FIELD_FORMAT.PLAIN_TEXT,
     permissions: buildFieldPermissions(false, false, false),
-    showInFilter: false,
-    defaultValue: null,
-    locked: true,
-    relationship: null,
-    dropdown: [],
-    category: [],
-    group: null,
     widthInForm: null,
     widthInList: null,
-    widthInDetail: null,
   });
 
   // Sub-fields for "Lembrete" group
@@ -387,20 +286,11 @@ export async function buildCalendarFields(
     name: 'Lembrete',
     slug: reminderGroupSlug,
     type: E_FIELD_TYPE.FIELD_GROUP,
-    required: false,
     multiple: true,
-    format: null,
     permissions: buildFieldPermissions(false, true, true),
-    showInFilter: false,
-    defaultValue: null,
     locked: false,
-    relationship: null,
-    dropdown: [],
-    category: [],
     group: { slug: reminderGroupSlug },
-    widthInForm: 100,
     widthInList: null,
-    widthInDetail: null,
   });
 
   return {
