@@ -1,10 +1,7 @@
 import z from 'zod';
 
 import type { Merge } from '@application/core/entity.core';
-import {
-  PaginationQueryValidator,
-  PerPageValidator,
-} from '@application/core/validator.core';
+import { pagination, perPage } from '@application/resources/_shared.validator';
 
 /**
  * Entrada da fatia `notifications`. Fonte unica — os `*.schema.ts` derivam
@@ -19,19 +16,18 @@ export const NotificationIdentifierParamsValidator = z.object({
     .min(1, 'O ID é obrigatório'),
 });
 
-export const NotificationPaginatedQueryValidator =
-  PaginationQueryValidator.extend({
-    perPage: PerPageValidator.default(20),
-    unreadOnly: z
-      .preprocess(
-        (value) => {
-          if (typeof value === 'boolean') return String(value);
-          return value;
-        },
-        z.enum(['true', 'false']).transform((value) => value === 'true'),
-      )
-      .optional(),
-  });
+export const NotificationPaginatedQueryValidator = pagination().extend({
+  perPage: perPage().default(20),
+  unreadOnly: z
+    .preprocess(
+      (value) => {
+        if (typeof value === 'boolean') return String(value);
+        return value;
+      },
+      z.enum(['true', 'false']).transform((value) => value === 'true'),
+    )
+    .optional(),
+});
 
 /** Escopo do dono, injetado pelo controller a partir da sessao. */
 export type NotificationPaginatedPayload = Merge<

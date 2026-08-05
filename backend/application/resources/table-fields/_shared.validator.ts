@@ -14,7 +14,7 @@ import {
   NAME_MAX_LENGTH,
   SLUG_MAX_LENGTH,
 } from '@application/core/field-rules.core';
-import { SlugIdParamsValidator } from '@application/core/validator.core';
+import { slugIdParams } from '@application/resources/_shared.validator';
 
 /**
  * Entrada da fatia `table-fields`. Fonte unica — os `*.schema.ts` derivam daqui
@@ -23,7 +23,7 @@ import { SlugIdParamsValidator } from '@application/core/validator.core';
  * Absorve o antigo `table-field-base.schema.ts`, que ja era este arquivo com
  * nome enganoso: guardava blocos Zod de entrada, nao schema de resposta.
  *
- * Cinco operacoes so apelidavam o `SlugIdParamsValidator` do core; o apelido
+ * Cinco operacoes so apelidavam o `slugIdParams()` do core; o apelido
  * some e elas passam a usar o bloco direto.
  */
 
@@ -33,7 +33,7 @@ export const TableSlugParamsValidator = z.object({
 });
 
 /** `:slug` + `:_id`: tabela + campo. Vem do core, reexportado pela fatia. */
-export const TableFieldParamsValidator = SlugIdParamsValidator;
+export const TableFieldParamsValidator = slugIdParams();
 
 export type TableFieldShowPayload = z.infer<typeof TableFieldParamsValidator>;
 export type TableFieldSendToTrashPayload = z.infer<
@@ -358,10 +358,9 @@ export type TableFieldAddCategoryPayload = Merge<
   z.infer<typeof TableFieldAddCategoryBodyValidator>
 >;
 
-export const TableFieldDeleteCategoryParamsValidator =
-  SlugIdParamsValidator.extend({
-    categoryId: z.string().trim().min(1),
-  });
+export const TableFieldDeleteCategoryParamsValidator = slugIdParams().extend({
+  categoryId: z.string().trim().min(1),
+});
 
 export type TableFieldDeleteCategoryPayload = z.infer<
   typeof TableFieldDeleteCategoryParamsValidator

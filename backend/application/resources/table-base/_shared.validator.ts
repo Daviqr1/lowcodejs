@@ -7,10 +7,7 @@ import {
   E_TABLE_STYLE,
   type Merge,
 } from '@application/core/entity.core';
-import {
-  BulkIdsValidator,
-  PaginationQueryValidator,
-} from '@application/core/validator.core';
+import { bulkIds, pagination } from '@application/resources/_shared.validator';
 import SlugService from '@application/services/slug/slug.service';
 
 /**
@@ -243,7 +240,7 @@ export type TableUpdatePayload = Merge<
 // ── Leitura ───────────────────────────────────────────────────────────
 
 export const TablePaginatedQueryValidator = TableFilterQueryValidator.extend({
-  ...PaginationQueryValidator.shape,
+  ...pagination().shape,
   owner: z
     .string()
     .trim()
@@ -275,7 +272,7 @@ export type TableExportCsvPayload = z.infer<
 // ── Operacoes em massa ────────────────────────────────────────────────
 
 export const BulkIdsBodyValidator = z.object({
-  ids: BulkIdsValidator,
+  ids: bulkIds(),
 });
 
 export type BulkTrashPayload = z.infer<typeof BulkIdsBodyValidator>;

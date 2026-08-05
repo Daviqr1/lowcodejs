@@ -1,15 +1,12 @@
 import z from 'zod';
 
-import {
-  PaginationQueryValidator,
-  TrashedFlagValidator,
-} from '@application/core/validator.core';
+import { pagination, boolFlag } from '@application/resources/_shared.validator';
 
-export const LoggerPaginatedQueryValidator = PaginationQueryValidator.extend({
+export const LoggerPaginatedQueryValidator = pagination().extend({
   search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
 
   // Filtra logs por estado de lixeira (default: ativos).
-  trashed: TrashedFlagValidator,
+  trashed: boolFlag(),
 });
 
 export type LoggerPaginatedPayload = z.infer<

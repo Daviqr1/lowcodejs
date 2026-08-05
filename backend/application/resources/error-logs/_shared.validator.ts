@@ -1,10 +1,10 @@
 import z from 'zod';
 
-import { PaginationQueryValidator } from '@application/core/validator.core';
+import { pagination } from '@application/resources/_shared.validator';
 
 /** Entrada da fatia `error-logs`. Fonte unica dos `*.schema.ts`. */
 
-export const ErrorLogPaginatedQueryValidator = PaginationQueryValidator.extend({
+export const ErrorLogPaginatedQueryValidator = pagination().extend({
   search: z.string().trim().optional(),
   // CSV de status HTTP (ex.: "404,500") — filtra por vários de uma vez.
   statuses: z.string().optional(),

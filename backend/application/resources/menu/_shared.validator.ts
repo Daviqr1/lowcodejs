@@ -5,10 +5,7 @@ import {
   E_PERMISSION_TARGET,
   type Merge,
 } from '@application/core/entity.core';
-import {
-  BulkIdsValidator,
-  PaginationQueryValidator,
-} from '@application/core/validator.core';
+import { bulkIds, pagination } from '@application/resources/_shared.validator';
 import SlugService from '@application/services/slug/slug.service';
 
 /**
@@ -219,7 +216,7 @@ export type MenuUpdatePayload = Merge<
 >;
 
 export const MenuPaginatedQueryValidator = MenuFilterQueryValidator.extend({
-  ...PaginationQueryValidator.shape,
+  ...pagination().shape,
   'order-owner': z.enum(['asc', 'desc']).optional(),
 });
 
@@ -251,7 +248,7 @@ export const MenuReorderBodyValidator = z.object({
 export type MenuReorderPayload = z.infer<typeof MenuReorderBodyValidator>;
 
 /** `ids` das tres operacoes em massa. */
-export const MenuBulkIdsBodyValidator = z.object({ ids: BulkIdsValidator });
+export const MenuBulkIdsBodyValidator = z.object({ ids: bulkIds() });
 
 export type MenuBulkTrashPayload = z.infer<typeof MenuBulkIdsBodyValidator>;
 export type MenuBulkRestorePayload = z.infer<typeof MenuBulkIdsBodyValidator>;

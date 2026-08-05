@@ -7,10 +7,10 @@ import {
   type ValueOf,
 } from '@application/core/entity.core';
 import {
-  BulkIdsValidator,
-  PaginationQueryValidator,
-  TrashedFlagValidator,
-} from '@application/core/validator.core';
+  bulkIds,
+  pagination,
+  boolFlag,
+} from '@application/resources/_shared.validator';
 
 /**
  * Entrada da fatia `user-groups`. Fonte unica — os `*.schema.ts` derivam daqui
@@ -41,7 +41,7 @@ const UserGroupEncompassesValidator = z
 /** Busca e ordenacao comuns a listar e exportar. */
 const UserGroupFilterQueryValidator = z.object({
   search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
-  trashed: TrashedFlagValidator,
+  trashed: boolFlag(),
   'order-name': z.enum(['asc', 'desc']).optional(),
   'order-description': z.enum(['asc', 'desc']).optional(),
   'order-created-at': z.enum(['asc', 'desc']).optional(),
@@ -90,7 +90,7 @@ export type UserGroupUpdatePayload = Merge<
 // ── Leitura ───────────────────────────────────────────────────────────
 
 export const UserGroupPaginatedQueryValidator =
-  UserGroupFilterQueryValidator.extend(PaginationQueryValidator.shape);
+  UserGroupFilterQueryValidator.extend(pagination().shape);
 
 export type UserGroupPaginatedPayload = Merge<
   z.infer<typeof UserGroupPaginatedQueryValidator>,
@@ -126,7 +126,7 @@ export type UserGroupDeletePayload = z.infer<
 
 /** `ids` das tres operacoes em massa. */
 export const UserGroupBulkIdsBodyValidator = z.object({
-  ids: BulkIdsValidator,
+  ids: bulkIds(),
 });
 
 export type UserGroupBulkTrashPayload = z.infer<

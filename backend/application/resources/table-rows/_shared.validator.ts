@@ -2,16 +2,16 @@ import z from 'zod';
 
 import { E_REACTION_TYPE, type Merge } from '@application/core/entity.core';
 import {
-  BulkIdsValidator,
-  PaginationQueryValidator,
-  SlugIdParamsValidator,
-} from '@application/core/validator.core';
+  bulkIds,
+  pagination,
+  slugIdParams,
+} from '@application/resources/_shared.validator';
 
 /**
  * Entrada da fatia `table-rows`. Fonte unica — os `*.schema.ts` derivam daqui o
  * JSON Schema da rota com `zodToRouteSchema`.
  *
- * Nove operacoes so apelidavam o `SlugIdParamsValidator` do core e seis
+ * Nove operacoes so apelidavam o `slugIdParams()` do core e seis
  * reescreviam o `:slug` sozinho; o corpo dinamico da row aparecia em quatro
  * copias quase iguais.
  */
@@ -22,7 +22,7 @@ export const TableSlugParamsValidator = z.object({
 });
 
 /** `:slug` + `:_id`: tabela + row. Vem do core, reexportado pela fatia. */
-export const TableRowParamsValidator = SlugIdParamsValidator;
+export const TableRowParamsValidator = slugIdParams();
 
 export type TableRowShowPayload = z.infer<typeof TableRowParamsValidator>;
 export type TableRowDeletePayload = z.infer<typeof TableRowParamsValidator>;
@@ -101,20 +101,22 @@ export type TableRowAutoSavePayload = Merge<
 
 // ── Leitura ───────────────────────────────────────────────────────────
 
-export const TableRowPaginatedQueryValidator = PaginationQueryValidator.extend({
-  search: z.string().trim().optional(),
-  // Filtro excludeLinked: oculta registros ja vinculados (autocomplete 1:1/N:N).
-  excludeLinked: z
-    .enum(['true', 'false'])
-    .transform((value) => value === 'true')
-    .optional(),
-  relationshipId: z.string().trim().optional(),
-  excludeSide: z.enum(['source', 'target']).optional(),
-  excludeForRecordId: z.string().trim().optional(),
-  // Auto-relacionamento: oculta o proprio registro editado da lista de
-  // candidatos (so tem efeito quando a tabela-alvo e a propria).
-  excludeSelfId: z.string().trim().optional(),
-}).loose();
+export const TableRowPaginatedQueryValidator = pagination()
+  .extend({
+    search: z.string().trim().optional(),
+    // Filtro excludeLinked: oculta registros ja vinculados (autocomplete 1:1/N:N).
+    excludeLinked: z
+      .enum(['true', 'false'])
+      .transform((value) => value === 'true')
+      .optional(),
+    relationshipId: z.string().trim().optional(),
+    excludeSide: z.enum(['source', 'target']).optional(),
+    excludeForRecordId: z.string().trim().optional(),
+    // Auto-relacionamento: oculta o proprio registro editado da lista de
+    // candidatos (so tem efeito quando a tabela-alvo e a propria).
+    excludeSelfId: z.string().trim().optional(),
+  })
+  .loose();
 
 export type TableRowPaginatedPayload = Merge<
   z.infer<typeof TableSlugParamsValidator>,
@@ -135,7 +137,7 @@ export type TableRowExportCsvPayload = Merge<
 
 // ── Operacoes em massa ────────────────────────────────────────────────
 
-export const BulkIdsBodyValidator = z.object({ ids: BulkIdsValidator });
+export const BulkIdsBodyValidator = z.object({ ids: bulkIds() });
 
 export type BulkTrashPayload = Merge<
   z.infer<typeof TableSlugParamsValidator>,
@@ -145,7 +147,7 @@ export type BulkRestorePayload = BulkTrashPayload;
 export type BulkDeletePayload = BulkTrashPayload;
 
 export const BulkUpdateBodyValidator = z.object({
-  ids: BulkIdsValidator.max(200),
+  ids: bulkIds().max(200),
   data: TableRowBodyValidator.refine((value) => Object.keys(value).length > 0, {
     message: 'Informe ao menos um campo para atualizar',
   }),
@@ -190,7 +192,7 @@ export type TableRowEvaluationPayload = Merge<
 // ── Forum ─────────────────────────────────────────────────────────────
 
 /** `:slug` + `:_id` + `:messageId` — aponta uma mensagem do forum. */
-export const ForumMessageParamsValidator = SlugIdParamsValidator.extend({
+export const ForumMessageParamsValidator = slugIdParams().extend({
   messageId: z.string().trim(),
 });
 

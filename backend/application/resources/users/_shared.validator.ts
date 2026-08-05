@@ -9,10 +9,10 @@ import {
 } from '@application/core/entity.core';
 import { PASSWORD_REGEX } from '@application/core/field-rules.core';
 import {
-  BulkIdsValidator,
-  PaginationQueryValidator,
-  TrashedFlagValidator,
-} from '@application/core/validator.core';
+  bulkIds,
+  pagination,
+  boolFlag,
+} from '@application/resources/_shared.validator';
 
 /**
  * Entrada da fatia `users`: os schemas Zod e os tipos derivados deles.
@@ -69,7 +69,7 @@ const UserPasswordValidator = z
 const UserFilterQueryValidator = z.object({
   search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
 
-  trashed: TrashedFlagValidator,
+  trashed: boolFlag(),
 
   status: z.enum(E_USER_STATUS, { message: 'Status inválido' }).optional(),
 
@@ -116,7 +116,7 @@ export type UserUpdatePayload = Merge<
 // ── Leitura ───────────────────────────────────────────────────────────
 
 export const UserPaginatedQueryValidator = UserFilterQueryValidator.extend(
-  PaginationQueryValidator.shape,
+  pagination().shape,
 );
 
 export type UserPaginatedPayload = Merge<
@@ -152,7 +152,7 @@ export type UserDeletePayload = Merge<
 // ── Operacoes em massa ────────────────────────────────────────────────
 
 /** `ids` das tres operacoes em massa sem outro campo. */
-export const UserBulkIdsBodyValidator = z.object({ ids: BulkIdsValidator });
+export const UserBulkIdsBodyValidator = z.object({ ids: bulkIds() });
 
 export type UserBulkTrashPayload = Merge<
   z.infer<typeof UserBulkIdsBodyValidator>,
@@ -167,7 +167,7 @@ export type UserBulkDeletePayload = Merge<
 >;
 
 export const UserBulkUpdateBodyValidator = z.object({
-  ids: BulkIdsValidator.max(500),
+  ids: bulkIds().max(500),
   status: UserStatusValidator,
 });
 
