@@ -16,7 +16,7 @@ import {
   makePasswordField,
   makeTextShortWithFormat,
 } from '@test/helpers/field-factory.helper';
-import { groupItems, lastItemId } from '@test/helpers/row-data.helper';
+import { makeRowWithGroupItem } from '@test/helpers/row-data.helper';
 import { makeTableWithGroup } from '@test/helpers/table-factory.helper';
 
 import GroupRowUpdateUseCase from '../update.use-case';
@@ -26,29 +26,12 @@ let rowRepository: RowInMemoryRepository;
 let rowPasswordService: BcryptRowPasswordService;
 let sut: GroupRowUpdateUseCase;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-async function createRowWithGroupItem(
+const createRowWithGroupItem = (
   table: ITable,
   groupSlug: string,
   itemData: Record<string, unknown>,
-) {
-  const row = await rowRepository.create({
-    table,
-    data: { [groupSlug]: [] },
-  });
-
-  const rowWithItem = await rowRepository.addGroupItem({
-    table,
-    rowId: row._id,
-    groupFieldSlug: groupSlug,
-    data: itemData,
-  });
-
-  const items = groupItems(rowWithItem, groupSlug);
-  const itemId = lastItemId(items);
-
-  return { row, rowWithItem, itemId };
-}
+): ReturnType<typeof makeRowWithGroupItem> =>
+  makeRowWithGroupItem(rowRepository, table, groupSlug, itemData);
 
 describe('Group Row Update - TEXT_SHORT', () => {
   beforeEach(() => {
