@@ -3,8 +3,8 @@ import {
   E_FIELD_VALIDATION,
 } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../../field-validation-rule-contract.service';
+import type { ValidationFieldShape } from '../../field-validation-rule.contract';
+import { FieldValidationRule } from '../../field-validation-rule.contract';
 
 class NotEmptyRule extends FieldValidationRule {
   readonly key = E_FIELD_VALIDATION.NOT_EMPTY;

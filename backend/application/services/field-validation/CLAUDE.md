@@ -12,10 +12,20 @@ porque algumas regras consultam o banco (is-unique, email-exists, ...).
 | `field-validation-contract.service.ts`| Abstract `FieldValidationContractService` + `FieldValidationOptions` |
 | `field-validation.service.ts`         | `@Service() export default` — impl                          |
 | `field-validation.service.spec.ts`    | Specs (is-unique/email-exists/user-exists com in-memory repos) |
+| `rule-registry-contract.service.ts`   | Abstract `FieldValidationRuleRegistryContractService` (`get`/`list`) + `ValidationRuleKey` |
+| `rule-registry.service.ts`            | `@Service() export default` — array `RULES` → `Map<key, rule>` |
+| `rule-registry.service.spec.ts`       | Specs do registry e das regras puras                        |
+| `field-validation-rule.contract.ts`   | Abstract `FieldValidationRule` (classe-base das regras) + `ValidationContext`/`ValidationDeps`/`ValidationFieldShape` — **não injetável** |
+| `rules/`                              | Uma subpasta por regra — ver `rules/CLAUDE.md`              |
 
-Registrado no DI **automaticamente** pelo scanner (contract ↔ impl por
-convenção). Não há in-memory dedicado: os specs instanciam a impl real com
+Os dois pares contract ↔ impl são registrados no DI **automaticamente** pelo
+scanner. Não há in-memory dedicado: os specs instanciam a impl real com
 repositórios in-memory.
+
+`field-validation-rule.contract.ts` fica **fora** do padrão
+`-contract.service.ts` de propósito: é contrato de regra, não de service, e o
+scanner do `di-registry.ts` procuraria uma impl irmã inexistente (avisando
+`impl ausente` em todo boot).
 
 ## Contrato
 

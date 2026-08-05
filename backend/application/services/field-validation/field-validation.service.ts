@@ -7,7 +7,7 @@ import { UserContractRepository } from '@application/repositories/user/user-cont
 
 import type { FieldValidationOptions } from './field-validation-contract.service';
 import { FieldValidationContractService } from './field-validation-contract.service';
-import type { ValidationDeps } from './field-validation-rule-contract.service';
+import type { ValidationDeps } from './field-validation-rule.contract';
 import { FieldValidationRuleRegistryContractService } from './rule-registry-contract.service';
 
 @Service()

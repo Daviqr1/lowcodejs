@@ -9,7 +9,7 @@ import type { IField } from '@application/core/entity.core';
 import type {
   ValidationContext,
   ValidationDeps,
-} from './field-validation-rule-contract.service';
+} from './field-validation-rule.contract';
 import FieldValidationRuleRegistryService from './rule-registry.service';
 
 const registry = new FieldValidationRuleRegistryService();

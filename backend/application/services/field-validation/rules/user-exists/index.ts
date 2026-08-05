@@ -6,8 +6,8 @@ import {
 import type {
   ValidationContext,
   ValidationFieldShape,
-} from '../../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../../field-validation-rule-contract.service';
+} from '../../field-validation-rule.contract';
+import { FieldValidationRule } from '../../field-validation-rule.contract';
 
 // "Usuário existe": o valor (id ou e-mail) deve corresponder a um usuario
 // existente. Suporta campo USER (array de ids) e TEXT_SHORT (id/e-mail).

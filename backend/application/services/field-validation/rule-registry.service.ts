@@ -1,6 +1,6 @@
 import { Service } from 'fastify-decorators';
 
-import type { FieldValidationRule } from './field-validation-rule-contract.service';
+import type { FieldValidationRule } from './field-validation-rule.contract';
 import type { ValidationRuleKey } from './rule-registry-contract.service';
 import { FieldValidationRuleRegistryContractService } from './rule-registry-contract.service';
 import areUniqueValues from './rules/are-unique-values';

@@ -6,8 +6,8 @@ import {
 import type {
   ValidationContext,
   ValidationFieldShape,
-} from '../../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../../field-validation-rule-contract.service';
+} from '../../field-validation-rule.contract';
+import { FieldValidationRule } from '../../field-validation-rule.contract';
 
 // "Valor único": o valor digitado nao pode existir em nenhuma outra row da
 // coluna da propria tabela. No update, ignora a propria row (`currentRowId`).

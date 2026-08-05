@@ -6,8 +6,8 @@ import {
 import type {
   ValidationContext,
   ValidationFieldShape,
-} from '../../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../../field-validation-rule-contract.service';
+} from '../../field-validation-rule.contract';
+import { FieldValidationRule } from '../../field-validation-rule.contract';
 
 // "E-mail existe": o e-mail digitado deve pertencer a um usuario cadastrado.
 class EmailExistsRule extends FieldValidationRule {

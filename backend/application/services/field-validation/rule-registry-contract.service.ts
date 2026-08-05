@@ -3,7 +3,7 @@ import type {
   ValueOf,
 } from '@application/core/entity.core';
 
-import type { FieldValidationRule } from './field-validation-rule-contract.service';
+import type { FieldValidationRule } from './field-validation-rule.contract';
 
 export type ValidationRuleKey = ValueOf<typeof E_FIELD_VALIDATION>;
 

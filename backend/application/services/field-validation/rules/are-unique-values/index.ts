@@ -3,8 +3,8 @@ import { E_FIELD_VALIDATION } from '@application/core/entity.core';
 import type {
   ValidationContext,
   ValidationFieldShape,
-} from '../../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../../field-validation-rule-contract.service';
+} from '../../field-validation-rule.contract';
+import { FieldValidationRule } from '../../field-validation-rule.contract';
 
 // "Valores únicos": campo multiplo cujos elementos devem ser unicos entre si E
 // sem colidir com valores ja presentes na coluna (em outras rows).

@@ -1,7 +1,7 @@
 import { E_FIELD_TYPE } from '@application/core/entity.core';
 
-import type { ValidationFieldShape } from '../field-validation-rule-contract.service';
-import { FieldValidationRule } from '../field-validation-rule-contract.service';
+import type { ValidationFieldShape } from '../field-validation-rule.contract';
+import { FieldValidationRule } from '../field-validation-rule.contract';
 
 /**
  * Base das regras que so checam o formato de um TEXT_SHORT contra um regex.
