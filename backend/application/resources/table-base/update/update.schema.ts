@@ -1,6 +1,7 @@
 import { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const TableUpdateSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -557,84 +558,38 @@ export const TableUpdateSchema: FastifySchema = {
         },
       },
     },
-    401: {
-      description: 'Não autenticado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autenticado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissão insuficiente',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'OWNER_CHANGE_FORBIDDEN',
-            'TABLE_PRIVATE',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'OWNER_CHANGE_FORBIDDEN',
+        'TABLE_PRIVATE',
+      ],
+      {
+        description: 'Acesso negado - Permissão insuficiente',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, 'TABLE_NOT_FOUND', {
       description: 'Tabela não encontrada',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Tabela não encontrada'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+      message: 'Tabela não encontrada',
+    }),
+    409: buildErrorResponse(409, 'TABLE_ALREADY_EXISTS', {
       description: 'Conflito - Já existe uma tabela com o slug gerado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Tabela já existe'] },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['TABLE_ALREADY_EXISTS'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Tabela já existe',
+    }),
+    500: buildErrorResponse(500, 'UPDATE_TABLE_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_TABLE_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

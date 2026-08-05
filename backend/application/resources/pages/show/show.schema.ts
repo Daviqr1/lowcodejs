@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const PageShowSchema: FastifySchema = {
   tags: ['Páginas'],
   summary: 'Buscar página por slug',
@@ -62,19 +64,10 @@ export const PageShowSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Não autorizado',
+    }),
     404: {
       description: 'Página não encontrada',
       type: 'object',
@@ -95,18 +88,9 @@ export const PageShowSchema: FastifySchema = {
         },
       ],
     },
-    500: {
+    500: buildErrorResponse(500, 'GET_MENU_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['GET_MENU_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

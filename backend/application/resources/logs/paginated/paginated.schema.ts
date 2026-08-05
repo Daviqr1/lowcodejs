@@ -4,6 +4,7 @@ import {
   E_LOGGER_ACTION_TYPE,
   E_LOGGER_OBJECT_TYPE,
 } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const LoggerPaginatedSchema: FastifySchema = {
   tags: ['Logs'],
@@ -139,31 +140,11 @@ export const LoggerPaginatedSchema: FastifySchema = {
         },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'LIST_LOG_PAGINATED_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['LIST_LOG_PAGINATED_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

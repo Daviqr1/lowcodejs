@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const UserCreateSchema: FastifySchema = {
   tags: ['Usuários'],
   summary: 'Criar novo usuário',
@@ -115,65 +117,24 @@ export const UserCreateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description:
-        'Requisição inválida - Grupo não informado ou falha na validação',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro de validação',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['GROUP_NOT_INFORMED', 'INVALID_PAYLOAD_FORMAT'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
+    400: buildErrorResponse(
+      400,
+      ['GROUP_NOT_INFORMED', 'INVALID_PAYLOAD_FORMAT'],
+      {
+        description:
+          'Requisição inválida - Grupo não informado ou falha na validação',
+        messageDescription: 'Mensagem de erro de validação',
+        errorsDescription: 'Erros de validação por campo',
       },
-    },
-    401: {
+    ),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    }),
+    409: buildErrorResponse(409, 'USER_ALREADY_EXISTS', {
       description: 'Conflito - Já existe usuário com este email',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['USER_ALREADY_EXISTS'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'CREATE_USER_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['CREATE_USER_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

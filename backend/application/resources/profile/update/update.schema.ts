@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const ProfileUpdateSchema: FastifySchema = {
   tags: ['Perfil'],
   summary: 'Atualizar perfil do usuário atual',
@@ -116,68 +118,24 @@ export const ProfileUpdateSchema: FastifySchema = {
         },
       },
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Erro de validação ou campos faltando',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
+      messageDescription: 'Mensagem de erro',
+      errorsDescription: 'Erros de validação por campo',
+    }),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'INVALID_CREDENTIALS'],
+      {
+        description:
+          'Não autorizado - Autenticação necessária ou senha atual inválida',
       },
-    },
-    401: {
-      description:
-        'Não autorizado - Autenticação necessária ou senha atual inválida',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'INVALID_CREDENTIALS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, 'USER_NOT_FOUND', {
       description: 'Usuário não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'UPDATE_USER_PROFILE_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_USER_PROFILE_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const NotificationDeleteSchema: FastifySchema = {
   tags: ['Notificações'],
   summary: 'Excluir notificação',
@@ -34,44 +36,17 @@ export const NotificationDeleteSchema: FastifySchema = {
         ok: { type: 'boolean', enum: [true], description: 'Confirmação' },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Não autorizado'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Não autorizado',
+    }),
+    404: buildErrorResponse(404, 'NOTIFICATION_NOT_FOUND', {
       description: 'Notificação não encontrada',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Notificação não encontrada'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['NOTIFICATION_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Notificação não encontrada',
+    }),
+    500: buildErrorResponse(500, 'DELETE_NOTIFICATION_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['DELETE_NOTIFICATION_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

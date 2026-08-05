@@ -1,6 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const TablePaginatedSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -578,34 +579,11 @@ export const TablePaginatedSchema: FastifySchema = {
         },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autenticado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'TABLE_LIST_PAGINATED_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_LIST_PAGINATED_ERROR'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

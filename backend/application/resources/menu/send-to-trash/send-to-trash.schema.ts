@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const MenuSendToTrashSchema: FastifySchema = {
   tags: ['Menu'],
   summary: 'Enviar menu para a lixeira (soft delete)',
@@ -31,71 +33,26 @@ export const MenuSendToTrashSchema: FastifySchema = {
       description: 'Menu movido para lixeira com sucesso',
       type: 'null',
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
-      },
-    },
-    401: {
+      messageDescription: 'Mensagem de erro',
+      errorsDescription: 'Erros de validação por campo',
+    }),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(404, 'MENU_NOT_FOUND', {
       description: 'Menu não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Menu não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+      message: 'Menu não encontrado',
+    }),
+    409: buildErrorResponse(409, 'MENU_HAS_CHILDREN', {
       description: 'Menu possui filhos ativos',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Menu possui filhos ativos'] },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['MENU_HAS_CHILDREN'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Menu possui filhos ativos',
+    }),
+    500: buildErrorResponse(500, 'SEND_TO_TRASH_MENU_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SEND_TO_TRASH_MENU_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

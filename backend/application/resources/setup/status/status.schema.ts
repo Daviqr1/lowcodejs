@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SetupStatusSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
   summary: 'Verificar status do setup wizard',
@@ -39,18 +41,8 @@ export const SetupStatusSchema: FastifySchema = {
         },
       },
     },
-    500: {
+    500: buildErrorResponse(500, 'SETUP_STATUS_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SETUP_STATUS_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

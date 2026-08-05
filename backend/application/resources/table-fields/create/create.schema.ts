@@ -4,6 +4,7 @@ import {
   FIELD_TYPE_ALL_VALUES,
   FIELD_TYPE_CONFIGURABLE_VALUES,
 } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const TableFieldCreateSchema: FastifySchema = {
   tags: ['Campos'],
@@ -594,107 +595,47 @@ export const TableFieldCreateSchema: FastifySchema = {
         },
       },
     },
-    400: {
-      description:
-        'Requisição inválida - Falha na validação do payload ou slug/tabela inválidos',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_PAYLOAD_FORMAT',
-            'INVALID_TABLE_SLUG',
-            'INVALID_FIELD_SLUG',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    400: buildErrorResponse(
+      400,
+      ['INVALID_PAYLOAD_FORMAT', 'INVALID_TABLE_SLUG', 'INVALID_FIELD_SLUG'],
+      {
+        description:
+          'Requisição inválida - Falha na validação do payload ou slug/tabela inválidos',
       },
-    },
-    401: {
-      description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissões insuficientes',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+      ],
+      {
+        description: 'Acesso negado - Permissões insuficientes',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, 'TABLE_NOT_FOUND', {
       description: 'Tabela não encontrada',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    }),
+    409: buildErrorResponse(
+      409,
+      ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
+      {
+        description:
+          'Conflito - Campo já existe ou opções de dropdown duplicadas',
       },
-    },
-    409: {
-      description:
-        'Conflito - Campo já existe ou opções de dropdown duplicadas',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    ),
+    500: buildErrorResponse(500, 'CREATE_FIELD_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['CREATE_FIELD_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

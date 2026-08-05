@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const StorageDeleteSchema: FastifySchema = {
   tags: ['Armazenamento'],
   summary: 'Deletar arquivo do armazenamento',
@@ -40,44 +42,14 @@ export const StorageDeleteSchema: FastifySchema = {
         },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+    }),
+    404: buildErrorResponse(404, 'STORAGE_NOT_FOUND', {
       description: 'Arquivo não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['STORAGE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'STORAGE_DELETE_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['STORAGE_DELETE_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

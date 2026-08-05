@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const TableRowRemoveFromTrashSchema: FastifySchema = {
   tags: ['Registros'],
   summary: 'Restaurar registro da lixeira',
@@ -47,88 +49,39 @@ export const TableRowRemoveFromTrashSchema: FastifySchema = {
       },
       additionalProperties: true,
     },
-    401: {
-      description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissão insuficiente ou tabela restrita',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'TABLE_PRIVATE',
-            'RESTRICTED_CREATE',
-            'FORM_VIEW_RESTRICTED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'TABLE_PRIVATE',
+        'RESTRICTED_CREATE',
+        'FORM_VIEW_RESTRICTED',
+      ],
+      {
+        description:
+          'Acesso negado - Permissão insuficiente ou tabela restrita',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND'], {
       description: 'Não encontrado - Tabela ou registro não existe',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    }),
+    409: buildErrorResponse(409, 'NOT_TRASHED', {
       description: 'Conflito - Registro não está na lixeira',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['NOT_TRASHED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'REMOVE_ROW_FROM_TRASH_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['REMOVE_ROW_FROM_TRASH_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

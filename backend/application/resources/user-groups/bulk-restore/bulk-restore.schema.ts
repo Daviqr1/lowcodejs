@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const UserGroupBulkRestoreSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
   summary: 'Restaurar múltiplos grupos da lixeira',
@@ -25,23 +27,11 @@ export const UserGroupBulkRestoreSchema: FastifySchema = {
         },
       },
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro de validação',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
-      },
-    },
+      messageDescription: 'Mensagem de erro de validação',
+      errorsDescription: 'Erros de validação por campo',
+    }),
     401: {
       type: 'object',
       properties: {

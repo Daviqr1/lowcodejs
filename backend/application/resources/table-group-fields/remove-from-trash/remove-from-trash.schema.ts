@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const GroupFieldRemoveFromTrashSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
   summary: 'Restaurar campo de grupo da lixeira',
@@ -143,104 +145,45 @@ export const GroupFieldRemoveFromTrashSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description: 'Requisição inválida - parâmetros inválidos',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    400: buildErrorResponse(
+      400,
+      ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+      {
+        description: 'Requisição inválida - parâmetros inválidos',
       },
-    },
-    401: {
-      description: 'Não autorizado - autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - autenticação necessária',
       },
-    },
-    403: {
-      description: 'Proibido - permissão insuficiente',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+      ],
+      {
+        description: 'Proibido - permissão insuficiente',
       },
-    },
-    404: {
-      description: 'Tabela, grupo ou campo não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    404: buildErrorResponse(
+      404,
+      ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
+      {
+        description: 'Tabela, grupo ou campo não encontrado',
       },
-    },
-    409: {
+    ),
+    409: buildErrorResponse(409, 'NOT_TRASHED', {
       description: 'Campo não está na lixeira',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['NOT_TRASHED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'REMOVE_GROUP_FIELD_FROM_TRASH_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: {
-          type: 'string',
-          enum: ['REMOVE_GROUP_FIELD_FROM_TRASH_ERROR'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

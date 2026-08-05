@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SettingUpdateSchema: FastifySchema = {
   tags: ['Configurações'],
   summary: 'Atualizar configurações do sistema',
@@ -433,54 +435,16 @@ export const SettingUpdateSchema: FastifySchema = {
         },
       },
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Erro de validação',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
-      },
-    },
-    401: {
+      messageDescription: 'Mensagem de erro',
+      errorsDescription: 'Erros de validação por campo',
+    }),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'SETTINGS_UPDATE_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: {
-          type: 'string',
-          enum: ['SETTINGS_UPDATE_ERROR'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const MagicLinkSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Autenticação via magic link',
@@ -33,74 +35,25 @@ export const MagicLinkSchema: FastifySchema = {
         'Autenticação bem-sucedida - define os cookies httpOnly e redireciona para o dashboard',
       type: 'null',
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    }),
+    404: buildErrorResponse(
+      404,
+      ['VALIDATION_TOKEN_NOT_FOUND', 'USER_NOT_FOUND'],
+      {
+        description:
+          'Não encontrado - Token de validação ou usuário não encontrado',
       },
-    },
-    404: {
-      description:
-        'Não encontrado - Token de validação ou usuário não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['VALIDATION_TOKEN_NOT_FOUND', 'USER_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    ),
+    409: buildErrorResponse(409, 'VALIDATION_TOKEN_ALREADY_USED', {
       description: 'Conflito - Token de validação já utilizado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['VALIDATION_TOKEN_ALREADY_USED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    410: {
+    }),
+    410: buildErrorResponse(410, 'VALIDATION_TOKEN_EXPIRED', {
       description: 'Expirado - Token de validação expirado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [410] },
-        cause: { type: 'string', enum: ['VALIDATION_TOKEN_EXPIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'MAGIC_LINK_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['MAGIC_LINK_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

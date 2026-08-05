@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const TableFieldDeleteSchema: FastifySchema = {
   tags: ['Campos'],
   summary: 'Excluir campo permanentemente',
@@ -36,100 +38,43 @@ export const TableFieldDeleteSchema: FastifySchema = {
       description: 'Campo excluído permanentemente com sucesso',
       type: 'null',
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação do payload',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    }),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - Autenticação necessária',
       },
-    },
-    401: {
-      description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'NATIVE_FIELD_CANNOT_BE_DELETED',
+        'FIELD_LOCKED',
+      ],
+      {
+        description: 'Acesso negado - Permissões insuficientes',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissões insuficientes',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'NATIVE_FIELD_CANNOT_BE_DELETED',
-            'FIELD_LOCKED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    404: buildErrorResponse(
+      404,
+      ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
+      {
+        description: 'Não encontrado - Tabela, grupo ou campo não existe',
       },
-    },
-    404: {
-      description: 'Não encontrado - Tabela, grupo ou campo não existe',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    ),
+    409: buildErrorResponse(409, 'FIELD_NOT_TRASHED', {
       description: 'Conflito - Campo não está na lixeira',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['FIELD_NOT_TRASHED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'DELETE_FIELD_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['DELETE_FIELD_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

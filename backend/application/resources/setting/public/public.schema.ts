@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SettingPublicSchema: FastifySchema = {
   tags: ['Configurações'],
   summary: 'Buscar configurações públicas do sistema',
@@ -79,18 +81,8 @@ export const SettingPublicSchema: FastifySchema = {
         },
       },
     },
-    500: {
+    500: buildErrorResponse(500, 'SETTINGS_READ_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SETTINGS_READ_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

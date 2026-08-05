@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const TableRowDeleteSchema: FastifySchema = {
   tags: ['Registros'],
   summary: 'Excluir registro',
@@ -28,75 +30,38 @@ export const TableRowDeleteSchema: FastifySchema = {
       description: 'Registro excluído com sucesso',
       type: 'null',
     },
-    401: {
-      description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - Autenticação necessária',
+        messageDescription: 'Mensagem de erro',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissões insuficientes',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'TABLE_PRIVATE',
-            'RESTRICTED_CREATE',
-            'FORM_VIEW_RESTRICTED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'TABLE_PRIVATE',
+        'RESTRICTED_CREATE',
+        'FORM_VIEW_RESTRICTED',
+      ],
+      {
+        description: 'Acesso negado - Permissões insuficientes',
+        messageDescription: 'Mensagem de erro',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND'], {
       description: 'Não encontrado - Tabela ou registro não existe',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'ROW_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      messageDescription: 'Mensagem de erro',
+    }),
+    500: buildErrorResponse(500, 'DELETE_ROW_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['DELETE_ROW_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      messageDescription: 'Mensagem de erro',
+    }),
   },
 };

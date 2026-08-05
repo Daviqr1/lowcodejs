@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const CloneTableSchema: FastifySchema = {
   tags: ['Tools'],
   summary: 'Clone table',
@@ -86,78 +88,26 @@ export const CloneTableSchema: FastifySchema = {
         },
       },
     },
-    409: {
+    409: buildErrorResponse(409, 'TABLE_ALREADY_EXISTS', {
       description: 'Conflict - Table with same slug already exists',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['TABLE_ALREADY_EXISTS'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
-        },
-      },
-    },
-    400: {
+      errorsDescription: 'Field-specific validation errors',
+    }),
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Bad request - Zod validation failed',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Specific validation error',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Field-specific validation errors',
-        },
-      },
-    },
-    401: {
+      messageDescription: 'Specific validation error',
+      errorsDescription: 'Field-specific validation errors',
+    }),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Unauthorized - Authentication required',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Unauthorized'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Unauthorized',
+    }),
+    404: buildErrorResponse(404, 'TABLE_NOT_FOUND', {
       description: 'Table not found',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Tabela base não encontrada'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Tabela base não encontrada',
+    }),
+    500: buildErrorResponse(500, 'CLONE_TABLE_ERROR', {
       description: 'Internal server error - Database or server issues',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro ao clonar tabela'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['CLONE_TABLE_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro ao clonar tabela',
+    }),
   },
 };

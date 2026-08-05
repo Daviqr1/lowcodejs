@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const MenuShowSchema: FastifySchema = {
   tags: ['Menu'],
   summary: 'Buscar menu por ID',
@@ -125,58 +127,22 @@ export const MenuShowSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
-      },
-    },
-    401: {
+      messageDescription: 'Mensagem de erro',
+      errorsDescription: 'Erros de validação por campo',
+    }),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(404, 'MENU_NOT_FOUND', {
       description: 'Menu não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Menu não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Menu não encontrado',
+    }),
+    500: buildErrorResponse(500, 'GET_MENU_BY_ID_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['GET_MENU_BY_ID_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

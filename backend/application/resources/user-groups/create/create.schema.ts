@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const UserGroupCreateSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
   summary: 'Criar um novo grupo de usuários',
@@ -106,64 +108,26 @@ export const UserGroupCreateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro de validação',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
+    400: buildErrorResponse(
+      400,
+      ['INVALID_PAYLOAD_FORMAT', 'INVALID_PARAMETERS'],
+      {
+        description: 'Requisição inválida - Falha na validação',
+        messageDescription: 'Mensagem de erro de validação',
+        errorsDescription: 'Erros de validação por campo',
       },
-    },
-    401: {
+    ),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+      message: 'Autenticação necessária',
+    }),
+    409: buildErrorResponse(409, 'GROUP_EXISTS', {
       description: 'Conflito - Grupo já existe',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Grupo já existe'] },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['GROUP_EXISTS'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Grupo já existe',
+    }),
+    500: buildErrorResponse(500, 'CREATE_USER_GROUP_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['CREATE_USER_GROUP_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

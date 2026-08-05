@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SchemaImportSchema: FastifySchema = {
   tags: ['Tabelas'],
   summary: 'Importar tabelas em lote a partir de um schema YAML',
@@ -46,71 +48,34 @@ export const SchemaImportSchema: FastifySchema = {
         },
       },
     },
-    400: {
-      description: 'YAML inválido ou estrutura inconsistente',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_YAML', 'INVALID_SCHEMA', 'OWNER_REQUIRED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    400: buildErrorResponse(
+      400,
+      ['INVALID_YAML', 'INVALID_SCHEMA', 'OWNER_REQUIRED'],
+      {
+        description: 'YAML inválido ou estrutura inconsistente',
       },
-    },
-    401: {
-      description: 'Não autenticado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autenticado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissão insuficiente',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+      ],
+      {
+        description: 'Acesso negado - Permissão insuficiente',
       },
-    },
-    500: {
+    ),
+    500: buildErrorResponse(500, 'SCHEMA_IMPORT_ERROR', {
       description: 'Erro interno',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SCHEMA_IMPORT_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

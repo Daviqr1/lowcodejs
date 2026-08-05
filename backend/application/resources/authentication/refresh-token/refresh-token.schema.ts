@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const RefreshTokenSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Renovar tokens de autenticação',
@@ -11,48 +13,19 @@ export const RefreshTokenSchema: FastifySchema = {
         'Tokens renovados com sucesso - define os cookies httpOnly accessToken e refreshToken',
       type: 'null',
     },
-    401: {
-      description:
-        'Não autorizado - Refresh token ausente, inválido ou expirado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['MISSING_REFRESH_TOKEN', 'INVALID_REFRESH_TOKEN'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    401: buildErrorResponse(
+      401,
+      ['MISSING_REFRESH_TOKEN', 'INVALID_REFRESH_TOKEN'],
+      {
+        description:
+          'Não autorizado - Refresh token ausente, inválido ou expirado',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, 'USER_NOT_FOUND', {
       description: 'Não encontrado - Usuário não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'REFRESH_TOKEN_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['REFRESH_TOKEN_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

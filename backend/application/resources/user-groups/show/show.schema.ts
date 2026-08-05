@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const UserGroupShowSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
   summary: 'Buscar grupo de usuários por ID',
@@ -59,58 +61,22 @@ export const UserGroupShowSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
-      },
-    },
-    401: {
+      messageDescription: 'Mensagem de erro',
+      errorsDescription: 'Erros de validação por campo',
+    }),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(404, 'USER_GROUP_NOT_FOUND', {
       description: 'Grupo de usuários não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Grupo de usuários não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_GROUP_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Grupo de usuários não encontrado',
+    }),
+    500: buildErrorResponse(500, 'GET_USER_GROUP_BY_ID_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['GET_USER_GROUP_BY_ID_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

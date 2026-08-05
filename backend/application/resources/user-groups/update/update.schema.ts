@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const UserGroupUpdateSchema: FastifySchema = {
   tags: ['Grupos de Usuários'],
   summary: 'Atualizar grupo de usuários',
@@ -102,69 +104,31 @@ export const UserGroupUpdateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'Mensagem de erro de validação',
-        },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_PAYLOAD_FORMAT',
-            'INVALID_PARAMETERS',
-            'GROUP_SELF_REFERENCE',
-            'GROUP_CYCLE_DETECTED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
+    400: buildErrorResponse(
+      400,
+      [
+        'INVALID_PAYLOAD_FORMAT',
+        'INVALID_PARAMETERS',
+        'GROUP_SELF_REFERENCE',
+        'GROUP_CYCLE_DETECTED',
+      ],
+      {
+        description: 'Requisição inválida - Falha na validação',
+        messageDescription: 'Mensagem de erro de validação',
+        errorsDescription: 'Erros de validação por campo',
       },
-    },
-    401: {
+    ),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(404, 'USER_GROUP_NOT_FOUND', {
       description: 'Grupo de usuários não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Grupo de usuários não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['USER_GROUP_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Grupo de usuários não encontrado',
+    }),
+    500: buildErrorResponse(500, 'UPDATE_USER_GROUP_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_USER_GROUP_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

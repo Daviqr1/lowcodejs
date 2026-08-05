@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const MenuUpdateSchema: FastifySchema = {
   tags: ['Menu'],
   summary: 'Atualizar item de menu',
@@ -189,104 +191,57 @@ export const MenuUpdateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Mensagem de erro' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_PAYLOAD_FORMAT',
-            'INVALID_PARAMETERS',
-            'CIRCULAR_REFERENCE',
-            'EXTENSION_NOT_ACTIVE',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-          description: 'Erros de validação por campo',
-        },
+    400: buildErrorResponse(
+      400,
+      [
+        'INVALID_PAYLOAD_FORMAT',
+        'INVALID_PARAMETERS',
+        'CIRCULAR_REFERENCE',
+        'EXTENSION_NOT_ACTIVE',
+      ],
+      {
+        description: 'Requisição inválida - Falha na validação',
+        messageDescription: 'Mensagem de erro',
+        errorsDescription: 'Erros de validação por campo',
       },
-    },
-    401: {
+    ),
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(
+      404,
+      [
+        'MENU_NOT_FOUND',
+        'TABLE_NOT_FOUND',
+        'PARENT_MENU_NOT_FOUND',
+        'EXTENSION_NOT_FOUND',
+      ],
+      {
+        description: 'Recurso não encontrado',
+        message: [
+          'Menu não encontrado',
+          'Tabela não encontrada',
+          'Menu pai não encontrado',
+          'Módulo de extensão não encontrado',
+        ],
       },
-    },
-    404: {
-      description: 'Recurso não encontrado',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Menu não encontrado',
-            'Tabela não encontrada',
-            'Menu pai não encontrado',
-            'Módulo de extensão não encontrado',
-          ],
-        },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: [
-            'MENU_NOT_FOUND',
-            'TABLE_NOT_FOUND',
-            'PARENT_MENU_NOT_FOUND',
-            'EXTENSION_NOT_FOUND',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    409: buildErrorResponse(
+      409,
+      ['MENU_ALREADY_EXISTS', 'SEPARATOR_HAS_CHILDREN'],
+      {
+        description:
+          'Conflito - Menu já existe ou separador com submenus ativos',
+        message: [
+          'Menu já existe',
+          'Separador com submenus ativos não pode mudar de tipo',
+        ],
       },
-    },
-    409: {
-      description: 'Conflito - Menu já existe ou separador com submenus ativos',
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          enum: [
-            'Menu já existe',
-            'Separador com submenus ativos não pode mudar de tipo',
-          ],
-        },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: ['MENU_ALREADY_EXISTS', 'SEPARATOR_HAS_CHILDREN'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    ),
+    500: buildErrorResponse(500, 'UPDATE_MENU_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_MENU_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

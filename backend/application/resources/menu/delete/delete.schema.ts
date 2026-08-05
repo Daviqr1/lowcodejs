@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const MenuDeleteSchema: FastifySchema = {
   tags: ['Menu'],
   summary: 'Excluir menu permanentemente',
@@ -31,57 +33,21 @@ export const MenuDeleteSchema: FastifySchema = {
       description: 'Menu excluído permanentemente com sucesso',
       type: 'null',
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Autenticação necessária'] },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+      message: 'Autenticação necessária',
+    }),
+    404: buildErrorResponse(404, 'MENU_NOT_FOUND', {
       description: 'Menu não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Menu não encontrado'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['MENU_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+      message: 'Menu não encontrado',
+    }),
+    409: buildErrorResponse(409, 'NOT_TRASHED', {
       description: 'Menu não está na lixeira',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Menu não está na lixeira'] },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['NOT_TRASHED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Menu não está na lixeira',
+    }),
+    500: buildErrorResponse(500, 'DELETE_MENU_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Erro interno do servidor'] },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['DELETE_MENU_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+      message: 'Erro interno do servidor',
+    }),
   },
 };

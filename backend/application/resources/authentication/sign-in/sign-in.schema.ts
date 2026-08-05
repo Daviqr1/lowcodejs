@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SignInSchema: FastifySchema = {
   tags: ['Autenticação'],
   summary: 'Autenticar usuário (login)',
@@ -43,60 +45,17 @@ export const SignInSchema: FastifySchema = {
         'Autenticação bem-sucedida - define os cookies httpOnly accessToken e refreshToken',
       type: 'null',
     },
-    400: {
+    400: buildErrorResponse(400, 'INVALID_PAYLOAD_FORMAT', {
       description: 'Requisição inválida - Falha na validação',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: { type: 'string', enum: ['INVALID_PAYLOAD_FORMAT'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    401: {
+    }),
+    401: buildErrorResponse(401, ['INVALID_CREDENTIALS', 'USER_INACTIVE'], {
       description: 'Não autorizado - Credenciais inválidas ou usuário inativo',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['INVALID_CREDENTIALS', 'USER_INACTIVE'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    }),
+    409: buildErrorResponse(409, 'MULTI_ACCOUNT_LIMIT_REACHED', {
       description: 'Conflito - Limite de contas simultâneas atingido',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['MULTI_ACCOUNT_LIMIT_REACHED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'SIGN_IN_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SIGN_IN_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

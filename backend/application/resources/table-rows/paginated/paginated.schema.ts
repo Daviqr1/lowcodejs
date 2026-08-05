@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const TableRowPaginatedSchema: FastifySchema = {
   tags: ['Registros'],
   summary: 'Listar registros paginados',
@@ -103,47 +105,30 @@ export const TableRowPaginatedSchema: FastifySchema = {
         },
       },
     },
-    401: {
-      description: 'Não autorizado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Permissão insuficiente ou tabela restrita',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'TABLE_PRIVATE',
-            'RESTRICTED_CREATE',
-            'FORM_VIEW_RESTRICTED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'TABLE_PRIVATE',
+        'RESTRICTED_CREATE',
+        'FORM_VIEW_RESTRICTED',
+      ],
+      {
+        description:
+          'Acesso negado - Permissão insuficiente ou tabela restrita',
       },
-    },
+    ),
     404: {
       description: 'Tabela não encontrada',
       type: 'object',
@@ -164,22 +149,9 @@ export const TableRowPaginatedSchema: FastifySchema = {
         },
       ],
     },
-    500: {
+    500: buildErrorResponse(500, 'LIST_ROW_TABLE_PAGINATED_ERROR', {
       description:
         'Erro interno do servidor - Problemas no banco ou no servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: {
-          type: 'string',
-          enum: ['LIST_ROW_TABLE_PAGINATED_ERROR'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

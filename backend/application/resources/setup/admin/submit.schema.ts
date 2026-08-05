@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SetupAdminSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
   summary: 'Criar administrador MASTER no setup wizard',
@@ -57,52 +59,23 @@ export const SetupAdminSubmitSchema: FastifySchema = {
         },
       },
     },
-    409: {
-      description: 'Conflito (setup já concluído ou usuário já existe)',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: [
-            'SETUP_ALREADY_COMPLETED',
-            'USER_ALREADY_EXISTS',
-            'MASTER_GROUP_NOT_FOUND',
-            'MASTER_ALREADY_EXISTS',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    409: buildErrorResponse(
+      409,
+      [
+        'SETUP_ALREADY_COMPLETED',
+        'USER_ALREADY_EXISTS',
+        'MASTER_GROUP_NOT_FOUND',
+        'MASTER_ALREADY_EXISTS',
+      ],
+      {
+        description: 'Conflito (setup já concluído ou usuário já existe)',
       },
-    },
-    412: {
+    ),
+    412: buildErrorResponse(412, 'SETUP_WRONG_STEP', {
       description: 'Etapa incorreta do setup',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [412] },
-        cause: { type: 'string', enum: ['SETUP_WRONG_STEP'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'SETUP_ADMIN_ERROR', {
       description: 'Erro interno',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SETUP_ADMIN_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

@@ -1,6 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_ALL_VALUES } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const TableShowSchema: FastifySchema = {
   tags: ['Tabelas'],
@@ -597,68 +598,30 @@ export const TableShowSchema: FastifySchema = {
         },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'USER_NOT_AUTHENTICATED', {
       description: 'Não autenticado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['USER_NOT_AUTHENTICATED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    }),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'TABLE_PRIVATE',
+        'FORM_VIEW_RESTRICTED',
+      ],
+      {
+        description:
+          'Acesso negado - Visibilidade ou permissão restringe o acesso',
       },
-    },
-    403: {
-      description:
-        'Acesso negado - Visibilidade ou permissão restringe o acesso',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'TABLE_PRIVATE',
-            'FORM_VIEW_RESTRICTED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, 'TABLE_NOT_FOUND', {
       description: 'Tabela não encontrada',
-      type: 'object',
-      properties: {
-        message: { type: 'string', enum: ['Tabela não encontrada'] },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+      message: 'Tabela não encontrada',
+    }),
+    500: buildErrorResponse(500, 'GET_TABLE_BY_SLUG_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['GET_TABLE_BY_SLUG_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

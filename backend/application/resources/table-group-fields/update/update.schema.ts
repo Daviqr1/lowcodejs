@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const GroupFieldUpdateSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
   summary: 'Atualizar campo no grupo',
@@ -257,112 +259,57 @@ export const GroupFieldUpdateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description: 'Requisição inválida - parâmetros ou slug inválidos',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_PAYLOAD_FORMAT',
-            'INVALID_PARAMETERS',
-            'INVALID_TABLE_SLUG',
-            'INVALID_FIELD_SLUG',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    400: buildErrorResponse(
+      400,
+      [
+        'INVALID_PAYLOAD_FORMAT',
+        'INVALID_PARAMETERS',
+        'INVALID_TABLE_SLUG',
+        'INVALID_FIELD_SLUG',
+      ],
+      {
+        description: 'Requisição inválida - parâmetros ou slug inválidos',
       },
-    },
-    401: {
-      description: 'Não autorizado - autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - autenticação necessária',
       },
-    },
-    403: {
-      description:
-        'Proibido - permissão insuficiente ou campo nativo/bloqueado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'NATIVE_FIELD_CANNOT_BE_TRASHED',
-            'FIELD_LOCKED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'NATIVE_FIELD_CANNOT_BE_TRASHED',
+        'FIELD_LOCKED',
+      ],
+      {
+        description:
+          'Proibido - permissão insuficiente ou campo nativo/bloqueado',
       },
-    },
-    404: {
-      description: 'Tabela, grupo ou campo não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: {
-          type: 'string',
-          enum: ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    404: buildErrorResponse(
+      404,
+      ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND', 'FIELD_NOT_FOUND'],
+      {
+        description: 'Tabela, grupo ou campo não encontrado',
       },
-    },
-    409: {
-      description: 'Conflito - campo ou opção de dropdown já existente',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    409: buildErrorResponse(
+      409,
+      ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
+      {
+        description: 'Conflito - campo ou opção de dropdown já existente',
       },
-    },
-    500: {
+    ),
+    500: buildErrorResponse(500, 'UPDATE_GROUP_FIELD_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['UPDATE_GROUP_FIELD_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

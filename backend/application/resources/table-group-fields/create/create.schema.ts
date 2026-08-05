@@ -1,6 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
 import { FIELD_TYPE_GROUP_CONFIGURABLE_VALUES } from '@application/core/entity.core';
+import { buildErrorResponse } from '@application/core/schema.core';
 
 export const GroupFieldCreateSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
@@ -265,109 +266,53 @@ export const GroupFieldCreateSchema: FastifySchema = {
         updatedAt: { type: 'string', format: 'date-time' },
       },
     },
-    400: {
-      description:
-        'Requisição inválida - payload Zod inválido, parâmetros inválidos ou regra de negócio',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [400] },
-        cause: {
-          type: 'string',
-          enum: [
-            'INVALID_PAYLOAD_FORMAT',
-            'INVALID_PARAMETERS',
-            'INVALID_TABLE_SLUG',
-            'FIELD_TYPE_NOT_ALLOWED_IN_GROUP',
-            'INVALID_FIELD_SLUG',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    400: buildErrorResponse(
+      400,
+      [
+        'INVALID_PAYLOAD_FORMAT',
+        'INVALID_PARAMETERS',
+        'INVALID_TABLE_SLUG',
+        'FIELD_TYPE_NOT_ALLOWED_IN_GROUP',
+        'INVALID_FIELD_SLUG',
+      ],
+      {
+        description:
+          'Requisição inválida - payload Zod inválido, parâmetros inválidos ou regra de negócio',
       },
-    },
-    401: {
-      description: 'Não autorizado - autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: {
-          type: 'string',
-          enum: ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autorizado - autenticação necessária',
       },
-    },
-    403: {
-      description: 'Proibido - permissões insuficientes ou grupo na lixeira',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: {
-          type: 'string',
-          enum: [
-            'USER_NOT_FOUND',
-            'USER_NOT_ACTIVE',
-            'PERMISSIONS_NOT_FOUND',
-            'INSUFFICIENT_PERMISSIONS',
-            'OWNER_OR_ADMIN_REQUIRED',
-            'GROUP_IS_TRASHED',
-          ],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+        'OWNER_OR_ADMIN_REQUIRED',
+        'GROUP_IS_TRASHED',
+      ],
+      {
+        description: 'Proibido - permissões insuficientes ou grupo na lixeira',
       },
-    },
-    404: {
+    ),
+    404: buildErrorResponse(404, ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND'], {
       description: 'Tabela ou grupo não encontrado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [404] },
-        cause: { type: 'string', enum: ['TABLE_NOT_FOUND', 'GROUP_NOT_FOUND'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
+    }),
+    409: buildErrorResponse(
+      409,
+      ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
+      {
+        description: 'Conflito - campo ou opção de dropdown já existe',
       },
-    },
-    409: {
-      description: 'Conflito - campo ou opção de dropdown já existe',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: {
-          type: 'string',
-          enum: ['FIELD_ALREADY_EXIST', 'DROPDOWN_OPTION_ALREADY_EXISTS'],
-        },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    ),
+    500: buildErrorResponse(500, 'CREATE_GROUP_FIELD_ERROR', {
       description: 'Erro interno do servidor',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['CREATE_GROUP_FIELD_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };

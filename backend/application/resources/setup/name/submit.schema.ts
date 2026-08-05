@@ -1,5 +1,7 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const SetupNameSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
   summary: 'Configurar nome do sistema e locale no setup wizard',
@@ -47,70 +49,20 @@ export const SetupNameSubmitSchema: FastifySchema = {
         },
       },
     },
-    401: {
+    401: buildErrorResponse(401, 'AUTHENTICATION_REQUIRED', {
       description: 'Não autenticado',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    403: {
+    }),
+    403: buildErrorResponse(403, 'FORBIDDEN', {
       description: 'Sem permissão',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: { type: 'string', enum: ['FORBIDDEN'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    409: {
+    }),
+    409: buildErrorResponse(409, 'SETUP_ALREADY_COMPLETED', {
       description: 'Conflito (setup já concluído)',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [409] },
-        cause: { type: 'string', enum: ['SETUP_ALREADY_COMPLETED'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    412: {
+    }),
+    412: buildErrorResponse(412, 'SETUP_WRONG_STEP', {
       description: 'Etapa incorreta do setup',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [412] },
-        cause: { type: 'string', enum: ['SETUP_WRONG_STEP'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
-    500: {
+    }),
+    500: buildErrorResponse(500, 'SETUP_NAME_ERROR', {
       description: 'Erro interno',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [500] },
-        cause: { type: 'string', enum: ['SETUP_NAME_ERROR'] },
-        errors: {
-          type: 'object',
-          additionalProperties: { type: 'string' },
-        },
-      },
-    },
+    }),
   },
 };
