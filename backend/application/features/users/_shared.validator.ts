@@ -3,15 +3,19 @@ import z from 'zod';
 import {
   E_ROLE,
   E_USER_STATUS,
-  type IUser,
   type Merge,
-  type ValueOf,
 } from '@application/core/entity.core';
-import { PASSWORD_REGEX } from '@application/core/field-rules.core';
 import {
-  bulkIds,
-  pagination,
+  type ActorScope,
   boolFlag,
+  bulkIds,
+  email,
+  identifier,
+  pagination,
+  type RequesterScope,
+  search,
+  sortDirection,
+  strongPassword,
 } from '@application/features/_shared.validator';
 
 /**
@@ -27,85 +31,86 @@ import {
 // ── Blocos reusados ───────────────────────────────────────────────────
 
 /** `:_id` das rotas por usuario. Repetido em 5 operacoes. */
-export const UserIdentifierParamsValidator = z.object({
-  _id: z
-    .string({ message: 'O ID é obrigatório' })
-    .trim()
-    .min(1, 'O ID é obrigatório'),
-});
+export const UserIdentifierParamsValidator = identifier();
 
-const UserBaseValidator = z.object({
-  name: z
-    .string({ message: 'O nome é obrigatório' })
-    .trim()
-    .min(1, 'O nome é obrigatório'),
-  email: z
-    .string({ message: 'O email é obrigatório' })
-    .email('Digite um email válido')
-    .trim(),
-  group: z
-    .string({ message: 'O grupo é obrigatório' })
-    .min(1, 'O grupo é obrigatório'),
-  groups: z
-    .array(z.string({ message: 'Cada grupo deve ser um texto' }))
-    .optional(),
-});
+function userBase(): z.ZodObject<
+  {
+    name: z.ZodString;
+    email: z.ZodString;
+    group: z.ZodString;
+    groups: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    name: z
+      .string({ message: 'O nome é obrigatório' })
+      .trim()
+      .min(1, 'O nome é obrigatório'),
+    email: email(),
+    group: z
+      .string({ message: 'O grupo é obrigatório' })
+      .min(1, 'O grupo é obrigatório'),
+    groups: z
+      .array(z.string({ message: 'Cada grupo deve ser um texto' }))
+      .optional(),
+  });
+}
 
-const UserStatusValidator = z.enum(
-  [E_USER_STATUS.ACTIVE, E_USER_STATUS.INACTIVE],
-  { message: 'O status deve ser ACTIVE ou INACTIVE' },
-);
-
-const UserPasswordValidator = z
-  .string({ message: 'A senha é obrigatória' })
-  .trim()
-  .min(6, 'A senha deve ter no mínimo 6 caracteres')
-  .regex(
-    PASSWORD_REGEX,
-    'A senha deve conter: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
-  );
+function userStatus(): z.ZodEnum<{ ACTIVE: 'ACTIVE'; INACTIVE: 'INACTIVE' }> {
+  return z.enum([E_USER_STATUS.ACTIVE, E_USER_STATUS.INACTIVE], {
+    message: 'O status deve ser ACTIVE ou INACTIVE',
+  });
+}
 
 /** Busca, filtros e ordenacao comuns a listar e exportar. */
-const UserFilterQueryValidator = z.object({
-  search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
+function userFilterQuery(): z.ZodObject<
+  {
+    search: z.ZodOptional<z.ZodString>;
+    trashed: ReturnType<typeof boolFlag>;
+    status: z.ZodOptional<z.ZodEnum<typeof E_USER_STATUS>>;
+    role: z.ZodOptional<z.ZodEnum<typeof E_ROLE>>;
+    'order-name': ReturnType<typeof sortDirection>;
+    'order-email': ReturnType<typeof sortDirection>;
+    'order-group': ReturnType<typeof sortDirection>;
+    'order-status': ReturnType<typeof sortDirection>;
+    'order-created-at': ReturnType<typeof sortDirection>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    search: search(),
 
-  trashed: boolFlag(),
+    trashed: boolFlag(),
 
-  status: z.enum(E_USER_STATUS, { message: 'Status inválido' }).optional(),
+    status: z.enum(E_USER_STATUS, { message: 'Status inválido' }).optional(),
 
-  // Contexto da consulta. Declarar `role=ADMINISTRATOR` pede ao backend
-  // aplicar as regras de escopo do admin (hoje: esconder MASTER).
-  // O JWT confirma autorizacao — ver `user.repository.ts`.
-  role: z.enum(E_ROLE, { message: 'Role inválido' }).optional(),
+    // Contexto da consulta. Declarar `role=ADMINISTRATOR` pede ao backend
+    // aplicar as regras de escopo do admin (hoje: esconder MASTER).
+    // O JWT confirma autorizacao — ver `user.repository.ts`.
+    role: z.enum(E_ROLE, { message: 'Role inválido' }).optional(),
 
-  'order-name': z.enum(['asc', 'desc']).optional(),
-  'order-email': z.enum(['asc', 'desc']).optional(),
-  'order-group': z.enum(['asc', 'desc']).optional(),
-  'order-status': z.enum(['asc', 'desc']).optional(),
-  'order-created-at': z.enum(['asc', 'desc']).optional(),
-});
-
-/** Quem pediu a consulta, injetado pelo controller a partir da sessao. */
-type RequesterScope = {
-  user?: Merge<Pick<IUser, '_id'>, { role: ValueOf<typeof E_ROLE> }>;
-};
-
-/** Quem executou a acao, injetado pelo controller a partir da sessao. */
-type ActorScope = { actorId: string };
+    'order-name': sortDirection(),
+    'order-email': sortDirection(),
+    'order-group': sortDirection(),
+    'order-status': sortDirection(),
+    'order-created-at': sortDirection(),
+  });
+}
 
 // ── Create ────────────────────────────────────────────────────────────
 
-export const UserCreateBodyValidator = UserBaseValidator.extend({
-  password: UserPasswordValidator,
+export const UserCreateBodyValidator = userBase().extend({
+  password: strongPassword(),
 });
 
 export type UserCreatePayload = z.infer<typeof UserCreateBodyValidator>;
 
 // ── Update ────────────────────────────────────────────────────────────
 
-export const UserUpdateBodyValidator = UserBaseValidator.partial().extend({
-  password: UserPasswordValidator.optional(),
-  status: UserStatusValidator.optional(),
+export const UserUpdateBodyValidator = userBase().partial().extend({
+  password: strongPassword().optional(),
+  status: userStatus().optional(),
 });
 
 export type UserUpdatePayload = Merge<
@@ -115,7 +120,7 @@ export type UserUpdatePayload = Merge<
 
 // ── Leitura ───────────────────────────────────────────────────────────
 
-export const UserPaginatedQueryValidator = UserFilterQueryValidator.extend(
+export const UserPaginatedQueryValidator = userFilterQuery().extend(
   pagination().shape,
 );
 
@@ -124,7 +129,7 @@ export type UserPaginatedPayload = Merge<
   RequesterScope
 >;
 
-export const UserExportCsvQueryValidator = UserFilterQueryValidator;
+export const UserExportCsvQueryValidator = userFilterQuery();
 
 export type UserExportCsvPayload = Merge<
   z.infer<typeof UserExportCsvQueryValidator>,
@@ -168,7 +173,7 @@ export type UserBulkDeletePayload = Merge<
 
 export const UserBulkUpdateBodyValidator = z.object({
   ids: bulkIds().max(500),
-  status: UserStatusValidator,
+  status: userStatus(),
 });
 
 export type UserBulkUpdatePayload = Merge<
