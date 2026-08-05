@@ -1,5 +1,18 @@
 import z from 'zod';
 
+import {
+  E_PERMISSION_TARGET,
+  E_ROLE,
+  E_SORT_DIRECTION,
+  type IUser,
+  type Merge,
+  type ValueOf,
+} from '@application/core/entity.core';
+import {
+  OBJECT_ID_REGEX,
+  PASSWORD_REGEX,
+} from '@application/core/field-rules.core';
+
 /**
  * Blocos Zod reusados por mais de uma fatia. Este e o nivel GLOBAL do padrao
  * `_shared`: regra usada por duas ou mais features mora aqui; regra de uma
@@ -85,3 +98,119 @@ export function boolFlag(): z.ZodOptional<
     )
     .optional();
 }
+
+/** `:_id` das rotas por recurso. Estava reescrito em 8 fatias. */
+export function identifier(): z.ZodObject<{ _id: z.ZodString }, z.core.$strip> {
+  return z.object({
+    _id: z
+      .string({ message: 'O ID é obrigatório' })
+      .trim()
+      .min(1, 'O ID é obrigatório'),
+  });
+}
+
+/** `?search=` das listagens. Estava reescrito em 11 pontos. */
+export function search(): z.ZodOptional<z.ZodString> {
+  return z.string({ message: 'A busca deve ser um texto' }).trim().optional();
+}
+
+/** `?order-<campo>=asc|desc`. Estava como literal solto em 26 pontos. */
+export function sortDirection(): z.ZodOptional<
+  z.ZodEnum<typeof E_SORT_DIRECTION>
+> {
+  return z.enum(E_SORT_DIRECTION).optional();
+}
+
+/** Email de entrada. Estava reescrito em 4 fatias. */
+export function email(): z.ZodString {
+  return z
+    .string({ message: 'O email é obrigatório' })
+    .email('Digite um email válido')
+    .trim();
+}
+
+/**
+ * Senha nova: exige a forca do `PASSWORD_REGEX`.
+ *
+ * Estava reescrita em 4 fatias com 3 textos diferentes para a mesma regra —
+ * o usuario via uma mensagem no cadastro e outra no perfil. Fica o texto mais
+ * completo das copias.
+ *
+ * Nao serve para conferir senha existente (login): ali a forca e verificada
+ * contra o hash, e o schema so precisa exigir presenca.
+ */
+export function strongPassword(): z.ZodString {
+  return z
+    .string({ message: 'A senha é obrigatória' })
+    .trim()
+    .min(6, 'A senha deve ter no mínimo 6 caracteres')
+    .regex(
+      PASSWORD_REGEX,
+      'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
+    );
+}
+
+/**
+ * Id de documento Mongo, conferido contra o `OBJECT_ID_REGEX`.
+ *
+ * Mais estrito que `identifier()`, que so exige texto nao vazio. Use onde o
+ * valor e de fato um `_id`, nunca onde a rota aceita slug.
+ */
+export function objectId(): z.ZodString {
+  return z
+    .string({ message: 'O ID é obrigatório' })
+    .trim()
+    .regex(OBJECT_ID_REGEX, 'ID inválido');
+}
+
+/**
+ * Alvo de uma acao protegida (`{ kind, group }`). Estava reescrito em
+ * `table-base` (permissoes da tabela), `table-fields` (visibilidade do campo)
+ * e `menu` (visibilidade do item).
+ */
+export function permissionBinding(): z.ZodObject<
+  {
+    kind: z.ZodEnum<{ PUBLIC: 'PUBLIC'; NOBODY: 'NOBODY'; GROUP: 'GROUP' }>;
+    group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    kind: z
+      .enum([
+        E_PERMISSION_TARGET.PUBLIC,
+        E_PERMISSION_TARGET.NOBODY,
+        E_PERMISSION_TARGET.GROUP,
+      ])
+      .describe(
+        'Alvo: PUBLIC (qualquer pessoa, inclusive sem login), NOBODY ' +
+          '(ninguem) ou GROUP (apenas o grupo informado em `group`). Para GROUP ' +
+          'vale a regra de intersecao: o usuario tambem precisa da permissao ' +
+          'global correspondente no seu grupo.',
+      ),
+    group: z
+      .string()
+      .trim()
+      .nullable()
+      .default(null)
+      .describe(
+        'Id do grupo liberado quando `kind` = GROUP; null caso contrario.',
+      ),
+  });
+}
+
+/**
+ * Escopo de sessao. Nao entra em schema nenhum: o controller le de
+ * `request.user` e mescla no payload do use-case. Qualquer valor destes campos
+ * vindo no corpo da requisicao e ignorado por construcao.
+ *
+ * Estavam declarados identicos em `users` e `user-groups`.
+ */
+
+/** Quem pediu a consulta. */
+export type RequesterScope = {
+  user?: Merge<Pick<IUser, '_id'>, { role: ValueOf<typeof E_ROLE> }>;
+};
+
+/** Quem executou a acao. */
+export type ActorScope = { actorId: string };

@@ -361,6 +361,15 @@ export const E_USER_STATUS = {
   INACTIVE: 'INACTIVE',
 } as const;
 
+/**
+ * Direcao de ordenacao das listagens. Estava escrita como literal solto
+ * `z.enum(['asc', 'desc'])` em 26 pontos dos validators.
+ */
+export const E_SORT_DIRECTION = {
+  ASC: 'asc',
+  DESC: 'desc',
+} as const;
+
 export type IUser = Merge<
   Base,
   {
