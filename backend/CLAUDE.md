@@ -442,6 +442,39 @@ Para adicionar nova dependencia (zero edicao no di-registry):
 Para trocar a implementacao (ex.: trocar de ORM), troque o conteudo do arquivo
 `<base>.<kind>.ts` — o scanner continua registrando o mesmo contract.
 
+### Como resolver dependencia em controller
+
+Controller **nao** e `@Service`, mas o container instancia ele do mesmo jeito
+(`classLoader` do fastify-decorators) e resolve **cada parametro do constructor**
+pelo `design:paramtypes`. Se um tipo de parametro nao for um token registrado, o
+boot estoura `TypeError: Invalid argument provided in <Class>'s constructor` —
+`npm run boot:check` pega isso.
+
+Forma unica, uma so em todo controller:
+
+```ts
+export default class {
+  private readonly http = getInstanceByToken(HttpResponseService);
+
+  constructor(
+    private readonly useCase: SignInUseCase = getInstanceByToken(SignInUseCase),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
+    ),
+  ) {}
+```
+
+- Tipo do parametro = **Contract**; argumento do `getInstanceByToken` = **impl**.
+  O default nunca executa em runtime (o container sempre passa o argumento), mas
+  mantem a classe construivel a mao em teste.
+- `HttpResponseService` e a **unica** excecao como field initializer — linha
+  identica em todos os controllers.
+- Nunca `const` de topo de modulo nem `getInstanceByToken` inline dentro de um
+  metodo. Mesmo sendo seguro (o `loadControllers()` roda depois do
+  `registerDependencies()`), e uma segunda forma sem ganho.
+- Fora de controller, as excecoes legitimas (middleware, `start/kernel.ts`,
+  `bin/server.ts`, `schedule-explorer`) estao na tabela "Nada de funcao solta".
+
 ## Fluxo de Inicializacao do Servidor
 
 ```
