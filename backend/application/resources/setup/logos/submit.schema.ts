@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupLogosBodyValidator } from './submit.validator';
 
 export const SetupLogosSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
@@ -8,22 +13,7 @@ export const SetupLogosSubmitSchema: FastifySchema = {
   description:
     'Define as URLs dos logos pequeno e grande. Etapa 3 do setup wizard.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    properties: {
-      LOGO_SMALL_URL: {
-        type: 'string',
-        nullable: true,
-        description: 'URL do logo pequeno',
-      },
-      LOGO_LARGE_URL: {
-        type: 'string',
-        nullable: true,
-        description: 'URL do logo grande',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupLogosBodyValidator),
   response: {
     200: {
       description: 'Logos salvos com sucesso',

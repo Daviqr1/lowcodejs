@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupPagingBodyValidator } from './submit.validator';
 
 export const SetupPagingSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
@@ -8,23 +13,7 @@ export const SetupPagingSubmitSchema: FastifySchema = {
   description:
     'Define itens por página e tabelas disponíveis para clone. Etapa 5 do setup wizard.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['PAGINATION_PER_PAGE'],
-    properties: {
-      PAGINATION_PER_PAGE: {
-        type: 'number',
-        minimum: 1,
-        description: 'Quantidade de itens por página',
-      },
-      MODEL_CLONE_TABLES: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'IDs das tabelas disponíveis para clone',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupPagingBodyValidator),
   response: {
     200: {
       description: 'Configurações de paginação salvas com sucesso',

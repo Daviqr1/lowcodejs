@@ -1,40 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupAdminBodyValidator } from './submit.validator';
 
 export const SetupAdminSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
   summary: 'Criar administrador MASTER no setup wizard',
   description:
     'Cria o primeiro usuário MASTER e autentica automaticamente. Etapa 1 do setup wizard.',
-  body: {
-    type: 'object',
-    required: ['name', 'email', 'password', 'confirmPassword'],
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        description: 'Nome do administrador',
-      },
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'Email do administrador',
-      },
-      password: {
-        type: 'string',
-        minLength: 6,
-        description:
-          'Senha (mín. 6 caracteres, 1 maiúscula, 1 minúscula, 1 número, 1 especial)',
-      },
-      confirmPassword: {
-        type: 'string',
-        minLength: 1,
-        description: 'Confirmação da senha',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupAdminBodyValidator),
   response: {
     201: {
       description: 'Administrador criado com sucesso',

@@ -1,30 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupNameBodyValidator } from './submit.validator';
 
 export const SetupNameSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
   summary: 'Configurar nome do sistema e locale no setup wizard',
   description: 'Define o nome do sistema e o idioma. Etapa 2 do setup wizard.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['SYSTEM_NAME', 'LOCALE'],
-    properties: {
-      SYSTEM_NAME: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 100,
-        description: 'Nome do sistema',
-      },
-      LOCALE: {
-        type: 'string',
-        enum: ['pt-br', 'en-us'],
-        description: 'Idioma do sistema',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupNameBodyValidator),
   response: {
     200: {
       description: 'Nome e locale salvos com sucesso',

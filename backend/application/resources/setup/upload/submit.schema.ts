@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupUploadBodyValidator } from './submit.validator';
 
 export const SetupUploadSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
@@ -8,32 +13,7 @@ export const SetupUploadSubmitSchema: FastifySchema = {
   description:
     'Define tamanho máximo, extensões aceitas e máximo de arquivos por upload. Etapa 4 do setup wizard.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: [
-      'FILE_UPLOAD_MAX_SIZE',
-      'FILE_UPLOAD_ACCEPTED',
-      'FILE_UPLOAD_MAX_FILES_PER_UPLOAD',
-    ],
-    properties: {
-      FILE_UPLOAD_MAX_SIZE: {
-        type: 'number',
-        minimum: 1,
-        description: 'Tamanho máximo de arquivo em bytes',
-      },
-      FILE_UPLOAD_ACCEPTED: {
-        type: 'string',
-        minLength: 1,
-        description: 'Extensões de arquivo aceitas',
-      },
-      FILE_UPLOAD_MAX_FILES_PER_UPLOAD: {
-        type: 'number',
-        minimum: 1,
-        description: 'Máximo de arquivos por upload',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupUploadBodyValidator),
   response: {
     200: {
       description: 'Configurações de upload salvas com sucesso',

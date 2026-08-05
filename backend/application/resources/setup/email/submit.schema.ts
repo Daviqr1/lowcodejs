@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupEmailBodyValidator } from './submit.validator';
 
 export const SetupEmailSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
@@ -8,37 +13,7 @@ export const SetupEmailSubmitSchema: FastifySchema = {
   description:
     'Define as credenciais SMTP para envio de emails. Etapa 6 (final) do setup wizard. Todos os campos são opcionais.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    properties: {
-      EMAIL_PROVIDER_HOST: {
-        type: 'string',
-        nullable: true,
-        description: 'Host do servidor SMTP',
-      },
-      EMAIL_PROVIDER_PORT: {
-        type: 'number',
-        nullable: true,
-        description: 'Porta do servidor SMTP',
-      },
-      EMAIL_PROVIDER_USER: {
-        type: 'string',
-        nullable: true,
-        description: 'Usuário de autenticação SMTP',
-      },
-      EMAIL_PROVIDER_PASSWORD: {
-        type: 'string',
-        nullable: true,
-        description: 'Senha de autenticação SMTP',
-      },
-      EMAIL_PROVIDER_FROM: {
-        type: 'string',
-        nullable: true,
-        description: 'Endereço de email remetente',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupEmailBodyValidator),
   response: {
     200: {
       description: 'Setup concluído com sucesso',

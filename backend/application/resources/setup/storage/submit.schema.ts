@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { SetupStorageBodyValidator } from './submit.validator';
 
 export const SetupStorageSubmitSchema: FastifySchema = {
   tags: ['Configuração Inicial'],
@@ -8,38 +13,7 @@ export const SetupStorageSubmitSchema: FastifySchema = {
   description:
     'Define o driver de armazenamento (local ou S3) e credenciais. Etapa 3 do setup wizard.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    required: ['STORAGE_DRIVER'],
-    properties: {
-      STORAGE_DRIVER: {
-        type: 'string',
-        enum: ['local', 's3'],
-        description: 'Driver de armazenamento',
-      },
-      STORAGE_ENDPOINT: {
-        type: 'string',
-        description: 'URL do endpoint S3',
-      },
-      STORAGE_REGION: {
-        type: 'string',
-        description: 'Região do bucket S3',
-      },
-      STORAGE_BUCKET: {
-        type: 'string',
-        description: 'Nome do bucket S3',
-      },
-      STORAGE_ACCESS_KEY: {
-        type: 'string',
-        description: 'Access key do S3',
-      },
-      STORAGE_SECRET_KEY: {
-        type: 'string',
-        description: 'Secret key do S3',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(SetupStorageBodyValidator),
   response: {
     200: {
       description: 'Configuração de armazenamento salva com sucesso',
