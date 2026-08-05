@@ -3,15 +3,11 @@ import { Controller, getInstanceByToken, PUT } from 'fastify-decorators';
 
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
-import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
-import UserMapperService from '@application/services/user-mapper/user-mapper.service';
+
+import { ProfileUpdateBodyValidator } from '../_shared.validator';
 
 import { ProfileUpdateSchema } from './update.schema';
 import ProfileUpdateUseCase from './update.use-case';
-import { ProfileUpdateBodyValidator } from './update.validator';
-
-const userMapper =
-  getInstanceByToken<UserMapperContractService>(UserMapperService);
 
 @Controller({
   route: 'profile',
@@ -46,6 +42,6 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    return response.status(200).send(userMapper.toResponse(result.value));
+    return response.status(200).send(result.value);
   }
 }

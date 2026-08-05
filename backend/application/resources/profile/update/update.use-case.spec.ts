@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
 import InMemoryPasswordService from '@application/services/password/in-memory-password.service';
+import UserMapperService from '@application/services/user-mapper/user-mapper.service';
 
 import ProfileUpdateUseCase from './update.use-case';
 
@@ -13,7 +14,11 @@ describe('Profile Update Use Case', () => {
   beforeEach(() => {
     userInMemoryRepository = new UserInMemoryRepository();
     passwordService = new InMemoryPasswordService();
-    sut = new ProfileUpdateUseCase(userInMemoryRepository, passwordService);
+    sut = new ProfileUpdateUseCase(
+      userInMemoryRepository,
+      passwordService,
+      new UserMapperService(),
+    );
   });
 
   it('deve atualizar o perfil do usuario sem alterar senha', async () => {
@@ -36,7 +41,9 @@ describe('Profile Update Use Case', () => {
 
     expect(result.value.name).toBe('John Updated');
     expect(result.value.email).toBe('john.updated@example.com');
-    expect(result.value.password).toBe('hashed_password');
+    // A resposta nao carrega mais o hash; confere na fonte.
+    const untouched = await userInMemoryRepository.findById(result.value._id);
+    expect(untouched?.password).toBe('hashed_password');
   });
 
   it('deve atualizar o perfil e senha quando senha atual estiver correta', async () => {
@@ -62,8 +69,9 @@ describe('Profile Update Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
 
     expect(result.value.name).toBe('John Updated');
-    expect(result.value.password).not.toBe(hashedPassword);
-    expect(result.value.password).toBe('hashed_new_password');
+    const stored = await userInMemoryRepository.findById(result.value._id);
+    expect(stored?.password).not.toBe(hashedPassword);
+    expect(stored?.password).toBe('hashed_new_password');
   });
 
   it('deve retornar erro INVALID_CREDENTIALS quando senha atual estiver incorreta', async () => {

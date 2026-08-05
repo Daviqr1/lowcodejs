@@ -2,14 +2,15 @@ import { Service } from 'fastify-decorators';
 
 import type { Either } from '@application/core/either.core';
 import { left, right } from '@application/core/either.core';
-import type { IUser as Entity } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { UserContractRepository } from '@application/repositories/user/user-contract.repository';
 import { PasswordContractService } from '@application/services/password/password-contract.service';
+import type { UserResponse } from '@application/services/user-mapper/user-mapper-contract.service';
+import { UserMapperContractService } from '@application/services/user-mapper/user-mapper-contract.service';
 
-import type { ProfileUpdatePayload } from './update.validator';
+import type { ProfileUpdatePayload } from '../_shared.validator';
 
-type Response = Either<HTTPException, Entity>;
+type Response = Either<HTTPException, UserResponse>;
 type Payload = ProfileUpdatePayload;
 
 @Service()
@@ -17,6 +18,7 @@ export default class ProfileUpdateUseCase {
   constructor(
     private readonly userRepository: UserContractRepository,
     private readonly passwordService: PasswordContractService,
+    private readonly userMapper: UserMapperContractService,
   ) {}
 
   async execute(payload: Payload): Promise<Response> {
@@ -39,7 +41,7 @@ export default class ProfileUpdateUseCase {
           }),
         });
 
-        return right(updated);
+        return right(this.userMapper.toResponse(updated));
       }
 
       const isMatch = await this.passwordService.compare(
@@ -75,7 +77,7 @@ export default class ProfileUpdateUseCase {
       // a de quem fez a troca, que precisa entrar de novo.
       await this.userRepository.revokeSessions(user._id);
 
-      return right(updated);
+      return right(this.userMapper.toResponse(updated));
     } catch (error) {
       console.error('[profile > update][error]:', error);
       return left(

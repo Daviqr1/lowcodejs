@@ -1,7 +1,9 @@
 import z from 'zod';
 
-import { Merge } from '@application/core/entity.core';
+import type { Merge } from '@application/core/entity.core';
 import { PASSWORD_REGEX } from '@application/core/field-rules.core';
+
+/** Entrada da fatia `profile`. Fonte unica dos `*.schema.ts`. */
 
 export const ProfileUpdateBodyValidator = z.object({
   name: z
@@ -29,11 +31,14 @@ export const ProfileUpdateBodyValidator = z.object({
   notificationsEnabled: z.coerce.boolean().optional(),
 });
 
-export const ProfileUpdateParamsValidator = z.object({
+/** O id vem da sessao (`request.user.sub`), nunca da rota. */
+export const ProfileIdentifierValidator = z.object({
   _id: z.string({ message: 'O ID é obrigatório' }).trim(),
 });
 
 export type ProfileUpdatePayload = Merge<
-  z.infer<typeof ProfileUpdateParamsValidator>,
+  z.infer<typeof ProfileIdentifierValidator>,
   z.infer<typeof ProfileUpdateBodyValidator>
 >;
+
+export type ProfileShowPayload = z.infer<typeof ProfileIdentifierValidator>;
