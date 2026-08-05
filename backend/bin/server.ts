@@ -176,9 +176,8 @@ async function start(): Promise<void> {
   }
 }
 
-MongooseConnect().then(async () => {
-  console.info('Mongoose system connected:', Env.DB_DATABASE);
-  console.info('Mongoose data connected:', Env.DB_DATA_DATABASE);
-  await syncSettingsFromDatabase();
-  start();
-});
+await MongooseConnect();
+console.info('Mongoose system connected:', Env.DB_DATABASE);
+console.info('Mongoose data connected:', Env.DB_DATA_DATABASE);
+await syncSettingsFromDatabase();
+start();
