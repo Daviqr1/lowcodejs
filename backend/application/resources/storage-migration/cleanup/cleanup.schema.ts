@@ -1,5 +1,9 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { StorageMigrationCleanupValidator } from './cleanup.validator';
+
 const badRequestBlock = {
   description: 'Requisição inválida',
   type: 'object',
@@ -71,14 +75,7 @@ export const StorageMigrationCleanupSchema: FastifySchema = {
   description:
     'Apaga fisicamente os arquivos que ficaram no driver antigo após a migração. Restrito ao MASTER.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    properties: {
-      confirm: { type: 'boolean' },
-    },
-    required: ['confirm'],
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(StorageMigrationCleanupValidator),
   response: {
     202: {
       description: 'Limpeza enfileirada com sucesso',

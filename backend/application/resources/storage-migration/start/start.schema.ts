@@ -1,5 +1,9 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { StorageMigrationStartValidator } from './start.validator';
+
 const badRequestBlock = {
   description: 'Requisição inválida',
   type: 'object',
@@ -64,23 +68,7 @@ export const StorageMigrationStartSchema: FastifySchema = {
   description:
     'Enfileira um job de background que copia todos os arquivos do driver antigo para o atual. Restrito ao usuário MASTER.',
   security: [{ cookieAuth: [] }],
-  body: {
-    type: 'object',
-    properties: {
-      concurrency: {
-        type: 'number',
-        minimum: 1,
-        maximum: 20,
-        description: 'Número de arquivos copiados em paralelo',
-      },
-      retry_failed_only: {
-        type: 'boolean',
-        description:
-          'Quando true, processa apenas arquivos com migration_status=failed',
-      },
-    },
-    additionalProperties: false,
-  },
+  body: zodToRouteSchema(StorageMigrationStartValidator),
   response: {
     202: {
       description: 'Migração enfileirada com sucesso',
