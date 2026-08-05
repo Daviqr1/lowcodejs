@@ -2,8 +2,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, POST, getInstanceByToken } from 'fastify-decorators';
 
 import { E_JWT_TYPE, type IJWTPayload } from '@application/core/entity.core';
-import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import ProfileShowUseCase from '@application/features/profile/show/show.use-case';
+import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 import { REFRESH_TOKEN_COOKIE } from '@application/services/session/session-contract.service';
 import { SessionContractService } from '@application/services/session/session-contract.service';

@@ -61,10 +61,7 @@ export const ValidateCodeBodyValidator = z.object({
   code: code(),
   // Escopa o codigo ao solicitante: sem isto qualquer codigo vivo no sistema
   // autentica qualquer conta.
-  email: z
-    .string({ message: 'O e-mail é obrigatório' })
-    .min(1, 'O e-mail é obrigatório')
-    .trim(),
+  email: email(),
 });
 
 export type ValidateCodePayload = z.infer<typeof ValidateCodeBodyValidator>;
