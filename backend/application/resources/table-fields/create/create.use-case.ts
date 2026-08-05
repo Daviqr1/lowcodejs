@@ -19,8 +19,6 @@ import { SlugContractService } from '@application/services/slug/slug-contract.se
 import { ModelBuilderContractService } from '@application/services/table/model-builder-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import {} from '../_shared.validator';
-
 import type { TableFieldCreatePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
