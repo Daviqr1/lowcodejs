@@ -60,7 +60,7 @@ backend/
 │   ├── model/                     # Mongoose schemas (17 models, todos no DB system)
 │   ├── repositories/              # Contract + Mongoose + InMemory (18 entidades)
 │   ├── services/                  # Toda a logica de comportamento, um service por contexto
-│   └── features/                 # 20 recursos REST (cada um com operacoes isoladas)
+│   └── features/                 # 22 features REST (cada uma com _shared.validator.ts)
 ├── database/
 │   ├── seeders/                   # Permissions, user groups, settings (idempotente)
 │   └── migrations/                # Migracoes one-time (dual-connection)
@@ -78,11 +78,13 @@ backend/
 - NAO contem logica de negocio
 - Retorna status codes adequados (201 create, 200 success, etc)
 
-### Validator (`*.validator.ts`)
-- Schemas Zod para validacao de input (body, params, query)
+### Validator (`_shared.validator.ts`)
+- Schemas Zod para validacao de input (body, params, query), um por fatia
 - Exporta tipos inferidos (`z.infer<typeof schema>`)
-- Validators base reutilizaveis (ex: `user-base.validator.ts`)
-- Schema files (`*.schema.ts`) sao para documentacao OpenAPI, nao runtime
+- Regra usada por duas ou mais features sobe para o `_shared.validator.ts` da
+  raiz de `features/`; bloco reusavel e **funcao**, nao constante
+- Schema files (`*.schema.ts`) derivam dali o JSON Schema com `zodToRouteSchema`
+- Ver `application/features/CLAUDE.md` para os tres niveis de `_shared`
 
 ### Use Case (`*.use-case.ts`)
 - Logica de negocio pura
@@ -270,7 +272,7 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 |------|---------|---------|
 | Controller | `{operacao}.controller.ts` | `create.controller.ts` |
 | Use Case | `{operacao}.use-case.ts` | `create.use-case.ts` |
-| Validator | `{operacao}.validator.ts` | `create.validator.ts` |
+| Validator | `_shared.validator.ts` (um por fatia) | `users/_shared.validator.ts` |
 | Schema (docs) | `{operacao}.schema.ts` | `create.schema.ts` |
 | Unit Test | `{operacao}.use-case.spec.ts` | `create.use-case.spec.ts` |
 | E2E Test | `{operacao}.controller.spec.ts` | `create.controller.spec.ts` |
@@ -280,7 +282,7 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 | Service Contract | `{nome}-contract.service.ts` | `email-contract.service.ts` |
 | Service Impl | `{nome}.service.ts` (`export default`) | `email.service.ts` |
 | Model | `{entidade}.model.ts` | `user.model.ts` |
-| Validator Base | `{entidade}-base.validator.ts` | `user-base.validator.ts` |
+| Validator global | `_shared.validator.ts` (raiz de `features/`) | `features/_shared.validator.ts` |
 
 ## Convenções de Código
 

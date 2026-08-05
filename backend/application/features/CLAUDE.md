@@ -1,6 +1,7 @@
-# Resources
+# Features
 
-20 recursos REST organizados por dominio. Cada recurso possui subdiretorios por operacao.
+22 features REST organizadas por dominio. Cada uma tem subdiretorios por operacao
+e um `_shared.validator.ts` com a entrada da fatia.
 
 > **Nota**: o recurso `tools/` foi totalmente migrado para extensões em
 > `backend/extensions/core/`: `clone-table` virou TOOL, `export-table` e
@@ -14,10 +15,12 @@
 Cada operacao (ex: `users/create/`) contem:
 - `{op}.controller.ts` - Roteamento HTTP + middleware stack
 - `{op}.use-case.ts` - Logica de negocio (Either pattern)
-- `{op}.validator.ts` - Validacao Zod
 - `{op}.schema.ts` - Documentacao OpenAPI
 - `{op}.use-case.spec.ts` - Teste unitario
 - `{op}.controller.spec.ts` - Teste e2e
+
+A validacao **nao** fica na pasta da operacao: vive no `_shared.validator.ts` da
+fatia, e o `*.schema.ts` deriva dali o JSON Schema com `zodToRouteSchema`.
 
 ## Recursos
 
@@ -65,3 +68,32 @@ Cada operacao (ex: `users/create/`) contem:
 - Controllers propagam errors via `...(error.errors && { errors: error.errors })`
 - Response schemas (`*.schema.ts`) incluem `errors: { type: 'object', additionalProperties: { type: 'string' } }` em todos os blocos de erro para evitar que o Fastify remova a propriedade na serializacao
 - `errors` e um mapa campo→mensagem usado pelo frontend para exibir erros nos formularios
+
+## Validacao: os tres niveis de `_shared`
+
+| Arquivo | Alcance |
+|---|---|
+| `_shared.validator.ts` (raiz) | regra usada por **duas ou mais** features: `email()`, `strongPassword()`, `identifier()`, `pagination()`, `search()`, `sortDirection()`, `boolFlag()`, `bulkIds()`, `slugIdParams()`, `objectId()`, `permissionBinding()` + os tipos de escopo de sessao |
+| `_shared.field.validator.ts` (raiz) | configuracao de campo do low-code, compartilhada por `table-fields` e `table-group-fields` |
+| `<feature>/_shared.validator.ts` | o que so aquela fatia reusa |
+
+Regras:
+
+- **Uma feature nunca importa o `_shared` de outra.** Se duas precisam da mesma
+  regra, ela sobe para a raiz. `grep -rn "features/[a-z-]*/_shared" application/features`
+  tem que dar zero.
+- **Bloco reusavel e funcao, nao constante.** `email()` devolve um no novo a
+  cada chamada; uma constante compartilhada colocaria o mesmo no em dois
+  validators. Em Zod isso e seguro (schema e imutavel: `.optional()` devolve no
+  novo), mas a forma-funcao mantem a intencao explicita e evita que criar dois
+  nomes para a mesma instancia passe despercebido.
+- **O validator final e constante**, e nao funcao: `zodToRouteSchema(X)` e
+  `z.infer<typeof X>` precisam do valor.
+- **Escopo nunca entra no schema.** `userId`, `actorId`, `owner` e afins vem de
+  `request.user` no controller e entram no payload do use-case pelo tipo
+  (`RequesterScope`, `ActorScope`), nunca do corpo da requisicao.
+- **Enum vem da fonte**: `z.enum(E_X)` de `entity.core.ts`, nunca membros
+  soletrados nem literal solto.
+
+`chat` e `permissions` nao tem `_shared.validator.ts` porque nao tem entrada
+nenhuma para validar.

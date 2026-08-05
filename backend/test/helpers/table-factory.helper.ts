@@ -6,9 +6,9 @@ import {
   type ITable,
   type Merge,
 } from '@application/core/entity.core';
+import type { TableFieldUpdatePayload } from '@application/features/table-fields/_shared.validator';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import TableInMemoryRepository from '@application/repositories/table/table-in-memory.repository';
-import type { TableFieldUpdatePayload } from '@application/features/table-fields/_shared.validator';
 
 import { makeFieldGroupField } from './field-factory.helper';
 
