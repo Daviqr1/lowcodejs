@@ -284,15 +284,15 @@ field-visibility services). Os grupos sao resolvidos server-side a cada request.
 
 ## Convenções de Código
 
-As **6 regras** do code-pattern aplicadas a **todo** `.ts` do backend (incluindo
+As **7 regras** do code-pattern aplicadas a **todo** `.ts` do backend (incluindo
 `extensions/`, `database/`, `hooks/`, `config/`, `test/`, `*.spec.ts`),
 **enforçadas pelo ESLint** (`eslint.config.js`, bloco `files: ['**/*.ts']`):
 regras 1–3 via regras nativas (`no-ternary`, `consistent-type-assertions:
 never`, `no-explicit-any`); regra 4 via `consistent-type-definitions: type`
-(override desliga em `**/*.d.ts` de augmentation); regras 5 e 6 via plugin local
-`lowcodejs/*` (`no-type-intersection`, `prefer-lookup-object`) em
-`eslint-local-rules/` na raiz do monorepo. `npm run lint` falha em qualquer nova
-violação.
+(override desliga em `**/*.d.ts` de augmentation); regras 5, 6 e 7 via plugin
+local `lowcodejs/*` (`no-type-intersection`, `prefer-lookup-object`,
+`no-promise-chain`) em `eslint-local-rules/` na raiz do monorepo. `npm run lint`
+falha em qualquer nova violação.
 
 ### 1. Sem ternário de atribuição/controle
 
@@ -358,6 +358,24 @@ combinadas) fica `if`.
 const MOCK_BY_FORMAT: Record<string, string> = { EMAIL: '…', URL: '…', CPF: '…' };
 data[slug] = MOCK_BY_FORMAT[format] ?? fallback;
 ```
+
+### 7. `async/await`, nunca cadeia `.then/.catch/.finally`
+
+Sempre `await` dentro de função `async`, com `try/catch` para o erro. O alvo é a
+**cadeia**, não a Promise: `await Promise.all([...])` segue válido.
+
+```ts
+// Evitar
+migrate().catch((error) => { logger.failed(error); process.exit(1) });
+// Preferir (ESM: top-level await disponível)
+try { await migrate() } catch (error) { logger.failed(error); process.exit(1) }
+```
+
+Disparo em background (fire-and-forget) não é exceção: extraia um método
+`async` privado com `try/catch` interno e chame com `void this.metodo(...)` —
+ver `logMcp` em `services/llm/llm-chat.service.ts`. Migration que usa o
+`runMigration` de `database/shared/` não escreve nem o `try/catch`: o runner já
+reporta a falha.
 
 Commits: Conventional Commits atômicos em pt-BR (`refactor(escopo): ...`).
 
