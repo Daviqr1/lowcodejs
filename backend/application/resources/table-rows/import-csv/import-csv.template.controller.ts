@@ -20,6 +20,15 @@ import { TableRowImportCsvTemplateSchema } from './import-csv.schema';
   route: 'tables',
 })
 export default class {
+  constructor(
+    private readonly tableRepository: TableContractRepository = getInstanceByToken(
+      TableMongooseRepository,
+    ),
+    private readonly csvExport: CsvExportContractService = getInstanceByToken(
+      CsvExportService,
+    ),
+  ) {}
+
   @GET({
     url: '/:slug/rows/imports/csv/template',
     options: {
@@ -35,10 +44,7 @@ export default class {
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const params = TableSlugParamsValidator.parse(request.params);
 
-    const tableRepo = getInstanceByToken<TableContractRepository>(
-      TableMongooseRepository,
-    );
-    const table = await tableRepo.findBySlug(params.slug);
+    const table = await this.tableRepository.findBySlug(params.slug);
 
     if (!table) {
       return response.status(404).send({
@@ -58,10 +64,8 @@ export default class {
       Record<string, unknown>
     > {})();
 
-    const csvExport =
-      getInstanceByToken<CsvExportContractService>(CsvExportService);
-    const stream = csvExport.buildStream({ source, fields: csvFields });
-    const filename = csvExport.filename(`template-${params.slug}`);
+    const stream = this.csvExport.buildStream({ source, fields: csvFields });
+    const filename = this.csvExport.filename(`template-${params.slug}`);
 
     return response
       .header('Content-Type', 'text/csv; charset=utf-8')

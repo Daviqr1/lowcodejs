@@ -23,6 +23,9 @@ export default class {
     private readonly useCase: MenuExportCsvUseCase = getInstanceByToken(
       MenuExportCsvUseCase,
     ),
+    private readonly csvExport: CsvExportContractService = getInstanceByToken(
+      CsvExportService,
+    ),
   ) {}
 
   @GET({
@@ -42,10 +45,7 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const filename =
-      getInstanceByToken<CsvExportContractService>(CsvExportService).filename(
-        'menus',
-      );
+    const filename = this.csvExport.filename('menus');
 
     return this.http.sendCsv(response, filename, result.value);
   }

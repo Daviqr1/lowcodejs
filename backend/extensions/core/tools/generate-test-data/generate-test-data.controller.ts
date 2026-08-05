@@ -26,6 +26,9 @@ export default class {
     private readonly useCase: GenerateTestDataUseCase = getInstanceByToken(
       GenerateTestDataUseCase,
     ),
+    private readonly jobRegistry: GenerationJobRegistryContractService = getInstanceByToken(
+      GenerationJobRegistryService,
+    ),
   ) {}
 
   @POST({
@@ -99,9 +102,7 @@ export default class {
     response: FastifyReply,
   ): Promise<void> {
     const { jobId } = request.params;
-    const job = getInstanceByToken<GenerationJobRegistryContractService>(
-      GenerationJobRegistryService,
-    ).getJob(jobId);
+    const job = this.jobRegistry.getJob(jobId);
 
     if (!job) {
       return response.status(404).send({

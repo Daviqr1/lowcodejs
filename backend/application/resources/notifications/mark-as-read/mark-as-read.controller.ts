@@ -20,6 +20,9 @@ export default class {
     private readonly repository: NotificationContractRepository = getInstanceByToken(
       NotificationMongooseRepository,
     ),
+    private readonly socket: NotificationSocketContractService = getInstanceByToken(
+      NotificationSocketService,
+    ),
   ) {}
 
   @PATCH({
@@ -46,9 +49,7 @@ export default class {
         });
       }
 
-      const namespace = getInstanceByToken<NotificationSocketContractService>(
-        NotificationSocketService,
-      ).namespace();
+      const namespace = this.socket.namespace();
       if (namespace) {
         namespace
           .to(`user:${request.user.sub}`)

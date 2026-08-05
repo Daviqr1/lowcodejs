@@ -23,6 +23,9 @@ export default class {
     private readonly useCase: UserGroupExportCsvUseCase = getInstanceByToken(
       UserGroupExportCsvUseCase,
     ),
+    private readonly csvExport: CsvExportContractService = getInstanceByToken(
+      CsvExportService,
+    ),
   ) {}
 
   @GET({
@@ -51,10 +54,7 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const filename =
-      getInstanceByToken<CsvExportContractService>(CsvExportService).filename(
-        'grupos',
-      );
+    const filename = this.csvExport.filename('grupos');
 
     return this.http.sendCsv(response, filename, result.value);
   }
