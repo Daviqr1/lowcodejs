@@ -111,43 +111,213 @@ function tableFilterQuery(): z.ZodObject<
 }
 
 // Mapa das 10 acoes -> binding. Todas opcionais.
-export const TablePermissionsSchema = z
-  .object({
-    [E_TABLE_PERMISSION.VIEW_TABLE]: permissionBinding(),
-    [E_TABLE_PERMISSION.UPDATE_TABLE]: permissionBinding(),
-    [E_TABLE_PERMISSION.CREATE_FIELD]: permissionBinding(),
-    [E_TABLE_PERMISSION.UPDATE_FIELD]: permissionBinding(),
-    [E_TABLE_PERMISSION.REMOVE_FIELD]: permissionBinding(),
-    [E_TABLE_PERMISSION.VIEW_FIELD]: permissionBinding(),
-    [E_TABLE_PERMISSION.CREATE_ROW]: permissionBinding(),
-    [E_TABLE_PERMISSION.UPDATE_ROW]: permissionBinding(),
-    [E_TABLE_PERMISSION.REMOVE_ROW]: permissionBinding(),
-    [E_TABLE_PERMISSION.VIEW_ROW]: permissionBinding(),
-  })
-  .partial()
-  .describe(
-    'Permissoes por acao da tabela (binding Grupo/Publico/Ninguem). O acesso ' +
-      'efetivo e a intersecao: alem do binding liberar, o usuario precisa da ' +
-      'permissao global da acao no seu grupo. Dono e membros (members[]) sao ' +
-      'concessoes explicitas e nao dependem dessa intersecao.',
-  );
+function tablePermissions(): z.ZodObject<
+  {
+    VIEW_TABLE: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    UPDATE_TABLE: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    CREATE_FIELD: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    UPDATE_FIELD: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    REMOVE_FIELD: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    VIEW_FIELD: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    CREATE_ROW: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    UPDATE_ROW: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    REMOVE_ROW: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+    VIEW_ROW: z.ZodOptional<
+      z.ZodObject<
+        {
+          kind: z.ZodEnum<{
+            PUBLIC: 'PUBLIC';
+            NOBODY: 'NOBODY';
+            GROUP: 'GROUP';
+          }>;
+          group: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+        },
+        z.core.$strip
+      >
+    >;
+  },
+  z.core.$strip
+> {
+  return z
+    .object({
+      [E_TABLE_PERMISSION.VIEW_TABLE]: permissionBinding(),
+      [E_TABLE_PERMISSION.UPDATE_TABLE]: permissionBinding(),
+      [E_TABLE_PERMISSION.CREATE_FIELD]: permissionBinding(),
+      [E_TABLE_PERMISSION.UPDATE_FIELD]: permissionBinding(),
+      [E_TABLE_PERMISSION.REMOVE_FIELD]: permissionBinding(),
+      [E_TABLE_PERMISSION.VIEW_FIELD]: permissionBinding(),
+      [E_TABLE_PERMISSION.CREATE_ROW]: permissionBinding(),
+      [E_TABLE_PERMISSION.UPDATE_ROW]: permissionBinding(),
+      [E_TABLE_PERMISSION.REMOVE_ROW]: permissionBinding(),
+      [E_TABLE_PERMISSION.VIEW_ROW]: permissionBinding(),
+    })
+    .partial()
+    .describe(
+      'Permissoes por acao da tabela (binding Grupo/Publico/Ninguem). O acesso ' +
+        'efetivo e a intersecao: alem do binding liberar, o usuario precisa da ' +
+        'permissao global da acao no seu grupo. Dono e membros (members[]) sao ' +
+        'concessoes explicitas e nao dependem dessa intersecao.',
+    );
+}
+
+export const TablePermissionsSchema = tablePermissions();
 
 // Convidados da tabela e seus perfis.
-export const TableMembersSchema = z
-  .array(
-    z.object({
-      user: z.string().trim().min(1),
-      profile: z.enum(E_TABLE_PROFILE),
-    }),
-  )
-  .default([]);
+function tableMembers(): z.ZodDefault<
+  z.ZodArray<
+    z.ZodObject<
+      {
+        user: z.ZodString;
+        profile: z.ZodEnum<{
+          readonly OWNER: 'OWNER';
+          readonly ADMIN: 'ADMIN';
+          readonly EDITOR: 'EDITOR';
+          readonly CONTRIBUTOR: 'CONTRIBUTOR';
+          readonly VIEWER: 'VIEWER';
+        }>;
+      },
+      z.core.$strip
+    >
+  >
+> {
+  return z
+    .array(
+      z.object({
+        user: z.string().trim().min(1),
+        profile: z.enum(E_TABLE_PROFILE),
+      }),
+    )
+    .default([]);
+}
 
-export const GroupConfigurationSchema = z.object({
-  slug: z.string().trim(),
-  name: z.string().trim(),
-  fields: z.array(z.any()).default([]),
-  _schema: z.any().default({}),
-});
+export const TableMembersSchema = tableMembers();
+
+function groupConfiguration(): z.ZodObject<
+  {
+    slug: z.ZodString;
+    name: z.ZodString;
+    fields: z.ZodDefault<z.ZodArray<z.ZodAny>>;
+    _schema: z.ZodDefault<z.ZodAny>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    slug: z.string().trim(),
+    name: z.string().trim(),
+    fields: z.array(z.any()).default([]),
+    _schema: z.any().default({}),
+  });
+}
+
+export const GroupConfigurationSchema = groupConfiguration();
 
 function tableStyle(): z.ZodDefault<
   z.ZodEnum<{
@@ -167,49 +337,121 @@ function tableStyle(): z.ZodDefault<
 
 export const TableStyleSchema = tableStyle();
 
-export const TableFieldOrderListSchema = z.array(z.string().trim()).default([]);
+function tableFieldOrderList(): z.ZodDefault<z.ZodArray<z.ZodString>> {
+  return z.array(z.string().trim()).default([]);
+}
 
-export const TableFieldOrderFormSchema = z.array(z.string().trim()).default([]);
+export const TableFieldOrderListSchema = tableFieldOrderList();
 
-export const TableFieldOrderFilterSchema = z
-  .array(z.string().trim())
-  .default([]);
+function tableFieldOrderForm(): z.ZodDefault<z.ZodArray<z.ZodString>> {
+  return z.array(z.string().trim()).default([]);
+}
 
-export const TableFieldOrderDetailSchema = z
-  .array(z.string().trim())
-  .default([]);
+export const TableFieldOrderFormSchema = tableFieldOrderForm();
 
-export const TableOrderSchema = z
-  .object({
-    field: z.string().trim(),
-    direction: z.enum(E_SORT_DIRECTION),
-  })
-  .nullable()
-  .default(null);
+function tableFieldOrderFilter(): z.ZodDefault<z.ZodArray<z.ZodString>> {
+  return z.array(z.string().trim()).default([]);
+}
 
-export const TableLayoutFieldsSchema = z.object({
-  title: z.string().nullable().default(null),
-  description: z.string().nullable().default(null),
-  cover: z.string().nullable().default(null),
-  category: z.string().nullable().default(null),
-  startDate: z.string().nullable().default(null),
-  endDate: z.string().nullable().default(null),
-  color: z.string().nullable().default(null),
-  participants: z.string().nullable().default(null),
-  reminder: z.string().nullable().default(null),
-});
+export const TableFieldOrderFilterSchema = tableFieldOrderFilter();
 
-export const TableMethodSchema = z.object({
-  beforeSave: z.object({
-    code: z.string().trim().nullable(),
-  }),
-  afterSave: z.object({
-    code: z.string().trim().nullable(),
-  }),
-  onLoad: z.object({
-    code: z.string().trim().nullable(),
-  }),
-});
+function tableFieldOrderDetail(): z.ZodDefault<z.ZodArray<z.ZodString>> {
+  return z.array(z.string().trim()).default([]);
+}
+
+export const TableFieldOrderDetailSchema = tableFieldOrderDetail();
+
+function tableOrder(): z.ZodDefault<
+  z.ZodNullable<
+    z.ZodObject<
+      {
+        field: z.ZodString;
+        direction: z.ZodEnum<{
+          readonly ASC: 'asc';
+          readonly DESC: 'desc';
+        }>;
+      },
+      z.core.$strip
+    >
+  >
+> {
+  return z
+    .object({
+      field: z.string().trim(),
+      direction: z.enum(E_SORT_DIRECTION),
+    })
+    .nullable()
+    .default(null);
+}
+
+export const TableOrderSchema = tableOrder();
+
+function tableLayoutFields(): z.ZodObject<
+  {
+    title: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    description: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    cover: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    category: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    startDate: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    endDate: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    color: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    participants: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    reminder: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    title: z.string().nullable().default(null),
+    description: z.string().nullable().default(null),
+    cover: z.string().nullable().default(null),
+    category: z.string().nullable().default(null),
+    startDate: z.string().nullable().default(null),
+    endDate: z.string().nullable().default(null),
+    color: z.string().nullable().default(null),
+    participants: z.string().nullable().default(null),
+    reminder: z.string().nullable().default(null),
+  });
+}
+
+export const TableLayoutFieldsSchema = tableLayoutFields();
+
+function tableMethod(): z.ZodObject<
+  {
+    beforeSave: z.ZodObject<
+      {
+        code: z.ZodNullable<z.ZodString>;
+      },
+      z.core.$strip
+    >;
+    afterSave: z.ZodObject<
+      {
+        code: z.ZodNullable<z.ZodString>;
+      },
+      z.core.$strip
+    >;
+    onLoad: z.ZodObject<
+      {
+        code: z.ZodNullable<z.ZodString>;
+      },
+      z.core.$strip
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    beforeSave: z.object({
+      code: z.string().trim().nullable(),
+    }),
+    afterSave: z.object({
+      code: z.string().trim().nullable(),
+    }),
+    onLoad: z.object({
+      code: z.string().trim().nullable(),
+    }),
+  });
+}
+
+export const TableMethodSchema = tableMethod();
 
 // ── Create e update ───────────────────────────────────────────────────
 
@@ -247,18 +489,18 @@ export const TableUpdateBodyValidator = z
     description: z.string().trim().nullable(),
     logo: z.string().trim().nullable(),
     style: tableStyle(),
-    fieldOrderList: TableFieldOrderListSchema,
-    fieldOrderForm: TableFieldOrderFormSchema,
-    fieldOrderFilter: TableFieldOrderFilterSchema,
-    fieldOrderDetail: TableFieldOrderDetailSchema,
-    methods: TableMethodSchema,
-    order: TableOrderSchema,
-    layoutFields: TableLayoutFieldsSchema.optional(),
-    groups: z.array(GroupConfigurationSchema).optional(),
+    fieldOrderList: tableFieldOrderList(),
+    fieldOrderForm: tableFieldOrderForm(),
+    fieldOrderFilter: tableFieldOrderFilter(),
+    fieldOrderDetail: tableFieldOrderDetail(),
+    methods: tableMethod(),
+    order: tableOrder(),
+    layoutFields: tableLayoutFields().optional(),
+    groups: z.array(groupConfiguration()).optional(),
     rowSlugFieldId: z.string().trim().nullable().optional(),
     // Permissoes (Grupo|Public|Nobody por acao) + convidados + troca de dono.
-    permissions: TablePermissionsSchema.optional(),
-    members: TableMembersSchema.optional(),
+    permissions: tablePermissions().optional(),
+    members: tableMembers().optional(),
     owner: z.string().trim().min(1).optional(),
   })
   .transform(withNormalizedSlug);
@@ -316,20 +558,58 @@ export type BulkRestorePayload = z.infer<typeof BulkIdsBodyValidator>;
 
 const FIELD_FORMAT_KEY_TO_VALUE: Record<string, string> = E_FIELD_FORMAT;
 
-const FieldFormatSchema = z
-  .union([z.string(), z.null()])
-  .nullable()
-  .optional()
-  .default(null)
-  .transform((value) => {
-    if (value === null || value === undefined) return null;
-    // aceita "DD_MM_YYYY" (chave) ou "dd/MM/yyyy" (valor)
-    if (value in FIELD_FORMAT_KEY_TO_VALUE) {
-      return FIELD_FORMAT_KEY_TO_VALUE[value];
-    }
-    return value;
-  })
-  .pipe(z.enum(E_FIELD_FORMAT).nullable());
+function fieldFormat(): z.ZodPipe<
+  z.ZodPipe<
+    z.ZodDefault<
+      z.ZodOptional<
+        z.ZodNullable<z.ZodUnion<readonly [z.ZodString, z.ZodNull]>>
+      >
+    >,
+    z.ZodTransform<string | null, string | null>
+  >,
+  z.ZodNullable<
+    z.ZodEnum<{
+      readonly ALPHA_NUMERIC: 'ALPHA_NUMERIC';
+      readonly INTEGER: 'INTEGER';
+      readonly DECIMAL: 'DECIMAL';
+      readonly URL: 'URL';
+      readonly EMAIL: 'EMAIL';
+      readonly PASSWORD: 'PASSWORD';
+      readonly PHONE: 'PHONE';
+      readonly CNPJ: 'CNPJ';
+      readonly CPF: 'CPF';
+      readonly RICH_TEXT: 'RICH_TEXT';
+      readonly PLAIN_TEXT: 'PLAIN_TEXT';
+      readonly DD_MM_YYYY: 'dd/MM/yyyy';
+      readonly MM_DD_YYYY: 'MM/dd/yyyy';
+      readonly YYYY_MM_DD: 'yyyy/MM/dd';
+      readonly DD_MM_YYYY_HH_MM_SS: 'dd/MM/yyyy HH:mm:ss';
+      readonly MM_DD_YYYY_HH_MM_SS: 'MM/dd/yyyy HH:mm:ss';
+      readonly YYYY_MM_DD_HH_MM_SS: 'yyyy/MM/dd HH:mm:ss';
+      readonly DD_MM_YYYY_DASH: 'dd-MM-yyyy';
+      readonly MM_DD_YYYY_DASH: 'MM-dd-yyyy';
+      readonly YYYY_MM_DD_DASH: 'yyyy-MM-dd';
+      readonly DD_MM_YYYY_HH_MM_SS_DASH: 'dd-MM-yyyy HH:mm:ss';
+      readonly MM_DD_YYYY_HH_MM_SS_DASH: 'MM-dd-yyyy HH:mm:ss';
+      readonly YYYY_MM_DD_HH_MM_SS_DASH: 'yyyy-MM-dd HH:mm:ss';
+    }>
+  >
+> {
+  return z
+    .union([z.string(), z.null()])
+    .nullable()
+    .optional()
+    .default(null)
+    .transform((value) => {
+      if (value === null || value === undefined) return null;
+      // aceita "DD_MM_YYYY" (chave) ou "dd/MM/yyyy" (valor)
+      if (value in FIELD_FORMAT_KEY_TO_VALUE) {
+        return FIELD_FORMAT_KEY_TO_VALUE[value];
+      }
+      return value;
+    })
+    .pipe(z.enum(E_FIELD_FORMAT).nullable());
+}
 
 const IMPORTABLE_FIELD_TYPES = [
   E_FIELD_TYPE.TEXT_SHORT,
@@ -343,56 +623,305 @@ const IMPORTABLE_FIELD_TYPES = [
   E_FIELD_TYPE.RELATIONSHIP,
 ] as const;
 
-const DropdownOptionSchema = z.object({
-  label: z.string().trim().min(1),
-  color: z.string().trim().nullable().optional(),
-});
+function dropdownOption(): z.ZodObject<
+  {
+    label: z.ZodString;
+    color: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    label: z.string().trim().min(1),
+    color: z.string().trim().nullable().optional(),
+  });
+}
 
-const RelationshipReferenceSchema = z.object({
-  table: z.string().trim().min(1),
-  field: z.string().trim().min(1),
-  order: z.enum(E_SORT_DIRECTION).optional().default('asc'),
-});
+function relationshipReference(): z.ZodObject<
+  {
+    table: z.ZodString;
+    field: z.ZodString;
+    order: z.ZodDefault<
+      z.ZodOptional<
+        z.ZodEnum<{
+          readonly ASC: 'asc';
+          readonly DESC: 'desc';
+        }>
+      >
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    table: z.string().trim().min(1),
+    field: z.string().trim().min(1),
+    order: z.enum(E_SORT_DIRECTION).optional().default('asc'),
+  });
+}
 
-const SchemaImportFieldSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Nome do campo é obrigatório')
-    .max(60, 'Nome do campo deve ter no máximo 60 caracteres'),
-  type: z.enum(IMPORTABLE_FIELD_TYPES),
-  required: z.boolean().optional().default(false),
-  multiple: z.boolean().optional().default(false),
-  format: FieldFormatSchema,
-  showInList: z.boolean().optional().default(true),
-  showInForm: z.boolean().optional().default(true),
-  showInFilter: z.boolean().optional().default(false),
-  showInDetail: z.boolean().optional().default(true),
-  defaultValue: z
-    .union([z.string(), z.array(z.string())])
-    .nullable()
-    .optional()
-    .default(null),
-  options: z.array(DropdownOptionSchema).optional().default([]),
-  relationship: RelationshipReferenceSchema.nullable().optional().default(null),
-});
+function schemaImportField(): z.ZodObject<
+  {
+    name: z.ZodString;
+    type: z.ZodEnum<{
+      TEXT_SHORT: 'TEXT_SHORT';
+      TEXT_LONG: 'TEXT_LONG';
+      DROPDOWN: 'DROPDOWN';
+      DATE: 'DATE';
+      RELATIONSHIP: 'RELATIONSHIP';
+      FILE: 'FILE';
+      CATEGORY: 'CATEGORY';
+      USER: 'USER';
+      USER_GROUP: 'USER_GROUP';
+    }>;
+    required: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    multiple: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    format: z.ZodPipe<
+      z.ZodPipe<
+        z.ZodDefault<
+          z.ZodOptional<
+            z.ZodNullable<z.ZodUnion<readonly [z.ZodString, z.ZodNull]>>
+          >
+        >,
+        z.ZodTransform<string | null, string | null>
+      >,
+      z.ZodNullable<
+        z.ZodEnum<{
+          readonly ALPHA_NUMERIC: 'ALPHA_NUMERIC';
+          readonly INTEGER: 'INTEGER';
+          readonly DECIMAL: 'DECIMAL';
+          readonly URL: 'URL';
+          readonly EMAIL: 'EMAIL';
+          readonly PASSWORD: 'PASSWORD';
+          readonly PHONE: 'PHONE';
+          readonly CNPJ: 'CNPJ';
+          readonly CPF: 'CPF';
+          readonly RICH_TEXT: 'RICH_TEXT';
+          readonly PLAIN_TEXT: 'PLAIN_TEXT';
+          readonly DD_MM_YYYY: 'dd/MM/yyyy';
+          readonly MM_DD_YYYY: 'MM/dd/yyyy';
+          readonly YYYY_MM_DD: 'yyyy/MM/dd';
+          readonly DD_MM_YYYY_HH_MM_SS: 'dd/MM/yyyy HH:mm:ss';
+          readonly MM_DD_YYYY_HH_MM_SS: 'MM/dd/yyyy HH:mm:ss';
+          readonly YYYY_MM_DD_HH_MM_SS: 'yyyy/MM/dd HH:mm:ss';
+          readonly DD_MM_YYYY_DASH: 'dd-MM-yyyy';
+          readonly MM_DD_YYYY_DASH: 'MM-dd-yyyy';
+          readonly YYYY_MM_DD_DASH: 'yyyy-MM-dd';
+          readonly DD_MM_YYYY_HH_MM_SS_DASH: 'dd-MM-yyyy HH:mm:ss';
+          readonly MM_DD_YYYY_HH_MM_SS_DASH: 'MM-dd-yyyy HH:mm:ss';
+          readonly YYYY_MM_DD_HH_MM_SS_DASH: 'yyyy-MM-dd HH:mm:ss';
+        }>
+      >
+    >;
+    showInList: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    showInForm: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    showInFilter: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    showInDetail: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    defaultValue: z.ZodDefault<
+      z.ZodOptional<
+        z.ZodNullable<
+          z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>
+        >
+      >
+    >;
+    options: z.ZodDefault<
+      z.ZodOptional<
+        z.ZodArray<
+          z.ZodObject<
+            {
+              label: z.ZodString;
+              color: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            },
+            z.core.$strip
+          >
+        >
+      >
+    >;
+    relationship: z.ZodDefault<
+      z.ZodOptional<
+        z.ZodNullable<
+          z.ZodObject<
+            {
+              table: z.ZodString;
+              field: z.ZodString;
+              order: z.ZodDefault<
+                z.ZodOptional<
+                  z.ZodEnum<{
+                    readonly ASC: 'asc';
+                    readonly DESC: 'desc';
+                  }>
+                >
+              >;
+            },
+            z.core.$strip
+          >
+        >
+      >
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Nome do campo é obrigatório')
+      .max(60, 'Nome do campo deve ter no máximo 60 caracteres'),
+    type: z.enum(IMPORTABLE_FIELD_TYPES),
+    required: z.boolean().optional().default(false),
+    multiple: z.boolean().optional().default(false),
+    format: fieldFormat(),
+    showInList: z.boolean().optional().default(true),
+    showInForm: z.boolean().optional().default(true),
+    showInFilter: z.boolean().optional().default(false),
+    showInDetail: z.boolean().optional().default(true),
+    defaultValue: z
+      .union([z.string(), z.array(z.string())])
+      .nullable()
+      .optional()
+      .default(null),
+    options: z.array(dropdownOption()).optional().default([]),
+    relationship: relationshipReference().nullable().optional().default(null),
+  });
+}
 
-const SchemaImportTableSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Nome da tabela é obrigatório')
-    .max(40, 'Nome da tabela deve ter no máximo 40 caracteres'),
-  style: z.enum(E_TABLE_STYLE).optional(),
-  fields: z
-    .array(SchemaImportFieldSchema)
-    .min(1, 'A tabela precisa de ao menos 1 campo')
-    .max(100, 'Limite de 100 campos por tabela'),
-});
+function schemaImportTable(): z.ZodObject<
+  {
+    name: z.ZodString;
+    style: z.ZodOptional<
+      z.ZodEnum<{
+        readonly LIST: 'LIST';
+        readonly GALLERY: 'GALLERY';
+        readonly DOCUMENT: 'DOCUMENT';
+        readonly CARD: 'CARD';
+        readonly MOSAIC: 'MOSAIC';
+        readonly KANBAN: 'KANBAN';
+        readonly FORUM: 'FORUM';
+        readonly CALENDAR: 'CALENDAR';
+        readonly GANTT: 'GANTT';
+      }>
+    >;
+    fields: z.ZodArray<
+      z.ZodObject<
+        {
+          name: z.ZodString;
+          type: z.ZodEnum<{
+            TEXT_SHORT: 'TEXT_SHORT';
+            TEXT_LONG: 'TEXT_LONG';
+            DROPDOWN: 'DROPDOWN';
+            DATE: 'DATE';
+            RELATIONSHIP: 'RELATIONSHIP';
+            FILE: 'FILE';
+            CATEGORY: 'CATEGORY';
+            USER: 'USER';
+            USER_GROUP: 'USER_GROUP';
+          }>;
+          required: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          multiple: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          format: z.ZodPipe<
+            z.ZodPipe<
+              z.ZodDefault<
+                z.ZodOptional<
+                  z.ZodNullable<z.ZodUnion<readonly [z.ZodString, z.ZodNull]>>
+                >
+              >,
+              z.ZodTransform<string | null, string | null>
+            >,
+            z.ZodNullable<
+              z.ZodEnum<{
+                readonly ALPHA_NUMERIC: 'ALPHA_NUMERIC';
+                readonly INTEGER: 'INTEGER';
+                readonly DECIMAL: 'DECIMAL';
+                readonly URL: 'URL';
+                readonly EMAIL: 'EMAIL';
+                readonly PASSWORD: 'PASSWORD';
+                readonly PHONE: 'PHONE';
+                readonly CNPJ: 'CNPJ';
+                readonly CPF: 'CPF';
+                readonly RICH_TEXT: 'RICH_TEXT';
+                readonly PLAIN_TEXT: 'PLAIN_TEXT';
+                readonly DD_MM_YYYY: 'dd/MM/yyyy';
+                readonly MM_DD_YYYY: 'MM/dd/yyyy';
+                readonly YYYY_MM_DD: 'yyyy/MM/dd';
+                readonly DD_MM_YYYY_HH_MM_SS: 'dd/MM/yyyy HH:mm:ss';
+                readonly MM_DD_YYYY_HH_MM_SS: 'MM/dd/yyyy HH:mm:ss';
+                readonly YYYY_MM_DD_HH_MM_SS: 'yyyy/MM/dd HH:mm:ss';
+                readonly DD_MM_YYYY_DASH: 'dd-MM-yyyy';
+                readonly MM_DD_YYYY_DASH: 'MM-dd-yyyy';
+                readonly YYYY_MM_DD_DASH: 'yyyy-MM-dd';
+                readonly DD_MM_YYYY_HH_MM_SS_DASH: 'dd-MM-yyyy HH:mm:ss';
+                readonly MM_DD_YYYY_HH_MM_SS_DASH: 'MM-dd-yyyy HH:mm:ss';
+                readonly YYYY_MM_DD_HH_MM_SS_DASH: 'yyyy-MM-dd HH:mm:ss';
+              }>
+            >
+          >;
+          showInList: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          showInForm: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          showInFilter: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          showInDetail: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+          defaultValue: z.ZodDefault<
+            z.ZodOptional<
+              z.ZodNullable<
+                z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>
+              >
+            >
+          >;
+          options: z.ZodDefault<
+            z.ZodOptional<
+              z.ZodArray<
+                z.ZodObject<
+                  {
+                    label: z.ZodString;
+                    color: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+                  },
+                  z.core.$strip
+                >
+              >
+            >
+          >;
+          relationship: z.ZodDefault<
+            z.ZodOptional<
+              z.ZodNullable<
+                z.ZodObject<
+                  {
+                    table: z.ZodString;
+                    field: z.ZodString;
+                    order: z.ZodDefault<
+                      z.ZodOptional<
+                        z.ZodEnum<{
+                          readonly ASC: 'asc';
+                          readonly DESC: 'desc';
+                        }>
+                      >
+                    >;
+                  },
+                  z.core.$strip
+                >
+              >
+            >
+          >;
+        },
+        z.core.$strip
+      >
+    >;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Nome da tabela é obrigatório')
+      .max(40, 'Nome da tabela deve ter no máximo 40 caracteres'),
+    style: z.enum(E_TABLE_STYLE).optional(),
+    fields: z
+      .array(schemaImportField())
+      .min(1, 'A tabela precisa de ao menos 1 campo')
+      .max(100, 'Limite de 100 campos por tabela'),
+  });
+}
 
 export const SchemaImportPayloadValidator = z.object({
   tables: z
-    .array(SchemaImportTableSchema)
+    .array(schemaImportTable())
     .min(1, 'É preciso declarar ao menos 1 tabela')
     .max(100, 'Limite de 100 tabelas por importação'),
 });
@@ -407,5 +936,5 @@ export const SchemaImportBodyValidator = z.object({
 
 export type SchemaImportBody = z.infer<typeof SchemaImportBodyValidator>;
 export type SchemaImportPayload = z.infer<typeof SchemaImportPayloadValidator>;
-export type SchemaImportTable = z.infer<typeof SchemaImportTableSchema>;
-export type SchemaImportField = z.infer<typeof SchemaImportFieldSchema>;
+export type SchemaImportTable = z.infer<ReturnType<typeof schemaImportTable>>;
+export type SchemaImportField = z.infer<ReturnType<typeof schemaImportField>>;

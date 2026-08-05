@@ -6,26 +6,57 @@ import {
   search,
 } from '@application/features/_shared.validator';
 
-const FilterOperatorValidator = z.enum([
-  'equals',
-  'not_equals',
-  'contains',
-  'is_empty',
-  'is_not_empty',
-  'date_between',
-]);
+function filterOperator(): z.ZodEnum<{
+  equals: 'equals';
+  not_equals: 'not_equals';
+  contains: 'contains';
+  is_empty: 'is_empty';
+  is_not_empty: 'is_not_empty';
+  date_between: 'date_between';
+}> {
+  return z.enum([
+    'equals',
+    'not_equals',
+    'contains',
+    'is_empty',
+    'is_not_empty',
+    'date_between',
+  ]);
+}
 
-const FilterValidator = z.object({
-  id: z.string().trim().min(1),
-  fieldId: z.string().trim().min(1),
-  fieldSlug: z.string().trim().min(1),
-  fieldType: z.string().trim().min(1),
-  operator: FilterOperatorValidator,
-  value: z.string().trim().nullable().default(null),
-  values: z.array(z.string().trim()).default([]),
-  dateStart: z.string().trim().nullable().default(null),
-  dateEnd: z.string().trim().nullable().default(null),
-});
+function filter(): z.ZodObject<
+  {
+    id: z.ZodString;
+    fieldId: z.ZodString;
+    fieldSlug: z.ZodString;
+    fieldType: z.ZodString;
+    operator: z.ZodEnum<{
+      equals: 'equals';
+      not_equals: 'not_equals';
+      contains: 'contains';
+      is_empty: 'is_empty';
+      is_not_empty: 'is_not_empty';
+      date_between: 'date_between';
+    }>;
+    value: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    values: z.ZodDefault<z.ZodArray<z.ZodString>>;
+    dateStart: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    dateEnd: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    id: z.string().trim().min(1),
+    fieldId: z.string().trim().min(1),
+    fieldSlug: z.string().trim().min(1),
+    fieldType: z.string().trim().min(1),
+    operator: filterOperator(),
+    value: z.string().trim().nullable().default(null),
+    values: z.array(z.string().trim()).default([]),
+    dateStart: z.string().trim().nullable().default(null),
+    dateEnd: z.string().trim().nullable().default(null),
+  });
+}
 
 export const CascadeDropdownParamsValidator = z.object({
   slug: z.string().trim().min(1),
@@ -59,7 +90,7 @@ export const CascadeDropdownConfigBodyValidator = z.object({
   enabled: z.boolean().default(true),
   parentWidth: z.coerce.number().min(1).max(100).default(30),
   childWidth: z.coerce.number().min(1).max(100).default(70),
-  filters: z.array(FilterValidator).default([]),
+  filters: z.array(filter()).default([]),
 });
 
 export type CascadeDropdownParams = z.infer<

@@ -9,14 +9,25 @@ import { pagination, search } from '@application/features/_shared.validator';
  */
 
 /** `:slug` + `:rowId` + `:groupSlug` — aponta o grupo dentro de uma row. */
-export const GroupRowParamsValidator = z.object({
-  slug: z.string().trim(),
-  rowId: z.string().trim(),
-  groupSlug: z.string().trim(),
-});
+function groupRowParams(): z.ZodObject<
+  {
+    slug: z.ZodString;
+    rowId: z.ZodString;
+    groupSlug: z.ZodString;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    slug: z.string().trim(),
+    rowId: z.string().trim(),
+    groupSlug: z.string().trim(),
+  });
+}
+
+export const GroupRowParamsValidator = groupRowParams();
 
 /** Mais `:itemId` — aponta um item do grupo. */
-export const GroupRowItemParamsValidator = GroupRowParamsValidator.extend({
+export const GroupRowItemParamsValidator = groupRowParams().extend({
   itemId: z.string().trim(),
 });
 

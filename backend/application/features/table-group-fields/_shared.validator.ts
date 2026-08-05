@@ -21,13 +21,23 @@ import {
  */
 
 /** `:slug` + `:groupSlug` — aponta o grupo dentro da tabela. */
-export const GroupParamsValidator = z.object({
-  slug: z.string().trim(),
-  groupSlug: z.string().trim(),
-});
+function groupParams(): z.ZodObject<
+  {
+    slug: z.ZodString;
+    groupSlug: z.ZodString;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    slug: z.string().trim(),
+    groupSlug: z.string().trim(),
+  });
+}
+
+export const GroupParamsValidator = groupParams();
 
 /** `:slug` + `:groupSlug` + `:fieldId` — aponta um campo do grupo. */
-export const GroupFieldParamsValidator = GroupParamsValidator.extend({
+export const GroupFieldParamsValidator = groupParams().extend({
   fieldId: z.string().trim(),
 });
 

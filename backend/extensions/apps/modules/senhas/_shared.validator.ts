@@ -5,12 +5,21 @@ import { objectId } from '@application/features/_shared.validator';
 /** Validadores Zod do módulo Senhas. Mensagens em PT-BR. */
 
 /** `:channelId` — repetido em 6 rotas, antes so como JSON Schema a mao. */
-export const ChannelParamsValidator = z.object({
-  channelId: objectId(),
-});
+function channelParams(): z.ZodObject<
+  {
+    channelId: z.ZodString;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    channelId: objectId(),
+  });
+}
+
+export const ChannelParamsValidator = channelParams();
 
 /** Mais `:entryId` — aponta uma senha dentro do canal. */
-export const EntryParamsValidator = ChannelParamsValidator.extend({
+export const EntryParamsValidator = channelParams().extend({
   entryId: objectId(),
 });
 
