@@ -13,10 +13,6 @@ import { SwitchAccountBodyValidator } from '../_shared.validator';
 
 import { SwitchAccountSchema } from './switch-account.schema';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: 'authentication',
 })
@@ -26,6 +22,9 @@ export default class {
   constructor(
     private readonly profileUseCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -42,13 +41,13 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { accountId } = SwitchAccountBodyValidator.parse(request.body);
-    const currentActiveId = session.getActiveAccountId(request);
+    const currentActiveId = this.session.getActiveAccountId(request);
 
     if (accountId === currentActiveId) {
       return response.status(200).send({ activeAccountId: accountId });
     }
 
-    const sessions = session.readAccountSessions(request);
+    const sessions = this.session.readAccountSessions(request);
     const targetRefreshToken = sessions[accountId];
 
     if (!targetRefreshToken) {
@@ -59,10 +58,8 @@ export default class {
       });
     }
 
-    const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
-      request,
-      targetRefreshToken,
-    );
+    const refreshTokenDecoded: IJWTPayload | null =
+      await this.session.verifyToken(request, targetRefreshToken);
 
     if (
       !refreshTokenDecoded ||
@@ -70,7 +67,7 @@ export default class {
       refreshTokenDecoded.sub !== accountId
     ) {
       delete sessions[accountId];
-      session.writeAccountSessions(response, sessions);
+      this.session.writeAccountSessions(response, sessions);
 
       return response.status(401).send({
         message: 'Refresh token inválido ou expirado',
@@ -83,20 +80,20 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const tokens = await session.createTokens(result.value, response);
+    const tokens = await this.session.createTokens(result.value, response);
 
     // Alvo deixa de ser inativo; a conta ativa atual passa a inativa.
     delete sessions[accountId];
-    const currentRefreshToken = session.getRequestCookie(
+    const currentRefreshToken = this.session.getRequestCookie(
       request,
       REFRESH_TOKEN_COOKIE,
     );
     if (currentActiveId && currentRefreshToken) {
       sessions[currentActiveId] = currentRefreshToken;
     }
-    session.writeAccountSessions(response, sessions);
+    this.session.writeAccountSessions(response, sessions);
 
-    session.setActiveSession(response, accountId, { ...tokens });
+    this.session.setActiveSession(response, accountId, { ...tokens });
 
     return response.status(200).send({ activeAccountId: accountId });
   }

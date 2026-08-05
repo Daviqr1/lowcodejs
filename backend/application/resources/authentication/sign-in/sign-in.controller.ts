@@ -14,10 +14,6 @@ import { SignInBodyValidator } from '../_shared.validator';
 import { SignInSchema } from './sign-in.schema';
 import SignInUseCase from './sign-in.use-case';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: 'authentication',
 })
@@ -26,6 +22,9 @@ export default class {
 
   constructor(
     private readonly useCase: SignInUseCase = getInstanceByToken(SignInUseCase),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
+    ),
   ) {}
 
   @POST({
@@ -40,11 +39,11 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const tokens = await session.createTokens(result.value, response);
+    const tokens = await this.session.createTokens(result.value, response);
     const accountId = result.value._id.toString();
 
-    const currentActiveId = session.getActiveAccountId(request);
-    const sessions = session.readAccountSessions(request);
+    const currentActiveId = this.session.getActiveAccountId(request);
+    const sessions = this.session.readAccountSessions(request);
 
     const existingIds = new Set<string>(Object.keys(sessions));
     if (currentActiveId) existingIds.add(currentActiveId);
@@ -60,7 +59,7 @@ export default class {
     // Preserva a sessão ativa atual (de outra conta) movendo-a para o mapa de
     // sessões inativas antes de promover a nova conta.
     if (currentActiveId && currentActiveId !== accountId) {
-      const currentRefreshToken = session.getRequestCookie(
+      const currentRefreshToken = this.session.getRequestCookie(
         request,
         REFRESH_TOKEN_COOKIE,
       );
@@ -69,8 +68,8 @@ export default class {
 
     delete sessions[accountId];
 
-    session.writeAccountSessions(response, sessions);
-    session.setActiveSession(response, accountId, { ...tokens });
+    this.session.writeAccountSessions(response, sessions);
+    this.session.setActiveSession(response, accountId, { ...tokens });
 
     return response.status(200).send();
   }

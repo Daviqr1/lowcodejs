@@ -9,10 +9,6 @@ import { SetupAdminSubmitSchema } from './submit.schema';
 import SetupAdminSubmitUseCase from './submit.use-case';
 import { SetupAdminBodyValidator } from './submit.validator';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: '/setup',
 })
@@ -22,6 +18,9 @@ export default class {
   constructor(
     private readonly useCase: SetupAdminSubmitUseCase = getInstanceByToken(
       SetupAdminSubmitUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -43,9 +42,9 @@ export default class {
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
     const { user, ...status } = result.value;
-    const tokens = await session.createTokens(user, response);
+    const tokens = await this.session.createTokens(user, response);
 
-    session.setActiveSession(response, user._id.toString(), { ...tokens });
+    this.session.setActiveSession(response, user._id.toString(), { ...tokens });
 
     return response.status(201).send(status);
   }

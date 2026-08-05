@@ -11,10 +11,6 @@ import { MagicLinkQueryValidator } from '../_shared.validator';
 import { MagicLinkSchema } from './magic-link.schema';
 import MagicLinkUseCase from './magic-link.use-case';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: '/authentication',
 })
@@ -24,6 +20,9 @@ export default class {
   constructor(
     private readonly useCase: MagicLinkUseCase = getInstanceByToken(
       MagicLinkUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -40,9 +39,9 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const tokens = await session.createTokens(result.value, response);
+    const tokens = await this.session.createTokens(result.value, response);
 
-    session.setActiveSession(response, result.value._id.toString(), {
+    this.session.setActiveSession(response, result.value._id.toString(), {
       ...tokens,
     });
 

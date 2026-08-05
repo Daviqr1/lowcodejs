@@ -12,13 +12,6 @@ import UserMapperService from '@application/services/user-mapper/user-mapper.ser
 
 import { AuthenticationAccountsSchema } from './accounts.schema';
 
-const userMapper =
-  getInstanceByToken<UserMapperContractService>(UserMapperService);
-
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: 'authentication',
 })
@@ -26,6 +19,12 @@ export default class {
   constructor(
     private readonly profileUseCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
+    ),
+    private readonly userMapper: UserMapperContractService = getInstanceByToken(
+      UserMapperService,
     ),
   ) {}
 
@@ -41,12 +40,12 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const activeId = session.getActiveAccountId(request);
-    const activeRefreshToken = session.getRequestCookie(
+    const activeId = this.session.getActiveAccountId(request);
+    const activeRefreshToken = this.session.getRequestCookie(
       request,
       REFRESH_TOKEN_COOKIE,
     );
-    const sessions = session.readAccountSessions(request);
+    const sessions = this.session.readAccountSessions(request);
 
     // Mapa accountId -> refreshToken (conta ativa + inativas, sem duplicar).
     const candidates = new Map<string, string>();
@@ -61,10 +60,8 @@ export default class {
     const validSessions: Record<string, string> = {};
 
     for (const [accountId, refreshToken] of candidates) {
-      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
-        request,
-        refreshToken,
-      );
+      const refreshTokenDecoded: IJWTPayload | null =
+        await this.session.verifyToken(request, refreshToken);
 
       if (
         !refreshTokenDecoded ||
@@ -78,12 +75,12 @@ export default class {
 
       if (result.isLeft()) continue;
 
-      accounts.push(userMapper.toResponse(result.value));
+      accounts.push(this.userMapper.toResponse(result.value));
       if (accountId !== activeId) validSessions[accountId] = refreshToken;
     }
 
     // Poda sessões inativas inválidas reescrevendo o cookie consolidado.
-    session.writeAccountSessions(response, validSessions);
+    this.session.writeAccountSessions(response, validSessions);
 
     const activeIsValid = accounts.some(
       (account) => account._id.toString() === activeId,
@@ -93,9 +90,9 @@ export default class {
     if (activeId && activeIsValid) activeAccountId = activeId;
 
     if (activeAccountId) {
-      session.setActiveAccountCookie(response, activeAccountId);
+      this.session.setActiveAccountCookie(response, activeAccountId);
     } else {
-      session.clearActiveAccountCookie(response);
+      this.session.clearActiveAccountCookie(response);
     }
 
     return response.status(200).send({

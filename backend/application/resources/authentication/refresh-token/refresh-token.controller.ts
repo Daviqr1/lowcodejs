@@ -11,10 +11,6 @@ import SessionService from '@application/services/session/session.service';
 import { RefreshTokenSchema } from './refresh-token.schema';
 import RefreshTokenUseCase from './refresh-token.use-case';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: 'authentication',
 })
@@ -24,6 +20,9 @@ export default class {
   constructor(
     private readonly useCase: RefreshTokenUseCase = getInstanceByToken(
       RefreshTokenUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -40,7 +39,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     try {
-      const refreshToken = session.getRequestCookie(
+      const refreshToken = this.session.getRequestCookie(
         request,
         REFRESH_TOKEN_COOKIE,
       );
@@ -53,12 +52,10 @@ export default class {
         });
       }
 
-      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
-        request,
-        refreshToken,
-      );
+      const refreshTokenDecoded: IJWTPayload | null =
+        await this.session.verifyToken(request, refreshToken);
 
-      const activeAccountId = session.getActiveAccountId(request);
+      const activeAccountId = this.session.getActiveAccountId(request);
 
       if (
         !refreshTokenDecoded ||
@@ -79,9 +76,9 @@ export default class {
 
       if (result.isLeft()) return this.http.sendError(response, result.value);
 
-      const tokens = await session.createTokens(result.value, response);
+      const tokens = await this.session.createTokens(result.value, response);
 
-      session.setActiveSession(response, refreshTokenDecoded.sub, {
+      this.session.setActiveSession(response, refreshTokenDecoded.sub, {
         ...tokens,
       });
 

@@ -10,10 +10,6 @@ import { ValidateCodeBodyValidator } from '../_shared.validator';
 import { ValidateCodeSchema } from './validate-code.schema';
 import ValidateCodeUseCase from './validate-code.use-case';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 @Controller({
   route: 'authentication',
 })
@@ -23,6 +19,9 @@ export default class {
   constructor(
     private readonly useCase: ValidateCodeUseCase = getInstanceByToken(
       ValidateCodeUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -39,9 +38,9 @@ export default class {
 
     if (result.isLeft()) return this.http.sendError(response, result.value);
 
-    const tokens = await session.createTokens(result.value.user, response);
+    const tokens = await this.session.createTokens(result.value.user, response);
 
-    session.setActiveSession(response, result.value.user._id.toString(), {
+    this.session.setActiveSession(response, result.value.user._id.toString(), {
       ...tokens,
     });
 

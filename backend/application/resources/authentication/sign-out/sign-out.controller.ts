@@ -11,10 +11,6 @@ import { SignOutBodyValidator } from '../_shared.validator';
 
 import { SignOutSchema } from './sign-out.schema';
 
-// Resolvido no import do modulo — `loadControllers()` roda depois de
-// `registerDependencies()`, entao o container ja esta populado.
-const session = getInstanceByToken<SessionContractService>(SessionService);
-
 const SUCCESS_MESSAGE = 'Logout realizado com sucesso';
 
 @Controller({
@@ -24,6 +20,9 @@ export default class {
   constructor(
     private readonly profileUseCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
+    ),
+    private readonly session: SessionContractService = getInstanceByToken(
+      SessionService,
     ),
   ) {}
 
@@ -40,11 +39,11 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const { all } = SignOutBodyValidator.parse(request.body ?? {});
-    const sessions = session.readAccountSessions(request);
+    const sessions = this.session.readAccountSessions(request);
     const sessionIds = Object.keys(sessions);
 
     if (all || sessionIds.length === 0) {
-      session.clearAllSessions(response);
+      this.session.clearAllSessions(response);
 
       return response.status(200).send({
         message: SUCCESS_MESSAGE,
@@ -56,10 +55,8 @@ export default class {
     for (const nextAccountId of sessionIds) {
       const refreshToken = sessions[nextAccountId];
 
-      const refreshTokenDecoded: IJWTPayload | null = await session.verifyToken(
-        request,
-        refreshToken,
-      );
+      const refreshTokenDecoded: IJWTPayload | null =
+        await this.session.verifyToken(request, refreshToken);
 
       if (
         !refreshTokenDecoded ||
@@ -77,11 +74,11 @@ export default class {
         continue;
       }
 
-      const tokens = await session.createTokens(result.value, response);
+      const tokens = await this.session.createTokens(result.value, response);
 
       delete sessions[nextAccountId];
-      session.writeAccountSessions(response, sessions);
-      session.setActiveSession(response, nextAccountId, { ...tokens });
+      this.session.writeAccountSessions(response, sessions);
+      this.session.setActiveSession(response, nextAccountId, { ...tokens });
 
       return response.status(200).send({
         message: SUCCESS_MESSAGE,
@@ -90,7 +87,7 @@ export default class {
     }
 
     // Nenhuma sessão inativa válida restante: encerra tudo.
-    session.clearAllSessions(response);
+    this.session.clearAllSessions(response);
 
     return response.status(200).send({
       message: SUCCESS_MESSAGE,

@@ -9,9 +9,6 @@ import UserMapperService from '@application/services/user-mapper/user-mapper.ser
 import { ProfileShowSchema } from './show.schema';
 import ProfileShowUseCase from './show.use-case';
 
-const userMapper =
-  getInstanceByToken<UserMapperContractService>(UserMapperService);
-
 @Controller({
   route: 'profile',
 })
@@ -21,6 +18,9 @@ export default class {
   constructor(
     private readonly useCase: ProfileShowUseCase = getInstanceByToken(
       ProfileShowUseCase,
+    ),
+    private readonly userMapper: UserMapperContractService = getInstanceByToken(
+      UserMapperService,
     ),
   ) {}
 
@@ -45,7 +45,7 @@ export default class {
     const { capabilities, ...user } = result.value;
 
     return response.status(200).send({
-      ...userMapper.toResponse(user),
+      ...this.userMapper.toResponse(user),
       capabilities,
     });
   }
