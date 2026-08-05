@@ -136,6 +136,32 @@ describe('zodToRouteSchema', () => {
     expect(Object(rua.errorMessage)).toEqual({ minLength: 'rua obrigatoria' });
   });
 
+  it('tira o default de dentro de combinador, que o AJV strict recusa', () => {
+    // `.nullable()` num objeto vira `anyOf`, e o default do campo passa a morar
+    // dentro dele. O AJV do Fastify recusa a rota inteira nesse caso:
+    // "strict mode: default is ignored for: ...".
+    const schema = zodToRouteSchema(
+      z.object({
+        visibility: z
+          .object({
+            kind: z.enum(['PUBLIC', 'NOBODY']),
+            group: z.string().nullable().default(null),
+          })
+          .nullable()
+          .optional(),
+        page: z.coerce.number().default(1),
+      }),
+    );
+
+    const visibility = Object(Object(schema.properties).visibility);
+    const branch = Object(Object(visibility.anyOf)[0]);
+    const group = Object(Object(branch.properties).group);
+    expect(group.default).toBeUndefined();
+
+    // Fora de combinador o default e aplicado pelo AJV e continua valendo.
+    expect(Object(Object(schema.properties).page).default).toBe(1);
+  });
+
   it('descreve a entrada de um schema com transform', () => {
     // Em `io: 'input'` a transformacao ainda nao aconteceu, entao a forma que
     // chega e representavel — o que falha e so o modo de saida.

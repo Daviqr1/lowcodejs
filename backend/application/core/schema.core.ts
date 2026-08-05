@@ -167,6 +167,40 @@ function errorMessageOf(node: JsonSchemaNode): Record<string, unknown> {
   return asNode(node.errorMessage) ?? {};
 }
 
+/** Palavras que combinam sub-schemas: dentro delas o AJV ignora `default`. */
+const COMBINATORS = ['anyOf', 'oneOf', 'allOf', 'not', 'if', 'then', 'else'];
+
+/**
+ * Remove `default` de tudo que esta **dentro** de um combinador.
+ *
+ * O AJV so aplica default quando o schema e filho direto de `properties`/
+ * `items` do dado; dentro de `anyOf` e companhia ele ignora — e, em strict
+ * mode (o do Fastify), recusa a rota inteira com "default is ignored for: X".
+ *
+ * Aparece sempre que um objeto com campo `.default()` leva `.nullable()`: o
+ * nullable vira `anyOf`, e o default do campo passa a morar dentro dele.
+ */
+function stripIgnoredDefaults(node: unknown, insideCombinator = false): void {
+  if (!node || typeof node !== 'object') return;
+
+  if (Array.isArray(node)) {
+    for (const item of node) stripIgnoredDefaults(item, insideCombinator);
+    return;
+  }
+
+  if (insideCombinator) Reflect.deleteProperty(node, 'default');
+
+  const record = asNode(node);
+  if (!record) return;
+
+  for (const [keyword, child] of Object.entries(record)) {
+    stripIgnoredDefaults(
+      child,
+      insideCombinator || COMBINATORS.includes(keyword),
+    );
+  }
+}
+
 /**
  * Campo ausente dispara `required` no objeto pai, nao `type` na propriedade.
  * Promove a mensagem de tipo de cada propriedade obrigatoria para o
@@ -258,6 +292,7 @@ export function zodToRouteSchema(schema: z.ZodType): JsonSchemaNode {
   // O Fastify compila com o AJV dele; declarar outro meta-schema so atrapalha.
   delete result.$schema;
 
+  stripIgnoredDefaults(result);
   liftRequiredMessages(result);
 
   return result;
