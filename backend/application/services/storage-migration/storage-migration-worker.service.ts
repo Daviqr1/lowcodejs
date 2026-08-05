@@ -24,7 +24,7 @@ import {
   E_STORAGE_MIGRATION_STATUS,
   type TStorageLocation,
 } from '@application/core/entity.core';
-import type { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
+import { StorageContractRepository } from '@application/repositories/storage/storage-contract.repository';
 import { QueueWorkerBase } from '@application/services/queue-worker/queue-worker.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
 import StorageService from '@application/services/storage/storage.service';

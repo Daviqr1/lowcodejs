@@ -17,13 +17,13 @@ import {
   type IField,
   type IGroupConfiguration,
 } from '@application/core/entity.core';
-import type { RowContractRepository } from '@application/repositories/row/row-contract.repository';
-import type { TableContractRepository } from '@application/repositories/table/table-contract.repository';
+import { RowContractRepository } from '@application/repositories/row/row-contract.repository';
+import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 import { FieldValueContractService } from '@application/services/field-value/field-value-contract.service';
 import { QueueWorkerBase } from '@application/services/queue-worker/queue-worker.base';
 import { RedisContractService } from '@application/services/redis/redis-contract.service';
-import type { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
-import type { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
+import { RowAccessGuardContractService } from '@application/services/row-access-guard/row-access-guard-contract.service';
+import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { RowPayloadValidatorContractService } from '@application/services/row-payload-validator/row-payload-validator-contract.service';
 
 import {
