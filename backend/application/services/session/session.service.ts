@@ -20,8 +20,13 @@ import {
 
 const ACCOUNT_SESSIONS_COOKIE = 'accountSessions';
 
-const ACCESS_MAX_AGE = 60 * 60 * 24 * 1000; // 24h
-const REFRESH_MAX_AGE = 60 * 60 * 7 * 24 * 1000; // 7d
+// O `maxAge` do @fastify/cookie e em SEGUNDOS — vira o atributo Max-Age do
+// Set-Cookie, que o RFC 6265 define em segundos. Multiplicar por 1000 fazia o
+// access token valer ~2,7 anos e o refresh ~19 anos no navegador: a sessao
+// nunca expirava do lado do cliente e sessoes mortas seguiam ocupando uma das
+// vagas de MAX_AUTH_ACCOUNTS.
+const ACCESS_MAX_AGE = 60 * 60 * 24; // 24h
+const REFRESH_MAX_AGE = 60 * 60 * 24 * 7; // 7d
 
 type CookieOptions = {
   path: string;
