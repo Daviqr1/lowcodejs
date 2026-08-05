@@ -73,7 +73,7 @@ em `services/row-access-guard/` e nas extensoes.
 
 ### `controllers.ts`
 
-`loadControllers()` — varre `application/resources` e `extensions` por
+`loadControllers()` — varre `application/features` e `extensions` por
 `*.controller.ts` e importa cada default export.
 
 ### `di-registry.ts`

@@ -51,10 +51,10 @@ validate(
 
 ## Onde é chamado
 
-- `resources/table-rows/create/create.use-case.ts` — após validação estrutural.
-- `resources/table-rows/update/update.use-case.ts` — com `skipMissing: true` +
+- `features/table-rows/create/create.use-case.ts` — após validação estrutural.
+- `features/table-rows/update/update.use-case.ts` — com `skipMissing: true` +
   `currentRowId: payload._id`.
-- `resources/table-rows/bulk-update/bulk-update.use-case.ts` — injeta o service e
+- `features/table-rows/bulk-update/bulk-update.use-case.ts` — injeta o service e
   o repassa ao `TableRowUpdateUseCase` que constrói internamente.
 
 Erro → `left(HTTPException.BadRequest('Requisição inválida',

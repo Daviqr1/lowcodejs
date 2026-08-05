@@ -1,7 +1,7 @@
 # error-log — Repositório de logs de erro
 
 Repositório da entidade **ErrorLog** (erros de aplicação capturados, listados/
-resolvidos pelo recurso `resources/error-logs/`).
+resolvidos pelo recurso `features/error-logs/`).
 
 | Arquivo                            | Papel                                                            |
 | ---------------------------------- | --------------------------------------------------------------- |

@@ -7,4 +7,4 @@ Rota de acesso direto a um registro pelo seu slug compartilhável
 | ----------- | ------------------------------------------------------------------------------------------------------------------ |
 | `index.tsx` | Route config: resolve o registro pelo slug (via `show-by-slug`) e redireciona/renderiza a visualização do registro |
 
-Backend correspondente: `resources/table-rows/show-by-slug`.
+Backend correspondente: `features/table-rows/show-by-slug`.

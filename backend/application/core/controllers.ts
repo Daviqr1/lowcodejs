@@ -39,7 +39,7 @@ export async function loadControllers(): Promise<Controllers> {
   const controllers: Controllers = [];
 
   await collectFromRoot(
-    join(process.cwd(), 'application/resources'),
+    join(process.cwd(), 'application/features'),
     controllers,
     'core',
   );

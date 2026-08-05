@@ -1,6 +1,0 @@
-graph TD
-    START[Container start] --> CHOWN[chown _storage para 1001]
-    CHOWN --> MIG[Roda scripts migrations sh em ordem 01 a 06]
-    MIG --> SEED[npm run seed seeders idempotentes]
-    SEED --> EXEC[exec su-exec 1001 node bin server.js]
-    EXEC --> READY[Fastify ready + listen + Socket.IO]

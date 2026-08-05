@@ -60,7 +60,7 @@ backend/
 │   ├── model/                     # Mongoose schemas (17 models, todos no DB system)
 │   ├── repositories/              # Contract + Mongoose + InMemory (18 entidades)
 │   ├── services/                  # Toda a logica de comportamento, um service por contexto
-│   └── resources/                 # 20 recursos REST (cada um com operacoes isoladas)
+│   └── features/                 # 20 recursos REST (cada um com operacoes isoladas)
 ├── database/
 │   ├── seeders/                   # Permissions, user groups, settings (idempotente)
 │   └── migrations/                # Migracoes one-time (dual-connection)
@@ -689,7 +689,7 @@ Helpers (`test/helpers/auth.helper.ts`):
 
 ## Socket.IO / Chat
 
-- Arquivo: `application/resources/chat/chat.socket.ts`
+- Arquivo: `application/features/chat/chat.socket.ts`
 - Auth: cookie accessToken (mesmo JWT do HTTP)
 - Integra MCP (Model Context Protocol) + OpenAI
 - Descobre tools do MCP server dinamicamente, converte para OpenAI tool definitions

@@ -26,5 +26,5 @@ documento Setting (`AI_LLM_PROVIDER`, `LLM_*`, `OPENAI_*`).
 
 ## Consumidores
 
-`resources/chat/chat.socket.ts` (chat em tempo real) e `setting` (projecao/save
+`features/chat/chat.socket.ts` (chat em tempo real) e `setting` (projecao/save
 dos campos de IA).

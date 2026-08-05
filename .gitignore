@@ -31,8 +31,8 @@ docker-compose.override.yml
 .claude/settings.json
 .claude/settings.local.json
 
-!backend/application/resources/logs/
-!backend/application/resources/logs/**
+!backend/application/features/logs/
+!backend/application/features/logs/**
 
 !frontend/src/routes/_private/logs
 !frontend/src/routes/_private/logs/**
