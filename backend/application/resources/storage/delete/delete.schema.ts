@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { StorageDeleteParamsValidator } from './delete.validator';
 
 export const StorageDeleteSchema: FastifySchema = {
   tags: ['Armazenamento'],
@@ -8,27 +13,7 @@ export const StorageDeleteSchema: FastifySchema = {
   description:
     'Remove permanentemente um arquivo do banco de dados e do sistema de arquivos. Esta ação não pode ser desfeita',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['_id'],
-    properties: {
-      _id: {
-        type: 'string',
-        description: 'ID do registro de armazenamento para deletar',
-        examples: ['507f1f77bcf86cd799439011'],
-        errorMessage: {
-          type: 'O ID deve ser um texto',
-        },
-      },
-    },
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        _id: 'O ID é obrigatório',
-      },
-      additionalProperties: 'Campos extras não são permitidos',
-    },
-  },
+  params: zodToRouteSchema(StorageDeleteParamsValidator),
   response: {
     200: {
       description: 'Arquivo deletado com sucesso',

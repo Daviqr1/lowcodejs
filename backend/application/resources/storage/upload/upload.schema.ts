@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { StorageUploadQueryValidator } from './upload.validator';
 
 export const StorageUploadSchema: FastifySchema = {
   tags: ['Armazenamento'],
@@ -9,16 +14,7 @@ export const StorageUploadSchema: FastifySchema = {
     'Faz upload de um ou mais arquivos para o sistema de armazenamento. Os arquivos são salvos no driver configurado e os metadados são armazenados no banco de dados',
   security: [{ cookieAuth: [] }],
   consumes: ['multipart/form-data'],
-  querystring: {
-    type: 'object',
-    properties: {
-      staticName: {
-        type: 'string',
-        minLength: 1,
-        description: 'Nome fixo opcional para o arquivo (sobrescreve o gerado)',
-      },
-    },
-  },
+  querystring: zodToRouteSchema(StorageUploadQueryValidator),
   response: {
     201: {
       description: 'Arquivos enviados com sucesso',
