@@ -86,7 +86,7 @@ export default class LoggerMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<ILogger | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const logger = await Model.findOne(where).populate(this.populateOptions);
 
