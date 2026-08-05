@@ -4,8 +4,8 @@ import {
   buildFieldPermissions,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
-  E_TABLE_STYLE,
   type IField,
+  type ITable,
 } from '@application/core/entity.core';
 import FieldInMemoryRepository from '@application/repositories/field/field-in-memory.repository';
 import RelationshipDefinitionInMemoryRepository from '@application/repositories/relationship-definition/relationship-definition-in-memory.repository';
@@ -18,6 +18,7 @@ import InMemoryModelBuilder from '@application/services/table/in-memory-model-bu
 import InMemorySchemaBuilder from '@application/services/table/in-memory-schema-builder.service';
 import TypeGuardService from '@application/services/type-guard/type-guard.service';
 import { InMemoryCascadeDropdownConfigRepository } from '@extensions/forms/plugins/cascade-dropdown/in-memory-cascade-dropdown-config.repository';
+import { makeFieldWithTable } from '@test/helpers/table-factory.helper';
 
 import TableFieldUpdateUseCase from '../update.use-case';
 
@@ -28,54 +29,22 @@ let schemaBuilder: InMemorySchemaBuilder;
 let modelBuilder: InMemoryModelBuilder;
 let sut: TableFieldUpdateUseCase;
 
-const FIELD_DEFAULTS = {
-  slug: 'nome',
-  type: E_FIELD_TYPE.TEXT_SHORT,
-  permissions: buildFieldPermissions(true, true, true),
-  showInFilter: true,
-  locked: false,
-  allowCreateRelationshipRecords: false,
-  native: false,
-  required: false,
-  category: [],
-  dropdown: [],
-  defaultValue: null,
-  format: E_FIELD_FORMAT.ALPHA_NUMERIC,
-  group: null,
-  multiple: false,
-  relationship: null,
-  widthInForm: 50,
-  widthInList: 10,
-  widthInDetail: null,
-};
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-async function createFieldAndTable(
+const createFieldAndTable = (
   fieldRepo: FieldInMemoryRepository,
   tableRepo: TableInMemoryRepository,
   fieldOverrides: Partial<IField> = {},
-) {
-  const field = await fieldRepo.create({
-    ...FIELD_DEFAULTS,
-    name: 'Nome',
-    ...fieldOverrides,
+): Promise<{ field: IField; table: ITable }> =>
+  makeFieldWithTable(fieldRepo, tableRepo, {
+    field: {
+      name: 'Nome',
+      slug: 'nome',
+      type: E_FIELD_TYPE.TEXT_SHORT,
+      showInFilter: true,
+      format: E_FIELD_FORMAT.ALPHA_NUMERIC,
+      ...fieldOverrides,
+    },
+    table: { name: 'Clientes', slug: 'clientes' },
   });
-
-  const table = await tableRepo.create({
-    name: 'Clientes',
-    slug: 'clientes',
-    _schema: {},
-    fields: [field._id],
-    owner: 'owner-id',
-    style: E_TABLE_STYLE.LIST,
-    fieldOrderList: [],
-    fieldOrderForm: [],
-  });
-
-  table.fields = [field];
-
-  return { field, table };
-}
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function buildUpdatePayload(
