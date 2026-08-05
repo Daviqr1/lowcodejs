@@ -1,15 +1,14 @@
 import z from 'zod';
 
+import type { Merge } from '@application/core/entity.core';
 import {
-  E_ROLE,
-  type IUser,
-  type Merge,
-  type ValueOf,
-} from '@application/core/entity.core';
-import {
-  bulkIds,
-  pagination,
   boolFlag,
+  bulkIds,
+  identifier,
+  pagination,
+  type RequesterScope,
+  search,
+  sortDirection,
 } from '@application/features/_shared.validator';
 
 /**
@@ -18,12 +17,7 @@ import {
  */
 
 /** `:_id` das rotas por grupo. Antes copiado em 5 operacoes. */
-export const UserGroupIdentifierParamsValidator = z.object({
-  _id: z
-    .string({ message: 'O ID é obrigatório' })
-    .trim()
-    .min(1, 'O ID é obrigatório'),
-});
+export const UserGroupIdentifierParamsValidator = identifier();
 
 const UserGroupDescriptionValidator = z
   .string({ message: 'A descrição deve ser um texto' })
@@ -40,17 +34,12 @@ const UserGroupEncompassesValidator = z
 
 /** Busca e ordenacao comuns a listar e exportar. */
 const UserGroupFilterQueryValidator = z.object({
-  search: z.string({ message: 'A busca deve ser um texto' }).trim().optional(),
+  search: search(),
   trashed: boolFlag(),
-  'order-name': z.enum(['asc', 'desc']).optional(),
-  'order-description': z.enum(['asc', 'desc']).optional(),
-  'order-created-at': z.enum(['asc', 'desc']).optional(),
+  'order-name': sortDirection(),
+  'order-description': sortDirection(),
+  'order-created-at': sortDirection(),
 });
-
-/** Quem pediu a consulta, injetado pelo controller a partir da sessao. */
-type RequesterScope = {
-  user?: Merge<Pick<IUser, '_id'>, { role: ValueOf<typeof E_ROLE> }>;
-};
 
 // ── Create e update ───────────────────────────────────────────────────
 
