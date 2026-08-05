@@ -4,6 +4,7 @@ import { E_REACTION_TYPE, type Merge } from '@application/core/entity.core';
 import {
   bulkIds,
   pagination,
+  search,
   slugIdParams,
 } from '@application/features/_shared.validator';
 
@@ -103,7 +104,7 @@ export type TableRowAutoSavePayload = Merge<
 
 export const TableRowPaginatedQueryValidator = pagination()
   .extend({
-    search: z.string().trim().optional(),
+    search: search(),
     // Filtro excludeLinked: oculta registros ja vinculados (autocomplete 1:1/N:N).
     excludeLinked: z
       .enum(['true', 'false'])
@@ -124,7 +125,7 @@ export type TableRowPaginatedPayload = Merge<
 >;
 
 export const TableRowExportCsvQueryValidator = z
-  .object({ search: z.string().trim().optional() })
+  .object({ search: search() })
   .loose();
 
 export type TableRowExportCsvPayload = Merge<
