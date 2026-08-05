@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import {
+  CHIPS_LIMIT_FIELD_TYPES,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_PERMISSION_TARGET,
@@ -136,6 +137,7 @@ export const FieldCreateSchema = z.object({
   required: z.boolean().default(false),
   widthInForm: z.number().default(50),
   widthInList: z.number().default(10),
+  visibleChipsLimit: z.number().int().min(1).nullable().default(null),
   htmlContent: z.string().default(''),
 });
 
@@ -183,6 +185,7 @@ export const fieldCreateFormDefaultValues: FieldCreateFormValues = {
   required: false,
   widthInForm: 50,
   widthInList: 10,
+  visibleChipsLimit: null,
   htmlContent: '',
 };
 
@@ -298,6 +301,10 @@ export const CreateFieldFormFields = withForm({
       isUser ||
       isUserGroup;
     const showRequired = !isReaction && !isEvaluation && !isHtmlContent;
+    // O resumo "+N" só existe nos campos que renderizam chips (dropdown,
+    // relacionamento, usuário) e só quando aceitam múltiplos valores.
+    const showVisibleChipsLimit =
+      CHIPS_LIMIT_FIELD_TYPES.includes(fieldType) && fieldMultiple;
 
     return (
       <section
@@ -453,6 +460,7 @@ export const CreateFieldFormFields = withForm({
                     'relationship.order',
                     'allowCustomDropdownOptions',
                     'allowCreateRelationshipRecords',
+                    'visibleChipsLimit',
                     'htmlContent',
                   ];
                   for (const conditionalField of conditionalFields) {
@@ -471,6 +479,7 @@ export const CreateFieldFormFields = withForm({
                   form.setFieldValue('dropdown', []);
                   form.setFieldValue('allowCustomDropdownOptions', false);
                   form.setFieldValue('allowCreateRelationshipRecords', false);
+                  form.setFieldValue('visibleChipsLimit', null);
                   form.setFieldValue('category', []);
                   form.setFieldValue(
                     'relationship',
@@ -998,6 +1007,15 @@ export const CreateFieldFormFields = withForm({
                 description="Este campo deve permitir múltiplos valores?"
                 disabled={isPending}
               />
+            )}
+          </form.AppField>
+        )}
+
+        {/* Limite de chips exibidos antes de resumir em "+N" */}
+        {showVisibleChipsLimit && (
+          <form.AppField name="visibleChipsLimit">
+            {(field) => (
+              <field.TableFieldVisibleChipsLimit disabled={isPending} />
             )}
           </form.AppField>
         )}

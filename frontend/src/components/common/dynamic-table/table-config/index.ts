@@ -13,6 +13,7 @@ export { TableFieldFormatSelect } from './table-field-format-select';
 export { TableFieldRelationshipOrderSelect } from './table-field-relationship-order-select';
 export { TableFieldRelationshipTableSelect } from './table-field-relationship-table-select';
 export { TableFieldTypeSelect } from './table-field-type-select';
+export { TableFieldVisibleChipsLimit } from './table-field-visible-chips-limit';
 export { TableLayoutFieldSelect } from './table-layout-field-select';
 export { TableOrderSelectField } from './table-order-select-field';
 export { TableStyleSelectField } from './table-style-select-field';

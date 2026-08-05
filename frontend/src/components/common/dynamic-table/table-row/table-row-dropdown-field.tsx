@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { getDropdownContrastStyle } from '../table-cells/utils';
 
+import { splitVisibleChips } from './table-row-chips-limit';
 import { TableRowFieldLabel } from './table-row-field-label';
 
 import { Button } from '@/components/ui/button';
@@ -410,9 +411,13 @@ export function TableRowDropdownField({
                 if (values.length > 0) {
                   chipsPlaceholder = '';
                 }
+                const { visible, hiddenCount } = splitVisibleChips(
+                  values,
+                  field.visibleChipsLimit,
+                );
                 return (
                   <>
-                    {values.map((opt) => (
+                    {visible.map((opt) => (
                       <ComboboxChip
                         key={opt.value}
                         aria-label={opt.label}
@@ -421,6 +426,11 @@ export function TableRowDropdownField({
                         {opt.label}
                       </ComboboxChip>
                     ))}
+                    {hiddenCount > 0 && (
+                      <span className="text-muted-foreground text-xs">
+                        +{hiddenCount}
+                      </span>
+                    )}
                     <ComboboxChipsInput
                       placeholder={chipsPlaceholder}
                       onKeyDown={handleInputKeyDown}

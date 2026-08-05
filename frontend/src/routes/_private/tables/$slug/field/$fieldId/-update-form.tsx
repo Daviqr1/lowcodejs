@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { useReadTable } from '@/hooks/tanstack-query/use-table-read';
 import { withForm } from '@/integrations/tanstack-form/form-hook';
 import {
+  CHIPS_LIMIT_FIELD_TYPES,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_PERMISSION_TARGET,
@@ -139,6 +140,7 @@ export const FieldUpdateSchema = z.object({
   trashed: z.boolean().default(false),
   widthInForm: z.number().default(50),
   widthInList: z.number().default(10),
+  visibleChipsLimit: z.number().int().min(1).nullable().default(null),
   htmlContent: z.string().default(''),
 });
 
@@ -204,6 +206,7 @@ export const fieldUpdateFormDefaultValues: FieldUpdateFormValues = {
   trashed: false,
   widthInForm: 50,
   widthInList: 10,
+  visibleChipsLimit: null,
   htmlContent: '',
 };
 
@@ -311,6 +314,10 @@ export const UpdateFieldFormFields = withForm({
       isUser ||
       isUserGroup;
     const showRequired = !isReaction && !isEvaluation && !isHtmlContent;
+    // O resumo "+N" só existe nos campos que renderizam chips (dropdown,
+    // relacionamento, usuário) e só quando aceitam múltiplos valores.
+    const showVisibleChipsLimit =
+      CHIPS_LIMIT_FIELD_TYPES.includes(fieldType) && fieldMultiple;
 
     const isDisabled = mode === 'show' || isPending;
     const lockAllControls = isLocked && !isDropdown;
@@ -1057,6 +1064,17 @@ export const UpdateFieldFormFields = withForm({
               <field.FieldBooleanSwitch
                 label="Permitir múltiplos"
                 description="Este campo deve permitir múltiplos valores?"
+                disabled={isDisabled || lockNonOptions}
+              />
+            )}
+          </form.AppField>
+        )}
+
+        {/* Limite de chips exibidos antes de resumir em "+N" */}
+        {showVisibleChipsLimit && (
+          <form.AppField name="visibleChipsLimit">
+            {(field) => (
+              <field.TableFieldVisibleChipsLimit
                 disabled={isDisabled || lockNonOptions}
               />
             )}

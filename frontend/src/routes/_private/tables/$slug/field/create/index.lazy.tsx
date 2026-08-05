@@ -25,7 +25,11 @@ import { useTablePermission } from '@/hooks/use-table-permission';
 import { useAppForm } from '@/integrations/tanstack-form/form-hook';
 import { useApiErrorAutoClear } from '@/integrations/tanstack-form/use-api-error-auto-clear';
 import type { E_FIELD_FORMAT } from '@/lib/constant';
-import { E_FIELD_TYPE, E_TABLE_TYPE } from '@/lib/constant';
+import {
+  CHIPS_LIMIT_FIELD_TYPES,
+  E_FIELD_TYPE,
+  E_TABLE_TYPE,
+} from '@/lib/constant';
 import { applyApiFieldErrors } from '@/lib/form-utils';
 import { handleApiError } from '@/lib/handle-api-error';
 import type { ICategory, IField, ValueOf } from '@/lib/interfaces';
@@ -193,6 +197,12 @@ function RouteComponent(): React.JSX.Element {
         fillWithCurrentUserWhenEmpty = value.fillWithCurrentUserWhenEmpty;
       }
 
+      // Só os campos que renderizam chips guardam o limite do resumo "+N".
+      let visibleChipsLimit: number | null = null;
+      if (CHIPS_LIMIT_FIELD_TYPES.includes(value.type)) {
+        visibleChipsLimit = value.visibleChipsLimit;
+      }
+
       let relationship: IField['relationship'] = null;
       if (hasRelationship) {
         let labelParts: typeof value.relationship.labelParts = [];
@@ -248,6 +258,7 @@ function RouteComponent(): React.JSX.Element {
         permissions: value.permissions,
         widthInForm: value.widthInForm,
         widthInList: value.widthInList,
+        visibleChipsLimit,
         format,
         validations: value.validations,
         defaultValue: normalizeDefaultValue(value.type, value.defaultValue),

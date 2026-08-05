@@ -4,6 +4,7 @@ import { PlusIcon } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 
+import { splitVisibleChips } from './table-row-chips-limit';
 import { TableRowFieldLabel } from './table-row-field-label';
 
 import { ComboboxLoadMore } from '@/components/common/combobox-load-more';
@@ -968,23 +969,29 @@ function DefaultRelationshipField({
                 className={cn(isInvalid && 'border-destructive')}
               >
                 <ComboboxValue>
-                  {(values: Array<IRow>): React.ReactNode => (
-                    <React.Fragment>
-                      {values.slice(0, 2).map((row) => (
-                        <ComboboxChip
-                          key={row._id}
-                          aria-label={getRowLabel(row)}
-                        >
-                          {getRowLabel(row)}
-                        </ComboboxChip>
-                      ))}
-                      {values.length > 2 && (
-                        <span className="text-muted-foreground text-sm">
-                          +{values.length - 2}
-                        </span>
-                      )}
-                    </React.Fragment>
-                  )}
+                  {(values: Array<IRow>): React.ReactNode => {
+                    const { visible, hiddenCount } = splitVisibleChips(
+                      values,
+                      field.visibleChipsLimit,
+                    );
+                    return (
+                      <React.Fragment>
+                        {visible.map((row) => (
+                          <ComboboxChip
+                            key={row._id}
+                            aria-label={getRowLabel(row)}
+                          >
+                            {getRowLabel(row)}
+                          </ComboboxChip>
+                        ))}
+                        {hiddenCount > 0 && (
+                          <span className="text-muted-foreground text-sm">
+                            +{hiddenCount}
+                          </span>
+                        )}
+                      </React.Fragment>
+                    );
+                  }}
                 </ComboboxValue>
                 <ComboboxChipsInput placeholder={comboboxPlaceholder} />
               </ComboboxChips>

@@ -1,4 +1,4 @@
-import type { Meta } from './interfaces';
+import type { Meta, ValueOf } from './interfaces';
 
 export const TABLE_NAME_REGEX =
   /^[a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\-_]+$/;
@@ -44,6 +44,16 @@ export const E_FIELD_TYPE = {
   TRASHED_AT: 'TRASHED_AT',
   STATUS: 'STATUS',
 } as const;
+
+// Tipos que renderizam os selecionados como chips quando `multiple` — os unicos
+// em que `field.visibleChipsLimit` (resumo "+N") tem efeito. `ReadonlyArray<
+// string>` porque o tipo chega dos forms como string solta; o `satisfies`
+// mantem os elementos presos ao enum.
+export const CHIPS_LIMIT_FIELD_TYPES: ReadonlyArray<string> = [
+  E_FIELD_TYPE.DROPDOWN,
+  E_FIELD_TYPE.RELATIONSHIP,
+  E_FIELD_TYPE.USER,
+] satisfies ReadonlyArray<ValueOf<typeof E_FIELD_TYPE>>;
 
 // Rotulos default dos campos nativos (espelha o backend). Usado como placeholder
 // no editor de rotulo de campo nativo. Chave = slug do campo nativo.

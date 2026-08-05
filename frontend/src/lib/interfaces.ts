@@ -319,6 +319,10 @@ export type IField = Merge<
     widthInForm: number | null;
     widthInList: number | null;
     widthInDetail: number | null;
+    // Limite de chips exibidos antes de resumir o restante em "+N" —
+    // aplicável aos campos DROPDOWN, RELATIONSHIP e USER quando multiple.
+    // null = sem limite, exibe todos os selecionados.
+    visibleChipsLimit?: number | null;
     tip?: string | null;
     htmlContent?: string;
     defaultValue: string | Array<string> | null;

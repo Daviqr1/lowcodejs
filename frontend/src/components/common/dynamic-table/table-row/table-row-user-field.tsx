@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { splitVisibleChips } from './table-row-chips-limit';
 import { TableRowFieldLabel } from './table-row-field-label';
 
 import { ComboboxLoadMore } from '@/components/common/combobox-load-more';
@@ -257,9 +258,13 @@ export function TableRowUserField({
                   if (selectedValues.length > 0) {
                     chipsPlaceholder = '';
                   }
+                  const { visible, hiddenCount } = splitVisibleChips(
+                    selectedValues,
+                    field.visibleChipsLimit,
+                  );
                   return (
                     <React.Fragment>
-                      {selectedValues.slice(0, 2).map((user) => (
+                      {visible.map((user) => (
                         <ComboboxChip
                           key={user._id}
                           aria-label={user.name}
@@ -267,9 +272,9 @@ export function TableRowUserField({
                           {user.name}
                         </ComboboxChip>
                       ))}
-                      {selectedValues.length > 2 && (
+                      {hiddenCount > 0 && (
                         <span className="text-muted-foreground text-xs">
-                          +{selectedValues.length - 2}
+                          +{hiddenCount}
                         </span>
                       )}
                       <ComboboxChipsInput placeholder={chipsPlaceholder} />

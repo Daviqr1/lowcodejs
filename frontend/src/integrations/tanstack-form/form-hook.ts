@@ -44,6 +44,7 @@ import {
   TableFieldTypeSelect,
   TableFieldUserDefaultValue,
   TableFieldValidationsField,
+  TableFieldVisibleChipsLimit,
   TableLayoutFieldSelect,
   TableOrderSelectField,
   TableStyleSelectField,
@@ -110,6 +111,7 @@ export const { useAppForm, withForm } = createFormHook({
     TableFieldRelationshipOnDeleteSelect,
     TableFieldCategoryTree,
     TableFieldValidationsField,
+    TableFieldVisibleChipsLimit,
     // Table row data input
     TableRowTextField,
     TableRowTextareaField,
