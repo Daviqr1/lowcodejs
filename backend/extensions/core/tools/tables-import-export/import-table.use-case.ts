@@ -8,8 +8,6 @@ import {
   FIELD_GROUP_NATIVE_LIST,
   FIELD_NATIVE_LIST,
   type IField,
-  type IFieldPermissions,
-  type IFieldValidation,
   type IGroupConfiguration,
   type ILayoutFields,
   type ITable,
@@ -31,6 +29,7 @@ import {
 import { SlugContractService } from '@application/services/slug/slug-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
+import type { ExportedField, ExportedGroup } from './export-table.types';
 import {
   TABLE_IMPORT_EVENT,
   type TableImportPhase,
@@ -47,39 +46,6 @@ import type {
  * interna é segura porque guardada por checagem de objeto — evita espalhar
  * `as` pelos acessos ao pacote importado.
  */
-
-type ExportedField = {
-  name: string;
-  slug: string;
-  type: IField['type'];
-  required: boolean;
-  multiple: boolean;
-  format: IField['format'];
-  validations?: IFieldValidation[];
-  showInFilter: boolean;
-  showInParentList?: boolean;
-  visibleInParentList?: boolean;
-  permissions?: IFieldPermissions | null;
-  widthInForm: number | null;
-  widthInList: number | null;
-  widthInDetail: number | null;
-  defaultValue: string | string[] | null;
-  locked?: boolean;
-  relationship: {
-    tableSlug: string;
-    fieldSlug: string;
-    order: 'asc' | 'desc';
-  } | null;
-  dropdown: Array<{ id: string; label: string; color?: string | null }>;
-  category: IField['category'];
-  group: { slug: string } | null;
-};
-
-type ExportedGroup = {
-  slug: string;
-  name: string;
-  fields: ExportedField[];
-};
 
 type ExportedStructure = {
   name: string;

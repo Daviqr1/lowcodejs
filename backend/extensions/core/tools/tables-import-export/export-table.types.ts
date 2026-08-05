@@ -1,5 +1,6 @@
 import type { Either } from '@application/core/either.core';
 import type {
+  IField,
   IFieldPermissions,
   IFieldValidation,
   Merge,
@@ -19,10 +20,10 @@ export type ExportTableUseCasePayload = Merge<
 export type ExportedField = {
   name: string;
   slug: string;
-  type: string;
+  type: IField['type'];
   required: boolean;
   multiple: boolean;
-  format: string | null;
+  format: IField['format'];
   validations?: IFieldValidation[];
   showInFilter: boolean;
   showInParentList?: boolean;
@@ -39,7 +40,7 @@ export type ExportedField = {
     order: 'asc' | 'desc';
   } | null;
   dropdown: Array<{ id: string; label: string; color?: string | null }>;
-  category: Array<{ id: string; label: string; children: unknown[] }>;
+  category: IField['category'];
   group: { slug: string } | null;
 };
 
