@@ -1,30 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  GroupRowBodyValidator,
+  GroupRowItemParamsValidator,
+} from '../_shared.validator';
+
 export const GroupRowUpdateSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Atualizar item do grupo',
   description:
     'Atualiza um item (subdocumento) existente dentro de um campo FIELD_GROUP de uma row. Semântica PATCH: apenas os campos enviados são atualizados. O corpo é dinâmico.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug', 'itemId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-      itemId: {
-        type: 'string',
-        description: 'ID do item embutido a atualizar',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description: 'Campos dinâmicos correspondentes ao schema do grupo',
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(GroupRowItemParamsValidator),
+  body: zodToRouteSchema(GroupRowBodyValidator),
   response: {
     200: {
       description: 'Item atualizado com sucesso (campos de senha mascarados)',

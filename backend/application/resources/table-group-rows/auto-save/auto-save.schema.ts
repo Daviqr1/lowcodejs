@@ -1,37 +1,22 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  GroupRowAutoSaveBodyValidator,
+  GroupRowAutoSaveQueryValidator,
+  GroupRowParamsValidator,
+} from '../_shared.validator';
+
 export const GroupRowAutoSaveSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Auto-salvar item do grupo (rascunho)',
   description:
     'Persiste um item (subdocumento) de um campo FIELD_GROUP como rascunho (status=draft) com dados parciais reais. Sem _id cria um novo item; com _id atualiza o existente. Nunca bloqueia por campo obrigatório ausente. O corpo é dinâmico.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      _id: {
-        type: 'string',
-        description:
-          'ID do item embutido a atualizar (omitir para criar um novo rascunho)',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description: 'Campos dinâmicos correspondentes ao schema do grupo',
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(GroupRowParamsValidator),
+  querystring: zodToRouteSchema(GroupRowAutoSaveQueryValidator),
+  body: zodToRouteSchema(GroupRowAutoSaveBodyValidator),
   response: {
     201: {
       description:

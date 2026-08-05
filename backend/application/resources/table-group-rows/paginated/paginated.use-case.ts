@@ -12,7 +12,7 @@ import { RowPasswordContractService } from '@application/services/row-password/r
 import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
-import type { GroupRowPaginatedPayload } from './paginated.validator';
+import type { GroupRowPaginatedPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Paginated<Record<string, unknown>>>;
 type Payload = Merge<GroupRowPaginatedPayload, { __actorUserId?: string }>;

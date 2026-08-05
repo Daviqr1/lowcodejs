@@ -1,21 +1,16 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { GroupRowParamsValidator } from '../_shared.validator';
+
 export const GroupRowListSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Listar itens do grupo',
   description:
     'Lista todos os itens (subdocumentos) não excluídos de um campo FIELD_GROUP dentro de uma row. Campos de senha são mascarados.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupRowParamsValidator),
   response: {
     200: {
       description: 'Lista de itens do grupo',

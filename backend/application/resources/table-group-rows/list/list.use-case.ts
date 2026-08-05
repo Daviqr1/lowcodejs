@@ -11,7 +11,7 @@ import { RowPasswordContractService } from '@application/services/row-password/r
 import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
-import type { GroupRowListPayload } from './list.validator';
+import type { GroupRowListPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Record<string, unknown>[]>;
 type Payload = Merge<GroupRowListPayload, { __actorUserId?: string }>;

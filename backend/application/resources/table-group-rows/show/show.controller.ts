@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { GroupRowItemParamsValidator } from '../_shared.validator';
+
 import { GroupRowShowSchema } from './show.schema';
 import GroupRowShowUseCase from './show.use-case';
-import { GroupRowShowParamsValidator } from './show.validator';
 
 @Controller({
   route: 'tables',
@@ -37,7 +38,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = GroupRowShowParamsValidator.parse(request.params);
+    const params = GroupRowItemParamsValidator.parse(request.params);
     const result = await this.useCase.execute({
       ...params,
       __actorUserId: request.user?.sub,

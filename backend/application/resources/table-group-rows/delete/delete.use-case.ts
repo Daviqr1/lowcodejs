@@ -10,7 +10,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowOwnershipContractService } from '@application/services/row-ownership/row-ownership-contract.service';
 import { TableGroupContractService } from '@application/services/table-group/table-group-contract.service';
 
-import type { GroupRowDeletePayload } from './delete.validator';
+import type { GroupRowDeletePayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, null>;
 type Payload = Merge<

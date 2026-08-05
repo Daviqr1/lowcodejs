@@ -1,26 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  GroupRowBodyValidator,
+  GroupRowParamsValidator,
+} from '../_shared.validator';
+
 export const GroupRowCreateSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Adicionar item ao grupo',
   description:
     'Adiciona um novo item (subdocumento) ao array de um campo FIELD_GROUP dentro de uma row. O corpo é dinâmico e validado contra os campos do grupo.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    description: 'Campos dinâmicos correspondentes ao schema do grupo',
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(GroupRowParamsValidator),
+  body: zodToRouteSchema(GroupRowBodyValidator),
   response: {
     201: {
       description:

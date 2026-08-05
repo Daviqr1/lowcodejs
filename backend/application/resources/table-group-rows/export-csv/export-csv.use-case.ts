@@ -18,7 +18,7 @@ import { RowAccessGuardContractService } from '@application/services/row-access-
 import { RowPasswordContractService } from '@application/services/row-password/row-password-contract.service';
 import { TypeGuardContractService } from '@application/services/type-guard/type-guard-contract.service';
 
-import type { GroupRowExportCsvPayload } from './export-csv.validator';
+import type { GroupRowExportCsvPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Readable>;
 

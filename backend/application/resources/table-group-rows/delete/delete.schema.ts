@@ -1,22 +1,16 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { GroupRowItemParamsValidator } from '../_shared.validator';
+
 export const GroupRowDeleteSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Excluir item do grupo',
   description:
     'Remove permanentemente um item (subdocumento) do array de um campo FIELD_GROUP dentro de uma row. É um hard delete.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug', 'itemId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-      itemId: { type: 'string', description: 'ID do item embutido a excluir' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupRowItemParamsValidator),
   response: {
     200: {
       description: 'Item excluído permanentemente com sucesso',

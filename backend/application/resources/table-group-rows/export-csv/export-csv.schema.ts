@@ -1,21 +1,16 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import { GroupRowParamsValidator } from '../_shared.validator';
+
 export const GroupRowExportCsvSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Exportar itens de um grupo embutido em CSV',
   description:
     'Gera um arquivo CSV com os itens de um campo FIELD_GROUP de uma row. Restrito a MASTER e ADMINISTRATOR (cap de 500.000 linhas).',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupRowParamsValidator),
   response: {
     200: { description: 'Arquivo CSV', type: 'string', format: 'binary' },
     401: {

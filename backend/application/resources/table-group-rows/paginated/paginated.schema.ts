@@ -1,43 +1,20 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  GroupRowPaginatedQueryValidator,
+  GroupRowParamsValidator,
+} from '../_shared.validator';
+
 export const GroupRowPaginatedSchema: FastifySchema = {
   tags: ['Registros de Grupo'],
   summary: 'Listar itens do grupo com paginação',
   description:
     'Retorna uma lista paginada dos itens (subdocumentos) não excluídos de um campo FIELD_GROUP dentro de uma row. Campos de senha são mascarados.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'rowId', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      rowId: { type: 'string', description: 'ID da row pai' },
-      groupSlug: { type: 'string', description: 'Slug do grupo (FIELD_GROUP)' },
-    },
-    additionalProperties: false,
-  },
-  querystring: {
-    type: 'object',
-    properties: {
-      page: {
-        type: 'number',
-        minimum: 1,
-        default: 1,
-        description: 'Número da página',
-      },
-      perPage: {
-        type: 'number',
-        minimum: 1,
-        default: 50,
-        description: 'Itens por página',
-      },
-      search: {
-        type: 'string',
-        description: 'Termo de busca para filtrar itens (opcional)',
-      },
-    },
-    additionalProperties: true,
-  },
+  params: zodToRouteSchema(GroupRowParamsValidator),
+  querystring: zodToRouteSchema(GroupRowPaginatedQueryValidator),
   response: {
     200: {
       description: 'Lista paginada de itens do grupo',

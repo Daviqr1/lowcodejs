@@ -6,13 +6,14 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { GroupRowAutoSaveSchema } from './auto-save.schema';
-import GroupRowAutoSaveUseCase from './auto-save.use-case';
 import {
   GroupRowAutoSaveBodyValidator,
-  GroupRowAutoSaveParamsValidator,
+  GroupRowParamsValidator,
   GroupRowAutoSaveQueryValidator,
-} from './auto-save.validator';
+} from '../_shared.validator';
+
+import { GroupRowAutoSaveSchema } from './auto-save.schema';
+import GroupRowAutoSaveUseCase from './auto-save.use-case';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = GroupRowAutoSaveParamsValidator.parse(request.params);
+    const params = GroupRowParamsValidator.parse(request.params);
     const payload = GroupRowAutoSaveBodyValidator.parse(request.body);
     const query = GroupRowAutoSaveQueryValidator.parse(request.query);
 
