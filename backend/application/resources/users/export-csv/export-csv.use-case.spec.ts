@@ -1,4 +1,3 @@
-import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -6,20 +5,11 @@ import { EXPORT_CSV_LIMIT } from '@application/services/csv-export/csv-export-co
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import DateService from '@application/services/date/date.service';
 import SlugService from '@application/services/slug/slug.service';
+import { streamToString } from '@test/helpers/stream.helper';
 
 import UserExportCsvUseCase from './export-csv.use-case';
 
 const BOM = '﻿';
-
-async function streamToString(stream: Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    let buf = chunk;
-    if (typeof chunk === 'string') buf = Buffer.from(chunk);
-    chunks.push(buf);
-  }
-  return Buffer.concat(chunks).toString('utf-8');
-}
 
 let repo: UserInMemoryRepository;
 let sut: UserExportCsvUseCase;

@@ -1,4 +1,3 @@
-import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -18,18 +17,9 @@ import { InMemoryRowAccessGuardService } from '@application/services/row-access-
 import InMemoryRowPasswordService from '@application/services/row-password/in-memory-row-password.service';
 import SlugService from '@application/services/slug/slug.service';
 import TypeGuardService from '@application/services/type-guard/type-guard.service';
+import { streamToString } from '@test/helpers/stream.helper';
 
 import TableRowExportCsvUseCase from './export-csv.use-case';
-
-async function streamToString(stream: Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    let buf = chunk;
-    if (typeof chunk === 'string') buf = Buffer.from(chunk);
-    chunks.push(buf);
-  }
-  return Buffer.concat(chunks).toString('utf-8');
-}
 
 let tableRepo: TableInMemoryRepository;
 let rowRepo: RowInMemoryRepository;

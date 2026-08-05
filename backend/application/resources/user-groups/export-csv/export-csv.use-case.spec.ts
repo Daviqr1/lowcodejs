@@ -1,4 +1,3 @@
-import type { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import UserInMemoryRepository from '@application/repositories/user/user-in-memory.repository';
@@ -8,18 +7,9 @@ import CsvExportService from '@application/services/csv-export/csv-export.servic
 import DateService from '@application/services/date/date.service';
 import GroupResolverService from '@application/services/group-resolver/group-resolver.service';
 import SlugService from '@application/services/slug/slug.service';
+import { streamToString } from '@test/helpers/stream.helper';
 
 import UserGroupExportCsvUseCase from './export-csv.use-case';
-
-async function streamToString(stream: Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    let buf = chunk;
-    if (typeof chunk === 'string') buf = Buffer.from(chunk);
-    chunks.push(buf);
-  }
-  return Buffer.concat(chunks).toString('utf-8');
-}
 
 let repo: UserGroupInMemoryRepository;
 let userRepo: UserInMemoryRepository;
