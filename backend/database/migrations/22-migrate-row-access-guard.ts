@@ -16,65 +16,17 @@
  *   Prod: node database/migrations/migrate-row-access-guard.js
  */
 
-import { config } from 'dotenv';
-import mongoose from 'mongoose';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-import { TaskLogger } from '../shared/task-logger';
-
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Guard de acesso por linha';
 
-type SettingMarkerDoc = {
-  MIGRATION_ROW_ACCESS_GUARD_AT?: Date | null;
-};
-
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, { dbName: DB_DATABASE });
-  await conn.asPromise();
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_ROW_ACCESS_GUARD_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerRowAccessGuard',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_ROW_ACCESS_GUARD_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
-    logger.done('nada a migrar — enforcement em runtime + bind-time');
-
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_ROW_ACCESS_GUARD_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_ROW_ACCESS_GUARD_AT',
+  async run(): Promise<string> {
+    return 'nada a migrar — enforcement em runtime + bind-time';
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

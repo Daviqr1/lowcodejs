@@ -27,23 +27,17 @@
  *   DB_DATABASE   - System database name (fields, tables, relationship-*)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Limpeza de definitions de relacionamento quebradas';
 
 type ObjectId = mongoose.Types.ObjectId;
-
-type SettingMarkerDoc = {
-  MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT?: Date | null;
-};
 
 type DefinitionDoc = {
   _id: ObjectId;
@@ -183,61 +177,12 @@ async function cleanupBrokenDefinitions(
   return { definitions: cleanedDefinitions, fields: cleanedFields };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, { dbName: DB_DATABASE });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT: {
-        type: Date,
-        default: null,
-      },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerRelBrokenDefs',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
-
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT',
+  async run({ db, logger }): Promise<string> {
     const result = await cleanupBrokenDefinitions(db, logger);
 
-    logger.done(
-      `${result.definitions} definitions quebradas removidas, ${result.fields} campos quarentenados`,
-    );
-
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_RELATIONSHIP_BROKEN_DEFINITIONS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.definitions} definitions quebradas removidas, ${result.fields} campos quarentenados`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

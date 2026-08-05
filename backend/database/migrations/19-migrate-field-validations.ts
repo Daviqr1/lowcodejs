@@ -16,21 +16,14 @@
  *   Prod: node database/migrations/migrate-field-validations.js
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Validações de campo';
-
-type SettingMarkerDoc = {
-  MIGRATION_FIELD_VALIDATIONS_AT?: Date | null;
-};
 
 async function backfillFieldValidations(
   db: mongoose.mongo.Db,
@@ -48,52 +41,12 @@ async function backfillFieldValidations(
   return { updated: result.modifiedCount, total };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, { dbName: DB_DATABASE });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_FIELD_VALIDATIONS_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerFieldValidations',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_FIELD_VALIDATIONS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_FIELD_VALIDATIONS_AT',
+  async run({ db }): Promise<string> {
     const result = await backfillFieldValidations(db);
-    logger.done(`${result.updated} de ${result.total} campos atualizados`);
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_FIELD_VALIDATIONS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.updated} de ${result.total} campos atualizados`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

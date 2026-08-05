@@ -21,21 +21,15 @@
  *   Prod: node database/migrations/migrate-table-permissions.js
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Permissões de tabela';
-
-type SettingMarkerDoc = {
-  MIGRATION_TABLE_PERMISSIONS_AT?: Date | null;
-};
 
 type Binding = { kind: string; group: mongoose.Types.ObjectId | null };
 
@@ -147,52 +141,12 @@ async function backfillTablePermissions(
   return { updated, total };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, { dbName: DB_DATABASE });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_TABLE_PERMISSIONS_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerTablePermissions',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_TABLE_PERMISSIONS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_TABLE_PERMISSIONS_AT',
+  async run({ db, logger }): Promise<string> {
     const result = await backfillTablePermissions(db, logger);
-    logger.done(`${result.updated} de ${result.total} tabelas atualizadas`);
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_TABLE_PERMISSIONS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.updated} de ${result.total} tabelas atualizadas`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

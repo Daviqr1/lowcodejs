@@ -21,21 +21,14 @@
  *   Prod: node database/migrations/migrate-drop-legacy-permission-fields.js
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Limpeza de campos legados de permissão';
-
-type SettingMarkerDoc = {
-  MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT?: Date | null;
-};
 
 const MIGRATED_FILTER = {
   permissions: { $exists: true, $ne: null },
@@ -65,54 +58,12 @@ async function dropLegacyFields(
   };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const conn = mongoose.createConnection(DATABASE_URL, { dbName: DB_DATABASE });
-  await conn.asPromise();
-
-  const db = conn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT: { type: Date, default: null },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = conn.model<SettingMarkerDoc>(
-    'SettingMarkerDropLegacyPermissionFields',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT',
+  async run({ db }): Promise<string> {
     const result = await dropLegacyFields(db);
-    logger.done(`${result.tables} tabelas e ${result.fields} campos limpos`);
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_DROP_LEGACY_PERMISSION_FIELDS_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await conn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.tables} tabelas e ${result.fields} campos limpos`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
