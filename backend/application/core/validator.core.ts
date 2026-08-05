@@ -23,6 +23,12 @@ export const PaginationQueryValidator = z.object({
   perPage: PerPageValidator.default(50),
 });
 
+/** `:slug` + `:_id` das rotas de row e de campo. Estenda para params extras. */
+export const SlugIdParamsValidator = z.object({
+  slug: z.string().trim().min(1),
+  _id: z.string().trim().min(1),
+});
+
 /** `ids` das operacoes em massa. O cap por chamador entra com `.max(n)`. */
 export const BulkIdsValidator = z
   .array(z.string().trim().min(1))

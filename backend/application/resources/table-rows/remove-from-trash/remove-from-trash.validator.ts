@@ -1,9 +1,8 @@
 import z from 'zod';
 
-export const TableRowRemoveFromTrashParamsValidator = z.object({
-  slug: z.string().trim(),
-  _id: z.string().trim(),
-});
+import { SlugIdParamsValidator } from '@application/core/validator.core';
+
+export const TableRowRemoveFromTrashParamsValidator = SlugIdParamsValidator;
 
 export type TableRowRemoveFromTrashPayload = z.infer<
   typeof TableRowRemoveFromTrashParamsValidator

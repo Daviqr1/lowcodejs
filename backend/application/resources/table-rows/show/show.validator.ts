@@ -1,8 +1,7 @@
 import z from 'zod';
 
-export const TableRowShowParamsValidator = z.object({
-  slug: z.string().trim(),
-  _id: z.string().trim(),
-});
+import { SlugIdParamsValidator } from '@application/core/validator.core';
+
+export const TableRowShowParamsValidator = SlugIdParamsValidator;
 
 export type TableRowShowPayload = z.infer<typeof TableRowShowParamsValidator>;

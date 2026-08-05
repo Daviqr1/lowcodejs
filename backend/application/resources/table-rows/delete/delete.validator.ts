@@ -1,9 +1,8 @@
 import z from 'zod';
 
-export const TableRowDeleteParamsValidator = z.object({
-  slug: z.string().trim(), // table slug reference
-  _id: z.string().trim(),
-});
+import { SlugIdParamsValidator } from '@application/core/validator.core';
+
+export const TableRowDeleteParamsValidator = SlugIdParamsValidator;
 
 export type TableRowDeletePayload = z.infer<
   typeof TableRowDeleteParamsValidator

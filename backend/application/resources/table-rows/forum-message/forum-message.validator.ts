@@ -1,15 +1,11 @@
 import z from 'zod';
 
 import { Merge } from '@application/core/entity.core';
+import { SlugIdParamsValidator } from '@application/core/validator.core';
 
-export const ForumMessageRowParamsValidator = z.object({
-  slug: z.string().trim(),
-  _id: z.string().trim(),
-});
+export const ForumMessageRowParamsValidator = SlugIdParamsValidator;
 
-export const ForumMessageParamsValidator = z.object({
-  slug: z.string().trim(),
-  _id: z.string().trim(),
+export const ForumMessageParamsValidator = SlugIdParamsValidator.extend({
   messageId: z.string().trim(),
 });
 

@@ -6,6 +6,7 @@ import {
   NAME_MAX_LENGTH,
   SLUG_MAX_LENGTH,
 } from '@application/core/field-rules.core';
+import { SlugIdParamsValidator } from '@application/core/validator.core';
 
 import { TableFieldBaseSchema } from '../table-field-base.schema';
 
@@ -29,10 +30,7 @@ export const TableFieldUpdateBodyValidator = z
   })
   .merge(TableFieldBaseSchema);
 
-export const TableFieldUpdateParamsValidator = z.object({
-  slug: z.string().trim(), // reference of table slug
-  _id: z.string().trim(),
-});
+export const TableFieldUpdateParamsValidator = SlugIdParamsValidator;
 
 export type TableFieldUpdatePayload = Merge<
   Omit<

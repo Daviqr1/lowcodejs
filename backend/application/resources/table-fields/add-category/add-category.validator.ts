@@ -1,11 +1,9 @@
 import z from 'zod';
 
 import { Merge } from '@application/core/entity.core';
+import { SlugIdParamsValidator } from '@application/core/validator.core';
 
-export const TableFieldAddCategoryParamsValidator = z.object({
-  slug: z.string().trim(),
-  _id: z.string().trim(),
-});
+export const TableFieldAddCategoryParamsValidator = SlugIdParamsValidator;
 
 export const TableFieldAddCategoryBodyValidator = z.object({
   label: z.string().trim().min(1),
