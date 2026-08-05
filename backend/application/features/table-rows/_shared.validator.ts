@@ -195,15 +195,30 @@ export const ForumMessageParamsValidator = slugIdParams().extend({
   messageId: z.string().trim(),
 });
 
-const ForumMessageBodyValidator = z.object({
-  text: z.string().optional(),
-  attachments: z.array(z.string().trim()).optional(),
-  mentions: z.array(z.string().trim()).optional(),
-  replyTo: z.string().trim().nullable().optional(),
-});
+/**
+ * Corpo da mensagem de forum. Criar e editar validam os mesmos campos, mas
+ * cada um recebe o seu no: antes as duas exportacoes eram a MESMA instancia
+ * com dois nomes.
+ */
+function forumMessageBody(): z.ZodObject<
+  {
+    text: z.ZodOptional<z.ZodString>;
+    attachments: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    mentions: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    replyTo: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    text: z.string().optional(),
+    attachments: z.array(z.string().trim()).optional(),
+    mentions: z.array(z.string().trim()).optional(),
+    replyTo: z.string().trim().nullable().optional(),
+  });
+}
 
-export const ForumMessageCreateBodyValidator = ForumMessageBodyValidator;
-export const ForumMessageUpdateBodyValidator = ForumMessageBodyValidator;
+export const ForumMessageCreateBodyValidator = forumMessageBody();
+export const ForumMessageUpdateBodyValidator = forumMessageBody();
 
 export type ForumMessageCreatePayload = Merge<
   Merge<
