@@ -67,7 +67,7 @@ export default class UserGroupMongooseRepository
   }
 
   async findById(_id: string, options?: FindOptions): Promise<IGroup | null> {
-    const where = this.trashedClause({ _id }, options);
+    const where = this.trashedClause({ _id }, options, false);
 
     const group = await Model.findOne(where).populate(this.populateOptions);
     if (!group) return null;
@@ -79,7 +79,7 @@ export default class UserGroupMongooseRepository
     slug: string,
     options?: FindOptions,
   ): Promise<IGroup | null> {
-    const where = this.trashedClause({ slug }, options);
+    const where = this.trashedClause({ slug }, options, false);
 
     const group = await Model.findOne(where).populate(this.populateOptions);
     if (!group) return null;
