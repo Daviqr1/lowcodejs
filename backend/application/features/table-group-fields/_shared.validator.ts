@@ -1,11 +1,8 @@
 import z from 'zod';
 
-import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
+import type { Merge } from '@application/core/entity.core';
 import {
-  NAME_MAX_LENGTH,
-  SLUG_MAX_LENGTH,
-} from '@application/core/field-rules.core';
-import {
+  fieldIdentity,
   type FieldPayloadOverrides,
   type OverriddenKeys,
   TableFieldBaseSchema,
@@ -56,24 +53,16 @@ type GroupFieldPayloadOverrides = Merge<
   { groupSlug: string }
 >;
 
-export const GroupFieldCreateBodyValidator = z
-  .object({
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
-    type: z.enum(E_FIELD_TYPE),
-  })
-  .merge(TableFieldBaseSchema);
+export const GroupFieldCreateBodyValidator =
+  fieldIdentity().merge(TableFieldBaseSchema);
 
 export type GroupFieldCreatePayload = Merge<
   Omit<z.infer<typeof GroupFieldCreateBodyValidator>, OverriddenKeys>,
   GroupFieldPayloadOverrides
 >;
 
-export const GroupFieldUpdateBodyValidator = z
-  .object({
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
-    type: z.enum(E_FIELD_TYPE),
+export const GroupFieldUpdateBodyValidator = fieldIdentity()
+  .extend({
     trashed: z.boolean().default(false),
     trashedAt: z
       .string()

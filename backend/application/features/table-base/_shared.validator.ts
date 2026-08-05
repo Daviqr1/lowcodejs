@@ -1,9 +1,9 @@
 import z from 'zod';
 
 import {
-  E_SORT_DIRECTION,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
+  E_SORT_DIRECTION,
   E_TABLE_PERMISSION,
   E_TABLE_PROFILE,
   E_TABLE_STYLE,
@@ -15,6 +15,7 @@ import {
   pagination,
   permissionBinding,
   search,
+  slugParams,
   sortDirection,
 } from '@application/features/_shared.validator';
 import SlugService from '@application/services/slug/slug.service';
@@ -32,9 +33,7 @@ import SlugService from '@application/services/slug/slug.service';
 const slugService = new SlugService();
 
 /** `:slug` da tabela. Antes copiado em 5 operacoes. */
-export const TableSlugParamsValidator = z.object({
-  slug: z.string().trim(),
-});
+export const TableSlugParamsValidator = slugParams();
 
 export type TableShowPayload = z.infer<typeof TableSlugParamsValidator>;
 export type TableDeletePayload = z.infer<typeof TableSlugParamsValidator>;

@@ -7,6 +7,7 @@ import {
   pagination,
   search,
   slugIdParams,
+  slugParams,
 } from '@application/features/_shared.validator';
 
 /**
@@ -19,9 +20,7 @@ import {
  */
 
 /** `:slug` da tabela — rotas que ainda nao apontam uma row. */
-export const TableSlugParamsValidator = z.object({
-  slug: z.string().trim(),
-});
+export const TableSlugParamsValidator = slugParams();
 
 /** `:slug` + `:_id`: tabela + row. Vem do core, reexportado pela fatia. */
 export const TableRowParamsValidator = slugIdParams();

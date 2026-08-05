@@ -1,16 +1,17 @@
 import z from 'zod';
 
-import { E_FIELD_TYPE, type Merge } from '@application/core/entity.core';
+import type { Merge } from '@application/core/entity.core';
+import { NAME_MAX_LENGTH } from '@application/core/field-rules.core';
 import {
-  NAME_MAX_LENGTH,
-  SLUG_MAX_LENGTH,
-} from '@application/core/field-rules.core';
-import {
+  fieldIdentity,
   type FieldPayloadOverrides,
   type OverriddenKeys,
   TableFieldBaseSchema,
 } from '@application/features/_shared.field.validator';
-import { slugIdParams } from '@application/features/_shared.validator';
+import {
+  slugIdParams,
+  slugParams,
+} from '@application/features/_shared.validator';
 
 /**
  * Entrada da fatia `table-fields`. Fonte unica — os `*.schema.ts` derivam daqui
@@ -24,9 +25,7 @@ import { slugIdParams } from '@application/features/_shared.validator';
  */
 
 /** `:slug` da tabela — rotas que ainda nao apontam um campo. */
-export const TableSlugParamsValidator = z.object({
-  slug: z.string().trim(),
-});
+export const TableSlugParamsValidator = slugParams();
 
 /** `:slug` + `:_id`: tabela + campo. Vem do core, reexportado pela fatia. */
 export const TableFieldParamsValidator = slugIdParams();
@@ -41,13 +40,8 @@ export type TableFieldRemoveFromTrashPayload = z.infer<
 
 // ── Create e update ───────────────────────────────────────────────────
 
-export const TableFieldCreateBodyValidator = z
-  .object({
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
-    type: z.enum(E_FIELD_TYPE),
-  })
-  .merge(TableFieldBaseSchema);
+export const TableFieldCreateBodyValidator =
+  fieldIdentity().merge(TableFieldBaseSchema);
 
 export type TableFieldCreatePayload = Merge<
   Omit<z.infer<typeof TableFieldCreateBodyValidator>, OverriddenKeys>,
@@ -57,11 +51,8 @@ export type TableFieldCreatePayload = Merge<
 // slug e opcional: campos nao-nativos podem editar a "url"/chave tecnica do
 // campo (honrado no use-case). Campos nativos nao enviam slug (slug camelCase
 // fixo) e o use-case os ignora.
-export const TableFieldUpdateBodyValidator = z
-  .object({
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
-    type: z.enum(E_FIELD_TYPE),
+export const TableFieldUpdateBodyValidator = fieldIdentity()
+  .extend({
     trashed: z.boolean().default(false),
     trashedAt: z
       .string()

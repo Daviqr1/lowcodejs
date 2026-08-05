@@ -57,15 +57,20 @@ export function pagination(): z.ZodObject<
   });
 }
 
+/** `:slug` da tabela. Estava reescrito em `table-base`, `table-fields` e `table-rows`. */
+export function slugParams(): z.ZodObject<
+  { slug: z.ZodString },
+  z.core.$strip
+> {
+  return z.object({ slug: z.string().trim().min(1) });
+}
+
 /** `:slug` + `:_id` das rotas de row e de campo. Estenda para params extras. */
 export function slugIdParams(): z.ZodObject<
   { slug: z.ZodString; _id: z.ZodString },
   z.core.$strip
 > {
-  return z.object({
-    slug: z.string().trim().min(1),
-    _id: z.string().trim().min(1),
-  });
+  return slugParams().extend({ _id: z.string().trim().min(1) });
 }
 
 /** `ids` das operacoes em massa. O cap por chamador entra com `.max(n)`. */

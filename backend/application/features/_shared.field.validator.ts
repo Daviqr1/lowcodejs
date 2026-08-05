@@ -1,13 +1,18 @@
 import z from 'zod';
 
 import {
-  E_SORT_DIRECTION,
   E_FIELD_FORMAT,
+  E_FIELD_TYPE,
   E_FIELD_VALIDATION,
+  E_SORT_DIRECTION,
   E_RELATIONSHIP_ON_DELETE,
   type ICategory,
   type IFieldValidation,
 } from '@application/core/entity.core';
+import {
+  NAME_MAX_LENGTH,
+  SLUG_MAX_LENGTH,
+} from '@application/core/field-rules.core';
 import { permissionBinding } from '@application/features/_shared.validator';
 
 /**
@@ -20,6 +25,25 @@ import { permissionBinding } from '@application/features/_shared.validator';
  * tamanho: sao 26 blocos de configuracao que afogariam os primitivos
  * genericos (email, paginacao, identificador) do outro arquivo.
  */
+
+/**
+ * Identidade do campo: nome, slug e tipo. Estava reescrita quatro vezes — no
+ * create e no update de `table-fields` e de `table-group-fields`.
+ */
+export function fieldIdentity(): z.ZodObject<
+  {
+    name: z.ZodString;
+    slug: z.ZodOptional<z.ZodString>;
+    type: z.ZodEnum<typeof E_FIELD_TYPE>;
+  },
+  z.core.$strip
+> {
+  return z.object({
+    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+    slug: z.string().trim().max(SLUG_MAX_LENGTH).optional(),
+    type: z.enum(E_FIELD_TYPE),
+  });
+}
 
 // Visibilidade do campo por contexto (lista/formulario/detalhe).
 function fieldPermissions(): z.ZodOptional<
