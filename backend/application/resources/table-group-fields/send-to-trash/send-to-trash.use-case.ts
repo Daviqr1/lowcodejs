@@ -41,7 +41,10 @@ export default class GroupFieldSendToTrashUseCase {
         );
       }
 
-      const field = await this.fieldRepository.findById(payload.fieldId);
+      const field = await this.fieldRepository.findById(payload.fieldId, {
+        // Precisa ver a lixeira para responder ALREADY_TRASHED em vez de 404.
+        includeTrashed: true,
+      });
 
       if (!field)
         return left(

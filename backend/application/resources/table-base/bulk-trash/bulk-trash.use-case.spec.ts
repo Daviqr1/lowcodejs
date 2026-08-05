@@ -43,8 +43,12 @@ describe('Bulk Trash Tables Use Case', () => {
     if (!result.isRight()) throw new Error('Expected right');
     expect(result.value.modified).toBe(2);
 
-    const trashed1 = await tableInMemoryRepository.findById(table1._id);
-    const trashed2 = await tableInMemoryRepository.findById(table2._id);
+    const trashed1 = await tableInMemoryRepository.findById(table1._id, {
+      trashed: true,
+    });
+    const trashed2 = await tableInMemoryRepository.findById(table2._id, {
+      trashed: true,
+    });
     expect(trashed1?.trashed).toBe(true);
     expect(trashed1?.trashedAt).toBeInstanceOf(Date);
     expect(trashed2?.trashed).toBe(true);

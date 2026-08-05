@@ -1013,7 +1013,9 @@ export default class ImportTableUseCase {
       // Slug é a chave da coleção dinâmica de dados — precisa ser único entre
       // TODAS as tabelas, inclusive as que estão na lixeira. Importar sobre um
       // slug "trashed" duplicaria a collection e mesclaria os registros.
-      const existing = await this.tableRepository.findBySlug(newSlug);
+      const existing = await this.tableRepository.findBySlug(newSlug, {
+        includeTrashed: true,
+      });
       if (existing) conflictingTables.push(originalSlug);
     }
 

@@ -17,7 +17,10 @@ export default class TableSendToTrashUseCase {
 
   async execute(payload: Payload): Promise<Response> {
     try {
-      const table = await this.tableRepository.findBySlug(payload.slug);
+      const table = await this.tableRepository.findBySlug(payload.slug, {
+        // Precisa ver a lixeira para responder ALREADY_TRASHED em vez de 404.
+        includeTrashed: true,
+      });
 
       if (!table)
         return left(

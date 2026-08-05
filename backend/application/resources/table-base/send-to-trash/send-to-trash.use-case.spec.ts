@@ -31,7 +31,9 @@ describe('Table Send To Trash Use Case', () => {
     expect(result.isRight()).toBe(true);
     if (!result.isRight()) throw new Error('Expected right');
 
-    const trashed = await tableInMemoryRepository.findById(created._id);
+    const trashed = await tableInMemoryRepository.findById(created._id, {
+      trashed: true,
+    });
     expect(trashed?.trashed).toBe(true);
     expect(trashed?.trashedAt).not.toBeNull();
   });

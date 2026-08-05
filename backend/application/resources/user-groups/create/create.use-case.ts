@@ -38,7 +38,11 @@ export default class UserGroupCreateUseCase {
           ),
         );
 
-      const group = await this.userGroupRepository.findBySlug(slug);
+      const group = await this.userGroupRepository.findBySlug(slug, {
+        // Unicidade vale tambem contra grupos na lixeira: restaurar um deles
+        // criaria slug duplicado.
+        includeTrashed: true,
+      });
 
       if (group)
         return left(

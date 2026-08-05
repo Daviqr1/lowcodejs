@@ -63,12 +63,18 @@ export abstract class InMemoryCollectionRepository<
     };
   }
 
-  /** `true` quando o item bate com o filtro de lixeira (ausente = passa). */
+  /**
+   * `true` quando o item bate com o filtro de lixeira. Espelha o
+   * `trashedClause` do Mongoose: sem opcao, so o que esta ativo passa;
+   * `includeTrashed` devolve os dois lados. Antes qualquer item passava, o que
+   * fazia o double divergir do banco e escondia regressao do suite unitario.
+   */
   protected matchesTrashed(
     item: { trashed: boolean },
     options?: FindOptions,
   ): boolean {
-    if (options?.trashed === undefined) return true;
+    if (options?.includeTrashed) return true;
+    if (options?.trashed === undefined) return !item.trashed;
     return item.trashed === options.trashed;
   }
 

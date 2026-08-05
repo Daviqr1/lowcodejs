@@ -34,7 +34,10 @@ export default class TableFieldSendToTrashUseCase {
           HTTPException.NotFound('Tabela não encontrada', 'TABLE_NOT_FOUND'),
         );
 
-      const field = await this.fieldRepository.findById(payload._id);
+      const field = await this.fieldRepository.findById(payload._id, {
+        // Precisa ver a lixeira para responder ALREADY_TRASHED em vez de 404.
+        includeTrashed: true,
+      });
 
       if (!field)
         return left(

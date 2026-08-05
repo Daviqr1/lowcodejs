@@ -46,7 +46,11 @@ export default class TableCreateUseCase {
 
       const slug = payload.slug;
 
-      const existingTable = await this.tableRepository.findBySlug(slug);
+      const existingTable = await this.tableRepository.findBySlug(slug, {
+        // Slug e a chave da colecao dinamica: precisa ser unico inclusive contra
+        // tabelas na lixeira, senao a nova tabela mesclaria os registros dela.
+        includeTrashed: true,
+      });
 
       if (existingTable)
         return left(
