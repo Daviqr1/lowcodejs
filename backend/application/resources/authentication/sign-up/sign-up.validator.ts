@@ -1,7 +1,6 @@
 import z from 'zod';
 
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/;
+import { PASSWORD_REGEX } from '@application/core/field-rules.core';
 
 export const SignUpBodyValidator = z.object({
   name: z
@@ -16,7 +15,7 @@ export const SignUpBodyValidator = z.object({
     .string({ message: 'A senha é obrigatória' })
     .min(6, 'A senha deve ter no mínimo 6 caracteres')
     .regex(
-      passwordRegex,
+      PASSWORD_REGEX,
       'A senha deve conter ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 especial',
     )
     .trim(),
