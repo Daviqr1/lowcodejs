@@ -25,27 +25,19 @@
  *   DB_DATA_DATABASE - Data database name (dynamic row collections)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import LoggerAuditService from '../../application/services/logger-audit/logger-audit.service';
-import { TaskLogger } from '../shared/task-logger';
-
-config({ path: '.env', quiet: true });
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
 // Migration roda fora do container de DI. As conexoes chegam por parametro
 // de metodo, entao o service nao precisa de nada no constructor.
 const loggerAudit = new LoggerAuditService();
 
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE || 'lowcodejs_data';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Backfill de auditoria dos logs';
-
-type SettingMarkerDoc = {
-  MIGRATION_LOGGER_AUDIT_AT?: Date | null;
-};
 
 async function backfillLoggerAudit(
   systemDb: mongoose.mongo.Db,
@@ -110,65 +102,16 @@ async function backfillLoggerAudit(
   return { scanned, updated };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_LOGGER_AUDIT_AT',
+  withDataConnection: true,
+  async run({ db, dataDb: rawDataDb }): Promise<string> {
+    const systemDb = db;
+    const dataDb = rawDataDb!;
 
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-
-  const dataConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATA_DATABASE,
-  });
-  await dataConn.asPromise();
-
-  const systemDb = systemConn.db!;
-  const dataDb = dataConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_LOGGER_AUDIT_AT: { type: Date, default: null },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarker',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_LOGGER_AUDIT_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
     const result = await backfillLoggerAudit(systemDb, dataDb);
-    logger.done(
-      `${result.scanned} logs de ROW lidos, ${result.updated} atualizados`,
-    );
 
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_LOGGER_AUDIT_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await systemConn.close();
-    await dataConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${result.scanned} logs de ROW lidos, ${result.updated} atualizados`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

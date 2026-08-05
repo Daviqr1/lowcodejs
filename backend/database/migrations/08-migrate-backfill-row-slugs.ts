@@ -35,30 +35,20 @@
  *   DB_DATA_DATABASE - Data database name (dynamic row collections)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
 import { E_FIELD_TYPE } from '../../application/core/entity.core';
 import SlugService from '../../application/services/slug/slug.service';
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE ?? 'lowcodejs';
-const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE ?? 'lowcodejs_data';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Slugs amigáveis das rows';
 
 // Migration roda fora do container de DI — instancia direto. O SlugService e
 // puro (constructor sem argumentos), entao `new` aqui e seguro.
 const slugService = new SlugService();
-
-type SettingMarkerDoc = {
-  MIGRATION_ROW_SLUG_BACKFILL_AT?: Date | null;
-  MIGRATION_ROW_SLUG_BACKFILL_FALLBACK_AT?: Date | null;
-  MIGRATION_ROW_SLUG_BACKFILL_UNIVERSAL_AT?: Date | null;
-};
 
 type MigrationStats = {
   tablesProcessed: number;
@@ -156,54 +146,13 @@ async function backfillCollection(
   return rowsUpdated;
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-
-  const dataConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATA_DATABASE,
-  });
-  await dataConn.asPromise();
-
-  const systemDb = systemConn.db!;
-  const dataDb = dataConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    {
-      MIGRATION_ROW_SLUG_BACKFILL_AT: { type: Date, default: null },
-      MIGRATION_ROW_SLUG_BACKFILL_FALLBACK_AT: { type: Date, default: null },
-      MIGRATION_ROW_SLUG_BACKFILL_UNIVERSAL_AT: { type: Date, default: null },
-    },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarkerRowSlugBackfill',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const alreadyDone =
-      setting?.MIGRATION_ROW_SLUG_BACKFILL_AT &&
-      setting?.MIGRATION_ROW_SLUG_BACKFILL_FALLBACK_AT &&
-      setting?.MIGRATION_ROW_SLUG_BACKFILL_UNIVERSAL_AT;
-
-    if (alreadyDone && !FORCE) {
-      logger.skipped(setting?.MIGRATION_ROW_SLUG_BACKFILL_AT ?? undefined);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_ROW_SLUG_BACKFILL_AT',
+  withDataConnection: true,
+  async run({ db, dataDb: rawDataDb, logger }): Promise<string> {
+    const systemDb = db;
+    const dataDb = rawDataDb!;
 
     const tablesCol = systemDb.collection('tables');
     const fieldsCol = systemDb.collection('fields');
@@ -249,29 +198,6 @@ async function migrate(): Promise<void> {
       logger.item(`${slug} — slug gerado em ${rowsUpdated} rows${tag}`);
     }
 
-    logger.done(
-      `${stats.tablesProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.fieldsAssigned} campos atribuídos`,
-    );
-
-    const now = new Date();
-    await SettingMarker.findOneAndUpdate(
-      {},
-      {
-        $set: {
-          MIGRATION_ROW_SLUG_BACKFILL_AT: now,
-          MIGRATION_ROW_SLUG_BACKFILL_FALLBACK_AT: now,
-          MIGRATION_ROW_SLUG_BACKFILL_UNIVERSAL_AT: now,
-        },
-      },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await systemConn.close();
-    await dataConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${stats.tablesProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.fieldsAssigned} campos atribuídos`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

@@ -32,22 +32,15 @@
  *   DB_DATA_DATABASE - Data database name (dynamic row collections)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
+import type { TaskLogger } from '../shared/task-logger';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE || 'lowcodejs';
-const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE || 'lowcodejs_data';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Reparo de FKs inline (OWNS_FK) apagadas pela migration 23';
-
-type SettingMarkerDoc = {
-  MIGRATION_REPAIR_OWNS_FK_AT?: Date | null;
-};
 
 type ObjectId = mongoose.Types.ObjectId;
 
@@ -137,45 +130,13 @@ async function repairDefinition(
   return 'repaired';
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-  const dataConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATA_DATABASE,
-  });
-  await dataConn.asPromise();
-
-  const systemDb = systemConn.db!;
-  const dataDb = dataConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_REPAIR_OWNS_FK_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarkerRepairOwnsFk',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_REPAIR_OWNS_FK_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_REPAIR_OWNS_FK_AT',
+  withDataConnection: true,
+  async run({ db, dataDb: rawDataDb, logger }): Promise<string> {
+    const systemDb = db;
+    const dataDb = rawDataDb!;
 
     const defsCol = systemDb.collection<DefDoc>('relationship-definitions');
     const defs = await defsCol.find({ trashed: { $ne: true } }).toArray();
@@ -191,22 +152,6 @@ async function migrate(): Promise<void> {
       if (result === 'noop') noop++;
     }
 
-    logger.done(
-      `${repaired} definitions reparadas, ${skipped} N:N mantidas, ${noop} sem links (já ok)`,
-    );
-
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_REPAIR_OWNS_FK_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await systemConn.close();
-    await dataConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${repaired} definitions reparadas, ${skipped} N:N mantidas, ${noop} sem links (já ok)`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));

@@ -28,22 +28,14 @@
  *   DB_DATA_DATABASE - Data database name (dynamic row collections)
  */
 
-import { config } from 'dotenv';
 import mongoose from 'mongoose';
 
-import { TaskLogger } from '../shared/task-logger';
+import {
+  reportMigrationFailure,
+  runMigration,
+} from '../shared/migration-runner';
 
-config({ path: '.env', quiet: true });
-
-const DATABASE_URL = process.env.DATABASE_URL;
-const DB_DATABASE = process.env.DB_DATABASE ?? 'lowcodejs';
-const DB_DATA_DATABASE = process.env.DB_DATA_DATABASE ?? 'lowcodejs_data';
-const FORCE = process.argv.includes('--force');
 const TITLE = 'Status/lixeira das rows';
-
-type SettingMarkerDoc = {
-  MIGRATION_ROW_STATUS_TRASHED_AT?: Date | null;
-};
 
 type MigrationStats = {
   collectionsProcessed: number;
@@ -126,46 +118,13 @@ async function backfillCollection(
   };
 }
 
-async function migrate(): Promise<void> {
-  const logger = new TaskLogger(TITLE);
-
-  if (!DATABASE_URL) {
-    logger.failed('DATABASE_URL não configurada');
-    process.exit(1);
-  }
-
-  const systemConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATABASE,
-  });
-  await systemConn.asPromise();
-
-  const dataConn = mongoose.createConnection(DATABASE_URL, {
-    dbName: DB_DATA_DATABASE,
-  });
-  await dataConn.asPromise();
-
-  const systemDb = systemConn.db!;
-  const dataDb = dataConn.db!;
-
-  const SettingMarkerSchema = new mongoose.Schema(
-    { MIGRATION_ROW_STATUS_TRASHED_AT: { type: Date, default: null } },
-    { strict: false, collection: 'settings' },
-  );
-  const SettingMarker = systemConn.model<SettingMarkerDoc>(
-    'SettingMarkerRowStatusTrashed',
-    SettingMarkerSchema,
-  );
-
-  const setting = await SettingMarker.findOne({}).lean();
-
-  try {
-    const appliedAt = setting?.MIGRATION_ROW_STATUS_TRASHED_AT;
-    if (appliedAt && !FORCE) {
-      logger.skipped(appliedAt);
-      return;
-    }
-
-    logger.running();
+runMigration({
+  title: TITLE,
+  marker: 'MIGRATION_ROW_STATUS_TRASHED_AT',
+  withDataConnection: true,
+  async run({ db, dataDb: rawDataDb, logger }): Promise<string> {
+    const systemDb = db;
+    const dataDb = rawDataDb!;
 
     const tablesCol = systemDb.collection('tables');
     const fieldsCol = systemDb.collection('fields');
@@ -206,22 +165,6 @@ async function migrate(): Promise<void> {
       );
     }
 
-    logger.done(
-      `${stats.collectionsProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.groupFieldsBackfilled} grupos`,
-    );
-
-    await SettingMarker.findOneAndUpdate(
-      {},
-      { $set: { MIGRATION_ROW_STATUS_TRASHED_AT: new Date() } },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-  } finally {
-    await systemConn.close();
-    await dataConn.close();
-  }
-}
-
-migrate().catch((error: unknown): void => {
-  new TaskLogger(TITLE).failed(error);
-  process.exit(1);
-});
+    return `${stats.collectionsProcessed} tabelas, ${stats.rowsUpdated} rows, ${stats.groupFieldsBackfilled} grupos`;
+  },
+}).catch((error: unknown): never => reportMigrationFailure(TITLE, error));
