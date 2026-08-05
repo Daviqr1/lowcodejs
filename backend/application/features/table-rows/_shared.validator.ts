@@ -163,7 +163,7 @@ export type BulkUpdatePayload = Merge<
 // ── Reacao e avaliacao ────────────────────────────────────────────────
 
 export const TableRowReactionBodyValidator = z.object({
-  type: z.enum([E_REACTION_TYPE.LIKE, E_REACTION_TYPE.UNLIKE]),
+  type: z.enum(E_REACTION_TYPE),
   field: z.string().trim(),
 });
 

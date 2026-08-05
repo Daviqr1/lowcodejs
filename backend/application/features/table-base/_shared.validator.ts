@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import {
+  E_SORT_DIRECTION,
   E_FIELD_FORMAT,
   E_FIELD_TYPE,
   E_TABLE_PERMISSION,
@@ -91,13 +92,7 @@ export const TableMembersSchema = z
   .array(
     z.object({
       user: z.string().trim().min(1),
-      profile: z.enum([
-        E_TABLE_PROFILE.OWNER,
-        E_TABLE_PROFILE.ADMIN,
-        E_TABLE_PROFILE.EDITOR,
-        E_TABLE_PROFILE.CONTRIBUTOR,
-        E_TABLE_PROFILE.VIEWER,
-      ]),
+      profile: z.enum(E_TABLE_PROFILE),
     }),
   )
   .default([]);
@@ -110,17 +105,7 @@ export const GroupConfigurationSchema = z.object({
 });
 
 export const TableStyleSchema = z
-  .enum([
-    E_TABLE_STYLE.GALLERY,
-    E_TABLE_STYLE.LIST,
-    E_TABLE_STYLE.DOCUMENT,
-    E_TABLE_STYLE.CARD,
-    E_TABLE_STYLE.MOSAIC,
-    E_TABLE_STYLE.KANBAN,
-    E_TABLE_STYLE.FORUM,
-    E_TABLE_STYLE.CALENDAR,
-    E_TABLE_STYLE.GANTT,
-  ])
+  .enum(E_TABLE_STYLE)
   .default(E_TABLE_STYLE.LIST);
 
 export const TableFieldOrderListSchema = z.array(z.string().trim()).default([]);
@@ -138,7 +123,7 @@ export const TableFieldOrderDetailSchema = z
 export const TableOrderSchema = z
   .object({
     field: z.string().trim(),
-    direction: z.enum(['asc', 'desc']),
+    direction: z.enum(E_SORT_DIRECTION),
   })
   .nullable()
   .default(null);
@@ -307,7 +292,7 @@ const DropdownOptionSchema = z.object({
 const RelationshipReferenceSchema = z.object({
   table: z.string().trim().min(1),
   field: z.string().trim().min(1),
-  order: z.enum(['asc', 'desc']).optional().default('asc'),
+  order: z.enum(E_SORT_DIRECTION).optional().default('asc'),
 });
 
 const SchemaImportFieldSchema = z.object({

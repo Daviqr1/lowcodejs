@@ -70,15 +70,7 @@ export const SettingUpdateBodyValidator = z.object({
     .nullable()
     .optional(),
   OPENAI_MODEL: z.string().trim().min(1).optional(),
-  AI_LLM_PROVIDER: z
-    .enum([
-      E_AI_LLM_PROVIDER.OPENAI,
-      E_AI_LLM_PROVIDER.GEMINI,
-      E_AI_LLM_PROVIDER.CLAUDE,
-      E_AI_LLM_PROVIDER.OPENROUTER,
-      E_AI_LLM_PROVIDER.OLLAMA,
-    ])
-    .optional(),
+  AI_LLM_PROVIDER: z.enum(E_AI_LLM_PROVIDER).optional(),
   LLM_API_KEY: z.string().trim().nullable().optional(),
   LLM_MODEL: z.string().trim().min(1).optional(),
   LLM_BASE_URL: z

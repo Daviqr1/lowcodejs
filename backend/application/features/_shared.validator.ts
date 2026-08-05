@@ -184,11 +184,7 @@ export function permissionBinding(): z.ZodObject<
 > {
   return z.object({
     kind: z
-      .enum([
-        E_PERMISSION_TARGET.PUBLIC,
-        E_PERMISSION_TARGET.NOBODY,
-        E_PERMISSION_TARGET.GROUP,
-      ])
+      .enum(E_PERMISSION_TARGET)
       .describe(
         'Alvo: PUBLIC (qualquer pessoa, inclusive sem login), NOBODY ' +
           '(ninguem) ou GROUP (apenas o grupo informado em `group`). Para GROUP ' +

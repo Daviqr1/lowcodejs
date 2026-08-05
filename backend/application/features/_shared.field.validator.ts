@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import {
+  E_SORT_DIRECTION,
   E_FIELD_FORMAT,
   E_FIELD_VALIDATION,
   E_RELATIONSHIP_ON_DELETE,
@@ -54,7 +55,7 @@ const Relationship = z.object({
     _id: z.string().trim(),
     slug: z.string().trim(),
   }),
-  order: z.enum(['asc', 'desc']).default('asc'),
+  order: z.enum(E_SORT_DIRECTION).default('asc'),
   customLabel: z.boolean().optional(),
   labelParts: z.array(RelationshipLabelPart).optional(),
   labelSeparator: z.string().optional(),
@@ -83,7 +84,7 @@ const Dropdown = z.object({
   label: z.string().trim(),
   color: z.string().nullable().optional(),
   sortField: z.string().nullable().optional(),
-  sortDirection: z.enum(['asc', 'desc']).nullable().optional(),
+  sortDirection: z.enum(E_SORT_DIRECTION).nullable().optional(),
 });
 
 // Regra de validacao configurada no campo: { rule, config }. `config` carrega os

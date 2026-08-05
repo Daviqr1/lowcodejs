@@ -58,7 +58,7 @@ function userBase(): z.ZodObject<
 }
 
 function userStatus(): z.ZodEnum<{ ACTIVE: 'ACTIVE'; INACTIVE: 'INACTIVE' }> {
-  return z.enum([E_USER_STATUS.ACTIVE, E_USER_STATUS.INACTIVE], {
+  return z.enum(E_USER_STATUS, {
     message: 'O status deve ser ACTIVE ou INACTIVE',
   });
 }
