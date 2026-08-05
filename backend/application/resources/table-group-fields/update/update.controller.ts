@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { GroupFieldUpdateSchema } from './update.schema';
-import GroupFieldUpdateUseCase from './update.use-case';
 import {
   GroupFieldUpdateBodyValidator,
-  GroupFieldUpdateParamsValidator,
-} from './update.validator';
+  GroupFieldParamsValidator,
+} from '../_shared.validator';
+
+import { GroupFieldUpdateSchema } from './update.schema';
+import GroupFieldUpdateUseCase from './update.use-case';
 
 @Controller({
   route: 'tables',
@@ -41,7 +42,7 @@ export default class {
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
     const payload = GroupFieldUpdateBodyValidator.parse(request.body);
-    const params = GroupFieldUpdateParamsValidator.parse(request.params);
+    const params = GroupFieldParamsValidator.parse(request.params);
 
     const result = await this.useCase.execute({
       ...payload,

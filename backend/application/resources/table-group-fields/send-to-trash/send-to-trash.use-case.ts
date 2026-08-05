@@ -9,7 +9,7 @@ import { TableContractRepository } from '@application/repositories/table/table-c
 import { FieldTrashContractService } from '@application/services/field-trash/field-trash-contract.service';
 import { SchemaBuilderContractService } from '@application/services/table/schema-builder-contract.service';
 
-import type { GroupFieldSendToTrashPayload } from './send-to-trash.validator';
+import type { GroupFieldSendToTrashPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, Entity>;
 type Payload = GroupFieldSendToTrashPayload;

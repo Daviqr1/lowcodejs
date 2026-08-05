@@ -1,21 +1,18 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { GroupParamsValidator } from '../_shared.validator';
 
 export const GroupFieldListSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
   summary: 'Listar campos do grupo',
   description: 'Lista todos os campos dentro de um FIELD_GROUP.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'groupSlug'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      groupSlug: { type: 'string', description: 'Slug do grupo' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupParamsValidator),
   response: {
     200: {
       description: 'Lista de campos do grupo',

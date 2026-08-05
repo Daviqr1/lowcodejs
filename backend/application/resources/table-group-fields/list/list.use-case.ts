@@ -6,7 +6,7 @@ import type { IField } from '@application/core/entity.core';
 import HTTPException from '@application/core/exception.core';
 import { TableContractRepository } from '@application/repositories/table/table-contract.repository';
 
-import type { GroupFieldListPayload } from './list.validator';
+import type { GroupFieldListPayload } from '../_shared.validator';
 
 type Response = Either<HTTPException, IField[]>;
 type Payload = GroupFieldListPayload;

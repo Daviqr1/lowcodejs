@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { GroupFieldParamsValidator } from '../_shared.validator';
 
 export const GroupFieldRemoveFromTrashSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
@@ -8,16 +13,7 @@ export const GroupFieldRemoveFromTrashSchema: FastifySchema = {
   description:
     'Restaura um campo dentro de um FIELD_GROUP da lixeira. Define trashed=false e reabilita as propriedades de exibição.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'groupSlug', 'fieldId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      groupSlug: { type: 'string', description: 'Slug do grupo' },
-      fieldId: { type: 'string', description: 'ID do campo a restaurar' },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupFieldParamsValidator),
   response: {
     200: {
       description: 'Campo restaurado da lixeira com sucesso',

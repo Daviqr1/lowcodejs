@@ -6,9 +6,10 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
+import { GroupParamsValidator } from '../_shared.validator';
+
 import { GroupFieldListSchema } from './list.schema';
 import GroupFieldListUseCase from './list.use-case';
-import { GroupFieldListParamsValidator } from './list.validator';
 
 @Controller({
   route: 'tables',
@@ -37,7 +38,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const params = GroupFieldListParamsValidator.parse(request.params);
+    const params = GroupParamsValidator.parse(request.params);
     const result = await this.useCase.execute({ ...params });
 
     if (result.isLeft()) return this.http.sendError(response, result.value);

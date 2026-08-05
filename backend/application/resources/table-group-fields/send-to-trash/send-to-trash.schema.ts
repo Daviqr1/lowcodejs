@@ -1,6 +1,11 @@
 import type { FastifySchema } from 'fastify';
 
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import { GroupFieldParamsValidator } from '../_shared.validator';
 
 export const GroupFieldSendToTrashSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
@@ -8,19 +13,7 @@ export const GroupFieldSendToTrashSchema: FastifySchema = {
   description:
     'Move um campo dentro de um FIELD_GROUP para a lixeira. Define trashed=true e desativa as propriedades de exibição.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'groupSlug', 'fieldId'],
-    properties: {
-      slug: { type: 'string', description: 'Slug da tabela' },
-      groupSlug: { type: 'string', description: 'Slug do grupo' },
-      fieldId: {
-        type: 'string',
-        description: 'ID do campo a ser enviado para a lixeira',
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupFieldParamsValidator),
   response: {
     200: {
       description: 'Campo enviado para a lixeira com sucesso',

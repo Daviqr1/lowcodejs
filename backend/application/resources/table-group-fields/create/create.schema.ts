@@ -1,7 +1,14 @@
 import type { FastifySchema } from 'fastify';
 
-import { FIELD_TYPE_GROUP_CONFIGURABLE_VALUES } from '@application/core/entity.core';
-import { buildErrorResponse } from '@application/core/schema.core';
+import {
+  buildErrorResponse,
+  zodToRouteSchema,
+} from '@application/core/schema.core';
+
+import {
+  GroupFieldCreateBodyValidator,
+  GroupParamsValidator,
+} from '../_shared.validator';
 
 export const GroupFieldCreateSchema: FastifySchema = {
   tags: ['Campos de Grupo'],
@@ -9,112 +16,8 @@ export const GroupFieldCreateSchema: FastifySchema = {
   description:
     'Cria um novo campo dentro de um FIELD_GROUP. O título de exibição é armazenado em name, enquanto slug é a chave técnica segura.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    required: ['slug', 'groupSlug'],
-    properties: {
-      slug: {
-        type: 'string',
-        description: 'Slug da tabela',
-      },
-      groupSlug: {
-        type: 'string',
-        description: 'Slug do grupo dentro da tabela',
-      },
-    },
-    additionalProperties: false,
-  },
-  body: {
-    type: 'object',
-    required: ['name', 'type'],
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 500,
-        description: 'Título de exibição do campo mostrado aos usuários finais',
-      },
-      slug: {
-        type: 'string',
-        minLength: 2,
-        maxLength: 80,
-        pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$',
-        description:
-          'Chave técnica segura do campo. Se omitida, a API a gera a partir do name.',
-      },
-      type: {
-        type: 'string',
-        enum: FIELD_TYPE_GROUP_CONFIGURABLE_VALUES,
-        description: 'Tipo do campo',
-      },
-      required: { type: 'boolean', default: false },
-      multiple: { type: 'boolean', default: false },
-      showInFilter: { type: 'boolean', default: false },
-      // Sem `default`: o Mongoose ja aplica false, e o default do AJV apagaria
-      // a flag que o caller nao enviou (ver update.schema.ts).
-      showInParentList: { type: 'boolean' },
-      visibleInParentList: { type: 'boolean' },
-      widthInForm: { type: 'number', nullable: true, default: 50 },
-      widthInList: { type: 'number', nullable: true, default: 10 },
-      widthInDetail: { type: 'number', nullable: true, default: 50 },
-      tip: { type: 'string', nullable: true, default: null },
-      label: {
-        type: 'object',
-        nullable: true,
-        description: 'Rótulo customizado por contexto de exibição do campo',
-        properties: {
-          list: { type: 'string', nullable: true },
-          filter: { type: 'string', nullable: true },
-          form: { type: 'string', nullable: true },
-          detail: { type: 'string', nullable: true },
-        },
-      },
-      locked: { type: 'boolean', default: false },
-      format: { type: 'string', nullable: true, default: null },
-      defaultValue: {
-        anyOf: [
-          { type: 'string' },
-          { type: 'array', items: { type: 'string' } },
-          { type: 'null' },
-        ],
-        default: null,
-      },
-      dropdown: { type: 'array', nullable: true, default: [] },
-      allowCustomDropdownOptions: { type: 'boolean', default: false },
-      allowCreateRelationshipRecords: { type: 'boolean', default: false },
-      fillWithCurrentUserWhenEmpty: { type: 'boolean', default: false },
-      relationship: { type: 'object', nullable: true, default: null },
-      category: { type: 'array', nullable: true, default: [] },
-      group: {
-        anyOf: [
-          { type: 'string' },
-          {
-            type: 'object',
-            properties: {
-              _id: { type: 'string' },
-              slug: { type: 'string' },
-            },
-          },
-          { type: 'null' },
-        ],
-        default: null,
-        description: 'Grupo de destino do campo (slug ou objeto)',
-      },
-      validations: {
-        type: 'array',
-        default: [],
-        description: 'Regras de validação configuradas para o campo',
-        items: {
-          type: 'object',
-          properties: {
-            rule: { type: 'string' },
-            config: { type: 'object', additionalProperties: true },
-          },
-        },
-      },
-    },
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(GroupParamsValidator),
+  body: zodToRouteSchema(GroupFieldCreateBodyValidator),
   response: {
     201: {
       description: 'Campo criado com sucesso no grupo',
