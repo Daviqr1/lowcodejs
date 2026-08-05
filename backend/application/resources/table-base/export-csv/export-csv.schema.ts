@@ -1,10 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
+import { buildErrorResponse } from '@application/core/schema.core';
+
 export const TableExportCsvSchema: FastifySchema = {
   tags: ['Tabelas'],
   summary: 'Exporta tabelas em CSV',
   description:
-    'Gera um arquivo CSV com a metadata de todas as tabelas que casam com os filtros aplicados. Restrito a MASTER e ADMINISTRATOR. Cap de 500.000 linhas por export.',
+    'Gera um arquivo CSV com a metadata de todas as tabelas que casam com os filtros aplicados. Restrito a quem tem acesso privilegiado às tabelas. Cap de 500.000 linhas por export.',
   security: [{ cookieAuth: [] }],
   querystring: {
     type: 'object',
@@ -22,26 +24,28 @@ export const TableExportCsvSchema: FastifySchema = {
   },
   response: {
     200: { description: 'Arquivo CSV', type: 'string', format: 'binary' },
-    401: {
-      description: 'Não autenticado - Autenticação necessária',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [401] },
-        cause: { type: 'string', enum: ['AUTHENTICATION_REQUIRED'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
+    400: buildErrorResponse(400, 'TABLE_REQUIRED', {
+      description: 'Requisição inválida - Ação exige uma tabela',
+    }),
+    401: buildErrorResponse(
+      401,
+      ['AUTHENTICATION_REQUIRED', 'USER_NOT_AUTHENTICATED'],
+      {
+        description: 'Não autenticado - Autenticação necessária',
       },
-    },
-    403: {
-      description: 'Acesso negado - Restrito a MASTER e ADMINISTRATOR',
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        code: { type: 'number', enum: [403] },
-        cause: { type: 'string', enum: ['FORBIDDEN'] },
-        errors: { type: 'object', additionalProperties: { type: 'string' } },
+    ),
+    403: buildErrorResponse(
+      403,
+      [
+        'USER_NOT_FOUND',
+        'USER_NOT_ACTIVE',
+        'PERMISSIONS_NOT_FOUND',
+        'INSUFFICIENT_PERMISSIONS',
+      ],
+      {
+        description: 'Acesso negado - Permissão insuficiente',
       },
-    },
+    ),
     422: {
       description: 'Resultado excede o limite de linhas para exportação',
       type: 'object',

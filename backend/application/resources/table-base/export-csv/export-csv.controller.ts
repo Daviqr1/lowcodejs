@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Controller, GET, getInstanceByToken } from 'fastify-decorators';
 
-import { E_ROLE } from '@application/core/entity.core';
+import { E_TABLE_PERMISSION } from '@application/core/entity.core';
 import { AuthenticationMiddleware } from '@application/middlewares/authentication.middleware';
-import { RoleMiddleware } from '@application/middlewares/role.middleware';
+import { TableAccessMiddleware } from '@application/middlewares/table-access.middleware';
 import { CsvExportContractService } from '@application/services/csv-export/csv-export-contract.service';
 import CsvExportService from '@application/services/csv-export/csv-export.service';
 import HttpResponseService from '@application/services/http-response/http-response.service';
@@ -29,7 +29,9 @@ export default class {
     options: {
       onRequest: [
         AuthenticationMiddleware({ optional: false }),
-        RoleMiddleware([E_ROLE.MASTER, E_ROLE.ADMINISTRATOR]),
+        TableAccessMiddleware({
+          requiredPermission: E_TABLE_PERMISSION.VIEW_TABLE,
+        }),
       ],
       schema: TableExportCsvSchema,
     },

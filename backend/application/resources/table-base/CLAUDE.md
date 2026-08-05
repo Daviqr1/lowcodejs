@@ -16,7 +16,7 @@ nao ha mais fallback.
 | create | POST | `/tables` | Sim | CREATE_TABLE |
 | schema-import | POST | `/tables/schema-import` | Sim | CREATE_TABLE |
 | paginated | GET | `/tables/paginated` | Sim | - |
-| export-csv | GET | `/tables/exports/csv` | Sim | MASTER/ADMINISTRATOR (cap 500.000 linhas) |
+| export-csv | GET | `/tables/exports/csv` | Sim | VIEW_TABLE — sem `:slug`, so privilegiado passa (cap 500.000 linhas) |
 | show | GET | `/tables/:slug` | Opcional | VIEW_TABLE |
 | update | PUT | `/tables/:slug` | Sim | UPDATE_TABLE |
 | delete | DELETE | `/tables/:slug` | Sim | REMOVE_TABLE |
