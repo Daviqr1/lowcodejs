@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { ExtensionToggleSchema } from './toggle.schema';
-import ExtensionToggleUseCase from './toggle.use-case';
 import {
   ExtensionToggleBodyValidator,
-  ExtensionToggleParamsValidator,
-} from './toggle.validator';
+  ExtensionIdentifierParamsValidator,
+} from '../_shared.validator';
+
+import { ExtensionToggleSchema } from './toggle.schema';
+import ExtensionToggleUseCase from './toggle.use-case';
 
 @Controller({
   route: '/extensions',
@@ -36,7 +37,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const { _id } = ExtensionToggleParamsValidator.parse(request.params);
+    const { _id } = ExtensionIdentifierParamsValidator.parse(request.params);
     const { enabled } = ExtensionToggleBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({ _id, enabled });

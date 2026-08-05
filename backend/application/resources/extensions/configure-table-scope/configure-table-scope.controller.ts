@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { ExtensionConfigureTableScopeSchema } from './configure-table-scope.schema';
-import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 import {
   ExtensionConfigureTableScopeBodyValidator,
-  ExtensionConfigureTableScopeParamsValidator,
-} from './configure-table-scope.validator';
+  ExtensionIdentifierParamsValidator,
+} from '../_shared.validator';
+
+import { ExtensionConfigureTableScopeSchema } from './configure-table-scope.schema';
+import ExtensionConfigureTableScopeUseCase from './configure-table-scope.use-case';
 
 @Controller({
   route: '/extensions',
@@ -36,9 +37,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const { _id } = ExtensionConfigureTableScopeParamsValidator.parse(
-      request.params,
-    );
+    const { _id } = ExtensionIdentifierParamsValidator.parse(request.params);
     const body = ExtensionConfigureTableScopeBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({

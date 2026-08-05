@@ -1,5 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  ExtensionIdentifierParamsValidator,
+  ExtensionToggleBodyValidator,
+} from '../_shared.validator';
+
 const badRequestBlock = {
   description: 'Requisição inválida',
   type: 'object',
@@ -64,19 +71,8 @@ export const ExtensionToggleSchema: FastifySchema = {
   description:
     'Alterna o flag enabled. Tentar habilitar uma extensão indisponível resulta em 400. Restrito ao usuário MASTER.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: { _id: { type: 'string' } },
-    required: ['_id'],
-  },
-  body: {
-    type: 'object',
-    properties: {
-      enabled: { type: 'boolean' },
-    },
-    required: ['enabled'],
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ExtensionIdentifierParamsValidator),
+  body: zodToRouteSchema(ExtensionToggleBodyValidator),
   response: {
     200: {
       type: 'object',

@@ -1,5 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  ExtensionIdentifierParamsValidator,
+  BulkConfigureTableSettingsBodyValidator,
+} from '../_shared.validator';
+
 const badRequestBlock = {
   description: 'Requisição inválida',
   type: 'object',
@@ -65,22 +72,8 @@ export const BulkConfigureTableSettingsSchema: FastifySchema = {
   description:
     'Persiste tableSettings[tableId] para N tabelas e chama onTableBound em cada uma. Restrito a usuários com MANAGE_PLUGINS.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: { _id: { type: 'string' } },
-    required: ['_id'],
-  },
-  body: {
-    type: 'object',
-    properties: {
-      tableSettings: {
-        type: 'object',
-        additionalProperties: { type: 'object', additionalProperties: true },
-      },
-    },
-    required: ['tableSettings'],
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ExtensionIdentifierParamsValidator),
+  body: zodToRouteSchema(BulkConfigureTableSettingsBodyValidator),
   response: {
     200: {
       type: 'object',

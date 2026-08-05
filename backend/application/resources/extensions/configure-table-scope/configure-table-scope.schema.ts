@@ -1,5 +1,12 @@
 import type { FastifySchema } from 'fastify';
 
+import { zodToRouteSchema } from '@application/core/schema.core';
+
+import {
+  ExtensionIdentifierParamsValidator,
+  ExtensionConfigureTableScopeBodyValidator,
+} from '../_shared.validator';
+
 const badRequestBlock = {
   description: 'Requisição inválida',
   type: 'object',
@@ -64,20 +71,8 @@ export const ExtensionConfigureTableScopeSchema: FastifySchema = {
   description:
     'Define se o plugin aparece em todas as tabelas (mode=all) ou apenas em um conjunto (mode=specific + tableIds). Restrito ao usuário MASTER.',
   security: [{ cookieAuth: [] }],
-  params: {
-    type: 'object',
-    properties: { _id: { type: 'string' } },
-    required: ['_id'],
-  },
-  body: {
-    type: 'object',
-    properties: {
-      mode: { type: 'string', enum: ['all', 'specific'] },
-      tableIds: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['mode'],
-    additionalProperties: false,
-  },
+  params: zodToRouteSchema(ExtensionIdentifierParamsValidator),
+  body: zodToRouteSchema(ExtensionConfigureTableScopeBodyValidator),
   response: {
     200: {
       type: 'object',

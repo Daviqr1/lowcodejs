@@ -6,12 +6,13 @@ import { AuthenticationMiddleware } from '@application/middlewares/authenticatio
 import { PermissionMiddleware } from '@application/middlewares/permission.middleware';
 import HttpResponseService from '@application/services/http-response/http-response.service';
 
-import { BulkConfigureTableSettingsSchema } from './bulk-configure-table-settings.schema';
-import BulkConfigureTableSettingsUseCase from './bulk-configure-table-settings.use-case';
 import {
   BulkConfigureTableSettingsBodyValidator,
-  BulkConfigureTableSettingsParamsValidator,
-} from './bulk-configure-table-settings.validator';
+  ExtensionIdentifierParamsValidator,
+} from '../_shared.validator';
+
+import { BulkConfigureTableSettingsSchema } from './bulk-configure-table-settings.schema';
+import BulkConfigureTableSettingsUseCase from './bulk-configure-table-settings.use-case';
 
 @Controller({
   route: '/extensions',
@@ -36,9 +37,7 @@ export default class {
     },
   })
   async handle(request: FastifyRequest, response: FastifyReply): Promise<void> {
-    const { _id } = BulkConfigureTableSettingsParamsValidator.parse(
-      request.params,
-    );
+    const { _id } = ExtensionIdentifierParamsValidator.parse(request.params);
     const body = BulkConfigureTableSettingsBodyValidator.parse(request.body);
 
     const result = await this.useCase.execute({
